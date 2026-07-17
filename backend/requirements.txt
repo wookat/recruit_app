@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+celery[redis]
+redis
+pandas
+openpyxl
+python-calamine
+xlrd
+requests
+beautifulsoup4
+python-multipart
+pydantic-settings
+alembic

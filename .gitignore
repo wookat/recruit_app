@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+*.log
+
+# Node
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# Data & outputs
+/data/
+*.xls
+*.xlsx
+*.zip
+*.csv
+*.tsv
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+.DS_Store

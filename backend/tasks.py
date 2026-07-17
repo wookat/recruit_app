@@ -1,0 +1,230 @@
+import os
+import re
+import sys
+import requests
+import pandas as pd
+from sqlalchemy.orm import Session
+from celery_app import celery_app
+from database import SessionLocal
+from ingest import ingest_positions_df
+import import_guopin_2027
+
+sys.path.insert(0, "/home/ubuntu")
+from recruit_parser import (
+    crawl_xds_summary,
+    extract_official_and_files,
+    download_file,
+    extract_zip,
+    parse_position_excel,
+)
+
+APP_DATA_DIR = "/home/ubuntu/recruit_app/data"
+os.makedirs(APP_DATA_DIR, exist_ok=True)
+
+
+def _download(url: str, path: str):
+    r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=120)
+    r.raise_for_status()
+    with open(path, "wb") as f:
+        f.write(r.content)
+    return path
+
+
+@celery_app.task(bind=True)
+def scrape_year(self, year: int):
+    self.update_state(state="PROGRESS", meta={"step": "dispatching subtasks"})
+    if year == 2025:
+        scrape_guokao_2025.delay()
+        scrape_xds.delay(2025)
+        scrape_shengkao_sources.delay(2025)
+        scrape_jdwz_2025.delay()
+    elif year == 2026:
+        scrape_xds.delay(2026)
+    elif year == 2027:
+        scrape_guopin_2027.delay()
+    return {"year": year, "status": "dispatched"}
+
+
+@celery_app.task(bind=True)
+def scrape_guopin_2027(self):
+    self.update_state(state="PROGRESS", meta={"step": "fetching guopin campus jobs"})
+    try:
+        import_guopin_2027.run()
+        return {"status": "done", "source": "https://www.iguopin.com"}
+    except Exception as exc:
+        raise self.retry(exc=exc, countdown=60)
+
+
+@celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
+def scrape_guokao_2025(self):
+    try:
+        url = "https://u3.huatu.com/uploads/soft/241014/f1.xls"
+        path = os.path.join(APP_DATA_DIR, "guokao_2025.xls")
+        _download(url, path)
+        df = parse_position_excel(
+            path,
+            province="全国",
+            source_url="http://bm.scs.gov.cn/kl2025",
+            default_exam="2025国家公务员考试",
+            job_type="公务员",
+        )
+        df["year"] = 2025
+        df["报名时间"] = "2024-10-15 8:00 至 2024-10-24 18:00"
+        df["笔试/考试时间"] = "2024-11-30"
+        db = SessionLocal()
+        try:
+            ingest_positions_df(db, df)
+            db.commit()
+        finally:
+            db.close()
+        return {"rows": len(df), "source": url}
+    except Exception as exc:
+        raise self.retry(exc=exc)
+
+
+@celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
+def scrape_jdwz_2025(self):
+    source = "http://81rc.81.cn/wzry/gzdt/"
+    files = [
+        ("https://u3.huatu.com/uploads/soft/241107/660647-24110H00J82439773927.xlsx",
+         "2025军队文职公开招考（不含先面试后笔试）"),
+        ("https://u3.huatu.com/uploads/soft/241107/660647-24110H00K85822132235.xlsx",
+         "2025军队文职公开招考（先面试后笔试）"),
+    ]
+    total = 0
+    for url, exam in files:
+        try:
+            fn = url.split("/")[-1]
+            path = os.path.join(APP_DATA_DIR, f"jdwz2025_{fn}")
+            _download(url, path)
+            df = parse_position_excel(
+                path,
+                province="全国",
+                source_url=source,
+                default_exam=exam,
+                job_type="军队文职",
+            )
+            df["year"] = 2025
+            df["报名时间"] = "2024-11-08 8:00 至 2024-11-14 18:00"
+            df["笔试/考试时间"] = "2024-12-28"
+            db = SessionLocal()
+            try:
+                ingest_positions_df(db, df)
+                db.commit()
+            finally:
+                db.close()
+            total += len(df)
+        except Exception as exc:
+            raise self.retry(exc=exc)
+    return {"rows": total, "source": source}
+
+
+@celery_app.task(bind=True)
+def scrape_xds(self, year: int):
+    if year == 2026:
+        url = "https://www.jingjia.org/xds/526923.html"
+    elif year == 2025:
+        url = "https://www.jingjia.org/xds/503383.html"
+    else:
+        return {"status": "no_summary_url"}
+
+    r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
+    r.encoding = "utf-8"
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(r.text, "html.parser")
+    rows = []
+    for table in soup.find_all("table"):
+        for tr in table.find_all("tr"):
+            tds = tr.find_all("td")
+            if len(tds) >= 4:
+                cells = [td.get_text(strip=True) for td in tds]
+                if cells[0] == "省份":
+                    continue
+                links = [a.get("href") for a in tr.find_all("a") if a.get("href")]
+                rows.append({
+                    "省份": cells[0],
+                    "招录人数": cells[2] if len(cells) > 2 else "",
+                    "报名时间": cells[3] if len(cells) > 3 else "",
+                    "笔试时间": cells[4] if len(cells) > 4 else "",
+                    "笔试内容": cells[5] if len(cells) > 5 else "",
+                    "detail_url": links[0] if links else "",
+                })
+
+    for row in rows:
+        if row["detail_url"]:
+            parse_xds_detail.delay(year, row)
+    return {"year": year, "provinces": len(rows)}
+
+
+@celery_app.task(bind=True)
+def parse_xds_detail(self, year: int, row: dict):
+    province = row["省份"]
+    detail_url = row.get("detail_url", "")
+    if not detail_url:
+        return {"province": province, "status": "no_detail_url"}
+
+    out_dir = os.path.join(APP_DATA_DIR, f"xds_{year}")
+    os.makedirs(out_dir, exist_ok=True)
+
+    try:
+        official_url, file_urls = extract_official_and_files(detail_url)
+    except Exception as e:
+        return {"province": province, "error": str(e)}
+
+    if not file_urls:
+        return {"province": province, "status": "no_files"}
+
+    downloaded = []
+    for fu in file_urls:
+        try:
+            downloaded.append(download_file(fu, out_dir))
+        except Exception:
+            continue
+
+    db = SessionLocal()
+    try:
+        for fp in downloaded:
+            if fp.endswith(".zip"):
+                extracted = extract_zip(fp, out_dir, prefix=f"{year}_{province}_zip")
+                for ef in extracted:
+                    if ef.endswith((".xlsx", ".xls")):
+                        _parse_xds_file(db, year, province, ef, detail_url)
+            elif fp.endswith((".xlsx", ".xls")):
+                _parse_xds_file(db, year, province, fp, detail_url)
+        db.commit()
+    finally:
+        db.close()
+
+    return {"province": province, "status": "done", "files": len(downloaded)}
+
+
+def _parse_xds_file(db: Session, year: int, province: str, fp: str, source_url: str):
+    base = os.path.basename(fp)
+    if any(k in base for k in ["专业目录", "参考目录", "填报指南", "报名推荐表", "高校名单", "学科名单", "政策问答"]):
+        return
+    if "优培" in base or "事业单位" in base or "引进" in base:
+        job_type = "事业编/事业单位"
+        default_exam = f"{year}{province}优培计划/事业单位招聘"
+    else:
+        job_type = "选调生"
+        default_exam = f"{year}{province}定向选调生"
+    try:
+        df = parse_position_excel(
+            fp,
+            province=province,
+            source_url=source_url,
+            default_exam=default_exam,
+            job_type=job_type,
+        )
+    except Exception:
+        return
+    if df.empty:
+        return
+    df["year"] = year
+    ingest_positions_df(db, df)
+
+
+@celery_app.task(bind=True)
+def scrape_shengkao_sources(self, year: int):
+    # 省考岗位分散在各省人事考试网，先建立入口目录；具体职位表可后续按省份抓取
+    return {"status": "placeholder", "year": year, "note": "省考职位表按省份分散，建议后续逐省队列抓取"}

@@ -15,6 +15,7 @@ frontend/dist/
 
 # Data & outputs
 /data/
+!/data/recruit.dump
 *.xls
 *.xlsx
 *.zip

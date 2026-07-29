@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { Position } from '@/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,7 +10,7 @@ interface Props {
   onDetail: (item: Position) => void
 }
 
-export function PositionCard({ item, onDetail }: Props) {
+export const PositionCard = memo(function PositionCard({ item, onDetail }: Props) {
   return (
     <Card className="flex flex-col transition-shadow hover:shadow-md">
       <CardHeader className="pb-2">
@@ -51,4 +52,4 @@ export function PositionCard({ item, onDetail }: Props) {
       </CardFooter>
     </Card>
   )
-}
+})

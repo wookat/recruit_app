@@ -12,6 +12,7 @@ from database import engine, Base, get_db
 from celery_app import celery_app
 import crud
 import schemas
+import cache
 from tasks import scrape_year
 
 
@@ -68,6 +69,7 @@ def health():
 
 
 @app.get("/api/positions", response_model=schemas.PositionList)
+@cache.cached("positions", ttl=30)
 def get_positions(
     year: Optional[List[int]] = Query(None),
     job_type: Optional[List[str]] = Query(None),
@@ -108,6 +110,7 @@ def get_positions(
 
 
 @app.get("/api/sources", response_model=schemas.PositionList)
+@cache.cached("sources", ttl=30)
 def get_sources(
     year: Optional[List[int]] = Query(None),
     job_type: Optional[List[str]] = Query(None),
@@ -147,6 +150,7 @@ def get_sources(
 
 
 @app.get("/api/filters", response_model=schemas.FilterOptions)
+@cache.cached("filters", ttl=60)
 def get_filters(db: Session = Depends(get_db)):
     return crud.get_filter_options(db)
 

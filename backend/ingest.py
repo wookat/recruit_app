@@ -72,10 +72,22 @@ def _compute_hash(rec):
     return hashlib.md5(s.encode("utf-8")).hexdigest()
 
 
+def _build_search_text(rec: dict) -> str:
+    parts = []
+    for k in ("position_example", "employer", "exam_type", "job_type",
+              "undergrad_major", "grad_major", "raw_major", "special_requirements",
+              "work_location", "notes"):
+        v = rec.get(k)
+        if v:
+            parts.append(str(v))
+    return " ".join(parts)
+
+
 def _enrich_record(rec: dict) -> dict:
     rec["job_type"] = normalize_job_type(rec.get("job_type"))
     rec["edu_level_norm"] = normalize_edu(rec.get("edu_requirement"))
     rec["location_tags"] = parse_location_tags(rec.get("work_location"))
+    rec["search_text"] = _build_search_text(rec)
     return rec
 
 

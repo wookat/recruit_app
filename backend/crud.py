@@ -88,20 +88,21 @@ def _apply_filters(query, model, filters: PositionFilter):
 
     if filters.keyword:
         k = f"%{filters.keyword}%"
-        query = query.filter(or_(
-            model.position_example.ilike(k),
-            model.employer.ilike(k),
-            model.undergrad_major.ilike(k),
-            model.grad_major.ilike(k),
-            model.raw_major.ilike(k),
-            model.special_requirements.ilike(k),
-            model.exam_type.ilike(k),
-            model.work_location.ilike(k),
-            model.job_type.ilike(k),
-            model.signup_time.ilike(k),
-            model.exam_time.ilike(k),
-            model.notes.ilike(k),
-        ))
+        if hasattr(model, "search_text"):
+            query = query.filter(model.search_text.ilike(k))
+        else:
+            query = query.filter(or_(
+                model.position_example.ilike(k),
+                model.employer.ilike(k),
+                model.undergrad_major.ilike(k),
+                model.grad_major.ilike(k),
+                model.raw_major.ilike(k),
+                model.special_requirements.ilike(k),
+                model.exam_type.ilike(k),
+                model.work_location.ilike(k),
+                model.job_type.ilike(k),
+                model.notes.ilike(k),
+            ))
     return query
 
 

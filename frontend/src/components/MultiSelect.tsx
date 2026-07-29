@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Check, ChevronDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { pinyinCommandFilter } from '@/lib/pinyin'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -55,13 +56,6 @@ export function MultiSelect({
     onChange([])
   }
 
-  const allOptions = React.useMemo(() => {
-    const flat: string[] = []
-    if (options) flat.push(...options)
-    if (groups) groups.forEach((g) => flat.push(...g.options))
-    return flat
-  }, [options, groups])
-
   const renderOption = (opt: string) => {
     const isSelected = selected.includes(opt)
     return (
@@ -113,7 +107,7 @@ export function MultiSelect({
           }
         />
         <PopoverContent className="w-72 p-0" align="start">
-          <Command>
+          <Command filter={pinyinCommandFilter}>
             <CommandInput placeholder={placeholder} />
             <CommandList className="max-h-64">
               <CommandEmpty>无匹配选项</CommandEmpty>

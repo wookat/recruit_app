@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { fetchFilters, type PositionList, type FilterOptions, type SearchParams } from '@/api'
 import { MultiSelect } from './MultiSelect'
 import { PositionTable } from './PositionTable'
@@ -15,6 +15,7 @@ import {
   saveFilter,
   type SavedFilter,
 } from '@/lib/storage'
+import { pinyinMatch } from '@/lib/pinyin'
 import {
   Search,
   Filter,
@@ -178,6 +179,21 @@ export function ListPage({ title, fetcher }: ListPageProps) {
     setParams({ ...DEFAULT_PARAMS, ...f.params, page: 1 })
   }
 
+  const pinyinSuggestions = useMemo(() => {
+    const kw = (params.keyword || '').trim()
+    if (!/^[a-zA-Z]{2,}$/.test(kw) || !filters) return []
+    const pool = [
+      ...new Set([
+        ...filters.hot_locations,
+        ...filters.provinces,
+        ...filters.categories,
+        ...filters.edu_levels,
+        ...HOT_SEARCH.map((h) => h.value),
+      ]),
+    ]
+    return pool.filter((t) => pinyinMatch(t, kw)).slice(0, 8)
+  }, [params.keyword, filters])
+
   function handleHotSearch(item: (typeof HOT_SEARCH)[number]) {
     if (item.type === 'location') {
       const current = params.location || []
@@ -297,6 +313,22 @@ export function ListPage({ title, fetcher }: ListPageProps) {
                 className="pl-9"
                 onKeyDown={(e) => e.key === 'Enter' && load()}
               />
+              {pinyinSuggestions.length > 0 && (
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-md border bg-popover shadow-md">
+                  <div className="px-3 py-1.5 text-[11px] text-muted-foreground">拼音联想（点击替换关键词）</div>
+                  {pinyinSuggestions.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                      onClick={() => updateParam('keyword', s)}
+                    >
+                      <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Sheet open={filterOpen} onOpenChange={setFilterOpen}>

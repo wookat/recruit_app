@@ -61,6 +61,18 @@ class FilterOptions(BaseModel):
     districts: List[str]
 
 
+class StatEntry(BaseModel):
+    name: str
+    count: int
+
+
+class StatsOut(BaseModel):
+    total: int
+    by_year: List[StatEntry]
+    by_exam_type: List[StatEntry]
+    by_province: List[StatEntry]
+
+
 class TaskOut(BaseModel):
     task_id: str
     status: str

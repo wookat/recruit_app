@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { fetchFilters, type PositionList, type FilterOptions, type SearchParams } from '@/api'
+import {
+  fetchFilters,
+  fetchSuggestions,
+  type PositionList,
+  type FilterOptions,
+  type SearchParams,
+  type Suggestion,
+} from '@/api'
+import { StatsDashboard } from './StatsDashboard'
+import { buildShareUrl, paramsFromQueryString } from '@/lib/urlFilters'
 import { MultiSelect } from './MultiSelect'
 import { PositionTable } from './PositionTable'
 import { PositionCardGrid } from './PositionCardGrid'
@@ -29,6 +38,7 @@ import {
   BookmarkPlus,
   Bookmark,
   Check,
+  Link2,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -47,6 +57,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 interface ListPageProps {
   title: string
   fetcher: (params: SearchParams) => Promise<PositionList>
+  showStats?: boolean
+  syncUrl?: boolean
 }
 
 const HOT_SEARCH = [
@@ -88,22 +100,74 @@ function defaultView(): ViewMode {
   return 'table'
 }
 
-export function ListPage({ title, fetcher }: ListPageProps) {
+export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) {
   const [filters, setFilters] = useState<FilterOptions | null>(null)
   const [data, setData] = useState<PositionList | null>(null)
   const [loading, setLoading] = useState(false)
   const [view, setView] = useState<ViewMode>(defaultView)
   const [filterOpen, setFilterOpen] = useState(false)
-  const [params, setParams] = useState<SearchParams>({ ...DEFAULT_PARAMS })
+  const [params, setParams] = useState<SearchParams>(() =>
+    syncUrl
+      ? { ...DEFAULT_PARAMS, ...paramsFromQueryString(window.location.search) }
+      : { ...DEFAULT_PARAMS },
+  )
   const [recent, setRecent] = useState<string[]>(() => getRecentSearches())
   const [saved, setSaved] = useState<SavedFilter[]>(() => getSavedFilters())
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveName, setSaveName] = useState('')
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [copied, setCopied] = useState(false)
+  const suggestDisabledRef = useRef(false)
+  const skipSuggestRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     fetchFilters().then(setFilters).catch(console.error)
   }, [])
+
+  useEffect(() => {
+    const kw = (params.keyword || '').trim()
+    if (
+      suggestDisabledRef.current ||
+      kw.length < 1 ||
+      (kw.length < 2 && !/[\u4e00-\u9fff]/.test(kw)) ||
+      skipSuggestRef.current === kw
+    ) {
+      setSuggestions([])
+      return
+    }
+    const t = setTimeout(() => {
+      fetchSuggestions(kw)
+        .then((s) => setSuggestions(s.filter((x) => x.text !== kw)))
+        .catch((e) => {
+          if (e?.response?.status === 404) suggestDisabledRef.current = true
+          setSuggestions([])
+        })
+    }, 250)
+    return () => clearTimeout(t)
+  }, [params.keyword])
+
+  function applySuggestion(text: string) {
+    skipSuggestRef.current = text
+    setSuggestions([])
+    updateParam('keyword', text)
+  }
+
+  async function copyShareLink() {
+    const url = buildShareUrl(params)
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = url
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const load = useCallback(async () => {
     abortRef.current?.abort()
@@ -286,6 +350,8 @@ export function ListPage({ title, fetcher }: ListPageProps) {
   )
 
   const activeChips = []
+  for (const v of params.exam_type_norm || []) activeChips.push({ label: `考试类型：${v}`, onRemove: () => updateParam('exam_type_norm', (params.exam_type_norm || []).filter((x) => x !== v)) })
+  for (const v of params.province || []) activeChips.push({ label: `省份：${v}`, onRemove: () => updateParam('province', (params.province || []).filter((x) => x !== v)) })
   if (params.keyword) activeChips.push({ label: `关键词：${params.keyword}`, onRemove: () => updateParam('keyword', '') })
   if (params.major) activeChips.push({ label: `专业：${params.major}`, onRemove: () => updateParam('major', '') })
   for (const y of params.year || []) activeChips.push({ label: `年份：${y}`, onRemove: () => updateParam('year', (params.year || []).filter((v) => v !== y)) })
@@ -298,6 +364,13 @@ export function ListPage({ title, fetcher }: ListPageProps) {
 
   return (
     <div className="space-y-5">
+      {showStats && (
+        <StatsDashboard
+          onSelectYear={(y) => updateParam('year', [y])}
+          onSelectExamType={(t) => updateParam('exam_type_norm', [t])}
+          onSelectProvince={(p) => updateParam('province', [p])}
+        />
+      )}
       <QuickMatch filters={filters} onSearch={applyQuickMatch} onReset={clearFilters} />
 
       <Card>
@@ -313,20 +386,43 @@ export function ListPage({ title, fetcher }: ListPageProps) {
                 className="pl-9"
                 onKeyDown={(e) => e.key === 'Enter' && load()}
               />
-              {pinyinSuggestions.length > 0 && (
+              {(suggestions.length > 0 || pinyinSuggestions.length > 0) && (
                 <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-md border bg-popover shadow-md">
-                  <div className="px-3 py-1.5 text-[11px] text-muted-foreground">拼音联想（点击替换关键词）</div>
-                  {pinyinSuggestions.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
-                      onClick={() => updateParam('keyword', s)}
-                    >
-                      <Search className="h-3.5 w-3.5 text-muted-foreground" />
-                      {s}
-                    </button>
-                  ))}
+                  {suggestions.length > 0 && (
+                    <>
+                      <div className="px-3 py-1.5 text-[11px] text-muted-foreground">关键词联想（点击替换关键词）</div>
+                      {suggestions.map((s) => (
+                        <button
+                          key={s.text}
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                          onClick={() => applySuggestion(s.text)}
+                        >
+                          <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="flex-1">{s.text}</span>
+                          {s.count !== undefined && (
+                            <span className="text-xs text-muted-foreground">{s.count.toLocaleString()} 条</span>
+                          )}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  {suggestions.length === 0 && pinyinSuggestions.length > 0 && (
+                    <>
+                      <div className="px-3 py-1.5 text-[11px] text-muted-foreground">拼音联想（点击替换关键词）</div>
+                      {pinyinSuggestions.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                          onClick={() => updateParam('keyword', s)}
+                        >
+                          <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                          {s}
+                        </button>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -474,6 +570,24 @@ export function ListPage({ title, fetcher }: ListPageProps) {
                 保存当前筛选
               </Button>
             )}
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              onClick={copyShareLink}
+            >
+              {copied ? (
+                <>
+                  <Check className="mr-0.5 h-3.5 w-3.5" />
+                  已复制
+                </>
+              ) : (
+                <>
+                  <Link2 className="mr-0.5 h-3.5 w-3.5" />
+                  复制筛选链接
+                </>
+              )}
+            </Button>
           </div>
 
           {activeChips.length > 0 && (

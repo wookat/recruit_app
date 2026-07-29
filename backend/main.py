@@ -39,6 +39,8 @@ def _build_filter(
     year: Optional[List[int]] = None,
     job_type: Optional[List[str]] = None,
     exam_type: Optional[List[str]] = None,
+    exam_type_norm: Optional[List[str]] = None,
+    province: Optional[List[str]] = None,
     edu_requirement: Optional[List[str]] = None,
     work_location: Optional[List[str]] = None,
     keyword: Optional[str] = None,
@@ -52,6 +54,8 @@ def _build_filter(
         year=year,
         job_type=job_type,
         exam_type=exam_type,
+        exam_type_norm=exam_type_norm,
+        province=province,
         edu_requirement=edu_requirement,
         work_location=work_location,
         keyword=keyword,
@@ -74,6 +78,8 @@ def get_positions(
     year: Optional[List[int]] = Query(None),
     job_type: Optional[List[str]] = Query(None),
     exam_type: Optional[List[str]] = Query(None),
+    exam_type_norm: Optional[List[str]] = Query(None),
+    province: Optional[List[str]] = Query(None),
     edu_requirement: Optional[List[str]] = Query(None),
     work_location: Optional[List[str]] = Query(None),
     keyword: Optional[str] = Query(None),
@@ -91,6 +97,8 @@ def get_positions(
         year=year,
         job_type=job_type,
         exam_type=exam_type,
+        exam_type_norm=exam_type_norm,
+        province=province,
         edu_requirement=edu_requirement,
         work_location=work_location,
         keyword=keyword,
@@ -153,6 +161,12 @@ def get_sources(
 @cache.cached("filters", ttl=60)
 def get_filters(db: Session = Depends(get_db)):
     return crud.get_filter_options(db)
+
+
+@app.get("/api/stats", response_model=schemas.StatsOut)
+@cache.cached("stats", ttl=300)
+def get_stats(db: Session = Depends(get_db)):
+    return crud.get_stats(db)
 
 
 @app.post("/api/admin/scrape/{year}", response_model=schemas.TaskOut)

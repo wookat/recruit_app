@@ -55,6 +55,8 @@ export interface SearchParams {
   year?: number[]
   job_type?: string[]
   exam_type?: string[]
+  exam_type_norm?: string[]
+  province?: string[]
   edu_requirement?: string[]
   work_location?: string[]
   keyword?: string
@@ -95,6 +97,59 @@ export async function fetchSources(params: SearchParams): Promise<PositionList> 
 export async function fetchFilters(): Promise<FilterOptions> {
   const res = await axios.get(`${API_BASE}/api/filters`)
   return res.data
+}
+
+export interface StatEntry {
+  name: string
+  count: number
+}
+
+export interface Stats {
+  total: number
+  by_year: StatEntry[]
+  by_exam_type: StatEntry[]
+  by_province: StatEntry[]
+}
+
+export async function fetchStats(): Promise<Stats> {
+  const res = await axios.get(`${API_BASE}/api/stats`)
+  return res.data
+}
+
+export interface Suggestion {
+  text: string
+  type?: string
+  count?: number
+}
+
+export async function fetchSuggestions(q: string, limit = 8): Promise<Suggestion[]> {
+  const res = await axios.get(`${API_BASE}/api/suggest`, { params: { q, limit } })
+  const data = res.data
+  const raw: unknown[] = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.suggestions)
+    ? data.suggestions
+    : Array.isArray(data?.items)
+    ? data.items
+    : []
+  return raw
+    .map((item): Suggestion | null => {
+      if (typeof item === 'string') return { text: item }
+      if (item && typeof item === 'object') {
+        const obj = item as Record<string, unknown>
+        const text = obj.text ?? obj.keyword ?? obj.value ?? obj.name
+        if (typeof text === 'string' && text) {
+          return {
+            text,
+            type: typeof obj.type === 'string' ? obj.type : undefined,
+            count: typeof obj.count === 'number' ? obj.count : undefined,
+          }
+        }
+      }
+      return null
+    })
+    .filter((s): s is Suggestion => s !== null)
+    .slice(0, limit)
 }
 
 export async function triggerScrape(year: number): Promise<{ task_id: string; status: string }> {

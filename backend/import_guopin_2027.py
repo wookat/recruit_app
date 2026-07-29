@@ -25,8 +25,9 @@ KEYWORDS = [
 ]
 
 
-def fetch_keyword(keyword: str, max_page=30):
+def fetch_keyword(keyword: str, max_page=50):
     items = {}
+    stale_count = 0
     for page in range(1, max_page + 1):
         data = {
             "page": page,
@@ -39,10 +40,18 @@ def fetch_keyword(keyword: str, max_page=30):
         res = r.json()
         if res.get("code") != 200:
             break
+        prev_len = len(items)
         for item in res["data"].get("list") or []:
             items[item["job_id"]] = item
+        new_len = len(items)
         if len(res["data"].get("list") or []) < 200:
             break
+        if new_len == prev_len:
+            stale_count += 1
+            if stale_count >= 3:
+                break
+        else:
+            stale_count = 0
         time.sleep(0.2)
     return list(items.values())
 

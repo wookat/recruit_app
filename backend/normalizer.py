@@ -85,6 +85,27 @@ def normalize_edu(edu: Optional[str]) -> str:
     return "其他/不限"
 
 
+def normalize_job_type(jt: Optional[str]) -> str:
+    if not jt:
+        return "其他"
+    j = str(jt).strip()
+    if any(k in j for k in ("事业单位", "事业编")):
+        return "事业单位/事业编"
+    if "公务员" in j:
+        return "公务员"
+    if "军队文职" in j:
+        return "军队文职"
+    if "选调生" in j:
+        return "选调生"
+    if any(k in j for k in ("央企", "国企", "国有企业", "中央企业")):
+        return "央企/国企"
+    if any(k in j for k in ("银行",)):
+        return "银行"
+    if any(k in j for k in ("民营", "股份制", "中外合资", "上市公司", "其他")):
+        return "其他企业"
+    return j
+
+
 def _extract_district(remainder: str) -> Optional[str]:
     r = _normalize_name(remainder)
     if r and len(r) >= 2:

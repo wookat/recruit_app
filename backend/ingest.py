@@ -11,7 +11,7 @@ from sqlalchemy.dialects.postgresql import insert
 sys.path.insert(0, os.path.dirname(__file__))
 from database import Base, SessionLocal
 from models import Position, Source
-from normalizer import normalize_edu, parse_location_tags
+from normalizer import normalize_edu, normalize_job_type, parse_location_tags
 
 
 def _clean(val):
@@ -73,6 +73,7 @@ def _compute_hash(rec):
 
 
 def _enrich_record(rec: dict) -> dict:
+    rec["job_type"] = normalize_job_type(rec.get("job_type"))
     rec["edu_level_norm"] = normalize_edu(rec.get("edu_requirement"))
     rec["location_tags"] = parse_location_tags(rec.get("work_location"))
     return rec

@@ -107,7 +107,7 @@ def _apply_filters(query, model, filters: PositionFilter):
 
 
 def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_size: int = 20, sort: str = "year_desc"):
-    q = db.query(Position)
+    q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None))
     q = _apply_filters(q, Position, filters)
     if sort == "year_desc":
         q = q.order_by(Position.year.desc(), Position.id.desc())
@@ -130,10 +130,12 @@ def search_sources(db: Session, filters: PositionFilter, page: int = 1, page_siz
 
 
 def get_filter_options(db: Session, limit: int = 120):
+    clean = [Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)]
+
     def distinct_values(col, l=limit):
         rows = (
             db.query(col)
-            .filter(col != None, col != "")
+            .filter(*clean, col != None, col != "")
             .distinct()
             .order_by(col)
             .limit(l)
@@ -142,14 +144,14 @@ def get_filter_options(db: Session, limit: int = 120):
         return [r[0] for r in rows if r[0]]
 
     years = [r[0] for r in db.query(Position.year)
-             .filter(Position.year != None)
+             .filter(*clean, Position.year != None)
              .distinct()
              .order_by(Position.year.desc())
              .all()]
 
     edu_levels = (
         db.query(Position.edu_level_norm)
-        .filter(Position.edu_level_norm != None, Position.edu_level_norm != "")
+        .filter(*clean, Position.edu_level_norm != None, Position.edu_level_norm != "")
         .distinct()
         .order_by(Position.edu_level_norm)
         .limit(limit)
@@ -160,7 +162,7 @@ def get_filter_options(db: Session, limit: int = 120):
     # 热门城市：从 location_tags 中计数，过滤掉省级名称，保留城市级
     city_counter: Counter = Counter()
     province_set = set(ALL_PROVINCES)
-    rows = db.query(Position.location_tags).filter(Position.location_tags != None).limit(200000).all()
+    rows = db.query(Position.location_tags).filter(*clean, Position.location_tags != None).limit(200000).all()
     for (tags,) in rows:
         for tag in (tags or []):
             if tag and tag not in province_set and len(tag) >= 2 and not tag.startswith("("):

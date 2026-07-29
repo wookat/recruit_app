@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Position, PositionList, SearchParams } from '@/api'
 import { PositionSheet } from './PositionSheet'
+import { FavoriteButton } from './FavoriteButton'
+import { CompareButton } from './CompareButton'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Building2, MapPin, GraduationCap, Loader2 } from 'lucide-react'
@@ -116,11 +118,14 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
                 style={{ transform: `translateY(${vi.start}px)` }}
               >
                 {item ? (
-                  <button
-                    type="button"
-                    className="flex w-full flex-col gap-1 border-b px-4 py-3 text-left transition-colors hover:bg-muted/50 active:bg-muted"
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="flex w-full cursor-pointer items-start gap-2 border-b px-4 py-3 text-left transition-colors hover:bg-muted/50 active:bg-muted"
                     onClick={() => setSelected(item)}
+                    onKeyDown={(e) => e.key === 'Enter' && setSelected(item)}
                   >
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge variant="secondary" className="text-[11px]">
                         {item.year}
@@ -146,7 +151,12 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
                         <span className="truncate">{item.work_location || '-'}</span>
                       </span>
                     </div>
-                  </button>
+                    </div>
+                    <div className="flex shrink-0 items-center">
+                      <FavoriteButton item={item} />
+                      <CompareButton item={item} />
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center gap-2 px-4 py-4 text-xs text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />

@@ -8,6 +8,8 @@ import {
 } from '@tanstack/react-table'
 import type { Position } from '@/api'
 import { PositionSheet } from './PositionSheet'
+import { FavoriteButton } from './FavoriteButton'
+import { CompareButton } from './CompareButton'
 import {
   Table,
   TableBody,
@@ -119,7 +121,7 @@ export function PositionTable({
                       {flexRender(h.column.columnDef.header, h.getContext())}
                     </TableHead>
                   ))}
-                  <TableHead className="w-20">操作</TableHead>
+                  <TableHead className="w-32">操作</TableHead>
                 </TableRow>
               ))}
             </TableHeader>
@@ -166,17 +168,21 @@ export function PositionTable({
                       </TableCell>
                     ))}
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-auto p-0 text-primary"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelected(row.original)
-                        }}
-                      >
-                        详情
-                      </Button>
+                      <div className="flex items-center gap-0.5">
+                        <FavoriteButton item={row.original} />
+                        <CompareButton item={row.original} />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 text-primary"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelected(row.original)
+                          }}
+                        >
+                          详情
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

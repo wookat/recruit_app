@@ -9,6 +9,8 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { FavoriteButton } from './FavoriteButton'
+import { CompareButton } from './CompareButton'
 
 interface Props {
   item: Position | null
@@ -85,11 +87,15 @@ export function PositionSheet({ item, onClose }: Props) {
     <Sheet open={!!item} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full max-w-2xl p-0 sm:max-w-xl">
         <SheetHeader className="px-4 pt-6 sm:px-6">
-          <SheetTitle className="flex flex-wrap items-center gap-2 text-lg">
+          <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             岗位详情
             <Badge variant="secondary">{item.year}</Badge>
             {item.job_type && <Badge variant="outline">{item.job_type}</Badge>}
             {item.edu_level_norm && <Badge variant="outline">{item.edu_level_norm}</Badge>}
+            <span className="ml-auto flex items-center">
+              <FavoriteButton item={item} />
+              <CompareButton item={item} />
+            </span>
           </SheetTitle>
         </SheetHeader>
         <ScrollArea className="h-[calc(100dvh-5rem)] px-4 sm:px-6">

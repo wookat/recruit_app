@@ -427,10 +427,14 @@ export function ListPage({ title, fetcher }: ListPageProps) {
                 <span className="cursor-pointer" onClick={() => applySavedFilter(f)}>
                   {f.name}
                 </span>
-                <X
-                  className="h-3 w-3 cursor-pointer text-muted-foreground hover:text-foreground"
+                <button
+                  type="button"
+                  aria-label={`删除筛选 ${f.name}`}
+                  className="cursor-pointer text-muted-foreground hover:text-foreground"
                   onClick={() => setSaved(deleteFilter(f.name))}
-                />
+                >
+                  <X className="pointer-events-none h-3 w-3" />
+                </button>
               </Badge>
             ))}
             {saveOpen ? (
@@ -478,7 +482,14 @@ export function ListPage({ title, fetcher }: ListPageProps) {
               {activeChips.map((chip, idx) => (
                 <Badge key={idx} variant="secondary" className="gap-1 text-xs font-normal">
                   {chip.label}
-                  <X className="h-3 w-3 cursor-pointer" onClick={chip.onRemove} />
+                  <button
+                    type="button"
+                    aria-label={`移除 ${chip.label}`}
+                    className="cursor-pointer text-muted-foreground hover:text-foreground"
+                    onClick={chip.onRemove}
+                  >
+                    <X className="pointer-events-none h-3 w-3" />
+                  </button>
                 </Badge>
               ))}
               <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={clearFilters}>

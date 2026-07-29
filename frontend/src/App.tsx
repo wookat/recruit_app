@@ -1,9 +1,15 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
-import { SourcesPage } from '@/components/SourcesPage'
-import { TasksPage } from '@/components/TasksPage'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Briefcase, FolderOpen, ListVideo } from 'lucide-react'
+
+const SourcesPage = lazy(() =>
+  import('@/components/SourcesPage').then((m) => ({ default: m.SourcesPage })),
+)
+const TasksPage = lazy(() =>
+  import('@/components/TasksPage').then((m) => ({ default: m.TasksPage })),
+)
 
 export default function App() {
   const [tab, setTab] = useState('search')
@@ -41,8 +47,10 @@ export default function App() {
 
       <main className="mx-auto max-w-7xl px-4 py-6">
         {tab === 'search' && <SearchPage />}
-        {tab === 'sources' && <SourcesPage />}
-        {tab === 'tasks' && <TasksPage />}
+        <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
+          {tab === 'sources' && <SourcesPage />}
+          {tab === 'tasks' && <TasksPage />}
+        </Suspense>
       </main>
 
       <footer className="border-t bg-background py-6 text-center text-xs text-muted-foreground">

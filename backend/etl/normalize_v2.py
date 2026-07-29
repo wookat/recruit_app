@@ -18,7 +18,8 @@ _CITY_SUFFIXES = (
     "哈尼族彝族自治州", "布依族苗族自治州", "苗族侗族自治州", "土家族苗族自治州",
     "傣族景颇族自治州", "蒙古族藏族自治州", "柯尔克孜自治州", "傈僳族自治州",
     "藏族羌族自治州", "回族自治州", "朝鲜族自治州", "藏族自治州", "彝族自治州",
-    "傣族自治州", "白族自治州", "蒙古自治州", "自治州", "地区", "林区", "盟", "市",
+    "傣族自治州", "白族自治州", "蒙古自治州", "哈萨克自治州", "自治州",
+    "地区", "林区", "盟", "市", "县",
 )
 _DISTRICT_RE = re.compile(r"^[\u4e00-\u9fa5]{1,10}(区|县|旗|市|镇|乡|街道)$")
 
@@ -53,6 +54,18 @@ def _load_pc() -> Dict[str, List[str]]:
 
 
 _PC = _load_pc()
+
+# Cities/regions missing from pc.json: Hainan province-administered counties,
+# Ili prefecture, SAR placeholders.
+_PC_SUPPLEMENT = {
+    "海南省": ["五指山市", "文昌市", "琼海市", "万宁市", "东方市", "定安县", "屯昌县",
+             "澄迈县", "临高县", "白沙县", "昌江县", "乐东县", "陵水县", "保亭县", "琼中县"],
+    "新疆维吾尔自治区": ["伊犁哈萨克自治州", "奎屯市", "伊宁市"],
+    "香港特别行政区": [], "澳门特别行政区": [],
+}
+for _k, _v in _PC_SUPPLEMENT.items():
+    _PC.setdefault(_k, [])
+    _PC[_k] = list(dict.fromkeys(_PC[_k] + _v))
 
 # province short name -> list of (variant, city_short); variants sorted longest-first
 PROVINCES: List[str] = []
@@ -222,7 +235,11 @@ _MAJOR_SPLIT_RE = re.compile(
     r"专业要求[:：]?\s*(?P<ug>.*?)(?:。|；|;)?\s*研究生专业要求[:：]?\s*(?P<g>.*?)(?:。|；|;)?\s*$",
     re.S,
 )
-_COLLEGE_RE = re.compile(r"(?:专科|大专)(?:生)?专业要求[:：]?\s*(?P<c>[^。；;]*)")
+_COLLEGE_RE = re.compile(
+    r"(?:大学)?(?:专科|大专)(?:生)?专业要求[:：]?\s*"
+    r"(?P<c>.*?)(?=(?:大学)?本科(?:生)?专业要求|研究生专业要求|。|；|;|$)",
+    re.S,
+)
 
 
 def clean_major(val: Optional[str]) -> Optional[str]:
@@ -253,6 +270,20 @@ def split_major(raw_major: Optional[str], undergrad: Optional[str], grad: Option
                 g = m.group("g")
             break
     return clean_major(ug), clean_major(g), clean_major(col)
+
+
+_WS_RE = re.compile(r"[\s\u3000]+")
+_PAREN_MAP = str.maketrans({"(": "（", ")": "）", ":": "：", "，": "、"})
+
+
+def clean_employer(val: Optional[str]) -> Optional[str]:
+    """Whitespace/full-width punctuation cleanup so the same employer written
+    with different spacing or half-width parens collapses to one spelling."""
+    if val is None:
+        return None
+    s = _WS_RE.sub("", str(val)).strip("。.、;；")
+    s = s.translate(_PAREN_MAP)
+    return s or None
 
 
 _HASH_KEYS = [

@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy import create_engine, text
 
 from etl.normalize_v2 import (
-    content_hash_v2, normalize_exam_type, parse_location, split_major,
+    clean_employer, content_hash_v2, normalize_exam_type, parse_location, split_major,
 )
 
 SCHEMA_SQL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "migration_001_schema.sql")
@@ -40,6 +40,7 @@ SELECT_COLS = [
 UPDATE_SQL = text("""
     UPDATE positions SET
         content_hash_v2 = :h,
+        employer = :emp,
         exam_type_norm = :etn,
         province = :prov, city = :city, district = :district,
         location_tags = :tags,
@@ -96,12 +97,14 @@ def step_normalize(engine, dry_run, batch_size, where="TRUE"):
         params = []
         for r in rows:
             rec = dict(r)
+            rec["employer"] = clean_employer(rec.get("employer"))
             ug, g, col = split_major(rec.get("raw_major"), rec.get("undergrad_major"), rec.get("grad_major"))
             rec["undergrad_major"], rec["grad_major"] = ug, g
             prov, city, district, tags = parse_location(rec.get("work_location"))
             params.append({
                 "id": rec["id"],
                 "h": content_hash_v2(rec),
+                "emp": rec["employer"],
                 "etn": normalize_exam_type(rec.get("exam_type")),
                 "prov": prov, "city": city, "district": district,
                 "tags": tags,

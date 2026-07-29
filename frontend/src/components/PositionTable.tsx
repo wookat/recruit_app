@@ -1,4 +1,5 @@
 import { useState } from 'react'
+
 import {
   useReactTable,
   getCoreRowModel,
@@ -27,6 +28,23 @@ import {
 } from '@/components/ui/select'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 
+const columns: ColumnDef<Position>[] = [
+  { accessorKey: 'year', header: '年份', size: 70 },
+  { accessorKey: 'job_type', header: '工作类型', size: 100 },
+  { accessorKey: 'exam_type', header: '考试/招聘类型', size: 200 },
+  { accessorKey: 'employer', header: '用人单位/系统', size: 220 },
+  { accessorKey: 'position_example', header: '岗位示例', size: 260 },
+  {
+    id: 'edu_level_norm',
+    accessorFn: (row) => row.edu_level_norm || row.edu_requirement,
+    header: '学历要求',
+    size: 100,
+  },
+  { accessorKey: 'work_location', header: '工作地点', size: 120 },
+  { accessorKey: 'signup_time', header: '报名时间', size: 160 },
+  { accessorKey: 'exam_time', header: '考试时间', size: 160 },
+]
+
 interface Props {
   data: Position[]
   total: number
@@ -48,23 +66,6 @@ export function PositionTable({
 }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
-
-  const columns: ColumnDef<Position>[] = [
-    { accessorKey: 'year', header: '年份', size: 70 },
-    { accessorKey: 'job_type', header: '工作类型', size: 100 },
-    { accessorKey: 'exam_type', header: '考试/招聘类型', size: 200 },
-    { accessorKey: 'employer', header: '用人单位/系统', size: 220 },
-    { accessorKey: 'position_example', header: '岗位示例', size: 260 },
-    {
-      id: 'edu_level_norm',
-      accessorFn: (row) => row.edu_level_norm || row.edu_requirement,
-      header: '学历要求',
-      size: 100,
-    },
-    { accessorKey: 'work_location', header: '工作地点', size: 120 },
-    { accessorKey: 'signup_time', header: '报名时间', size: 160 },
-    { accessorKey: 'exam_time', header: '考试时间', size: 160 },
-  ]
 
   const table = useReactTable({
     data,
@@ -211,9 +212,12 @@ export function PositionTable({
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
+            <span className="px-1 text-sm text-muted-foreground sm:hidden">
+              {page}/{totalPages}
+            </span>
             {getPageNumbers().map((p, idx) =>
               p === '...' ? (
-                <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground">
+                <span key={`ellipsis-${idx}`} className="hidden px-2 text-muted-foreground sm:inline">
                   ...
                 </span>
               ) : (
@@ -221,7 +225,7 @@ export function PositionTable({
                   key={p}
                   variant={p === page ? 'default' : 'outline'}
                   size="sm"
-                  className="h-8 min-w-[2rem] px-2"
+                  className="hidden h-8 min-w-[2rem] px-2 sm:inline-flex"
                   onClick={() => onPageChange(Number(p))}
                 >
                   {p}

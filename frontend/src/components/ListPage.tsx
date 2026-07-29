@@ -1,11 +1,35 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { fetchFilters, type PositionList, type FilterOptions, type SearchParams } from '@/api'
 import { MultiSelect } from './MultiSelect'
 import { PositionTable } from './PositionTable'
 import { PositionCardGrid } from './PositionCardGrid'
+import { VirtualPositionList } from './VirtualPositionList'
 import { QuickMatch, type QuickMatchValues } from './QuickMatch'
 import { LocationFilter } from './LocationFilter'
-import { Search, Filter, X, RotateCcw, LayoutGrid, Table2, TrendingUp } from 'lucide-react'
+import {
+  addRecentSearch,
+  clearRecentSearches,
+  deleteFilter,
+  getRecentSearches,
+  getSavedFilters,
+  saveFilter,
+  type SavedFilter,
+} from '@/lib/storage'
+import { pinyinMatch } from '@/lib/pinyin'
+import {
+  Search,
+  Filter,
+  X,
+  RotateCcw,
+  LayoutGrid,
+  Table2,
+  TrendingUp,
+  Rows3,
+  History,
+  BookmarkPlus,
+  Bookmark,
+  Check,
+} from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -55,34 +79,58 @@ const DEFAULT_PARAMS: SearchParams = {
   category: [],
 }
 
+type ViewMode = 'table' | 'card' | 'list'
+
+function defaultView(): ViewMode {
+  if (typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches) {
+    return 'card'
+  }
+  return 'table'
+}
+
 export function ListPage({ title, fetcher }: ListPageProps) {
   const [filters, setFilters] = useState<FilterOptions | null>(null)
   const [data, setData] = useState<PositionList | null>(null)
   const [loading, setLoading] = useState(false)
-  const [view, setView] = useState<'table' | 'card'>('table')
+  const [view, setView] = useState<ViewMode>(defaultView)
   const [filterOpen, setFilterOpen] = useState(false)
   const [params, setParams] = useState<SearchParams>({ ...DEFAULT_PARAMS })
+  const [recent, setRecent] = useState<string[]>(() => getRecentSearches())
+  const [saved, setSaved] = useState<SavedFilter[]>(() => getSavedFilters())
+  const [saveOpen, setSaveOpen] = useState(false)
+  const [saveName, setSaveName] = useState('')
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     fetchFilters().then(setFilters).catch(console.error)
   }, [])
 
   const load = useCallback(async () => {
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
     setLoading(true)
     try {
       const res = await fetcher(params)
+      if (controller.signal.aborted) return
       setData(res)
+      const kw = (params.keyword || '').trim()
+      if (kw.length >= 2) setRecent(addRecentSearch(kw))
     } catch (e) {
-      console.error(e)
+      if (!controller.signal.aborted) console.error(e)
     } finally {
-      setLoading(false)
+      if (!controller.signal.aborted) setLoading(false)
     }
   }, [fetcher, params])
 
   useEffect(() => {
+    if (view === 'list') return
     const t = setTimeout(load, 300)
-    return () => clearTimeout(t)
-  }, [load])
+    return () => {
+      clearTimeout(t)
+      abortRef.current?.abort()
+    }
+  }, [load, view])
 
   function updateParam<K extends keyof SearchParams>(key: K, value: SearchParams[K]) {
     setParams((p) => {
@@ -118,6 +166,33 @@ export function ListPage({ title, fetcher }: ListPageProps) {
   function clearFilters() {
     setParams({ ...DEFAULT_PARAMS })
   }
+
+  function handleSaveFilter() {
+    const name = saveName.trim()
+    if (!name) return
+    setSaved(saveFilter(name, params))
+    setSaveName('')
+    setSaveOpen(false)
+  }
+
+  function applySavedFilter(f: SavedFilter) {
+    setParams({ ...DEFAULT_PARAMS, ...f.params, page: 1 })
+  }
+
+  const pinyinSuggestions = useMemo(() => {
+    const kw = (params.keyword || '').trim()
+    if (!/^[a-zA-Z]{2,}$/.test(kw) || !filters) return []
+    const pool = [
+      ...new Set([
+        ...filters.hot_locations,
+        ...filters.provinces,
+        ...filters.categories,
+        ...filters.edu_levels,
+        ...HOT_SEARCH.map((h) => h.value),
+      ]),
+    ]
+    return pool.filter((t) => pinyinMatch(t, kw)).slice(0, 8)
+  }, [params.keyword, filters])
 
   function handleHotSearch(item: (typeof HOT_SEARCH)[number]) {
     if (item.type === 'location') {
@@ -238,6 +313,22 @@ export function ListPage({ title, fetcher }: ListPageProps) {
                 className="pl-9"
                 onKeyDown={(e) => e.key === 'Enter' && load()}
               />
+              {pinyinSuggestions.length > 0 && (
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-md border bg-popover shadow-md">
+                  <div className="px-3 py-1.5 text-[11px] text-muted-foreground">拼音联想（点击替换关键词）</div>
+                  {pinyinSuggestions.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                      onClick={() => updateParam('keyword', s)}
+                    >
+                      <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
@@ -273,6 +364,16 @@ export function ListPage({ title, fetcher }: ListPageProps) {
               >
                 <Table2 className="h-4 w-4" />
               </Button>
+              <Button
+                variant={view === 'list' ? 'default' : 'outline'}
+                size="icon"
+                className="h-9 w-9"
+                aria-label="无限滚动列表"
+                title="无限滚动列表（大数据量浏览）"
+                onClick={() => setView('list')}
+              >
+                <Rows3 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 
@@ -293,13 +394,102 @@ export function ListPage({ title, fetcher }: ListPageProps) {
             ))}
           </div>
 
+          {recent.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <History className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-muted-foreground">最近搜索：</span>
+              {recent.map((kw) => (
+                <Badge
+                  key={kw}
+                  variant="outline"
+                  className="cursor-pointer hover:bg-muted"
+                  onClick={() => updateParam('keyword', kw)}
+                >
+                  {kw}
+                </Badge>
+              ))}
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs text-muted-foreground"
+                onClick={() => setRecent(clearRecentSearches())}
+              >
+                清除
+              </Button>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <Bookmark className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-muted-foreground">保存的筛选：</span>
+            {saved.map((f) => (
+              <Badge key={f.name} variant="secondary" className="gap-1 font-normal">
+                <span className="cursor-pointer" onClick={() => applySavedFilter(f)}>
+                  {f.name}
+                </span>
+                <button
+                  type="button"
+                  aria-label={`删除筛选 ${f.name}`}
+                  className="cursor-pointer text-muted-foreground hover:text-foreground"
+                  onClick={() => setSaved(deleteFilter(f.name))}
+                >
+                  <X className="pointer-events-none h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+            {saveOpen ? (
+              <span className="inline-flex items-center gap-1">
+                <Input
+                  autoFocus
+                  value={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveFilter()}
+                  placeholder="筛选名称"
+                  className="h-7 w-32 text-xs"
+                />
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSaveFilter} aria-label="确认保存">
+                  <Check className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => {
+                    setSaveOpen(false)
+                    setSaveName('')
+                  }}
+                  aria-label="取消保存"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </span>
+            ) : (
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs"
+                onClick={() => setSaveOpen(true)}
+              >
+                <BookmarkPlus className="mr-0.5 h-3.5 w-3.5" />
+                保存当前筛选
+              </Button>
+            )}
+          </div>
+
           {activeChips.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground">已选条件：</span>
               {activeChips.map((chip, idx) => (
                 <Badge key={idx} variant="secondary" className="gap-1 text-xs font-normal">
                   {chip.label}
-                  <X className="h-3 w-3 cursor-pointer" onClick={chip.onRemove} />
+                  <button
+                    type="button"
+                    aria-label={`移除 ${chip.label}`}
+                    className="cursor-pointer text-muted-foreground hover:text-foreground"
+                    onClick={chip.onRemove}
+                  >
+                    <X className="pointer-events-none h-3 w-3" />
+                  </button>
                 </Badge>
               ))}
               <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={clearFilters}>
@@ -321,7 +511,7 @@ export function ListPage({ title, fetcher }: ListPageProps) {
         </div>
       </div>
 
-      {view === 'table' ? (
+      {view === 'table' && (
         <PositionTable
           data={data?.items || []}
           total={data?.total || 0}
@@ -331,9 +521,9 @@ export function ListPage({ title, fetcher }: ListPageProps) {
           onPageChange={(page) => updateParam('page', page)}
           onPageSizeChange={(size) => updateParam('page_size', size)}
         />
-      ) : (
-        <PositionCardGrid data={data?.items || []} loading={loading} />
       )}
+      {view === 'card' && <PositionCardGrid data={data?.items || []} loading={loading} />}
+      {view === 'list' && <VirtualPositionList fetcher={fetcher} params={params} />}
 
       {view === 'card' && data && data.total > 0 && (
         <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-3">

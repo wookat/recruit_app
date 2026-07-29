@@ -25,20 +25,23 @@ class Position(Base):
     source_url = Column(Text)
     notes = Column(Text)
     raw_major = Column(Text)
+    college_major = Column(Text)
+    search_text = Column(Text)
     content_hash = Column(String(32), index=True, unique=True, nullable=True)
+    content_hash_v2 = Column(String(32), index=True)
+    dup_of_id = Column(Integer)
+    invalid_reason = Column(String(50))
+    exam_type_norm = Column(String(50), index=True)
+    province = Column(String(30), index=True)
+    city = Column(String(50), index=True)
+    district = Column(String(50), index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
         Index("idx_pos_year_job", "year", "job_type"),
         Index("idx_pos_loc_tags", "location_tags", postgresql_using="gin"),
-        Index("idx_pos_search", "position_example", "undergrad_major", "grad_major",
-              "special_requirements", postgresql_using="gin",
-              postgresql_ops={
-                  "position_example": "gin_trgm_ops",
-                  "undergrad_major": "gin_trgm_ops",
-                  "grad_major": "gin_trgm_ops",
-                  "special_requirements": "gin_trgm_ops",
-              }),
+        Index("idx_pos_search_text", "search_text", postgresql_using="gin",
+              postgresql_ops={"search_text": "gin_trgm_ops"}),
     )
 
 

@@ -9,6 +9,28 @@ interface LocationFilterProps {
 }
 
 export function LocationFilter({ filters, value, onChange }: LocationFilterProps) {
+  const locationTree = filters?.location_tree
+  const provinceSet = new Set(filters?.provinces || [])
+  const citySet = useMemo(() => {
+    const set = new Set<string>()
+    for (const node of locationTree || []) {
+      for (const c of node.cities) set.add(c)
+    }
+    return set
+  }, [locationTree])
+
+  const selectedProvinces = value.filter((v) => provinceSet.has(v))
+  const selectedCities = value.filter((v) => citySet.has(v))
+  // 不在省/市集合中的视为区县（或兜底）
+  const selectedDistricts = value.filter((v) => !provinceSet.has(v) && !citySet.has(v))
+
+  const cityGroups: OptionGroup[] = useMemo(() => {
+    const selectedProvinceSet = new Set(selectedProvinces)
+    return (locationTree || [])
+      .filter((node) => selectedProvinceSet.size === 0 || selectedProvinceSet.has(node.province))
+      .map((node) => ({ label: node.province, options: node.cities }))
+  }, [locationTree, selectedProvinces])
+
   if (!filters) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -20,26 +42,6 @@ export function LocationFilter({ filters, value, onChange }: LocationFilterProps
   }
 
   const f = filters
-  const provinceSet = new Set(f.provinces)
-  const citySet = useMemo(() => {
-    const set = new Set<string>()
-    for (const node of f.location_tree) {
-      for (const c of node.cities) set.add(c)
-    }
-    return set
-  }, [f.location_tree])
-
-  const selectedProvinces = value.filter((v) => provinceSet.has(v))
-  const selectedCities = value.filter((v) => citySet.has(v))
-  // 不在省/市集合中的视为区县（或兜底）
-  const selectedDistricts = value.filter((v) => !provinceSet.has(v) && !citySet.has(v))
-
-  const cityGroups: OptionGroup[] = useMemo(() => {
-    const selectedProvinceSet = new Set(selectedProvinces)
-    return f.location_tree
-      .filter((node) => selectedProvinceSet.size === 0 || selectedProvinceSet.has(node.province))
-      .map((node) => ({ label: node.province, options: node.cities }))
-  }, [f.location_tree, selectedProvinces])
 
   function handleProvinceChange(next: string[]) {
     // 省份变化时，过滤掉已选城市中不在当前省份下的城市（保留省份单独选择也生效）

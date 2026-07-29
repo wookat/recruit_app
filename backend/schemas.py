@@ -22,6 +22,11 @@ class PositionBase(BaseModel):
     source_url: Optional[str] = None
     notes: Optional[str] = None
     raw_major: Optional[str] = None
+    province: Optional[str] = None
+    city: Optional[str] = None
+    district: Optional[str] = None
+    exam_type_norm: Optional[str] = None
+    college_major: Optional[str] = None
 
 
 class PositionOut(PositionBase):

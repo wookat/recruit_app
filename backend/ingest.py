@@ -12,6 +12,13 @@ sys.path.insert(0, os.path.dirname(__file__))
 from database import Base, SessionLocal
 from models import Position, Source
 from normalizer import normalize_edu, normalize_job_type, parse_location_tags
+from etl.normalize_v2 import (
+    clean_employer,
+    content_hash_v2,
+    normalize_exam_type,
+    parse_location,
+    split_major,
+)
 
 
 def _clean(val):
@@ -72,10 +79,33 @@ def _compute_hash(rec):
     return hashlib.md5(s.encode("utf-8")).hexdigest()
 
 
+def _build_search_text(rec: dict) -> str:
+    parts = []
+    for k in ("position_example", "employer", "exam_type", "exam_type_norm", "job_type",
+              "undergrad_major", "grad_major", "college_major", "raw_major",
+              "special_requirements", "work_location", "province", "city", "district",
+              "notes"):
+        v = rec.get(k)
+        if v:
+            parts.append(str(v))
+    return " ".join(parts)
+
+
 def _enrich_record(rec: dict) -> dict:
     rec["job_type"] = normalize_job_type(rec.get("job_type"))
     rec["edu_level_norm"] = normalize_edu(rec.get("edu_requirement"))
-    rec["location_tags"] = parse_location_tags(rec.get("work_location"))
+    rec["employer"] = clean_employer(rec.get("employer"))
+    rec["exam_type_norm"] = normalize_exam_type(rec.get("exam_type"))
+    province, city, district, location_tags = parse_location(rec.get("work_location"))
+    rec["province"] = province
+    rec["city"] = city
+    rec["district"] = district
+    rec["location_tags"] = location_tags
+    rec["undergrad_major"], rec["grad_major"], rec["college_major"] = split_major(
+        rec.get("raw_major"), rec.get("undergrad_major"), rec.get("grad_major")
+    )
+    rec["content_hash_v2"] = content_hash_v2(rec)
+    rec["search_text"] = _build_search_text(rec)
     return rec
 
 

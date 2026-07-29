@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 from sqlalchemy import or_, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 
 from models import Position, Source
 from normalizer import (
@@ -88,25 +88,26 @@ def _apply_filters(query, model, filters: PositionFilter):
 
     if filters.keyword:
         k = f"%{filters.keyword}%"
-        query = query.filter(or_(
-            model.position_example.ilike(k),
-            model.employer.ilike(k),
-            model.undergrad_major.ilike(k),
-            model.grad_major.ilike(k),
-            model.raw_major.ilike(k),
-            model.special_requirements.ilike(k),
-            model.exam_type.ilike(k),
-            model.work_location.ilike(k),
-            model.job_type.ilike(k),
-            model.signup_time.ilike(k),
-            model.exam_time.ilike(k),
-            model.notes.ilike(k),
-        ))
+        if hasattr(model, "search_text"):
+            query = query.filter(model.search_text.ilike(k))
+        else:
+            query = query.filter(or_(
+                model.position_example.ilike(k),
+                model.employer.ilike(k),
+                model.undergrad_major.ilike(k),
+                model.grad_major.ilike(k),
+                model.raw_major.ilike(k),
+                model.special_requirements.ilike(k),
+                model.exam_type.ilike(k),
+                model.work_location.ilike(k),
+                model.job_type.ilike(k),
+                model.notes.ilike(k),
+            ))
     return query
 
 
 def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_size: int = 20, sort: str = "year_desc"):
-    q = db.query(Position)
+    q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
     q = _apply_filters(q, Position, filters)
     if sort == "year_desc":
         q = q.order_by(Position.year.desc(), Position.id.desc())
@@ -129,10 +130,12 @@ def search_sources(db: Session, filters: PositionFilter, page: int = 1, page_siz
 
 
 def get_filter_options(db: Session, limit: int = 120):
+    clean = [Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)]
+
     def distinct_values(col, l=limit):
         rows = (
             db.query(col)
-            .filter(col != None, col != "")
+            .filter(*clean, col != None, col != "")
             .distinct()
             .order_by(col)
             .limit(l)
@@ -141,14 +144,14 @@ def get_filter_options(db: Session, limit: int = 120):
         return [r[0] for r in rows if r[0]]
 
     years = [r[0] for r in db.query(Position.year)
-             .filter(Position.year != None)
+             .filter(*clean, Position.year != None)
              .distinct()
              .order_by(Position.year.desc())
              .all()]
 
     edu_levels = (
         db.query(Position.edu_level_norm)
-        .filter(Position.edu_level_norm != None, Position.edu_level_norm != "")
+        .filter(*clean, Position.edu_level_norm != None, Position.edu_level_norm != "")
         .distinct()
         .order_by(Position.edu_level_norm)
         .limit(limit)
@@ -159,7 +162,7 @@ def get_filter_options(db: Session, limit: int = 120):
     # 热门城市：从 location_tags 中计数，过滤掉省级名称，保留城市级
     city_counter: Counter = Counter()
     province_set = set(ALL_PROVINCES)
-    rows = db.query(Position.location_tags).filter(Position.location_tags != None).limit(200000).all()
+    rows = db.query(Position.location_tags).filter(*clean, Position.location_tags != None).limit(200000).all()
     for (tags,) in rows:
         for tag in (tags or []):
             if tag and tag not in province_set and len(tag) >= 2 and not tag.startswith("("):

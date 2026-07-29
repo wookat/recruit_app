@@ -17,12 +17,13 @@ export function CompareButton({ item, className }: Props) {
     <Button
       variant="ghost"
       size="icon"
-      className={cn('h-8 w-8', className)}
       aria-label={active ? '移出对比' : '加入对比'}
       title={full ? `最多对比 ${COMPARE_MAX} 个岗位` : active ? '移出对比' : '加入对比'}
-      disabled={full}
+      aria-disabled={full}
+      className={cn('h-8 w-8', full && 'opacity-50', className)}
       onClick={(e) => {
         e.stopPropagation()
+        if (full) return
         toggleCompare(item)
       }}
     >

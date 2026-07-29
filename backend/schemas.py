@@ -61,6 +61,31 @@ class FilterOptions(BaseModel):
     districts: List[str]
 
 
+class SuggestItem(BaseModel):
+    word: str
+    count: int
+
+
+class SuggestOut(BaseModel):
+    query: str
+    suggestions: List[SuggestItem]
+
+
+class CountItem(BaseModel):
+    name: str
+    count: int
+
+
+class StatsOut(BaseModel):
+    total: int
+    by_year: List[CountItem]
+    by_job_type: List[CountItem]
+    by_province: List[CountItem]
+    by_edu_level: List[CountItem]
+    by_exam_type: List[CountItem]
+    hot_keywords: List[SuggestItem]
+
+
 class TaskOut(BaseModel):
     task_id: str
     status: str

@@ -155,6 +155,22 @@ def get_filters(db: Session = Depends(get_db)):
     return crud.get_filter_options(db)
 
 
+@app.get("/api/suggest", response_model=schemas.SuggestOut)
+@cache.cached("suggest", ttl=300)
+def suggest(
+    q: str = Query(..., min_length=1, max_length=50),
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+):
+    return {"query": q, "suggestions": crud.suggest_keywords(db, q, limit)}
+
+
+@app.get("/api/stats", response_model=schemas.StatsOut)
+@cache.cached("stats", ttl=3600)
+def stats(db: Session = Depends(get_db)):
+    return crud.get_stats(db)
+
+
 @app.post("/api/admin/scrape/{year}", response_model=schemas.TaskOut)
 def trigger_scrape(year: int):
     task = scrape_year.delay(year)

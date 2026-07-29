@@ -1,3 +1,4 @@
+import re
 from collections import Counter
 from typing import Dict, List, Optional
 
@@ -190,4 +191,75 @@ def get_filter_options(db: Session, limit: int = 120):
         "location_tree": location_tree(),
         "hot_locations": hot_locations,
         "districts": districts,
+    }
+
+
+_TOKEN_SPLIT_RE = re.compile(r"[\s,，、；;。．.:：/（）()\[\]【】\-—－|｜*＊·\"'“”]+")
+
+_CLEAN_FILTERS = (Position.dup_of_id.is_(None), Position.invalid_reason.is_(None))
+
+
+def suggest_keywords(db: Session, q: str, limit: int = 10, sample: int = 500) -> List[Dict]:
+    """关键词补全：利用 search_text 的 GIN trigram 索引取样含 q 的行，
+    再从 position_example/employer/exam_type 中切词统计包含 q 的高频词。"""
+    q = (q or "").strip()
+    if not q:
+        return []
+    rows = (
+        db.query(Position.position_example, Position.employer, Position.exam_type)
+        .filter(*_CLEAN_FILTERS, Position.search_text.ilike(f"%{q}%"))
+        .limit(sample)
+        .all()
+    )
+    counter: Counter = Counter()
+    ql = q.lower()
+    for row in rows:
+        for field in row:
+            if not field:
+                continue
+            for tok in _TOKEN_SPLIT_RE.split(field):
+                tok = tok.strip()
+                if 2 <= len(tok) <= 20 and ql in tok.lower():
+                    counter[tok] += 1
+    return [{"word": w, "count": c} for w, c in counter.most_common(limit)]
+
+
+def get_stats(db: Session, top_n: int = 20) -> Dict:
+    """整体统计：总量、按年份/工作类型/省份/学历/考试类别分布、热门岗位关键词。"""
+    def group_count(col, limit_n=None, order_by_key=False):
+        query = (
+            db.query(col, func.count().label("c"))
+            .filter(*_CLEAN_FILTERS, col != None)
+            .group_by(col)
+        )
+        query = query.order_by(col.desc() if order_by_key else func.count().desc())
+        if limit_n:
+            query = query.limit(limit_n)
+        return [{"name": str(k), "count": c} for k, c in query.all()]
+
+    total = db.query(func.count(Position.id)).filter(*_CLEAN_FILTERS).scalar() or 0
+
+    hot_counter: Counter = Counter()
+    rows = (
+        db.query(Position.position_example, func.count().label("c"))
+        .filter(*_CLEAN_FILTERS, Position.position_example != None, Position.position_example != "")
+        .group_by(Position.position_example)
+        .order_by(func.count().desc())
+        .limit(top_n * 10)
+        .all()
+    )
+    for name, c in rows:
+        for tok in _TOKEN_SPLIT_RE.split(name):
+            tok = tok.strip()
+            if 2 <= len(tok) <= 10:
+                hot_counter[tok] += c
+
+    return {
+        "total": total,
+        "by_year": group_count(Position.year, order_by_key=True),
+        "by_job_type": group_count(Position.job_type),
+        "by_province": group_count(Position.province),
+        "by_edu_level": group_count(Position.edu_level_norm),
+        "by_exam_type": group_count(Position.exam_type_norm, limit_n=top_n),
+        "hot_keywords": [{"word": w, "count": c} for w, c in hot_counter.most_common(top_n)],
     }

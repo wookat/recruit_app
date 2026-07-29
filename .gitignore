@@ -28,3 +28,6 @@ frontend/dist/
 .vscode/
 .idea/
 .DS_Store
+
+# Local scraped exports (canonical dump is data/recruit.dump)
+/exports/

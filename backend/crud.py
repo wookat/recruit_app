@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 from sqlalchemy import or_, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 
 from models import Position, Source
 from normalizer import (
@@ -107,7 +107,7 @@ def _apply_filters(query, model, filters: PositionFilter):
 
 
 def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_size: int = 20, sort: str = "year_desc"):
-    q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None))
+    q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
     q = _apply_filters(q, Position, filters)
     if sort == "year_desc":
         q = q.order_by(Position.year.desc(), Position.id.desc())

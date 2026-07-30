@@ -52,13 +52,14 @@ export function FavoritesSheet({ open, onClose }: Props) {
     <>
       <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
         <SheetContent side="right" className="w-full max-w-2xl p-0 sm:max-w-md">
-          <SheetHeader className="px-4 pt-6 sm:px-6">
-            <SheetTitle className="flex items-center gap-2 text-lg">
+          <SheetHeader className="space-y-1.5 px-4 pt-6 sm:px-6">
+            <SheetTitle className="flex items-center gap-2 pr-8 text-lg">
               <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
               我的收藏
               <Badge variant="secondary">{favorites.length}</Badge>
-              {favorites.length > 0 && (
-                <span className="ml-auto flex items-center gap-1">
+            </SheetTitle>
+            {favorites.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -86,9 +87,8 @@ export function FavoritesSheet({ open, onClose }: Props) {
                     <Trash2 className="mr-1 h-3.5 w-3.5" />
                     清空
                   </Button>
-                </span>
-              )}
-            </SheetTitle>
+              </div>
+            )}
           </SheetHeader>
           {favorites.length > 0 && (
             <div className="flex flex-wrap gap-1.5 px-4 pb-1 sm:px-6">
@@ -102,7 +102,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
               ))}
             </div>
           )}
-          <ScrollArea className="h-[calc(100dvh-6.5rem)]">
+          <ScrollArea className="min-h-0 flex-1">
             {favorites.length === 0 ? (
               <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
                 暂无收藏，点击岗位旁的 ⭐ 收藏

@@ -121,47 +121,47 @@ export function PositionSheet({ item, onClose }: Props) {
   return (
     <Sheet open={!!item} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full max-w-2xl p-0 sm:max-w-xl">
-        <SheetHeader className="px-4 pt-6 sm:px-6">
+        <SheetHeader className="space-y-2 px-4 pt-6 sm:px-6">
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             岗位详情
             <Badge variant="secondary">{item.year}</Badge>
             {item.job_type && <Badge variant="outline">{item.job_type}</Badge>}
             {item.edu_level_norm && <Badge variant="outline">{item.edu_level_norm}</Badge>}
-            <span className="ml-auto flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                aria-label="复制岗位链接"
-                title="复制岗位链接"
-                onClick={copyLink}
-              >
-                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Link2 className="h-4 w-4" />}
-              </Button>
-              <Select
-                value={statuses[item.id] || '未投递'}
-                onValueChange={(v) => setAppStatus(item.id, v as AppStatus)}
-              >
-                <SelectTrigger
-                  size="sm"
-                  className={`h-7 w-auto gap-1 border-none px-2 text-[11px] font-medium shadow-none ${STATUS_COLORS[(statuses[item.id] || '未投递') as AppStatus]}`}
-                >
-                  {statuses[item.id] || '未投递'}
-                </SelectTrigger>
-                <SelectContent>
-                  {APP_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s} className="text-xs">
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FavoriteButton item={item} />
-              <CompareButton item={item} />
-            </span>
           </SheetTitle>
+          <div className="flex flex-wrap items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="复制岗位链接"
+              title="复制岗位链接"
+              onClick={copyLink}
+            >
+              {copied ? <Check className="h-4 w-4 text-green-600" /> : <Link2 className="h-4 w-4" />}
+            </Button>
+            <Select
+              value={statuses[item.id] || '未投递'}
+              onValueChange={(v) => setAppStatus(item.id, v as AppStatus)}
+            >
+              <SelectTrigger
+                size="sm"
+                className={`h-7 w-auto gap-1 border-none px-2 text-[11px] font-medium shadow-none ${STATUS_COLORS[(statuses[item.id] || '未投递') as AppStatus]}`}
+              >
+                {statuses[item.id] || '未投递'}
+              </SelectTrigger>
+              <SelectContent>
+                {APP_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s} className="text-xs">
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FavoriteButton item={item} />
+            <CompareButton item={item} />
+          </div>
         </SheetHeader>
-        <ScrollArea className="h-[calc(100dvh-5rem)] px-4 sm:px-6">
+        <ScrollArea className="min-h-0 flex-1 px-4 sm:px-6">
           <div className="space-y-5 pb-8 pt-2">
             <Section icon={Info} title="基本信息">
               <Field label="用人单位/系统" value={item.employer} />

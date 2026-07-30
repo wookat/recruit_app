@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MultiSelect } from './MultiSelect'
-import { Search, Sparkles, RotateCcw, Wand2 } from 'lucide-react'
+import { Search, Sparkles, RotateCcw, Wand2, ChevronDown, ChevronUp } from 'lucide-react'
 
 export interface QuickMatchValues {
   eduLevel: string[]
@@ -27,6 +27,7 @@ const CATEGORIES = ['公务员', '事业单位/事业编', '军队文职', '选�
 const YEARS = ['2027', '2026', '2025']
 
 export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMatchProps) {
+  const [open, setOpen] = useState(false)
   const [eduLevel, setEduLevel] = useState<string[]>(['本科'])
   const [major, setMajor] = useState('')
   const [location, setLocation] = useState<string[]>([])
@@ -66,6 +67,25 @@ export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMat
       ]
     : undefined
 
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex w-full items-center gap-2 rounded-xl border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+      >
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+          <Sparkles className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold">一键匹配理想岗位</div>
+          <div className="line-clamp-1 text-xs text-muted-foreground">按学历、专业、城市、目标类型快速筛选</div>
+        </div>
+        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </button>
+    )
+  }
+
   return (
     <Card className="overflow-hidden border-primary/10 bg-gradient-to-br from-primary/[0.03] to-muted/30">
       <CardContent className="space-y-4 p-4">
@@ -73,10 +93,18 @@ export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMat
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
             <Sparkles className="h-4 w-4" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h2 className="text-base font-semibold">一键匹配理想岗位</h2>
             <p className="text-xs text-muted-foreground">选择学历、专业、城市、目标类型，快速筛选最适合你的体制内工作</p>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 shrink-0 gap-1 text-xs text-muted-foreground"
+            onClick={() => setOpen(false)}
+          >
+            收起 <ChevronUp className="h-3.5 w-3.5" />
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">

@@ -31,6 +31,7 @@ interface MultiSelectProps {
   selected: string[]
   onChange: (selected: string[]) => void
   placeholder?: string
+  triggerLabel?: string
 }
 
 export function MultiSelect({
@@ -40,6 +41,7 @@ export function MultiSelect({
   selected,
   onChange,
   placeholder = '搜索选项…',
+  triggerLabel,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -82,7 +84,7 @@ export function MultiSelect({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      {label && <label className="text-xs font-medium text-muted-foreground">{label}</label>}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
@@ -93,7 +95,11 @@ export function MultiSelect({
               className="h-9 w-full justify-between px-3 text-left font-normal"
             >
               <span className="truncate">
-                {selected.length === 0 ? '全部' : `已选 ${selected.length} 项`}
+                {selected.length === 0
+                  ? triggerLabel || '全部'
+                  : triggerLabel
+                  ? `${triggerLabel} · ${selected.length}`
+                  : `已选 ${selected.length} 项`}
               </span>
               <div className="flex items-center gap-1">
                 {selected.length > 0 && (

@@ -34,8 +34,26 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
+    volumes:
+      - ./exports:/app/exports
     ports:
       - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    image: recruit-app:latest
+    container_name: recruit-worker
+    restart: unless-stopped
+    command: ["celery", "-A", "celery_app", "worker", "--loglevel=info", "--concurrency=1"]
+    environment:
+      DATABASE_URL: postgresql://recruit:recruit@postgres:5432/recruit
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
     depends_on:
       postgres:
         condition: service_healthy

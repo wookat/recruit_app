@@ -1,0 +1,13 @@
+[Unit]
+Description=2027 recruit announcement monitor
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /opt/recruit_app/monitor_2027_server.sh
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

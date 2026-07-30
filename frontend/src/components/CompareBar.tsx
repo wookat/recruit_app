@@ -15,13 +15,13 @@ export function CompareBar() {
     <>
       <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-2.5">
-          <Scale className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">
-            对比栏（{compare.length}/{COMPARE_MAX}）
+          <Scale className="h-4 w-4 shrink-0 text-primary" />
+          <span className="shrink-0 text-sm font-medium">
+            <span className="hidden sm:inline">对比栏</span>（{compare.length}/{COMPARE_MAX}）
           </span>
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
             {compare.map((p) => (
-              <Badge key={p.id} variant="secondary" className="max-w-[180px] gap-1 font-normal">
+              <Badge key={p.id} variant="secondary" className="max-w-[120px] gap-1 font-normal sm:max-w-[180px]">
                 <span className="truncate">{p.position_example || p.exam_type || p.employer || `#${p.id}`}</span>
                 <button
                   type="button"

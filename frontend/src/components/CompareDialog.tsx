@@ -35,7 +35,50 @@ export function CompareDialog({ open, onClose, items }: Props) {
           <DialogTitle>岗位对比（{items.length} 个）</DialogTitle>
         </DialogHeader>
         <div className="overflow-auto p-4" style={{ maxHeight: 'calc(85vh - 3.5rem)' }}>
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+          <div className="space-y-4 sm:hidden">
+            {items.map((p) => (
+              <div key={p.id} className="rounded-lg border">
+                <div className="flex items-start justify-between gap-2 border-b bg-muted/40 px-3 py-2">
+                  <div className="min-w-0">
+                    <div className="line-clamp-2 text-sm font-semibold leading-snug">
+                      {p.position_example || p.exam_type || '-'}
+                    </div>
+                    <Badge variant="secondary" className="mt-1 text-[11px]">
+                      {p.year}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    aria-label="移出对比"
+                    onClick={() => toggleCompare(p)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <dl className="divide-y">
+                  {COMPARE_FIELDS.map((field) => {
+                    const values = items.map((x) => field.get(x))
+                    const differs = new Set(values).size > 1
+                    return (
+                      <div
+                        key={field.label}
+                        className={cn('px-3 py-1.5', differs && 'bg-amber-50/60 dark:bg-amber-950/20')}
+                      >
+                        <dt className="text-[11px] font-medium text-muted-foreground">
+                          {field.label}
+                          {differs && <span className="ml-1 text-amber-600 dark:text-amber-400">≠</span>}
+                        </dt>
+                        <dd className="whitespace-pre-wrap text-sm leading-relaxed">{field.get(p)}</dd>
+                      </div>
+                    )
+                  })}
+                </dl>
+              </div>
+            ))}
+          </div>
+          <table className="hidden w-full min-w-[640px] border-collapse text-sm sm:table">
             <thead>
               <tr>
                 <th className="sticky left-0 z-10 w-32 bg-popover p-2 text-left text-xs font-medium text-muted-foreground">

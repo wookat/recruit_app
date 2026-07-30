@@ -43,12 +43,22 @@ import {
   Check,
   Link2,
   Download,
+  MoreHorizontal,
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Select,
   SelectContent,
@@ -110,6 +120,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
   const [loading, setLoading] = useState(false)
   const [view, setView] = useState<ViewMode>(defaultView)
   const [filterOpen, setFilterOpen] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [params, setParams] = useState<SearchParams>(() =>
     syncUrl
       ? { ...DEFAULT_PARAMS, ...paramsFromQueryString(window.location.search) }
@@ -291,6 +302,49 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
     }
   }
 
+  const keyFilterRow = (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {filters ? (
+        <>
+          <MultiSelect
+            label=""
+            triggerLabel="年份"
+            options={filters.years.map(String)}
+            selected={(params.year || []).map(String)}
+            onChange={(v) => updateParam('year', v.map(Number).filter((n) => !isNaN(n)))}
+          />
+          <MultiSelect
+            label=""
+            triggerLabel="岗位类型"
+            options={filters.categories}
+            selected={params.category || []}
+            onChange={(v) => updateParam('category', v)}
+          />
+          <MultiSelect
+            label=""
+            triggerLabel="省份"
+            options={filters.provinces}
+            selected={params.province || []}
+            onChange={(v) => updateParam('province', v)}
+          />
+          <MultiSelect
+            label=""
+            triggerLabel="学历"
+            options={filters.edu_levels}
+            selected={params.edu_level || []}
+            onChange={(v) => updateParam('edu_level', v)}
+          />
+        </>
+      ) : (
+        <>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-9 w-full rounded-md" />
+          ))}
+        </>
+      )}
+    </div>
+  )
+
   const advancedFilterPanel = (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {filters ? (
@@ -384,25 +438,6 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
 
   return (
     <div className="space-y-5">
-      {showStats && <DeadlinesCard />}
-      {showStats && (
-        <StatsDashboard
-          onSelectYear={(y) => updateParam('year', [y])}
-          onSelectExamType={(t) => updateParam('exam_type_norm', [t])}
-          onSelectProvince={(p) => updateParam('province', [p])}
-        />
-      )}
-      <QuickMatch
-        filters={filters}
-        onSearch={applyQuickMatch}
-        onReset={clearFilters}
-        onRecommend={applyRecommend}
-      />
-
-      {recommendQuery && (
-        <RecommendPanel query={recommendQuery} onClose={() => setRecommendQuery(null)} />
-      )}
-
       <Card>
         <CardContent className="space-y-4 p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
@@ -460,18 +495,34 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
               <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
                 <SheetTrigger
                   render={
-                    <Button variant="outline" size="icon" className="shrink-0 lg:hidden" aria-label="筛选">
+                    <Button variant="outline" size="sm" className="h-9 shrink-0 gap-1.5 lg:hidden" aria-label="筛选">
                       <Filter className="h-4 w-4" />
+                      筛选
                     </Button>
                   }
                 />
-                <SheetContent side="left" className="w-[85vw] max-w-[340px] overflow-y-auto">
+                <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-2xl px-4 pb-8 pt-4">
                   <SheetHeader>
                     <SheetTitle>高级筛选</SheetTitle>
                   </SheetHeader>
                   <div className="mt-4 space-y-4">{advancedFilterPanel}</div>
+                  <div className="sticky bottom-0 mt-4 flex gap-2 bg-popover pt-2">
+                    <Button className="flex-1" onClick={() => setFilterOpen(false)}>
+                      查看结果{data ? `（${data.total.toLocaleString()} 条）` : ''}
+                    </Button>
+                  </div>
                 </SheetContent>
               </Sheet>
+              <Button
+                variant={advancedOpen ? 'secondary' : 'outline'}
+                size="sm"
+                className="hidden h-9 shrink-0 gap-1.5 lg:inline-flex"
+                onClick={() => setAdvancedOpen((v) => !v)}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                高级筛选
+                {advancedOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </Button>
               <Button
                 variant={view === 'card' ? 'default' : 'outline'}
                 size="icon"
@@ -503,7 +554,9 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
             </div>
           </div>
 
-          <div className="hidden lg:block">{advancedFilterPanel}</div>
+          {keyFilterRow}
+
+          {advancedOpen && <div className="hidden lg:block">{advancedFilterPanel}</div>}
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
@@ -603,7 +656,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
             <Button
               variant="link"
               size="sm"
-              className="h-auto p-0 text-xs"
+              className="hidden h-auto p-0 text-xs sm:inline-flex"
               onClick={() => handleExport('csv')}
             >
               <Download className="mr-0.5 h-3.5 w-3.5" />
@@ -612,7 +665,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
             <Button
               variant="link"
               size="sm"
-              className="h-auto p-0 text-xs"
+              className="hidden h-auto p-0 text-xs sm:inline-flex"
               onClick={() => handleExport('xlsx')}
             >
               <Download className="mr-0.5 h-3.5 w-3.5" />
@@ -621,7 +674,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
             <Button
               variant="link"
               size="sm"
-              className="h-auto p-0 text-xs"
+              className="hidden h-auto p-0 text-xs sm:inline-flex"
               onClick={copyShareLink}
             >
               {copied ? (
@@ -636,6 +689,30 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
                 </>
               )}
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="link" size="sm" className="h-auto p-0 text-xs sm:hidden">
+                    <MoreHorizontal className="mr-0.5 h-3.5 w-3.5" />
+                    更多
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('csv')}>
+                  <Download className="h-4 w-4" />
+                  导出 CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                  <Download className="h-4 w-4" />
+                  导出 Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={copyShareLink}>
+                  <Link2 className="h-4 w-4" />
+                  复制筛选链接
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {activeChips.length > 0 && (
@@ -661,6 +738,19 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
           )}
         </CardContent>
       </Card>
+
+      <QuickMatch
+        filters={filters}
+        onSearch={applyQuickMatch}
+        onReset={clearFilters}
+        onRecommend={applyRecommend}
+      />
+
+      {recommendQuery && (
+        <RecommendPanel query={recommendQuery} onClose={() => setRecommendQuery(null)} />
+      )}
+
+      {showStats && <DeadlinesCard />}
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -715,6 +805,14 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
             </Button>
           </div>
         </div>
+      )}
+
+      {showStats && (
+        <StatsDashboard
+          onSelectYear={(y) => updateParam('year', [y])}
+          onSelectExamType={(t) => updateParam('exam_type_norm', [t])}
+          onSelectProvince={(p) => updateParam('province', [p])}
+        />
       )}
     </div>
   )

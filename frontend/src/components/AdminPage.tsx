@@ -420,10 +420,10 @@ export function AdminPage() {
 }
 
 const RUN_STATUS_STYLES: Record<string, string> = {
-  success: 'bg-green-100 text-green-700',
-  partial: 'bg-yellow-100 text-yellow-700',
-  error: 'bg-red-100 text-red-700',
-  running: 'bg-slate-100 text-slate-600',
+  success: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
+  partial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
+  error: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+  running: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
 }
 
 const RUN_STATUS_LABELS: Record<string, string> = {
@@ -474,7 +474,7 @@ function RunRow({
         </td>
         <td className="whitespace-nowrap py-2 pr-3 text-xs">{runDuration(run.started_at, run.finished_at)}</td>
         <td className="py-2 pr-3">
-          <Badge className={`border-transparent ${RUN_STATUS_STYLES[run.status] || 'bg-slate-100 text-slate-600'}`}>
+          <Badge className={`border-transparent ${RUN_STATUS_STYLES[run.status] || RUN_STATUS_STYLES.running}`}>
             {RUN_STATUS_LABELS[run.status] || run.status}
           </Badge>
         </td>

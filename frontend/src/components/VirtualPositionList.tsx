@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Position, PositionList, SearchParams } from '@/api'
 import { PositionSheet } from './PositionSheet'
+import { EmptyState } from './EmptyState'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
 import { Badge } from '@/components/ui/badge'
@@ -100,9 +101,10 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
 
   if (!loading && items.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center rounded-xl border bg-card text-muted-foreground">
-        暂无数据
-      </div>
+      <EmptyState
+        title="没有找到匹配的岗位"
+        description="试试减少筛选条件、更换关键词，或使用一键匹配推荐岗位"
+      />
     )
   }
 

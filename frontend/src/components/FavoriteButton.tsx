@@ -16,7 +16,7 @@ export function FavoriteButton({ item, className }: Props) {
     <Button
       variant="ghost"
       size="icon"
-      className={cn('h-8 w-8', className)}
+      className={cn('h-11 w-11 sm:h-8 sm:w-8', className)}
       aria-label={active ? '取消收藏' : '收藏岗位'}
       title={active ? '取消收藏' : '收藏岗位'}
       onClick={(e) => {

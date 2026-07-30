@@ -18,13 +18,13 @@ export const APP_STATUSES = [
 export type AppStatus = (typeof APP_STATUSES)[number]
 
 export const STATUS_COLORS: Record<AppStatus, string> = {
-  未投递: 'bg-slate-100 text-slate-600',
-  已投递: 'bg-blue-100 text-blue-700',
-  待笔试: 'bg-cyan-100 text-cyan-700',
-  待面试: 'bg-violet-100 text-violet-700',
-  'OC/录用': 'bg-green-100 text-green-700',
-  已放弃: 'bg-amber-100 text-amber-700',
-  已挂: 'bg-red-100 text-red-700',
+  未投递: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  已投递: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+  待笔试: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300',
+  待面试: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300',
+  'OC/录用': 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
+  已放弃: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  已挂: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
 }
 
 type Listener = () => void

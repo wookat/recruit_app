@@ -25,6 +25,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Building2, MapPin, Star, Trash2, Link2, Check, CalendarDays, ListChecks } from 'lucide-react'
+import { EmptyState } from './EmptyState'
 
 interface Props {
   open: boolean
@@ -219,9 +220,12 @@ export function FavoritesSheet({ open, onClose }: Props) {
           )}
           <ScrollArea className="min-h-0 flex-1">
             {favorites.length === 0 ? (
-              <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                暂无收藏，点击岗位旁的 ⭐ 收藏
-              </div>
+              <EmptyState
+                icon={Star}
+                className="m-4 sm:m-6"
+                title="还没有收藏岗位"
+                description="点击岗位列表或详情里的星标即可收藏，方便追踪投递进度"
+              />
             ) : view === 'track' ? (
               <div>
                 {groups.map((g) => (
@@ -236,9 +240,11 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   </div>
                 ))}
                 {groups.length === 0 && (
-                  <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-                    该状态下暂无岗位
-                  </div>
+                  <EmptyState
+                    className="m-4 sm:m-6"
+                    title="该状态下暂无岗位"
+                    description="点击上方状态徽章可切换筛选"
+                  />
                 )}
               </div>
             ) : (
@@ -253,12 +259,12 @@ export function FavoritesSheet({ open, onClose }: Props) {
                         <span
                           className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                             expired
-                              ? 'bg-slate-100 text-slate-500'
+                              ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
                               : n <= 1
-                              ? 'bg-red-100 text-red-700'
+                              ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
                               : n <= 3
-                              ? 'bg-orange-100 text-orange-700'
-                              : 'bg-amber-100 text-amber-700'
+                              ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
+                              : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
                           }`}
                         >
                           {expired ? '已截止' : n === 0 ? '今日截止' : `剩 ${n} 天`}
@@ -269,9 +275,12 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   )
                 })}
                 {calendarDays.length === 0 && (
-                  <div className="flex h-32 items-center justify-center px-6 text-center text-sm text-muted-foreground">
-                    近 14 天内没有可识别截止日期的收藏岗位
-                  </div>
+                  <EmptyState
+                    icon={CalendarDays}
+                    className="m-4 sm:m-6"
+                    title="近 14 天内没有即将截止的收藏岗位"
+                    description="收藏更多岗位后，这里会按截止日期提醒你报名"
+                  />
                 )}
               </div>
             )}

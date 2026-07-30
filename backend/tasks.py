@@ -356,7 +356,13 @@ def _backfill_signup_deadlines(db, max_rows: int = DQ_BACKFILL_MAX) -> dict:
 def data_quality_audit():
     """每日数据质量审计：统计指标写入 Redis dq:report（48h TTL），
     顺带增量回填可解析的 signup_deadline（限 5 万行/次）。"""
-    db = SessionLocal()
+    from database import engine
+
+    # 维护型任务：绑定单连接并放宽默认 20s 语句超时（大表扫描/统计需更长时间）
+    conn = engine.connect()
+    conn.execute(sql_text("SET statement_timeout = 300000"))
+    conn.commit()
+    db = SessionLocal(bind=conn)
     try:
         backfill = _backfill_signup_deadlines(db)
 
@@ -412,6 +418,7 @@ def data_quality_audit():
         return report["rows"] | {"backfill": backfill}
     finally:
         db.close()
+        conn.close()
 
 
 @celery_app.task

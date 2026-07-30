@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 import requests
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -8,8 +7,6 @@ from celery_app import celery_app
 from database import SessionLocal
 from ingest import ingest_positions_df
 import import_guopin_2027
-
-sys.path.insert(0, "/home/ubuntu")
 from recruit_parser import (
     crawl_xds_summary,
     extract_official_and_files,

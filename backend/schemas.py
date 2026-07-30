@@ -38,6 +38,7 @@ class PositionOut(PositionBase):
 
 class PositionList(BaseModel):
     total: int
+    total_capped: bool = False  # True 表示 total 为封顶值（实际结果数 >= total）
     page: int
     page_size: int
     next_cursor: Optional[int] = None

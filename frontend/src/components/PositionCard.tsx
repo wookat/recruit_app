@@ -17,7 +17,7 @@ export const PositionCard = memo(function PositionCard({ item, onDetail }: Props
   const statuses = useAppStatuses()
   const status = statuses[item.id]
   return (
-    <Card className="flex flex-col transition-all hover:border-primary/20 hover:shadow-md">
+    <Card className="flex h-full flex-col transition-all hover:border-primary/20 hover:shadow-md">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">

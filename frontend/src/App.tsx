@@ -114,10 +114,12 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6">
-        {tab === 'search' && <SearchPage />}
-        <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
-          {tab === 'admin' && showAdmin && <AdminPage />}
-        </Suspense>
+        <div key={tab} className="animate-fade-in-up">
+          {tab === 'search' && <SearchPage />}
+          <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
+            {tab === 'admin' && showAdmin && <AdminPage />}
+          </Suspense>
+        </div>
       </main>
 
       <footer className="border-t bg-background py-6 pb-16 text-center text-xs text-muted-foreground">

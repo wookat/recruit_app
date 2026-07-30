@@ -32,7 +32,7 @@ export function PositionCardGrid({ data, loading }: Props) {
               <Skeleton className="h-4 w-2/3" />
             </CardContent>
             <CardFooter className="pt-0">
-              <Skeleton className="h-8 w-full rounded-md" />
+              <Skeleton className="h-8 w-full rounded-lg" />
             </CardFooter>
           </Card>
         ))}
@@ -52,8 +52,14 @@ export function PositionCardGrid({ data, loading }: Props) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {data.map((item) => (
-          <PositionCard key={item.id} item={item} onDetail={setSelected} />
+        {data.map((item, i) => (
+          <div
+            key={item.id}
+            className="h-full animate-fade-in-up"
+            style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
+          >
+            <PositionCard item={item} onDetail={setSelected} />
+          </div>
         ))}
       </div>
       {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} />}

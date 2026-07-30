@@ -17,7 +17,7 @@ export const PositionCard = memo(function PositionCard({ item, onDetail }: Props
   const statuses = useAppStatuses()
   const status = statuses[item.id]
   return (
-    <Card className="flex flex-col transition-shadow hover:shadow-md">
+    <Card className="flex flex-col transition-all hover:border-primary/20 hover:shadow-md">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -62,7 +62,12 @@ export const PositionCard = memo(function PositionCard({ item, onDetail }: Props
         </div>
       </CardContent>
       <CardFooter className="pt-0">
-        <Button variant="default" size="sm" className="w-full" onClick={() => onDetail(item)}>
+        <Button
+          variant="default"
+          size="sm"
+          className="h-11 w-full sm:h-8"
+          onClick={() => onDetail(item)}
+        >
           查看详情
         </Button>
       </CardFooter>

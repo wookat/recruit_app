@@ -3,6 +3,8 @@ import type { Position } from '@/api'
 import { PositionCard } from './PositionCard'
 import { PositionSheet } from './PositionSheet'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import { EmptyState } from './EmptyState'
 
 interface Props {
   data: Position[]
@@ -16,7 +18,23 @@ export function PositionCardGrid({ data, loading }: Props) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-56 w-full rounded-xl" />
+          <Card key={i} className="flex flex-col">
+            <CardHeader className="space-y-2 pb-2">
+              <div className="flex gap-2">
+                <Skeleton className="h-5 w-12 rounded-4xl" />
+                <Skeleton className="h-5 w-20 rounded-4xl" />
+              </div>
+              <Skeleton className="h-5 w-4/5" />
+            </CardHeader>
+            <CardContent className="flex-1 space-y-2.5">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-2/3" />
+            </CardContent>
+            <CardFooter className="pt-0">
+              <Skeleton className="h-8 w-full rounded-md" />
+            </CardFooter>
+          </Card>
         ))}
       </div>
     )
@@ -24,9 +42,10 @@ export function PositionCardGrid({ data, loading }: Props) {
 
   if (data.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center rounded-xl border bg-card text-muted-foreground">
-        暂无数据
-      </div>
+      <EmptyState
+        title="没有找到匹配的岗位"
+        description="试试减少筛选条件、更换关键词，或使用一键匹配推荐岗位"
+      />
     )
   }
 

@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-table'
 import type { Position } from '@/api'
 import { PositionSheet } from './PositionSheet'
+import { EmptyState } from './EmptyState'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
 import {
@@ -137,12 +138,13 @@ export function PositionTable({
                   </TableRow>
                 ))
               ) : data.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length + 1}
-                    className="h-32 text-center text-muted-foreground"
-                  >
-                    暂无数据
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={columns.length + 1} className="p-0">
+                    <EmptyState
+                      className="rounded-none border-0 bg-transparent"
+                      title="没有找到匹配的岗位"
+                      description="试试减少筛选条件、更换关键词，或使用一键匹配推荐岗位"
+                    />
                   </TableCell>
                 </TableRow>
               ) : (

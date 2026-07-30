@@ -3,8 +3,9 @@
 # 发现新 .sql 导出后自动导入并增量跑 normalize + search_text。
 set -eo pipefail
 
-cd /home/ubuntu/recruit_app
-export PATH="$PWD/backend/.venv/bin:$PATH"
+cd "${RECRUIT_APP_DIR:-$(cd "$(dirname "$0")" && pwd)}"
+VENV_BIN="${RECRUIT_VENV_BIN:-$PWD/backend/.venv/bin}"
+export PATH="$VENV_BIN:$PATH"
 export PYTHONPATH="$PWD/backend${PYTHONPATH:+:$PYTHONPATH}"
 OUT_DIR="exports/2027_watch"
 LOG="/tmp/monitor_2027.log"

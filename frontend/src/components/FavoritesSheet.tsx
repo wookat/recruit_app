@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import type { Position } from '@/api'
 import { clearFavorites, toggleFavorite, useFavorites } from '@/lib/positionStore'
+import { copyText, favoritesShareUrl } from '@/lib/clipboard'
 import { PositionSheet } from './PositionSheet'
 import { CompareButton } from './CompareButton'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Building2, MapPin, Star, Trash2 } from 'lucide-react'
+import { Building2, MapPin, Star, Trash2, Link2, Check } from 'lucide-react'
 
 interface Props {
   open: boolean
@@ -17,6 +18,13 @@ interface Props {
 export function FavoritesSheet({ open, onClose }: Props) {
   const favorites = useFavorites()
   const [selected, setSelected] = useState<Position | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  async function shareFavorites() {
+    await copyText(favoritesShareUrl(favorites.map((p) => p.id)))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <>
@@ -28,15 +36,35 @@ export function FavoritesSheet({ open, onClose }: Props) {
               我的收藏
               <Badge variant="secondary">{favorites.length}</Badge>
               {favorites.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto h-7 text-xs text-muted-foreground"
-                  onClick={clearFavorites}
-                >
-                  <Trash2 className="mr-1 h-3.5 w-3.5" />
-                  清空
-                </Button>
+                <span className="ml-auto flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-muted-foreground"
+                    onClick={shareFavorites}
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="mr-1 h-3.5 w-3.5 text-green-600" />
+                        已复制
+                      </>
+                    ) : (
+                      <>
+                        <Link2 className="mr-1 h-3.5 w-3.5" />
+                        分享收藏夹
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-muted-foreground"
+                    onClick={clearFavorites}
+                  >
+                    <Trash2 className="mr-1 h-3.5 w-3.5" />
+                    清空
+                  </Button>
+                </span>
               )}
             </SheetTitle>
           </SheetHeader>

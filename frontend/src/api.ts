@@ -69,6 +69,8 @@ export interface SearchParams {
   page?: number
   page_size?: number
   sort?: string
+  after_id?: number
+  after_year?: number
 }
 
 function toQuery(params: SearchParams) {
@@ -137,7 +139,7 @@ export async function fetchSuggestions(q: string, limit = 8): Promise<Suggestion
       if (typeof item === 'string') return { text: item }
       if (item && typeof item === 'object') {
         const obj = item as Record<string, unknown>
-        const text = obj.text ?? obj.keyword ?? obj.value ?? obj.name
+        const text = obj.text ?? obj.word ?? obj.keyword ?? obj.value ?? obj.name
         if (typeof text === 'string' && text) {
           return {
             text,
@@ -149,6 +151,54 @@ export async function fetchSuggestions(q: string, limit = 8): Promise<Suggestion
       return null
     })
     .filter((s): s is Suggestion => s !== null)
+    .slice(0, limit)
+}
+
+export async function fetchPosition(id: number): Promise<Position> {
+  const res = await axios.get(`${API_BASE}/api/positions/${id}`)
+  return res.data
+}
+
+export interface DeadlineEntry {
+  position: Position | null
+  title: string
+  employer: string
+  deadline: string
+  daysLeft: number | null
+}
+
+function parseDeadlineEntry(item: unknown): DeadlineEntry | null {
+  if (!item || typeof item !== 'object') return null
+  const obj = item as Record<string, unknown>
+  const deadline =
+    obj.signup_deadline ?? obj.deadline ?? obj.signup_end ?? obj.end_date ?? obj.signup_time
+  if (typeof deadline !== 'string' || !deadline) return null
+  const title = obj.position_example ?? obj.title ?? obj.exam_type ?? ''
+  const employer = obj.employer ?? ''
+  const daysLeft = obj.days_left ?? obj.daysLeft
+  const isPosition = typeof obj.id === 'number' && 'year' in obj
+  return {
+    position: isPosition ? (obj as unknown as Position) : null,
+    title: typeof title === 'string' ? title : '',
+    employer: typeof employer === 'string' ? employer : '',
+    deadline,
+    daysLeft: typeof daysLeft === 'number' ? daysLeft : null,
+  }
+}
+
+export async function fetchDeadlines(days = 7, limit = 20): Promise<DeadlineEntry[]> {
+  const res = await axios.get(`${API_BASE}/api/deadlines`, { params: { days, limit } })
+  const data = res.data
+  const raw: unknown[] = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.items)
+    ? data.items
+    : Array.isArray(data?.deadlines)
+    ? data.deadlines
+    : []
+  return raw
+    .map(parseDeadlineEntry)
+    .filter((e): e is DeadlineEntry => e !== null)
     .slice(0, limit)
 }
 

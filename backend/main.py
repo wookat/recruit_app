@@ -91,7 +91,8 @@ def get_positions(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=200),
     sort: str = Query("year_desc"),
-    after_id: Optional[int] = Query(None, ge=1, description="keyset 分页游标：返回 id < after_id 的下一页（按 id 降序），与 page 互斥，优先生效"),
+    after_id: Optional[int] = Query(None, ge=0),
+    after_year: Optional[int] = Query(None),
     db: Session = Depends(get_db),
 ):
     filters = _build_filter(
@@ -109,18 +110,31 @@ def get_positions(
         major_type=major_type,
         category=category,
     )
-    total, items = crud.search_positions(db, filters, page, page_size, sort, after_id=after_id)
-    out_items = [schemas.PositionOut.model_validate(item).model_dump() for item in items]
-    next_cursor = None
-    if after_id is not None and len(items) == page_size:
-        next_cursor = items[-1].id
+    if after_id is not None:
+        items = crud.search_positions_cursor(db, filters, after_id, after_year, page_size, sort)
+        return {
+            "total": -1,
+            "page": page,
+            "page_size": page_size,
+            "next_cursor": items[-1].id if items else None,
+            "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
+        }
+    total, items = crud.search_positions(db, filters, page, page_size, sort)
     return {
         "total": total,
         "page": page,
         "page_size": page_size,
-        "items": out_items,
-        "next_cursor": next_cursor,
+        "next_cursor": None,
+        "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
     }
+
+
+@app.get("/api/positions/{position_id}", response_model=schemas.PositionOut)
+def get_position(position_id: int, db: Session = Depends(get_db)):
+    item = crud.get_position(db, position_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Position not found")
+    return schemas.PositionOut.model_validate(item)
 
 
 @app.get("/api/sources", response_model=schemas.PositionList)
@@ -169,22 +183,6 @@ def get_filters(db: Session = Depends(get_db)):
     return crud.get_filter_options(db)
 
 
-@app.get("/api/deadlines", response_model=schemas.PositionList)
-@cache.cached("deadlines", ttl=300)
-def deadlines(
-    days: int = Query(7, ge=1, le=365),
-    limit: int = Query(50, ge=1, le=200),
-    db: Session = Depends(get_db),
-):
-    items = crud.upcoming_deadlines(db, days=days, limit=limit)
-    return {
-        "total": len(items),
-        "page": 1,
-        "page_size": limit,
-        "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
-    }
-
-
 @app.get("/api/suggest", response_model=schemas.SuggestOut)
 @cache.cached("suggest", ttl=300)
 def suggest(
@@ -199,6 +197,23 @@ def suggest(
 @cache.cached("stats", ttl=3600)
 def stats(db: Session = Depends(get_db)):
     return crud.get_stats(db)
+
+
+@app.get("/api/deadlines", response_model=schemas.PositionList)
+@cache.cached("deadlines", ttl=300)
+def deadlines(
+    days: int = Query(7, ge=1, le=365),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    items = crud.upcoming_deadlines(db, days=days, limit=limit)
+    return {
+        "total": len(items),
+        "page": 1,
+        "page_size": limit,
+        "next_cursor": None,
+        "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
+    }
 
 
 @app.post("/api/admin/scrape/{year}", response_model=schemas.TaskOut)

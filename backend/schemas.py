@@ -40,6 +40,7 @@ class PositionList(BaseModel):
     total: int
     page: int
     page_size: int
+    next_cursor: Optional[int] = None
     items: List[PositionOut]
     next_cursor: Optional[int] = None
 

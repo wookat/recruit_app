@@ -1,4 +1,7 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { fetchPosition, type Position } from '@/api'
+import { importFavorites } from '@/lib/positionStore'
+import { PositionSheet } from '@/components/PositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -19,7 +22,32 @@ const TasksPage = lazy(() =>
 export default function App() {
   const [tab, setTab] = useState('search')
   const [favOpen, setFavOpen] = useState(false)
+  const [deepLinked, setDeepLinked] = useState<Position | null>(null)
   const favorites = useFavorites()
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    const positionId = Number(q.get('position_id'))
+    if (positionId > 0) {
+      fetchPosition(positionId).then(setDeepLinked).catch(console.error)
+    }
+    const favIds = (q.get('favorites') || '')
+      .split(',')
+      .map(Number)
+      .filter((n) => n > 0)
+      .slice(0, 50)
+    if (favIds.length > 0) {
+      Promise.allSettled(favIds.map(fetchPosition)).then((results) => {
+        const items = results
+          .filter((r): r is PromiseFulfilledResult<Position> => r.status === 'fulfilled')
+          .map((r) => r.value)
+        if (items.length > 0) {
+          importFavorites(items)
+          setFavOpen(true)
+        }
+      })
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-muted/30 font-sans">
@@ -75,6 +103,7 @@ export default function App() {
 
       <FavoritesSheet open={favOpen} onClose={() => setFavOpen(false)} />
       <CompareBar />
+      {deepLinked && <PositionSheet item={deepLinked} onClose={() => setDeepLinked(null)} />}
     </div>
   )
 }

@@ -51,6 +51,15 @@ export function toggleFavorite(item: Position) {
   emit()
 }
 
+export function importFavorites(items: Position[]): number {
+  const fresh = items.filter((p) => !isFavorite(p.id))
+  if (fresh.length === 0) return 0
+  favorites = [...fresh, ...favorites].slice(0, FAV_MAX)
+  persistFavorites()
+  emit()
+  return fresh.length
+}
+
 export function clearFavorites() {
   favorites = []
   persistFavorites()

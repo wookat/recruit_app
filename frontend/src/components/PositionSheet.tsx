@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import type { Position } from '@/api'
-import { ExternalLink, GraduationCap, CalendarClock, Info, AlertTriangle, MapPin } from 'lucide-react'
+import { copyText, positionShareUrl } from '@/lib/clipboard'
+import { ExternalLink, GraduationCap, CalendarClock, Info, AlertTriangle, MapPin, Link2, Check } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -9,6 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/ui/button'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
 
@@ -77,7 +80,15 @@ function Section({
 }
 
 export function PositionSheet({ item, onClose }: Props) {
+  const [copied, setCopied] = useState(false)
   if (!item) return null
+
+  async function copyLink() {
+    if (!item) return
+    await copyText(positionShareUrl(item.id))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const hasRequirements =
     item.edu_level_norm || item.edu_requirement || item.undergrad_major || item.grad_major || item.raw_major
@@ -93,6 +104,16 @@ export function PositionSheet({ item, onClose }: Props) {
             {item.job_type && <Badge variant="outline">{item.job_type}</Badge>}
             {item.edu_level_norm && <Badge variant="outline">{item.edu_level_norm}</Badge>}
             <span className="ml-auto flex items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                aria-label="复制岗位链接"
+                title="复制岗位链接"
+                onClick={copyLink}
+              >
+                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Link2 className="h-4 w-4" />}
+              </Button>
               <FavoriteButton item={item} />
               <CompareButton item={item} />
             </span>

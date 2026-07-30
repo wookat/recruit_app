@@ -310,13 +310,7 @@ def _parse_dt_part(part: str, default_year=None, default_month=None) -> Optional
 
 
 def parse_signup_deadline(signup_time: Optional[str]):
-    """Extract the signup end datetime from free-text signup_time.
-
-    Handles 'YYYY-MM-DD HH:MM 至 YYYY-MM-DD HH:MM', single datetimes, and
-    Chinese forms like '2025年12月4日9:00至8日16:00' (end inherits year/month
-    from the start). Returns None when the year cannot be determined —
-    ambiguous strings are left unparsed rather than guessed.
-    """
+    """Extract the signup end datetime from free-text signup_time."""
     if not signup_time:
         return None
     s = str(signup_time).strip()

@@ -114,28 +114,56 @@ def _apply_filters(query, model, filters: PositionFilter):
     return query
 
 
-def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_size: int = 20,
-                     sort: str = "year_desc", after_id: Optional[int] = None):
+def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_size: int = 20, sort: str = "year_desc"):
     q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
     q = _apply_filters(q, Position, filters)
-    total = q.count()
-    if after_id is not None:
-        # keyset 分页：按 id 递减游标，深翻页避免大 OFFSET 扫描
-        items = (
-            q.filter(Position.id < after_id)
-            .order_by(Position.id.desc())
-            .limit(page_size)
-            .all()
-        )
-        return total, items
     if sort == "year_desc":
         q = q.order_by(Position.year.desc(), Position.id.desc())
     elif sort == "year_asc":
         q = q.order_by(Position.year.asc(), Position.id.asc())
     else:
         q = q.order_by(Position.id.desc())
+    total = q.count()
     items = q.offset((page - 1) * page_size).limit(page_size).all()
     return total, items
+
+
+def get_position(db: Session, position_id: int):
+    return (
+        db.query(Position)
+        .filter(Position.id == position_id)
+        .options(defer(Position.search_text))
+        .first()
+    )
+
+
+def search_positions_cursor(
+    db: Session,
+    filters: PositionFilter,
+    after_id: int,
+    after_year: Optional[int] = None,
+    page_size: int = 100,
+    sort: str = "year_desc",
+):
+    q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
+    q = _apply_filters(q, Position, filters)
+    if sort == "year_desc" and after_year is not None:
+        q = q.filter(
+            or_(
+                Position.year < after_year,
+                (Position.year == after_year) & (Position.id < after_id),
+            )
+        ).order_by(Position.year.desc(), Position.id.desc())
+    elif sort == "year_asc" and after_year is not None:
+        q = q.filter(
+            or_(
+                Position.year > after_year,
+                (Position.year == after_year) & (Position.id > after_id),
+            )
+        ).order_by(Position.year.asc(), Position.id.asc())
+    else:
+        q = q.filter(Position.id < after_id).order_by(Position.id.desc())
+    return q.limit(page_size).all()
 
 
 def upcoming_deadlines(db: Session, days: int = 7, limit: int = 50):
@@ -163,32 +191,6 @@ def search_sources(db: Session, filters: PositionFilter, page: int = 1, page_siz
     total = q.count()
     items = q.offset((page - 1) * page_size).limit(page_size).all()
     return total, items
-
-
-def get_stats(db: Session):
-    clean = [Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)]
-
-    def group_counts(col, limit=None, order_by_count=True):
-        q = (
-            db.query(col, func.count(Position.id))
-            .filter(*clean, col != None, col != "")
-            .group_by(col)
-        )
-        if order_by_count:
-            q = q.order_by(func.count(Position.id).desc())
-        else:
-            q = q.order_by(col.desc())
-        if limit:
-            q = q.limit(limit)
-        return [{"name": str(r[0]), "count": r[1]} for r in q.all()]
-
-    total = db.query(func.count(Position.id)).filter(*clean).scalar() or 0
-    return {
-        "total": total,
-        "by_year": group_counts(Position.year, order_by_count=False),
-        "by_exam_type": group_counts(Position.exam_type_norm, limit=12),
-        "by_province": group_counts(Position.province, limit=15),
-    }
 
 
 def get_filter_options(db: Session, limit: int = 120):

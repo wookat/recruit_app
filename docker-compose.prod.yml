@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: recruit-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: recruit
+      POSTGRES_PASSWORD: recruit
+      POSTGRES_DB: recruit
+    command: >-
+      postgres -c shared_buffers=192MB -c effective_cache_size=512MB
+      -c work_mem=8MB -c maintenance_work_mem=64MB -c max_connections=40
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recruit -d recruit"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: recruit-redis
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+
+  app:
+    build: .
+    image: recruit-app:latest
+    container_name: recruit-app
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://recruit:recruit@postgres:5432/recruit
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  caddy:
+    image: caddy:2
+    container_name: recruit-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - app
+
+volumes:
+  pgdata:
+  caddy_data:

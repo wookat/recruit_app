@@ -1,0 +1,12 @@
+{
+	auto_https disable_redirects
+}
+
+:80 {
+	reverse_proxy app:8000
+}
+
+https://jobs.zalize.com {
+	tls internal
+	reverse_proxy app:8000
+}

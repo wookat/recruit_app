@@ -26,7 +26,7 @@ from sqlalchemy import create_engine, text
 
 from etl.normalize_v2 import (
     clean_employer, content_hash_v2, normalize_exam_type, parse_location,
-    parse_signup_deadline, split_major,
+    parse_signup_deadline_v2, split_major,
 )
 
 _ETL_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -113,7 +113,7 @@ def step_normalize(engine, dry_run, batch_size, where="TRUE"):
                 "id": rec["id"],
                 "h": content_hash_v2(rec),
                 "emp": rec["employer"],
-                "deadline": parse_signup_deadline(rec.get("signup_time")),
+                "deadline": parse_signup_deadline_v2(rec.get("signup_time"), default_year=rec.get("year")),
                 "etn": normalize_exam_type(rec.get("exam_type")),
                 "prov": prov, "city": city, "district": district,
                 "tags": tags,

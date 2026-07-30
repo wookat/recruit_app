@@ -325,6 +325,68 @@ def parse_signup_deadline(signup_time: Optional[str]):
     return _parse_dt_part(end, default_year, default_month)
 
 
+# 要求至少出现"月"信息的日期匹配（避免把纯数字/时刻误认成日期）
+_FULL_DATE_RE = re.compile(
+    r"(?:(?P<y>\d{4})\s*[年./\-]\s*)?(?P<m>\d{1,2})\s*[月./\-]\s*(?P<d>\d{1,2})\s*日?"
+)
+_TIME_RE = re.compile(r"(?:上午|下午|晚上)?\s*(?P<h>\d{1,2})[:：时](?P<min>\d{2})?")
+_DEADLINE_HINT_RE = re.compile(r"截止(?:时间|日期)?[：:为至到]?")
+
+
+def parse_signup_deadline_v2(signup_time: Optional[str], default_year=None):
+    """增强版报名截止解析：覆盖常见格式。
+
+    - 2026年10月15日-10月24日 / 2026-10-15至2026-10-24
+    - 10月15日8:00至10月24日18:00（年份缺失时用 default_year 兜底）
+    - 截止2026-10-24 / 报名截止时间：2026年10月24日18:00
+    """
+    if not signup_time:
+        return None
+    s = str(signup_time).strip()
+    if not s:
+        return None
+    # 有"截止"提示时，优先解析提示之后的第一个日期
+    hint = _DEADLINE_HINT_RE.search(s)
+    search_space = s[hint.end():] if hint else s
+    matches = list(_FULL_DATE_RE.finditer(search_space))
+    if hint and not matches:
+        matches = list(_FULL_DATE_RE.finditer(s))
+        search_space = s
+    if not matches:
+        return None
+    m = matches[0] if hint else matches[-1]  # 区间取末端；截止提示取其后首个
+    y = m.group("y")
+    if not y:  # 从更早的日期匹配继承年份
+        for prev in matches:
+            if prev is m:
+                break
+            if prev.group("y"):
+                y = prev.group("y")
+        y = y or (str(default_year) if default_year else None)
+    if not y:
+        return None
+    day = int(m.group("d"))
+    tail = search_space[m.end():]
+    dm = re.match(r"\s*[至到\-—–~～]\s*(\d{1,2})\s*日", tail)  # "10月15日至24日" 的末端日
+    if dm and not hint:
+        day = int(dm.group(1))
+        tail = tail[dm.end():]
+    h, mi = 23, 59
+    tm = _TIME_RE.match(tail[:16].strip())
+    if tm:
+        h = int(tm.group("h"))
+        mi = int(tm.group("min")) if tm.group("min") else 0
+        if "下午" in tail[:16] and h < 12:
+            h += 12
+    try:
+        dt = datetime(int(y), int(m.group("m")), day, min(h, 23), mi)
+    except ValueError:
+        return None
+    if not (2000 <= dt.year <= 2100):
+        return None
+    return dt
+
+
 _WS_RE = re.compile(r"[\s\u3000]+")
 _PAREN_MAP = str.maketrans({"(": "（", ")": "）", ":": "：", "，": "、"})
 

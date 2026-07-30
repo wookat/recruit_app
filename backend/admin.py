@@ -2,6 +2,7 @@
 
 鉴权：请求头 X-Admin-Token 必须等于环境变量 ADMIN_TOKEN。
 """
+import json
 import os
 from typing import Optional
 
@@ -10,8 +11,10 @@ from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from cache import get_redis
 from database import get_db
 from models import Position, WatchSource, Announcement, CrawlRun
+from tasks import DQ_REPORT_KEY, data_quality_audit
 import collector
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -154,12 +157,28 @@ def seed_watch_sources(db: Session = Depends(get_db)):
                 category=w.get("job_type"),
                 year=w.get("year"),
                 enabled=1,
-                interval_minutes=60,
+                interval_minutes=w.get("interval_minutes", 60),
             )
         )
         added += 1
     db.commit()
     return {"added": added}
+
+
+@router.get("/data-quality", dependencies=[Depends(require_admin)])
+def get_data_quality():
+    """返回最近一次数据质量审计报告（tasks.data_quality_audit 写入 Redis dq:report）。"""
+    raw = get_redis().get(DQ_REPORT_KEY)
+    if not raw:
+        raise HTTPException(status_code=404, detail="报告未生成，可先 POST /api/admin/data-quality/refresh")
+    return json.loads(raw)
+
+
+@router.post("/data-quality/refresh", dependencies=[Depends(require_admin)])
+def refresh_data_quality():
+    """异步触发一次数据质量审计。"""
+    task = data_quality_audit.delay()
+    return {"task_id": task.id, "status": "started"}
 
 
 @router.get("/announcements", dependencies=[Depends(require_admin)])

@@ -17,7 +17,7 @@ from etl.normalize_v2 import (
     content_hash_v2,
     normalize_exam_type,
     parse_location,
-    parse_signup_deadline,
+    parse_signup_deadline_v2,
     split_major,
 )
 
@@ -106,7 +106,7 @@ def _enrich_record(rec: dict) -> dict:
         rec.get("raw_major"), rec.get("undergrad_major"), rec.get("grad_major")
     )
     rec["content_hash_v2"] = content_hash_v2(rec)
-    rec["signup_deadline"] = parse_signup_deadline(rec.get("signup_time"))
+    rec["signup_deadline"] = parse_signup_deadline_v2(rec.get("signup_time"), default_year=rec.get("year"))
     rec["search_text"] = _build_search_text(rec)
     return rec
 

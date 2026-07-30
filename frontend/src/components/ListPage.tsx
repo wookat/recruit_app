@@ -16,7 +16,7 @@ import { PositionCardGrid } from './PositionCardGrid'
 import { VirtualPositionList } from './VirtualPositionList'
 import { QuickMatch, type QuickMatchValues } from './QuickMatch'
 import { RecommendPanel, type RecommendQuery } from './RecommendPanel'
-import { buildExportUrl } from '@/api'
+import { buildExportUrl, createExport, exportDownloadUrl, fetchExportStatus } from '@/api'
 import { LocationFilter } from './LocationFilter'
 import {
   addRecentSearch,
@@ -45,6 +45,7 @@ import {
   Download,
   MoreHorizontal,
   SlidersHorizontal,
+  Loader2,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react'
@@ -105,6 +106,9 @@ const DEFAULT_PARAMS: SearchParams = {
   category: [],
 }
 
+const SYNC_EXPORT_MAX = 2000
+const ASYNC_EXPORT_MAX = 50000
+
 type ViewMode = 'table' | 'card' | 'list'
 
 function defaultView(): ViewMode {
@@ -133,9 +137,18 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [copied, setCopied] = useState(false)
   const [recommendQuery, setRecommendQuery] = useState<RecommendQuery | null>(null)
+  const [exportTask, setExportTask] = useState<string | null>(null)
+  const [exportError, setExportError] = useState('')
   const suggestDisabledRef = useRef(false)
   const skipSuggestRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const exportTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (exportTimerRef.current) clearInterval(exportTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     fetchFilters().then(setFilters).catch(console.error)
@@ -258,8 +271,61 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
     })
   }
 
-  function handleExport(format: 'csv' | 'xlsx') {
-    window.open(buildExportUrl(params, format), '_blank')
+  function handleExport(format: 'csv' | 'xlsx', all = false) {
+    if (exportTask) return
+    const total = data?.total ?? 0
+    if (!all && total <= SYNC_EXPORT_MAX) {
+      window.open(buildExportUrl(params, format), '_blank')
+      return
+    }
+    void startAsyncExport(format, all ? ASYNC_EXPORT_MAX : Math.min(total || ASYNC_EXPORT_MAX, ASYNC_EXPORT_MAX))
+  }
+
+  async function startAsyncExport(format: 'csv' | 'xlsx', maxRows: number) {
+    setExportError('')
+    setExportTask('starting')
+    try {
+      const { task_id } = await createExport(params, format, maxRows)
+      setExportTask(task_id)
+      pollExport(task_id)
+    } catch {
+      setExportTask(null)
+      showExportError('导出任务创建失败，请稍后重试（频率限制：每分钟 3 次）')
+    }
+  }
+
+  function pollExport(taskId: string) {
+    if (exportTimerRef.current) clearInterval(exportTimerRef.current)
+    exportTimerRef.current = setInterval(async () => {
+      try {
+        const st = await fetchExportStatus(taskId)
+        if (st.status === 'SUCCESS') {
+          stopExportPolling()
+          setExportTask(null)
+          window.location.assign(exportDownloadUrl(taskId))
+        } else if (st.status === 'FAILURE' || st.status === 'REVOKED') {
+          stopExportPolling()
+          setExportTask(null)
+          showExportError(`导出失败：${st.error || '服务端处理出错，请重试'}`)
+        }
+      } catch {
+        stopExportPolling()
+        setExportTask(null)
+        showExportError('导出状态查询失败，请重试')
+      }
+    }, 3000)
+  }
+
+  function stopExportPolling() {
+    if (exportTimerRef.current) {
+      clearInterval(exportTimerRef.current)
+      exportTimerRef.current = null
+    }
+  }
+
+  function showExportError(msg: string) {
+    setExportError(msg)
+    setTimeout(() => setExportError(''), 6000)
   }
 
   function handleSaveFilter() {
@@ -653,24 +719,41 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
                 保存当前筛选
               </Button>
             )}
-            <Button
-              variant="link"
-              size="sm"
-              className="hidden h-auto p-0 text-xs sm:inline-flex"
-              onClick={() => handleExport('csv')}
-            >
-              <Download className="mr-0.5 h-3.5 w-3.5" />
-              导出 CSV
-            </Button>
-            <Button
-              variant="link"
-              size="sm"
-              className="hidden h-auto p-0 text-xs sm:inline-flex"
-              onClick={() => handleExport('xlsx')}
-            >
-              <Download className="mr-0.5 h-3.5 w-3.5" />
-              导出 Excel
-            </Button>
+            {exportTask ? (
+              <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                正在导出…完成后自动下载
+              </span>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="hidden h-auto p-0 text-xs sm:inline-flex"
+                    >
+                      <Download className="mr-0.5 h-3.5 w-3.5" />
+                      导出
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleExport('csv')}>
+                    导出 CSV{data && data.total > SYNC_EXPORT_MAX ? '（异步）' : ''}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                    导出 Excel{data && data.total > SYNC_EXPORT_MAX ? '（异步）' : ''}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('csv', true)}>
+                    全部导出 CSV（最多 5 万行）
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('xlsx', true)}>
+                    全部导出 Excel（最多 5 万行）
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button
               variant="link"
               size="sm"
@@ -699,13 +782,21 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
                 }
               />
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleExport('csv')}>
+                <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('csv')}>
                   <Download className="h-4 w-4" />
-                  导出 CSV
+                  导出 CSV{data && data.total > SYNC_EXPORT_MAX ? '（异步）' : ''}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('xlsx')}>
                   <Download className="h-4 w-4" />
-                  导出 Excel
+                  导出 Excel{data && data.total > SYNC_EXPORT_MAX ? '（异步）' : ''}
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('csv', true)}>
+                  <Download className="h-4 w-4" />
+                  全部导出 CSV（最多 5 万行）
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('xlsx', true)}>
+                  <Download className="h-4 w-4" />
+                  全部导出 Excel（最多 5 万行）
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={copyShareLink}>
                   <Link2 className="h-4 w-4" />
@@ -813,6 +904,18 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
           onSelectExamType={(t) => updateParam('exam_type_norm', [t])}
           onSelectProvince={(p) => updateParam('province', [p])}
         />
+      )}
+
+      {exportTask && (
+        <div className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-popover px-4 py-2 text-sm shadow-lg">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          正在导出…完成后自动下载
+        </div>
+      )}
+      {exportError && (
+        <div className="fixed bottom-20 left-1/2 z-50 max-w-[90vw] -translate-x-1/2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 shadow-lg dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+          {exportError}
+        </div>
       )}
     </div>
   )

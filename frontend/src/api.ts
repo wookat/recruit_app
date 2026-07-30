@@ -231,6 +231,50 @@ export function buildExportUrl(params: SearchParams, format: 'csv' | 'xlsx'): st
   return `${API_BASE}/api/export?format=${format}${qs ? `&${qs}` : ''}`
 }
 
+export interface ExportStatus {
+  task_id: string
+  status: string
+  file?: string
+  rows?: number
+  error?: string
+}
+
+export async function createExport(
+  params: SearchParams,
+  format: 'csv' | 'xlsx',
+  maxRows: number,
+): Promise<{ task_id: string }> {
+  const body = {
+    year: params.year,
+    job_type: params.job_type,
+    exam_type: params.exam_type,
+    exam_type_norm: params.exam_type_norm,
+    province: params.province,
+    edu_requirement: params.edu_requirement,
+    work_location: params.work_location,
+    keyword: params.keyword || undefined,
+    location: params.location,
+    edu_level: params.edu_level,
+    major: params.major || undefined,
+    major_type: params.major_type,
+    category: params.category,
+    format,
+    sort: params.sort || 'year_desc',
+    max_rows: maxRows,
+  }
+  const res = await axios.post(`${API_BASE}/api/export`, body)
+  return res.data
+}
+
+export async function fetchExportStatus(taskId: string): Promise<ExportStatus> {
+  const res = await axios.get(`${API_BASE}/api/export/status/${taskId}`)
+  return res.data
+}
+
+export function exportDownloadUrl(taskId: string): string {
+  return `${API_BASE}/api/export/download/${taskId}`
+}
+
 export async function triggerScrape(
   token: string,
   year: number,

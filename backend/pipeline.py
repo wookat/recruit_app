@@ -23,6 +23,7 @@ from sqlalchemy import func as sa_func, text
 from sqlalchemy.orm import Session
 
 import collector
+import precompute
 from database import Base, engine
 from ingest import ingest_positions_df
 from models import Announcement, Attachment, CrawlRun, Position, WatchSource
@@ -134,6 +135,10 @@ def post_ingest(since_id: int):
     with engine.begin() as conn:
         conn.execute(_SEARCH_TEXT_SQL, {"since_id": int(since_id)})
     _clear_api_cache()
+    try:
+        precompute.refresh_hot_caches()
+    except Exception:  # noqa: BLE001  预热失败不影响采集结果
+        pass
 
 
 def _parse_and_ingest(db: Session, fp: str, ann: Announcement, source: WatchSource) -> tuple:

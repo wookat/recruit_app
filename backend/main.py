@@ -8,7 +8,7 @@ from typing import List, Optional
 import pandas as pd
 from fastapi import FastAPI, Depends, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -19,7 +19,7 @@ import crud
 import schemas
 import cache
 from admin import require_admin, router as admin_router
-from tasks import scrape_year
+from tasks import EXPORTS_DIR, export_positions_task, scrape_year
 
 
 @asynccontextmanager
@@ -44,6 +44,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(admin_router)
+
+SYNC_EXPORT_MAX_ROWS = 2000  # 同步导出快路径上限，更大请走 POST /api/export 异步任务
 
 
 def _build_filter(
@@ -270,7 +272,7 @@ def _rate_limit(request: Request, bucket: str, limit: int, window: int = 60):
 @app.get("/api/export")
 def export_positions(
     request: Request,
-    format: str = Query("csv", pattern="^(csv|xlsx)$"),
+    format: str = Query("csv", pattern="^(csv|xlsx)$"),  # 同步快路径：仅限小导出
     year: Optional[List[int]] = Query(None),
     job_type: Optional[List[str]] = Query(None),
     exam_type: Optional[List[str]] = Query(None),
@@ -285,10 +287,11 @@ def export_positions(
     major_type: Optional[str] = Query("any"),
     category: Optional[List[str]] = Query(None),
     sort: str = Query("year_desc"),
-    max_rows: int = Query(20000, ge=1, le=50000),
+    max_rows: int = Query(2000, ge=1, le=50000),
     db: Session = Depends(get_db),
 ):
     _rate_limit(request, "export", limit=3, window=60)
+    max_rows = min(max_rows, SYNC_EXPORT_MAX_ROWS)  # 大导出请用 POST /api/export 异步任务
     filters = _build_filter(
         year=year,
         job_type=job_type,
@@ -338,6 +341,50 @@ def export_positions(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}.xlsx"'},
     )
+
+
+@app.post("/api/export")
+def create_export(
+    request: Request,
+    body: schemas.ExportRequest,
+):
+    """异步导出：创建 Celery 任务，返回 task_id；文件写到 exports/，24h 后自动清理。"""
+    _rate_limit(request, "export", limit=3, window=60)
+    if body.format not in ("csv", "xlsx"):
+        raise HTTPException(status_code=422, detail="format 仅支持 csv/xlsx")
+    filters = body.model_dump(exclude={"format", "sort", "max_rows"}, exclude_none=True)
+    task = export_positions_task.delay(
+        filters, format=body.format, sort=body.sort,
+        max_rows=max(1, min(body.max_rows, 50000)),
+    )
+    return {"task_id": task.id, "status": "started"}
+
+
+@app.get("/api/export/status/{task_id}")
+def export_status(task_id: str):
+    result = celery_app.AsyncResult(task_id)
+    out = {"task_id": task_id, "status": result.status}
+    if result.successful() and isinstance(result.result, dict):
+        out.update(result.result)
+    elif result.failed():
+        out["error"] = str(result.result)[:500]
+    return out
+
+
+@app.get("/api/export/download/{task_id}")
+def export_download(task_id: str):
+    result = celery_app.AsyncResult(task_id)
+    if not result.successful() or not isinstance(result.result, dict):
+        raise HTTPException(status_code=404, detail="导出任务未完成或不存在")
+    fname = os.path.basename(result.result.get("file", ""))
+    path = os.path.join(EXPORTS_DIR, fname)
+    if not fname or not os.path.isfile(path):
+        raise HTTPException(status_code=410, detail="导出文件已过期清理，请重新导出")
+    media = (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        if fname.endswith(".xlsx") else "text/csv; charset=utf-8"
+    )
+    return FileResponse(path, media_type=media, filename=fname)
 
 
 @app.post(

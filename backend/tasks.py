@@ -311,8 +311,10 @@ def cleanup_exports():
 
 @celery_app.task
 def refresh_hot_cache():
-    """预计算 /api/stats 与 /api/filters 的 Redis 热缓存（24h TTL）。"""
-    return precompute.refresh_hot_caches()
+    """预计算 /api/stats 与 /api/filters 的 Redis 热缓存（24h TTL），并预热热门筛选 count。"""
+    result = precompute.refresh_hot_caches()
+    result["warm"] = precompute.warm_common_queries()
+    return result
 
 
 DQ_REPORT_KEY = "dq:report"

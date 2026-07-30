@@ -14,6 +14,19 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
+import {
+  APP_STATUSES,
+  STATUS_COLORS,
+  setAppStatus,
+  useAppStatuses,
+  type AppStatus,
+} from '@/lib/positionStore'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select'
 
 interface Props {
   item: Position | null
@@ -81,6 +94,7 @@ function Section({
 
 export function PositionSheet({ item, onClose }: Props) {
   const [copied, setCopied] = useState(false)
+  const statuses = useAppStatuses()
   if (!item) return null
 
   async function copyLink() {
@@ -114,6 +128,24 @@ export function PositionSheet({ item, onClose }: Props) {
               >
                 {copied ? <Check className="h-4 w-4 text-green-600" /> : <Link2 className="h-4 w-4" />}
               </Button>
+              <Select
+                value={statuses[item.id] || '未投递'}
+                onValueChange={(v) => setAppStatus(item.id, v as AppStatus)}
+              >
+                <SelectTrigger
+                  size="sm"
+                  className={`h-7 w-auto gap-1 border-none px-2 text-[11px] font-medium shadow-none ${STATUS_COLORS[(statuses[item.id] || '未投递') as AppStatus]}`}
+                >
+                  {statuses[item.id] || '未投递'}
+                </SelectTrigger>
+                <SelectContent>
+                  {APP_STATUSES.map((s) => (
+                    <SelectItem key={s} value={s} className="text-xs">
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FavoriteButton item={item} />
               <CompareButton item={item} />
             </span>

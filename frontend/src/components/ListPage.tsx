@@ -404,7 +404,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
       ) : (
         <>
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-9 w-full rounded-md" />
+            <Skeleton key={i} className="h-9 w-full rounded-lg" />
           ))}
         </>
       )}
@@ -518,7 +518,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
                 onKeyDown={(e) => e.key === 'Enter' && load()}
               />
               {(suggestions.length > 0 || pinyinSuggestions.length > 0) && (
-                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-md border bg-popover shadow-md">
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg bg-popover shadow-md ring-1 ring-foreground/10">
                   {suggestions.length > 0 && (
                     <>
                       <div className="px-3 py-1.5 text-[11px] text-muted-foreground">关键词联想（点击替换关键词）</div>
@@ -909,7 +909,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
       )}
 
       {exportTask && (
-        <div className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-popover px-4 py-2 text-sm shadow-lg">
+        <div className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg border bg-popover px-4 py-2 text-sm shadow-lg">
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
           正在导出…完成后自动下载
         </div>

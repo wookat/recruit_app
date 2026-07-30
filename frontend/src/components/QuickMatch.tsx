@@ -72,7 +72,7 @@ export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMat
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center gap-2 rounded-xl border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+        className="flex w-full items-center gap-2 rounded-xl border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-muted/30 px-4 py-3 text-left transition-all hover:bg-muted/50 active:scale-[0.995]"
       >
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
           <Sparkles className="h-4 w-4" />
@@ -146,7 +146,7 @@ export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMat
                 placeholder="选择城市或省份…"
               />
             ) : (
-              <div className="h-9 animate-pulse rounded-md bg-muted" />
+              <div className="h-9 animate-pulse rounded-lg bg-muted" />
             )}
           </div>
 

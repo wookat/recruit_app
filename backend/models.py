@@ -46,6 +46,38 @@ class Position(Base):
     )
 
 
+class WatchSource(Base):
+    """自动化采集的监控来源（公告索引页）。"""
+
+    __tablename__ = "watch_sources"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False, unique=True)
+    index_url = Column(Text, nullable=False)
+    keywords = Column(String(200))  # 逗号分隔，公告标题需全部包含
+    category = Column(String(50))  # 公务员/军队文职/事业单位...
+    year = Column(Integer)
+    enabled = Column(Integer, default=1, index=True)  # 1=启用 0=停用
+    interval_minutes = Column(Integer, default=60)
+    last_checked_at = Column(DateTime(timezone=True))
+    last_status = Column(String(20))  # ok / error
+    last_message = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Announcement(Base):
+    """采集到的公告链接，待管理员审核/处理。"""
+
+    __tablename__ = "announcements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    source_id = Column(Integer, index=True)
+    title = Column(Text, nullable=False)
+    url = Column(Text, nullable=False, unique=True)
+    status = Column(String(20), default="new", index=True)  # new/processed/ignored
+    detected_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class Source(Base):
     __tablename__ = "sources"
 

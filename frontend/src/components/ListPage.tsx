@@ -465,7 +465,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
                     </Button>
                   }
                 />
-                <SheetContent side="left" className="w-[340px] overflow-y-auto">
+                <SheetContent side="left" className="w-[85vw] max-w-[340px] overflow-y-auto">
                   <SheetHeader>
                     <SheetTitle>高级筛选</SheetTitle>
                   </SheetHeader>

@@ -5,7 +5,7 @@ import { PositionSheet } from '@/components/PositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Briefcase, FolderOpen, ListVideo, Star } from 'lucide-react'
+import { Briefcase, FolderOpen, ListVideo, Settings, Star } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
@@ -18,9 +18,14 @@ const SourcesPage = lazy(() =>
 const TasksPage = lazy(() =>
   import('@/components/TasksPage').then((m) => ({ default: m.TasksPage })),
 )
+const AdminPage = lazy(() =>
+  import('@/components/AdminPage').then((m) => ({ default: m.AdminPage })),
+)
+
+const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
 
 export default function App() {
-  const [tab, setTab] = useState('search')
+  const [tab, setTab] = useState(showAdmin ? 'admin' : 'search')
   const [favOpen, setFavOpen] = useState(false)
   const [deepLinked, setDeepLinked] = useState<Position | null>(null)
   const favorites = useFavorites()
@@ -71,7 +76,9 @@ export default function App() {
         </div>
         <div className="mx-auto max-w-7xl px-4 pb-3">
           <Tabs value={tab} onValueChange={setTab} className="w-full">
-            <TabsList className="grid h-10 w-full max-w-md grid-cols-3">
+            <TabsList
+              className={`grid h-10 w-full max-w-md ${showAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}
+            >
               <TabsTrigger value="search" className="gap-1.5">
                 <Briefcase className="h-4 w-4" />
                 岗位检索
@@ -84,6 +91,12 @@ export default function App() {
                 <ListVideo className="h-4 w-4" />
                 抓取队列
               </TabsTrigger>
+              {showAdmin && (
+                <TabsTrigger value="admin" className="gap-1.5">
+                  <Settings className="h-4 w-4" />
+                  管理
+                </TabsTrigger>
+              )}
             </TabsList>
           </Tabs>
         </div>
@@ -94,6 +107,7 @@ export default function App() {
         <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
           {tab === 'sources' && <SourcesPage />}
           {tab === 'tasks' && <TasksPage />}
+          {tab === 'admin' && showAdmin && <AdminPage />}
         </Suspense>
       </main>
 

@@ -242,3 +242,88 @@ export async function fetchTaskStatus(
   const res = await axios.get(`${API_BASE}/api/admin/task/${taskId}`)
   return res.data
 }
+
+// ---- 管理后台 ----
+export interface AdminOverview {
+  positions: { total: number; clean: number; dup: number; invalid: number }
+  by_year: { year: number; count: number }[]
+  watch_sources: { total: number; enabled: number; error: number }
+  announcements: { new: number; total: number }
+}
+
+export interface WatchSource {
+  id: number
+  name: string
+  index_url: string
+  keywords: string | null
+  category: string | null
+  year: number | null
+  enabled: number
+  interval_minutes: number
+  last_checked_at: string | null
+  last_status: string | null
+  last_message: string | null
+}
+
+export interface Announcement {
+  id: number
+  source_id: number | null
+  title: string
+  url: string
+  status: string
+  detected_at: string | null
+}
+
+function adminHeaders(token: string) {
+  return { headers: { 'X-Admin-Token': token } }
+}
+
+export async function adminOverview(token: string): Promise<AdminOverview> {
+  const res = await axios.get(`${API_BASE}/api/admin/overview`, adminHeaders(token))
+  return res.data
+}
+
+export async function adminListSources(token: string): Promise<WatchSource[]> {
+  const res = await axios.get(`${API_BASE}/api/admin/watch-sources`, adminHeaders(token))
+  return res.data
+}
+
+export async function adminUpdateSource(
+  token: string,
+  id: number,
+  body: Omit<WatchSource, 'id' | 'last_checked_at' | 'last_status' | 'last_message'>,
+): Promise<WatchSource> {
+  const res = await axios.patch(`${API_BASE}/api/admin/watch-sources/${id}`, body, adminHeaders(token))
+  return res.data
+}
+
+export async function adminCheckSource(
+  token: string,
+  id: number,
+): Promise<{ source: string; status: string; new: number }> {
+  const res = await axios.post(`${API_BASE}/api/admin/watch-sources/${id}/check`, {}, adminHeaders(token))
+  return res.data
+}
+
+export async function adminSeedSources(token: string): Promise<{ added: number }> {
+  const res = await axios.post(`${API_BASE}/api/admin/watch-sources/seed`, {}, adminHeaders(token))
+  return res.data
+}
+
+export async function adminListAnnouncements(
+  token: string,
+  status?: string,
+): Promise<Announcement[]> {
+  const qs = status ? `?status=${status}` : ''
+  const res = await axios.get(`${API_BASE}/api/admin/announcements${qs}`, adminHeaders(token))
+  return res.data
+}
+
+export async function adminSetAnnouncementStatus(
+  token: string,
+  id: number,
+  status: string,
+): Promise<Announcement> {
+  const res = await axios.patch(`${API_BASE}/api/admin/announcements/${id}`, { status }, adminHeaders(token))
+  return res.data
+}

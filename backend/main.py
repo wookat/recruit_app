@@ -18,6 +18,7 @@ from celery_app import celery_app
 import crud
 import schemas
 import cache
+from admin import router as admin_router
 from tasks import scrape_year
 
 
@@ -38,6 +39,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(admin_router)
 
 
 def _build_filter(

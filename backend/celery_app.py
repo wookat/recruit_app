@@ -21,4 +21,10 @@ celery_app.conf.update(
     task_time_limit=3600,
     worker_prefetch_multiplier=1,
     result_expires=3600 * 24,
+    beat_schedule={
+        "check-watch-sources": {
+            "task": "tasks.check_watch_sources",
+            "schedule": 1800.0,  # 每 30 分钟检查一次到期来源
+        },
+    },
 )

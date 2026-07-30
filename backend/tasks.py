@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from celery_app import celery_app
 from database import SessionLocal
 from ingest import ingest_positions_df
+import collector
 import import_guopin_2027
 from recruit_parser import (
     crawl_xds_summary,
@@ -225,3 +226,13 @@ def _parse_xds_file(db: Session, year: int, province: str, fp: str, source_url: 
 def scrape_shengkao_sources(self, year: int):
     # 省考岗位分散在各省人事考试网，先建立入口目录；具体职位表可后续按省份抓取
     return {"status": "placeholder", "year": year, "note": "省考职位表按省份分散，建议后续逐省队列抓取"}
+
+
+@celery_app.task
+def check_watch_sources():
+    """定时任务：检查所有到期启用的监控来源，写入新公告。"""
+    db = SessionLocal()
+    try:
+        return {"results": collector.check_due_sources(db)}
+    finally:
+        db.close()

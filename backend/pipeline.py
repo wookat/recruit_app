@@ -137,6 +137,7 @@ def post_ingest(since_id: int):
     _clear_api_cache()
     try:
         precompute.refresh_hot_caches()
+        precompute.warm_common_queries()
     except Exception:  # noqa: BLE001  预热失败不影响采集结果
         pass
 

@@ -102,3 +102,23 @@ class RecommendOut(BaseModel):
 class TaskOut(BaseModel):
     task_id: str
     status: str
+
+
+class ExportRequest(BaseModel):
+    """异步导出请求体：筛选条件 + 导出参数。"""
+    year: Optional[List[int]] = None
+    job_type: Optional[List[str]] = None
+    exam_type: Optional[List[str]] = None
+    exam_type_norm: Optional[List[str]] = None
+    province: Optional[List[str]] = None
+    edu_requirement: Optional[List[str]] = None
+    work_location: Optional[List[str]] = None
+    keyword: Optional[str] = None
+    location: Optional[List[str]] = None
+    edu_level: Optional[List[str]] = None
+    major: Optional[str] = None
+    major_type: Optional[str] = "any"
+    category: Optional[List[str]] = None
+    format: str = "csv"  # csv | xlsx
+    sort: str = "year_desc"
+    max_rows: int = 50000

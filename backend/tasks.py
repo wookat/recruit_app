@@ -1,5 +1,9 @@
+import csv
 import os
 import re
+import time
+from datetime import datetime
+
 import requests
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -7,7 +11,9 @@ from celery_app import celery_app
 from database import SessionLocal
 from ingest import ingest_positions_df
 import collector
+import crud
 import pipeline
+import precompute
 import import_guopin_2027
 from recruit_parser import (
     crawl_xds_summary,
@@ -19,6 +25,10 @@ from recruit_parser import (
 
 APP_DATA_DIR = os.getenv("APP_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data"))
 os.makedirs(APP_DATA_DIR, exist_ok=True)
+
+EXPORTS_DIR = os.getenv("EXPORTS_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "exports"))
+os.makedirs(EXPORTS_DIR, exist_ok=True)
+EXPORT_FILE_MAX_AGE = 24 * 3600
 
 
 def _download(url: str, path: str):
@@ -227,6 +237,78 @@ def _parse_xds_file(db: Session, year: int, province: str, fp: str, source_url: 
 def scrape_shengkao_sources(self, year: int):
     # 省考岗位分散在各省人事考试网，先建立入口目录；具体职位表可后续按省份抓取
     return {"status": "placeholder", "year": year, "note": "省考职位表按省份分散，建议后续逐省队列抓取"}
+
+
+def _write_export_csv(rows, path):
+    """逐行写 CSV（服务器游标 yield_per 分批取数，不构建 DataFrame）。"""
+    cols = crud.EXPORT_COLUMNS
+    n = 0
+    with open(path, "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f)
+        writer.writerow([label for _, label in cols])
+        for pos in rows:
+            writer.writerow([getattr(pos, attr, "") or "" for attr, _ in cols])
+            n += 1
+    return n
+
+
+def _write_export_xlsx(rows, path):
+    """openpyxl write_only 流式写 xlsx，避免一次性 DataFrame。"""
+    from openpyxl import Workbook
+
+    cols = crud.EXPORT_COLUMNS
+    wb = Workbook(write_only=True)
+    ws = wb.create_sheet("岗位")
+    ws.append([label for _, label in cols])
+    n = 0
+    for pos in rows:
+        ws.append([str(getattr(pos, attr, "") or "") for attr, _ in cols])
+        n += 1
+    wb.save(path)
+    return n
+
+
+@celery_app.task(bind=True)
+def export_positions_task(self, filters: dict, format: str = "csv", sort: str = "year_desc", max_rows: int = 50000):
+    """异步导出：分批读库逐行写文件到 exports/，返回文件名与行数。"""
+    self.update_state(state="PROGRESS", meta={"step": "exporting"})
+    fmt = "xlsx" if format == "xlsx" else "csv"
+    fname = f"positions_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{self.request.id[:8]}.{fmt}"
+    path = os.path.join(EXPORTS_DIR, fname)
+    db = SessionLocal()
+    try:
+        f = crud.PositionFilter(**(filters or {}))
+        rows = crud.export_positions(db, f, sort=sort, max_rows=min(int(max_rows), 50000))
+        n = _write_export_xlsx(rows, path) if fmt == "xlsx" else _write_export_csv(rows, path)
+    except Exception:
+        if os.path.exists(path):
+            os.remove(path)
+        raise
+    finally:
+        db.close()
+    return {"file": fname, "rows": n, "format": fmt}
+
+
+@celery_app.task
+def cleanup_exports():
+    """每日清理 exports/ 中超过 24h 的导出文件。"""
+    now = time.time()
+    removed = 0
+    for name in os.listdir(EXPORTS_DIR):
+        p = os.path.join(EXPORTS_DIR, name)
+        try:
+            if os.path.isfile(p) and now - os.path.getmtime(p) > EXPORT_FILE_MAX_AGE:
+                os.remove(p)
+                removed += 1
+        except OSError:
+            continue
+    return {"removed": removed}
+
+
+@celery_app.task
+def refresh_hot_cache():
+    """预计算 /api/stats 与 /api/filters 的 Redis 热缓存（24h TTL）。"""
+    return precompute.refresh_hot_caches()
 
 
 @celery_app.task

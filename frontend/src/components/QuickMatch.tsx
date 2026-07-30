@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MultiSelect } from './MultiSelect'
-import { Search, Sparkles, RotateCcw } from 'lucide-react'
+import { Search, Sparkles, RotateCcw, Wand2 } from 'lucide-react'
 
 export interface QuickMatchValues {
   eduLevel: string[]
@@ -19,13 +19,14 @@ interface QuickMatchProps {
   filters: FilterOptions | null
   onSearch: (values: QuickMatchValues) => void
   onReset: () => void
+  onRecommend?: (values: QuickMatchValues) => void
 }
 
 const EDU_LEVELS = ['大专/中专', '本科', '硕士研究生', '博士研究生']
 const CATEGORIES = ['公务员', '事业单位/事业编', '军队文职', '选调生', '国企/央企', '上市公司', '其他企业']
 const YEARS = ['2027', '2026', '2025']
 
-export function QuickMatch({ filters, onSearch, onReset }: QuickMatchProps) {
+export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMatchProps) {
   const [eduLevel, setEduLevel] = useState<string[]>(['本科'])
   const [major, setMajor] = useState('')
   const [location, setLocation] = useState<string[]>([])
@@ -34,6 +35,11 @@ export function QuickMatch({ filters, onSearch, onReset }: QuickMatchProps) {
 
   function handleSearch() {
     onSearch({ eduLevel, major: major.trim(), location, category, year })
+  }
+
+  function handleRecommend() {
+    if (!major.trim() || !onRecommend) return
+    onRecommend({ eduLevel, major: major.trim(), location, category, year })
   }
 
   function handleReset() {
@@ -152,6 +158,19 @@ export function QuickMatch({ filters, onSearch, onReset }: QuickMatchProps) {
               <RotateCcw className="mr-1 h-4 w-4" />
               重置
             </Button>
+            {onRecommend && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-9"
+                onClick={handleRecommend}
+                disabled={!major.trim()}
+                title={major.trim() ? '根据专业智能推荐岗位' : '请先输入专业关键词'}
+              >
+                <Wand2 className="mr-1 h-4 w-4" />
+                智能推荐
+              </Button>
+            )}
             <Button size="sm" className="h-9" onClick={handleSearch}>
               <Search className="mr-1 h-4 w-4" />
               一键匹配

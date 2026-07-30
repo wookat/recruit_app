@@ -4,10 +4,11 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, case
 from sqlalchemy.orm import Session, defer
 
 from models import Position, Source
+from major_map import expand_major
 from normalizer import (
     normalize_edu,
     parse_location_tags,
@@ -285,6 +286,84 @@ def suggest_keywords(db: Session, q: str, limit: int = 10, sample: int = 500) ->
                 if 2 <= len(tok) <= 20 and ql in tok.lower():
                     counter[tok] += 1
     return [{"word": w, "count": c} for w, c in counter.most_common(limit)]
+
+
+def recommend_positions(
+    db: Session,
+    major: str,
+    filters: PositionFilter,
+    limit: int = 50,
+):
+    """专业智能推荐：把专业关键词扩展为同大类相关专业，
+    命中原词 > 同大类专业 > 专业不限，返回打分排序的岗位。"""
+    terms = expand_major(major)
+    if not terms:
+        return [], []
+    major_cols = [Position.undergrad_major, Position.grad_major, Position.raw_major]
+
+    def any_match(term: str):
+        k = f"%{term}%"
+        return or_(*(col.ilike(k) for col in major_cols))
+
+    unrestricted = or_(*(col.ilike("%不限%") for col in major_cols))
+    related = terms[1:]
+    whens = [(any_match(terms[0]), 3)]
+    if related:
+        whens.append((or_(*(any_match(t) for t in related)), 2))
+    score = case(*whens, else_=1).label("score")
+
+    q = (
+        db.query(Position, score)
+        .filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None))
+        .filter(or_(*(any_match(t) for t in terms), unrestricted))
+        .options(defer(Position.search_text))
+    )
+    match_filters = PositionFilter(**{**filters.model_dump(), "major": None, "keyword": None})
+    q = _apply_filters(q, Position, match_filters)
+    rows = (
+        q.order_by(score.desc(), Position.year.desc(), Position.id.desc())
+        .limit(limit)
+        .all()
+    )
+    items = []
+    for pos, s in rows:
+        pos.match_score = s
+        items.append(pos)
+    return items, terms
+
+
+EXPORT_COLUMNS = [
+    ("id", "ID"),
+    ("year", "年份"),
+    ("job_type", "工作类型"),
+    ("exam_type", "考试/招聘类型"),
+    ("employer", "招聘单位"),
+    ("position_example", "岗位"),
+    ("edu_requirement", "学历要求"),
+    ("edu_level_norm", "学历层级"),
+    ("undergrad_major", "本科专业"),
+    ("grad_major", "研究生专业"),
+    ("work_location", "工作地点"),
+    ("province", "省份"),
+    ("city", "城市"),
+    ("exam_form", "考试形式"),
+    ("signup_time", "报名时间"),
+    ("signup_deadline", "报名截止"),
+    ("exam_time", "考试时间"),
+    ("special_requirements", "特殊要求"),
+    ("source_url", "来源链接"),
+]
+
+
+def export_positions(db: Session, filters: PositionFilter, sort: str = "year_desc", max_rows: int = 20000):
+    """导出查询：返回最多 max_rows 条匹配当前筛选的岗位。"""
+    q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
+    q = _apply_filters(q, Position, filters)
+    if sort == "year_asc":
+        q = q.order_by(Position.year.asc(), Position.id.asc())
+    else:
+        q = q.order_by(Position.year.desc(), Position.id.desc())
+    return q.limit(max_rows).yield_per(1000)
 
 
 def get_stats(db: Session, top_n: int = 20) -> Dict:

@@ -15,6 +15,8 @@ import { PositionTable } from './PositionTable'
 import { PositionCardGrid } from './PositionCardGrid'
 import { VirtualPositionList } from './VirtualPositionList'
 import { QuickMatch, type QuickMatchValues } from './QuickMatch'
+import { RecommendPanel, type RecommendQuery } from './RecommendPanel'
+import { buildExportUrl } from '@/api'
 import { LocationFilter } from './LocationFilter'
 import {
   addRecentSearch,
@@ -40,6 +42,7 @@ import {
   Bookmark,
   Check,
   Link2,
+  Download,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -118,6 +121,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
   const [saveName, setSaveName] = useState('')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [copied, setCopied] = useState(false)
+  const [recommendQuery, setRecommendQuery] = useState<RecommendQuery | null>(null)
   const suggestDisabledRef = useRef(false)
   const skipSuggestRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -230,6 +234,21 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
 
   function clearFilters() {
     setParams({ ...DEFAULT_PARAMS })
+    setRecommendQuery(null)
+  }
+
+  function applyRecommend(values: QuickMatchValues) {
+    setRecommendQuery({
+      major: values.major,
+      edu_level: values.eduLevel.length ? values.eduLevel : undefined,
+      location: values.location.length ? values.location : undefined,
+      category: values.category.length ? values.category : undefined,
+      year: values.year.map(Number).filter((n) => !isNaN(n)),
+    })
+  }
+
+  function handleExport(format: 'csv' | 'xlsx') {
+    window.open(buildExportUrl(params, format), '_blank')
   }
 
   function handleSaveFilter() {
@@ -373,7 +392,16 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
           onSelectProvince={(p) => updateParam('province', [p])}
         />
       )}
-      <QuickMatch filters={filters} onSearch={applyQuickMatch} onReset={clearFilters} />
+      <QuickMatch
+        filters={filters}
+        onSearch={applyQuickMatch}
+        onReset={clearFilters}
+        onRecommend={applyRecommend}
+      />
+
+      {recommendQuery && (
+        <RecommendPanel query={recommendQuery} onClose={() => setRecommendQuery(null)} />
+      )}
 
       <Card>
         <CardContent className="space-y-4 p-4">
@@ -572,6 +600,24 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
                 保存当前筛选
               </Button>
             )}
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              onClick={() => handleExport('csv')}
+            >
+              <Download className="mr-0.5 h-3.5 w-3.5" />
+              导出 CSV
+            </Button>
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              onClick={() => handleExport('xlsx')}
+            >
+              <Download className="mr-0.5 h-3.5 w-3.5" />
+              导出 Excel
+            </Button>
             <Button
               variant="link"
               size="sm"

@@ -73,7 +73,7 @@ export interface SearchParams {
   after_year?: number
 }
 
-function toQuery(params: SearchParams) {
+function toQuery(params: object) {
   const q = new URLSearchParams()
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return
@@ -200,6 +200,35 @@ export async function fetchDeadlines(days = 7, limit = 20): Promise<DeadlineEntr
     .map(parseDeadlineEntry)
     .filter((e): e is DeadlineEntry => e !== null)
     .slice(0, limit)
+}
+
+export interface RecommendItem extends Position {
+  match_score: number
+}
+
+export interface RecommendResult {
+  major: string
+  expanded_terms: string[]
+  total: number
+  items: RecommendItem[]
+}
+
+export async function fetchRecommend(params: {
+  major: string
+  edu_level?: string[]
+  location?: string[]
+  category?: string[]
+  year?: number[]
+  limit?: number
+}): Promise<RecommendResult> {
+  const res = await axios.get(`${API_BASE}/api/recommend?${toQuery(params)}`)
+  return res.data
+}
+
+export function buildExportUrl(params: SearchParams, format: 'csv' | 'xlsx'): string {
+  const { page: _p, page_size: _ps, after_id: _a, after_year: _ay, ...rest } = params
+  const qs = toQuery(rest)
+  return `${API_BASE}/api/export?format=${format}${qs ? `&${qs}` : ''}`
 }
 
 export async function triggerScrape(year: number): Promise<{ task_id: string; status: string }> {

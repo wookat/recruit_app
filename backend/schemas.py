@@ -88,6 +88,17 @@ class StatsOut(BaseModel):
     hot_keywords: List[SuggestItem]
 
 
+class RecommendItem(PositionOut):
+    match_score: int = 1
+
+
+class RecommendOut(BaseModel):
+    major: str
+    expanded_terms: List[str]
+    total: int
+    items: List[RecommendItem]
+
+
 class TaskOut(BaseModel):
     task_id: str
     status: str

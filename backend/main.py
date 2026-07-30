@@ -1,9 +1,14 @@
+import csv
+import io
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import List, Optional
 
+import pandas as pd
 from fastapi import FastAPI, Depends, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -73,7 +78,7 @@ def health():
 
 
 @app.get("/api/positions", response_model=schemas.PositionList)
-@cache.cached("positions", ttl=30)
+@cache.cached("positions", ttl=120)
 def get_positions(
     year: Optional[List[int]] = Query(None),
     job_type: Optional[List[str]] = Query(None),
@@ -138,7 +143,7 @@ def get_position(position_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/api/sources", response_model=schemas.PositionList)
-@cache.cached("sources", ttl=30)
+@cache.cached("sources", ttl=120)
 def get_sources(
     year: Optional[List[int]] = Query(None),
     job_type: Optional[List[str]] = Query(None),
@@ -178,7 +183,7 @@ def get_sources(
 
 
 @app.get("/api/filters", response_model=schemas.FilterOptions)
-@cache.cached("filters", ttl=60)
+@cache.cached("filters", ttl=600)
 def get_filters(db: Session = Depends(get_db)):
     return crud.get_filter_options(db)
 
@@ -214,6 +219,100 @@ def deadlines(
         "next_cursor": None,
         "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
     }
+
+
+@app.get("/api/recommend", response_model=schemas.RecommendOut)
+@cache.cached("recommend", ttl=300)
+def recommend(
+    major: str = Query(..., min_length=1, max_length=50),
+    edu_level: Optional[List[str]] = Query(None),
+    location: Optional[List[str]] = Query(None),
+    category: Optional[List[str]] = Query(None),
+    year: Optional[List[int]] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    filters = _build_filter(
+        year=year, edu_level=edu_level, location=location, category=category
+    )
+    items, terms = crud.recommend_positions(db, major, filters, limit)
+    out = []
+    for item in items:
+        d = schemas.PositionOut.model_validate(item).model_dump()
+        d["match_score"] = getattr(item, "match_score", 1)
+        out.append(d)
+    return {"major": major, "expanded_terms": terms, "total": len(out), "items": out}
+
+
+@app.get("/api/export")
+def export_positions(
+    format: str = Query("csv", pattern="^(csv|xlsx)$"),
+    year: Optional[List[int]] = Query(None),
+    job_type: Optional[List[str]] = Query(None),
+    exam_type: Optional[List[str]] = Query(None),
+    exam_type_norm: Optional[List[str]] = Query(None),
+    province: Optional[List[str]] = Query(None),
+    edu_requirement: Optional[List[str]] = Query(None),
+    work_location: Optional[List[str]] = Query(None),
+    keyword: Optional[str] = Query(None),
+    location: Optional[List[str]] = Query(None),
+    edu_level: Optional[List[str]] = Query(None),
+    major: Optional[str] = Query(None),
+    major_type: Optional[str] = Query("any"),
+    category: Optional[List[str]] = Query(None),
+    sort: str = Query("year_desc"),
+    max_rows: int = Query(20000, ge=1, le=50000),
+    db: Session = Depends(get_db),
+):
+    filters = _build_filter(
+        year=year,
+        job_type=job_type,
+        exam_type=exam_type,
+        exam_type_norm=exam_type_norm,
+        province=province,
+        edu_requirement=edu_requirement,
+        work_location=work_location,
+        keyword=keyword,
+        location=location,
+        edu_level=edu_level,
+        major=major,
+        major_type=major_type,
+        category=category,
+    )
+    rows = crud.export_positions(db, filters, sort=sort, max_rows=max_rows)
+    cols = crud.EXPORT_COLUMNS
+    filename = f"positions_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+    if format == "csv":
+        def iter_csv():
+            buf = io.StringIO()
+            writer = csv.writer(buf)
+            writer.writerow([label for _, label in cols])
+            yield "\ufeff" + buf.getvalue()  # BOM for Excel compatibility
+            for pos in rows:
+                buf.seek(0)
+                buf.truncate(0)
+                writer.writerow([getattr(pos, attr, "") or "" for attr, _ in cols])
+                yield buf.getvalue()
+
+        return StreamingResponse(
+            iter_csv(),
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
+        )
+
+    # xlsx
+    data = [[getattr(pos, attr, "") or "" for attr, _ in cols] for pos in rows]
+    df = pd.DataFrame(data, columns=[label for _, label in cols])
+    out = io.BytesIO()
+    with pd.ExcelWriter(out, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="岗位")
+    out.seek(0)
+    return StreamingResponse(
+        out,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}.xlsx"'},
+    )
 
 
 @app.post("/api/admin/scrape/{year}", response_model=schemas.TaskOut)

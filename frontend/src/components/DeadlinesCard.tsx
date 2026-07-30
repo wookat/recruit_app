@@ -21,6 +21,12 @@ function daysLeftLabel(n: number | null, fallback: string): string {
   return `剩 ${n} 天`
 }
 
+function shortDate(s: string): string {
+  const d = new Date(s)
+  if (isNaN(d.getTime())) return s
+  return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function urgencyClass(n: number | null): string {
   if (n !== null && n <= 1)
     return 'border-red-300 text-red-700 dark:border-red-800 dark:text-red-400'
@@ -87,7 +93,9 @@ export function DeadlinesCard() {
                   {e.title || '-'}
                   {e.employer && <span className="ml-2 text-xs text-muted-foreground">{e.employer}</span>}
                 </span>
-                <span className="shrink-0 text-xs text-muted-foreground">{e.deadline}</span>
+                <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline" title={e.deadline}>
+                  {shortDate(e.deadline)}
+                </span>
               </div>
             )
             return e.position ? (

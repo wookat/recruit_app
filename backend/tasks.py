@@ -16,7 +16,7 @@ from recruit_parser import (
     parse_position_excel,
 )
 
-APP_DATA_DIR = "/home/ubuntu/recruit_app/data"
+APP_DATA_DIR = os.getenv("APP_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data"))
 os.makedirs(APP_DATA_DIR, exist_ok=True)
 
 

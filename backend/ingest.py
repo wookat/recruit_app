@@ -113,13 +113,29 @@ def _enrich_record(rec: dict) -> dict:
 
 def ingest_positions_df(db, df: pd.DataFrame, default_year=2026):
     records = []
+    seen_v2 = set()
     for _, row in df.iterrows():
         rec = _row_to_record(row, _POS_MAPPING, default_year)
         if not rec.get("exam_type") and not rec.get("position_example"):
             continue
         rec = _enrich_record(rec)
         rec["content_hash"] = _compute_hash(rec)
+        if rec["content_hash_v2"] in seen_v2:
+            continue
+        seen_v2.add(rec["content_hash_v2"])
         records.append(rec)
+    if records:
+        # 按 content_hash_v2 预过滤已存在的岗位，避免同岗位换来源 URL 后重复入库
+        v2_list = [r["content_hash_v2"] for r in records]
+        existing = set()
+        for i in range(0, len(v2_list), 5000):
+            rows = (
+                db.query(Position.content_hash_v2)
+                .filter(Position.content_hash_v2.in_(v2_list[i : i + 5000]))
+                .all()
+            )
+            existing.update(h for (h,) in rows)
+        records = [r for r in records if r["content_hash_v2"] not in existing]
     if records:
         stmt = insert(Position).values(records)
         stmt = stmt.on_conflict_do_nothing(index_elements=["content_hash"])

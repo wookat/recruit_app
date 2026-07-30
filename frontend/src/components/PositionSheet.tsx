@@ -92,6 +92,16 @@ function Section({
   )
 }
 
+function safeUrl(u: string | null | undefined): string | null {
+  if (!u) return null
+  try {
+    const p = new URL(u).protocol
+    return p === 'http:' || p === 'https:' ? u : null
+  } catch {
+    return null
+  }
+}
+
 export function PositionSheet({ item, onClose }: Props) {
   const [copied, setCopied] = useState(false)
   const statuses = useAppStatuses()
@@ -210,11 +220,11 @@ export function PositionSheet({ item, onClose }: Props) {
                 <Separator />
                 <Section icon={Info} title="备注与来源">
                   <Field label="备注" value={item.notes} />
-                  {item.source_url && (
+                  {safeUrl(item.source_url) && (
                     <div>
                       <div className="text-xs font-medium text-muted-foreground">信息来源</div>
                       <a
-                        href={item.source_url}
+                        href={safeUrl(item.source_url)!}
                         target="_blank"
                         rel="noreferrer"
                         className="mt-1 inline-flex items-center break-all text-sm text-primary hover:underline"

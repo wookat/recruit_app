@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 
 import pandas as pd
-from fastapi import FastAPI, Depends, Query, HTTPException
+from fastapi import FastAPI, Depends, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,7 +18,7 @@ from celery_app import celery_app
 import crud
 import schemas
 import cache
-from admin import router as admin_router
+from admin import require_admin, router as admin_router
 from tasks import scrape_year
 
 
@@ -34,8 +34,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="体制内岗位检索系统", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[
+        "https://jobs.zalize.com",
+        "http://localhost:5173",
+        "http://localhost:8000",
+    ],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -193,7 +197,7 @@ def get_filters(db: Session = Depends(get_db)):
 @app.get("/api/suggest", response_model=schemas.SuggestOut)
 @cache.cached("suggest", ttl=300)
 def suggest(
-    q: str = Query(..., min_length=1, max_length=50),
+    q: str = Query(..., min_length=2, max_length=50),
     limit: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
 ):
@@ -246,8 +250,26 @@ def recommend(
     return {"major": major, "expanded_terms": terms, "total": len(out), "items": out}
 
 
+def _rate_limit(request: Request, bucket: str, limit: int, window: int = 60):
+    """基于 Redis 的简单滑窗限流：同一 IP 在 window 秒内最多 limit 次。"""
+    ip = request.headers.get("cf-connecting-ip") or (request.client.host if request.client else "unknown")
+    key = f"rl:{bucket}:{ip}"
+    try:
+        r = cache.get_redis()
+        n = r.incr(key)
+        if n == 1:
+            r.expire(key, window)
+        if n > limit:
+            raise HTTPException(status_code=429, detail="请求过于频繁，请稍后再试")
+    except HTTPException:
+        raise
+    except Exception:
+        pass  # Redis 不可用时不阻断请求
+
+
 @app.get("/api/export")
 def export_positions(
+    request: Request,
     format: str = Query("csv", pattern="^(csv|xlsx)$"),
     year: Optional[List[int]] = Query(None),
     job_type: Optional[List[str]] = Query(None),
@@ -266,6 +288,7 @@ def export_positions(
     max_rows: int = Query(20000, ge=1, le=50000),
     db: Session = Depends(get_db),
 ):
+    _rate_limit(request, "export", limit=3, window=60)
     filters = _build_filter(
         year=year,
         job_type=job_type,
@@ -317,13 +340,19 @@ def export_positions(
     )
 
 
-@app.post("/api/admin/scrape/{year}", response_model=schemas.TaskOut)
+@app.post(
+    "/api/admin/scrape/{year}",
+    response_model=schemas.TaskOut,
+    dependencies=[Depends(require_admin)],
+)
 def trigger_scrape(year: int):
+    if year not in (2025, 2026, 2027):
+        raise HTTPException(status_code=422, detail="仅支持 2025-2027 年份")
     task = scrape_year.delay(year)
     return {"task_id": task.id, "status": "started"}
 
 
-@app.get("/api/admin/task/{task_id}")
+@app.get("/api/admin/task/{task_id}", dependencies=[Depends(require_admin)])
 def task_status(task_id: str):
     result = celery_app.AsyncResult(task_id)
     return {"task_id": task_id, "status": result.status, "info": result.info}

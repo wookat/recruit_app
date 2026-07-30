@@ -7,6 +7,7 @@ from celery_app import celery_app
 from database import SessionLocal
 from ingest import ingest_positions_df
 import collector
+import pipeline
 import import_guopin_2027
 from recruit_parser import (
     crawl_xds_summary,
@@ -230,9 +231,9 @@ def scrape_shengkao_sources(self, year: int):
 
 @celery_app.task
 def check_watch_sources():
-    """定时任务：检查所有到期启用的监控来源，写入新公告。"""
+    """定时任务：对所有到期启用的来源执行采集闭环（公告→附件→解析→入库）。"""
     db = SessionLocal()
     try:
-        return {"results": collector.check_due_sources(db)}
+        return {"results": pipeline.run_due_pipelines(db)}
     finally:
         db.close()

@@ -1,10 +1,25 @@
 import { useState } from 'react'
 import type { Position } from '@/api'
-import { clearFavorites, toggleFavorite, useFavorites } from '@/lib/positionStore'
+import {
+  APP_STATUSES,
+  STATUS_COLORS,
+  clearFavorites,
+  setAppStatus,
+  toggleFavorite,
+  useAppStatuses,
+  useFavorites,
+  type AppStatus,
+} from '@/lib/positionStore'
 import { copyText, favoritesShareUrl } from '@/lib/clipboard'
 import { PositionSheet } from './PositionSheet'
 import { CompareButton } from './CompareButton'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,8 +32,15 @@ interface Props {
 
 export function FavoritesSheet({ open, onClose }: Props) {
   const favorites = useFavorites()
+  const statuses = useAppStatuses()
   const [selected, setSelected] = useState<Position | null>(null)
   const [copied, setCopied] = useState(false)
+
+  const statusCounts = favorites.reduce<Record<string, number>>((acc, p) => {
+    const s = statuses[p.id] || '未投递'
+    acc[s] = (acc[s] || 0) + 1
+    return acc
+  }, {})
 
   async function shareFavorites() {
     await copyText(favoritesShareUrl(favorites.map((p) => p.id)))
@@ -68,7 +90,19 @@ export function FavoritesSheet({ open, onClose }: Props) {
               )}
             </SheetTitle>
           </SheetHeader>
-          <ScrollArea className="h-[calc(100dvh-5rem)]">
+          {favorites.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 px-4 pb-1 sm:px-6">
+              {APP_STATUSES.filter((s) => statusCounts[s]).map((s) => (
+                <span
+                  key={s}
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_COLORS[s]}`}
+                >
+                  {s} {statusCounts[s]}
+                </span>
+              ))}
+            </div>
+          )}
+          <ScrollArea className="h-[calc(100dvh-6.5rem)]">
             {favorites.length === 0 ? (
               <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
                 暂无收藏，点击岗位旁的 ⭐ 收藏
@@ -97,6 +131,24 @@ export function FavoritesSheet({ open, onClose }: Props) {
                         </span>
                       </div>
                     </button>
+                    <Select
+                      value={statuses[p.id] || '未投递'}
+                      onValueChange={(v) => setAppStatus(p.id, v as AppStatus)}
+                    >
+                      <SelectTrigger
+                        size="sm"
+                        className={`h-7 w-auto gap-1 border-none px-2 text-[11px] font-medium shadow-none ${STATUS_COLORS[(statuses[p.id] || '未投递') as AppStatus]}`}
+                      >
+                        {statuses[p.id] || '未投递'}
+                      </SelectTrigger>
+                      <SelectContent>
+                        {APP_STATUSES.map((s) => (
+                          <SelectItem key={s} value={s} className="text-xs">
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <CompareButton item={p} />
                     <Button
                       variant="ghost"

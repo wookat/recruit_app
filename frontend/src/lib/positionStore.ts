@@ -2,8 +2,30 @@ import { useSyncExternalStore } from 'react'
 import type { Position } from '@/api'
 
 const FAV_KEY = 'recruit.favorites'
+const STATUS_KEY = 'recruit.appStatus'
 const FAV_MAX = 200
 export const COMPARE_MAX = 4
+
+export const APP_STATUSES = [
+  '未投递',
+  '已投递',
+  '待笔试',
+  '待面试',
+  'OC/录用',
+  '已放弃',
+  '已挂',
+] as const
+export type AppStatus = (typeof APP_STATUSES)[number]
+
+export const STATUS_COLORS: Record<AppStatus, string> = {
+  未投递: 'bg-slate-100 text-slate-600',
+  已投递: 'bg-blue-100 text-blue-700',
+  待笔试: 'bg-cyan-100 text-cyan-700',
+  待面试: 'bg-violet-100 text-violet-700',
+  'OC/录用': 'bg-green-100 text-green-700',
+  已放弃: 'bg-amber-100 text-amber-700',
+  已挂: 'bg-red-100 text-red-700',
+}
 
 type Listener = () => void
 
@@ -16,7 +38,17 @@ function readFavorites(): Position[] {
   }
 }
 
+function readStatuses(): Record<number, AppStatus> {
+  try {
+    const raw = localStorage.getItem(STATUS_KEY)
+    return raw ? (JSON.parse(raw) as Record<number, AppStatus>) : {}
+  } catch {
+    return {}
+  }
+}
+
 let favorites: Position[] = readFavorites()
+let statuses: Record<number, AppStatus> = readStatuses()
 let compare: Position[] = []
 const listeners = new Set<Listener>()
 
@@ -85,6 +117,30 @@ export function toggleCompare(item: Position): boolean {
 export function clearCompare() {
   compare = []
   emit()
+}
+
+function persistStatuses() {
+  try {
+    localStorage.setItem(STATUS_KEY, JSON.stringify(statuses))
+  } catch {
+    // ignore quota / privacy-mode errors
+  }
+}
+
+export function setAppStatus(id: number, status: AppStatus) {
+  if (status === '未投递') {
+    const rest = { ...statuses }
+    delete rest[id]
+    statuses = rest
+  } else {
+    statuses = { ...statuses, [id]: status }
+  }
+  persistStatuses()
+  emit()
+}
+
+export function useAppStatuses(): Record<number, AppStatus> {
+  return useSyncExternalStore(subscribe, () => statuses)
 }
 
 export function useFavorites(): Position[] {

@@ -14,11 +14,12 @@ sys.path.insert(0, os.path.dirname(__file__))
 from ingest import _POS_MAPPING, _compute_hash, _enrich_record, _row_to_record
 
 _SQL_COLUMNS = [
-    "year", "job_type", "exam_type", "employer", "position_example",
-    "edu_requirement", "edu_level_norm", "undergrad_major", "grad_major",
-    "exam_form", "signup_time", "exam_time", "special_requirements",
-    "work_location", "location_tags", "source_url", "notes", "raw_major",
-    "content_hash",
+    "year", "job_type", "exam_type", "exam_type_norm", "employer", "position_example",
+    "edu_requirement", "edu_level_norm", "undergrad_major", "grad_major", "college_major",
+    "exam_form", "signup_time", "signup_deadline", "exam_time", "special_requirements",
+    "work_location", "province", "city", "district", "location_tags",
+    "source_url", "notes", "raw_major",
+    "content_hash", "content_hash_v2", "search_text",
 ]
 
 

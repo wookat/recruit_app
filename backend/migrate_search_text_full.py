@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Recompute search_text for all rows (use after ETL changes undergrad/grad/major)."""
+"""Recompute search_text for all rows (use after ETL changes undergrad/grad/major).
+
+Supports --since-id to only recompute rows with id > N (useful for incremental
+imports after running ETL normalize on new rows).
+"""
+import argparse
 import os
 import time
 
@@ -9,7 +14,7 @@ DB_URL = os.getenv("DATABASE_URL", "postgresql://recruit:recruit@localhost:5432/
 engine = create_engine(DB_URL, future=True)
 
 
-def main():
+def main(since_id: int = 0):
     with engine.connect() as conn:
         print("creating GIN trigram index...")
         conn.execute(text("DROP INDEX IF EXISTS idx_pos_search_text"))
@@ -18,7 +23,7 @@ def main():
 
         print("populating search_text (batched)...")
         batch_size = 50000
-        last_id = 0
+        last_id = since_id
         total = 0
         t0 = time.time()
         while True:
@@ -27,7 +32,7 @@ def main():
                     """
                     WITH to_update AS (
                         SELECT id FROM positions
-                        WHERE id > :last_id
+                        WHERE id > :last_id AND id > :since_id
                         ORDER BY id
                         LIMIT :batch_size
                     )
@@ -51,7 +56,7 @@ def main():
                     WHERE p.id = t.id
                     """
                 ),
-                {"last_id": last_id, "batch_size": batch_size},
+                {"last_id": last_id, "batch_size": batch_size, "since_id": since_id},
             )
             n = result.rowcount
             conn.commit()
@@ -59,8 +64,8 @@ def main():
             if n == 0:
                 break
             row = conn.execute(
-                text("SELECT MAX(id) FROM (SELECT id FROM positions WHERE id > :last_id ORDER BY id LIMIT :batch_size) sub"),
-                {"last_id": last_id, "batch_size": batch_size},
+                text("SELECT MAX(id) FROM (SELECT id FROM positions WHERE id > :last_id AND id > :since_id ORDER BY id LIMIT :batch_size) sub"),
+                {"last_id": last_id, "batch_size": batch_size, "since_id": since_id},
             ).fetchone()
             last_id = row[0] or 0
             print(f"  updated {total} rows  ({time.time()-t0:.1f}s)")
@@ -73,4 +78,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--since-id", type=int, default=0, help="only recompute rows with id > N")
+    args = ap.parse_args()
+    main(since_id=args.since_id)

@@ -7,17 +7,20 @@ import {
   adminSeedSources,
   adminSetAnnouncementStatus,
   adminUpdateSource,
+  fetchCrawlRuns,
   fetchTaskStatus,
   triggerScrape,
   type AdminOverview,
   type Announcement,
+  type CrawlRun,
+  type CrawlRunList,
   type WatchSource,
 } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { RefreshCw, ShieldCheck } from 'lucide-react'
+import { ChevronDown, ChevronRight, RefreshCw, ShieldCheck } from 'lucide-react'
 
 const TOKEN_KEY = 'recruit.adminToken'
 
@@ -33,6 +36,9 @@ export function AdminPage() {
   const [busy, setBusy] = useState<number | null>(null)
   const [taskId, setTaskId] = useState<string | null>(null)
   const [taskStatus, setTaskStatus] = useState('')
+  const [runs, setRuns] = useState<CrawlRunList | null>(null)
+  const [runPage, setRunPage] = useState(1)
+  const [expandedRun, setExpandedRun] = useState<number | null>(null)
 
   useEffect(() => {
     if (!taskId || !token) return
@@ -59,6 +65,7 @@ export function AdminPage() {
         setOverview(ov)
         setSources(srcs)
         setAnns(list)
+        fetchCrawlRuns(tk, runPage).then(setRuns).catch(() => setRuns(null))
         setAuthed(true)
         setError('')
         localStorage.setItem(TOKEN_KEY, tk)
@@ -67,7 +74,7 @@ export function AdminPage() {
         setError('令牌无效或后台未配置')
       }
     },
-    [annFilter],
+    [annFilter, runPage],
   )
 
   useEffect(() => {
@@ -275,6 +282,72 @@ export function AdminPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base">采集运行历史</CardTitle>
+          {runs && runs.total > runs.page_size && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs"
+                disabled={runPage <= 1}
+                onClick={() => setRunPage((p) => Math.max(1, p - 1))}
+              >
+                上一页
+              </Button>
+              <span>
+                {runs.page}/{Math.max(1, Math.ceil(runs.total / runs.page_size))}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs"
+                disabled={runs.page >= Math.ceil(runs.total / runs.page_size)}
+                onClick={() => setRunPage((p) => p + 1)}
+              >
+                下一页
+              </Button>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-sm">
+            <thead>
+              <tr className="border-b text-left text-xs text-muted-foreground">
+                <th className="py-2 pr-3">#</th>
+                <th className="py-2 pr-3">来源</th>
+                <th className="py-2 pr-3">开始时间</th>
+                <th className="py-2 pr-3">耗时</th>
+                <th className="py-2 pr-3">状态</th>
+                <th className="py-2 pr-3">公告</th>
+                <th className="py-2 pr-3">附件</th>
+                <th className="py-2 pr-3">解析</th>
+                <th className="py-2">入库</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(runs?.items || []).map((r) => (
+                <RunRow
+                  key={r.id}
+                  run={r}
+                  sourceName={sources.find((s) => s.id === r.source_id)?.name}
+                  expanded={expandedRun === r.id}
+                  onToggle={() => setExpandedRun((cur) => (cur === r.id ? null : r.id))}
+                />
+              ))}
+              {(!runs || runs.items.length === 0) && (
+                <tr>
+                  <td colSpan={9} className="py-6 text-center text-muted-foreground">
+                    暂无采集运行记录
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-base">公告审核</CardTitle>
           <div className="flex gap-1">
             {['new', 'processed', 'ignored', 'all'].map((f) => (
@@ -343,6 +416,81 @@ export function AdminPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+const RUN_STATUS_STYLES: Record<string, string> = {
+  success: 'bg-green-100 text-green-700',
+  partial: 'bg-yellow-100 text-yellow-700',
+  error: 'bg-red-100 text-red-700',
+  running: 'bg-slate-100 text-slate-600',
+}
+
+const RUN_STATUS_LABELS: Record<string, string> = {
+  success: '成功',
+  partial: '部分成功',
+  error: '失败',
+  running: '运行中',
+}
+
+function runDuration(started: string | null, finished: string | null): string {
+  if (!started || !finished) return '-'
+  const ms = new Date(finished).getTime() - new Date(started).getTime()
+  if (isNaN(ms) || ms < 0) return '-'
+  const s = Math.round(ms / 1000)
+  if (s < 60) return `${s} 秒`
+  return `${Math.floor(s / 60)} 分 ${s % 60} 秒`
+}
+
+function RunRow({
+  run,
+  sourceName,
+  expanded,
+  onToggle,
+}: {
+  run: CrawlRun
+  sourceName?: string
+  expanded: boolean
+  onToggle: () => void
+}) {
+  const hasError = !!run.error
+  return (
+    <>
+      <tr
+        className={`border-b ${hasError ? 'cursor-pointer hover:bg-muted/50' : ''} ${expanded ? 'bg-muted/30' : ''}`}
+        onClick={hasError ? onToggle : undefined}
+        title={hasError && !expanded ? run.error || '' : undefined}
+      >
+        <td className="py-2 pr-3 text-xs tabular-nums text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            {hasError &&
+              (expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />)}
+            {run.id}
+          </span>
+        </td>
+        <td className="max-w-[200px] truncate py-2 pr-3">{sourceName || (run.source_id ? `#${run.source_id}` : '-')}</td>
+        <td className="whitespace-nowrap py-2 pr-3 text-xs">
+          {run.started_at ? new Date(run.started_at).toLocaleString('zh-CN') : '-'}
+        </td>
+        <td className="whitespace-nowrap py-2 pr-3 text-xs">{runDuration(run.started_at, run.finished_at)}</td>
+        <td className="py-2 pr-3">
+          <Badge className={`border-transparent ${RUN_STATUS_STYLES[run.status] || 'bg-slate-100 text-slate-600'}`}>
+            {RUN_STATUS_LABELS[run.status] || run.status}
+          </Badge>
+        </td>
+        <td className="py-2 pr-3 tabular-nums">{run.announcements_found}</td>
+        <td className="py-2 pr-3 tabular-nums">{run.attachments_downloaded}</td>
+        <td className="py-2 pr-3 tabular-nums">{run.rows_parsed}</td>
+        <td className="py-2 tabular-nums">{run.rows_ingested}</td>
+      </tr>
+      {expanded && hasError && (
+        <tr className="border-b bg-red-50/60 dark:bg-red-950/20">
+          <td colSpan={9} className="whitespace-pre-wrap break-all px-3 py-2 text-xs text-red-700 dark:text-red-400">
+            {run.error}
+          </td>
+        </tr>
+      )}
+    </>
   )
 }
 

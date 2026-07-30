@@ -284,12 +284,40 @@ export interface Announcement {
   detected_at: string | null
 }
 
+export interface CrawlRun {
+  id: number
+  source_id: number | null
+  started_at: string | null
+  finished_at: string | null
+  status: string
+  announcements_found: number
+  attachments_downloaded: number
+  rows_parsed: number
+  rows_ingested: number
+  error: string | null
+}
+
+export interface CrawlRunList {
+  total: number
+  page: number
+  page_size: number
+  items: CrawlRun[]
+}
+
 function adminHeaders(token: string) {
   return { headers: { 'X-Admin-Token': token } }
 }
 
 export async function adminOverview(token: string): Promise<AdminOverview> {
   const res = await axios.get(`${API_BASE}/api/admin/overview`, adminHeaders(token))
+  return res.data
+}
+
+export async function fetchCrawlRuns(token: string, page = 1, pageSize = 20): Promise<CrawlRunList> {
+  const res = await axios.get(`${API_BASE}/api/admin/crawl-runs`, {
+    params: { page, page_size: pageSize },
+    ...adminHeaders(token),
+  })
   return res.data
 }
 

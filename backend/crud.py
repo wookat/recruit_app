@@ -1,5 +1,6 @@
 import re
 from collections import Counter
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel
@@ -113,18 +114,46 @@ def _apply_filters(query, model, filters: PositionFilter):
     return query
 
 
-def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_size: int = 20, sort: str = "year_desc"):
+def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_size: int = 20,
+                     sort: str = "year_desc", after_id: Optional[int] = None):
     q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
     q = _apply_filters(q, Position, filters)
+    total = q.count()
+    if after_id is not None:
+        # keyset 分页：按 id 递减游标，深翻页避免大 OFFSET 扫描
+        items = (
+            q.filter(Position.id < after_id)
+            .order_by(Position.id.desc())
+            .limit(page_size)
+            .all()
+        )
+        return total, items
     if sort == "year_desc":
         q = q.order_by(Position.year.desc(), Position.id.desc())
     elif sort == "year_asc":
         q = q.order_by(Position.year.asc(), Position.id.asc())
     else:
         q = q.order_by(Position.id.desc())
-    total = q.count()
     items = q.offset((page - 1) * page_size).limit(page_size).all()
     return total, items
+
+
+def upcoming_deadlines(db: Session, days: int = 7, limit: int = 50):
+    """即将截止的岗位：signup_deadline 在 [now, now+days] 内，按截止时间升序。"""
+    now = datetime.now()
+    return (
+        db.query(Position)
+        .filter(
+            Position.dup_of_id.is_(None), Position.invalid_reason.is_(None),
+            Position.signup_deadline != None,
+            Position.signup_deadline >= now,
+            Position.signup_deadline <= now + timedelta(days=days),
+        )
+        .options(defer(Position.search_text))
+        .order_by(Position.signup_deadline.asc(), Position.id.asc())
+        .limit(limit)
+        .all()
+    )
 
 
 def search_sources(db: Session, filters: PositionFilter, page: int = 1, page_size: int = 20):

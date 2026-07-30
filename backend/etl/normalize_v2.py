@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import re
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 _PC_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "pc.json")
@@ -278,6 +279,56 @@ def split_major(raw_major: Optional[str], undergrad: Optional[str], grad: Option
                 g = m.group("g")
             break
     return clean_major(ug), clean_major(g), clean_major(col)
+
+
+_RANGE_SPLIT_RE = re.compile(r"至|到|—|–|~|～")
+_DATE_PART_RE = re.compile(
+    r"(?:(?P<y>\d{4})\s*[年./-]\s*)?(?:(?P<m>\d{1,2})\s*[月./-]\s*)?(?P<d>\d{1,2})\s*日?"
+    r"(?:\s*(?:上午|下午|晚上)?\s*(?P<h>\d{1,2})[:：时](?P<min>\d{2})?)?"
+)
+
+
+def _parse_dt_part(part: str, default_year=None, default_month=None) -> Optional[datetime]:
+    part = part.strip()
+    if not part:
+        return None
+    m = _DATE_PART_RE.search(part)
+    if not m or m.group("d") is None:
+        return None
+    y = m.group("y") or default_year
+    mo = m.group("m") or default_month
+    if not y or not mo:
+        return None
+    try:
+        h = int(m.group("h")) if m.group("h") else 23
+        mi = int(m.group("min")) if m.group("min") else (59 if not m.group("h") else 0)
+        if "下午" in part and h < 12:
+            h += 12
+        return datetime(int(y), int(mo), int(m.group("d")), min(h, 23), mi)
+    except ValueError:
+        return None
+
+
+def parse_signup_deadline(signup_time: Optional[str]):
+    """Extract the signup end datetime from free-text signup_time.
+
+    Handles 'YYYY-MM-DD HH:MM 至 YYYY-MM-DD HH:MM', single datetimes, and
+    Chinese forms like '2025年12月4日9:00至8日16:00' (end inherits year/month
+    from the start). Returns None when the year cannot be determined —
+    ambiguous strings are left unparsed rather than guessed.
+    """
+    if not signup_time:
+        return None
+    s = str(signup_time).strip()
+    if not s:
+        return None
+    parts = _RANGE_SPLIT_RE.split(s)
+    start = parts[0]
+    end = parts[-1] if len(parts) > 1 else parts[0]
+    sm = _DATE_PART_RE.search(start)
+    default_year = sm.group("y") if sm else None
+    default_month = sm.group("m") if sm else None
+    return _parse_dt_part(end, default_year, default_month)
 
 
 _WS_RE = re.compile(r"[\s\u3000]+")

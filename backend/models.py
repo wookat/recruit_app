@@ -32,6 +32,7 @@ class Position(Base):
     dup_of_id = Column(Integer)
     invalid_reason = Column(String(50))
     exam_type_norm = Column(String(50), index=True)
+    signup_deadline = Column(DateTime, index=True)
     province = Column(String(30), index=True)
     city = Column(String(50), index=True)
     district = Column(String(50), index=True)

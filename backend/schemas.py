@@ -27,6 +27,7 @@ class PositionBase(BaseModel):
     district: Optional[str] = None
     exam_type_norm: Optional[str] = None
     college_major: Optional[str] = None
+    signup_deadline: Optional[datetime] = None
 
 
 class PositionOut(PositionBase):
@@ -40,6 +41,7 @@ class PositionList(BaseModel):
     page: int
     page_size: int
     items: List[PositionOut]
+    next_cursor: Optional[int] = None
 
 
 class LocationNode(BaseModel):

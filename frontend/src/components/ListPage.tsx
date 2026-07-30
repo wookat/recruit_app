@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import {
   fetchFilters,
   fetchSuggestions,
+  formatTotal,
   type PositionList,
   type FilterOptions,
   type SearchParams,
@@ -574,7 +575,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
                   <div className="mt-4 space-y-4">{advancedFilterPanel}</div>
                   <div className="sticky bottom-0 mt-4 flex gap-2 bg-popover pt-2">
                     <Button className="flex-1" onClick={() => setFilterOpen(false)}>
-                      查看结果{data ? `（${data.total.toLocaleString()} 条）` : ''}
+                      查看结果{data ? `（${formatTotal(data.total, data.total_capped)} 条）` : ''}
                     </Button>
                   </div>
                 </SheetContent>
@@ -848,7 +849,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
           <h1 className="text-xl font-bold tracking-tight">{title}</h1>
           {data && (
             <Badge variant="secondary" className="text-sm font-medium">
-              共 {data.total.toLocaleString()} 条
+              共 {formatTotal(data.total, data.total_capped)} 条
             </Badge>
           )}
         </div>
@@ -858,6 +859,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
         <PositionTable
           data={data?.items || []}
           total={data?.total || 0}
+          totalCapped={data?.total_capped}
           page={data?.page || 1}
           pageSize={data?.page_size || 20}
           loading={loading}
@@ -871,7 +873,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
       {view === 'card' && data && data.total > 0 && (
         <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-3">
           <div className="text-sm text-muted-foreground">
-            共 <span className="font-medium text-foreground">{data.total.toLocaleString()}</span> 条 · 第{' '}
+            共 <span className="font-medium text-foreground">{formatTotal(data.total, data.total_capped)}</span> 条 · 第{' '}
             <span className="font-medium text-foreground">
               {data.page}/{Math.max(1, Math.ceil(data.total / data.page_size))}
             </span>{' '}

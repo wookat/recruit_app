@@ -27,9 +27,15 @@ export interface Position {
 
 export interface PositionList {
   total: number
+  total_capped?: boolean
   page: number
   page_size: number
   items: Position[]
+}
+
+/** 结果计数展示：封顶计数时显示 10,000+ */
+export function formatTotal(total: number, capped?: boolean): string {
+  return capped ? '10,000+' : total.toLocaleString()
 }
 
 export interface LocationNode {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Position, PositionList, SearchParams } from '@/api'
+import { formatTotal } from '@/api'
 import { PositionSheet } from './PositionSheet'
 import { EmptyState } from './EmptyState'
 import { FavoriteButton } from './FavoriteButton'
@@ -20,6 +21,7 @@ const ROW_ESTIMATE = 96
 export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) {
   const [items, setItems] = useState<Position[]>([])
   const [total, setTotal] = useState(0)
+  const [totalCapped, setTotalCapped] = useState(false)
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState<Position | null>(null)
   const [exhausted, setExhausted] = useState(false)
@@ -38,7 +40,10 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
           : { ...params, page: 1, page_size: pageSize }
         const res = await fetcher(query)
         if (controller.signal.aborted) return
-        if (res.total >= 0) setTotal(res.total)
+        if (res.total >= 0) {
+          setTotal(res.total)
+          setTotalCapped(!!res.total_capped)
+        }
         if (res.items.length < pageSize) setExhausted(true)
         setItems((prev) => {
           if (!cursor) return res.items
@@ -113,7 +118,7 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
       <div className="flex items-center justify-between border-b px-4 py-2 text-xs text-muted-foreground">
         <span>
           已加载 <span className="font-medium text-foreground">{items.length.toLocaleString()}</span> /{' '}
-          {total.toLocaleString()} 条 · 滚动自动加载
+          {formatTotal(total, totalCapped)} 条 · 滚动自动加载
         </span>
         {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
       </div>

@@ -7,6 +7,7 @@ import {
   type ColumnDef,
 } from '@tanstack/react-table'
 import type { Position } from '@/api'
+import { formatTotal } from '@/api'
 import { PositionSheet } from './PositionSheet'
 import { EmptyState } from './EmptyState'
 import { FavoriteButton } from './FavoriteButton'
@@ -51,6 +52,7 @@ const columns: ColumnDef<Position>[] = [
 interface Props {
   data: Position[]
   total: number
+  totalCapped?: boolean
   page: number
   pageSize: number
   onPageChange: (page: number) => void
@@ -61,6 +63,7 @@ interface Props {
 export function PositionTable({
   data,
   total,
+  totalCapped,
   page,
   pageSize,
   onPageChange,
@@ -195,7 +198,7 @@ export function PositionTable({
 
         <div className="flex flex-col items-center justify-between gap-3 border-t px-4 py-3 sm:flex-row">
           <div className="text-sm text-muted-foreground">
-            共 <span className="font-medium text-foreground">{total.toLocaleString()}</span> 条 · 第{' '}
+            共 <span className="font-medium text-foreground">{formatTotal(total, totalCapped)}</span> 条 · 第{' '}
             <span className="font-medium text-foreground">
               {page}/{totalPages}
             </span>{' '}

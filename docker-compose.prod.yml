@@ -50,6 +50,8 @@ services:
     container_name: recruit-worker
     restart: unless-stopped
     command: ["celery", "-A", "celery_app", "worker", "-B", "--loglevel=info", "--concurrency=1"]
+    volumes:
+      - ./exports:/app/exports
     environment:
       DATABASE_URL: postgresql://recruit:recruit@postgres:5432/recruit
       REDIS_URL: redis://redis:6379/0

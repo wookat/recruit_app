@@ -25,8 +25,12 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return
-          if (id.includes('@base-ui')) return 'base-ui'
-          if (id.includes('react-dom') || id.includes('/react/') || id.includes('scheduler')) {
+          if (
+            id.includes('@base-ui') ||
+            id.includes('react-dom') ||
+            id.includes('/react/') ||
+            id.includes('scheduler')
+          ) {
             return 'react-vendor'
           }
           if (id.includes('@tanstack')) return 'tanstack'

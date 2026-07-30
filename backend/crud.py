@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel
-from sqlalchemy import or_, func, case
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, defer
 
 import cache
@@ -319,24 +319,39 @@ def recommend_positions(
 
     unrestricted = or_(*(col.ilike("%不限%") for col in major_cols))
     related = terms[1:]
-    whens = [(any_match(terms[0]), 3)]
-    if related:
-        whens.append((or_(*(any_match(t) for t in related)), 2))
-    score = case(*whens, else_=1).label("score")
-
-    q = (
-        db.query(Position, score)
-        .filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None))
-        .filter(or_(*(any_match(t) for t in terms), unrestricted))
-        .options(defer(Position.search_text))
-    )
     match_filters = PositionFilter(**{**filters.model_dump(), "major": None, "keyword": None})
-    q = _apply_filters(q, Position, match_filters)
-    rows = (
-        q.order_by(score.desc(), Position.year.desc(), Position.id.desc())
-        .limit(limit)
-        .all()
-    )
+
+    def base_query(cond):
+        q = (
+            db.query(Position)
+            .filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None))
+            .filter(cond)
+            .options(defer(Position.search_text))
+        )
+        return _apply_filters(q, Position, match_filters)
+
+    # 分层查询各自 LIMIT 提前终止，避免单条全表 ILIKE + 排序超时
+    tiers = [(any_match(terms[0]), 3)]
+    if related:
+        tiers.append((or_(*(any_match(t) for t in related)), 2))
+    tiers.append((unrestricted, 1))
+
+    rows = []
+    seen = set()
+    for cond, tier_score in tiers:
+        if len(rows) >= limit:
+            break
+        for pos in (
+            base_query(cond)
+            .order_by(Position.year.desc(), Position.id.desc())
+            .limit(limit - len(rows) + len(seen))
+        ):
+            if pos.id in seen:
+                continue
+            seen.add(pos.id)
+            rows.append((pos, tier_score))
+            if len(rows) >= limit:
+                break
     items = []
     for pos, s in rows:
         pos.match_score = s

@@ -5,19 +5,13 @@ import { PositionSheet } from '@/components/PositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Briefcase, FolderOpen, ListVideo, Settings, Star } from 'lucide-react'
+import { Briefcase, Settings, Star } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
 import { CompareBar } from '@/components/CompareBar'
 import { useFavorites } from '@/lib/positionStore'
 
-const SourcesPage = lazy(() =>
-  import('@/components/SourcesPage').then((m) => ({ default: m.SourcesPage })),
-)
-const TasksPage = lazy(() =>
-  import('@/components/TasksPage').then((m) => ({ default: m.TasksPage })),
-)
 const AdminPage = lazy(() =>
   import('@/components/AdminPage').then((m) => ({ default: m.AdminPage })),
 )
@@ -74,39 +68,27 @@ export default function App() {
             )}
           </Button>
         </div>
-        <div className="mx-auto max-w-7xl px-4 pb-3">
-          <Tabs value={tab} onValueChange={setTab} className="w-full">
-            <TabsList
-              className={`grid h-10 w-full max-w-md ${showAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}
-            >
-              <TabsTrigger value="search" className="gap-1.5">
-                <Briefcase className="h-4 w-4" />
-                岗位检索
-              </TabsTrigger>
-              <TabsTrigger value="sources" className="gap-1.5">
-                <FolderOpen className="h-4 w-4" />
-                来源目录
-              </TabsTrigger>
-              <TabsTrigger value="tasks" className="gap-1.5">
-                <ListVideo className="h-4 w-4" />
-                抓取队列
-              </TabsTrigger>
-              {showAdmin && (
+        {showAdmin && (
+          <div className="mx-auto max-w-7xl px-4 pb-3">
+            <Tabs value={tab} onValueChange={setTab} className="w-full">
+              <TabsList className="grid h-10 w-full max-w-xs grid-cols-2">
+                <TabsTrigger value="search" className="gap-1.5">
+                  <Briefcase className="h-4 w-4" />
+                  岗位检索
+                </TabsTrigger>
                 <TabsTrigger value="admin" className="gap-1.5">
                   <Settings className="h-4 w-4" />
                   管理
                 </TabsTrigger>
-              )}
-            </TabsList>
-          </Tabs>
-        </div>
+              </TabsList>
+            </Tabs>
+          </div>
+        )}
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6">
         {tab === 'search' && <SearchPage />}
         <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
-          {tab === 'sources' && <SourcesPage />}
-          {tab === 'tasks' && <TasksPage />}
           {tab === 'admin' && showAdmin && <AdminPage />}
         </Suspense>
       </main>

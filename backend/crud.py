@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import or_, func, case
 from sqlalchemy.orm import Session, defer
 
+import cache
 from models import Position, Source
 from major_map import expand_major
 from normalizer import (
@@ -124,7 +125,8 @@ def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_s
         q = q.order_by(Position.year.asc(), Position.id.asc())
     else:
         q = q.order_by(Position.id.desc())
-    total = q.count()
+    count_key = "cnt:pos:" + filters.model_dump_json()
+    total = cache.get_or_set(count_key, 1800, q.count)
     items = q.offset((page - 1) * page_size).limit(page_size).all()
     return total, items
 
@@ -189,7 +191,8 @@ def search_sources(db: Session, filters: PositionFilter, page: int = 1, page_siz
     q = db.query(Source)
     q = _apply_filters(q, Source, filters)
     q = q.order_by(Source.year.desc(), Source.id.desc())
-    total = q.count()
+    count_key = "cnt:src:" + filters.model_dump_json()
+    total = cache.get_or_set(count_key, 1800, q.count)
     items = q.offset((page - 1) * page_size).limit(page_size).all()
     return total, items
 

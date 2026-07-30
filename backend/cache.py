@@ -30,6 +30,22 @@ def _make_key(prefix: str, *args) -> str:
     return f"{prefix}:{md5(payload.encode()).hexdigest()}"
 
 
+def get_or_set(key: str, ttl: int, fn: Callable[[], Any]) -> Any:
+    r = get_redis()
+    try:
+        cached_val = r.get(key)
+        if cached_val is not None:
+            return json.loads(cached_val)
+    except Exception:
+        pass
+    result = fn()
+    try:
+        r.setex(key, ttl, json.dumps(result, default=str))
+    except Exception:
+        pass
+    return result
+
+
 def cached(prefix: str, ttl: int = 60):
     def decorator(func: Callable[..., Any]):
         @wraps(func)

@@ -1,5 +1,6 @@
 import os
 from celery import Celery
+from celery.schedules import crontab
 
 BROKER = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
@@ -24,7 +25,7 @@ celery_app.conf.update(
     beat_schedule={
         "check-watch-sources": {
             "task": "tasks.check_watch_sources",
-            "schedule": 1800.0,  # 每 30 分钟检查一次到期来源
+            "schedule": crontab(hour=6, minute=0),  # 每天 6:00 检查全部来源
         },
     },
 )

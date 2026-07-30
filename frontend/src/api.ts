@@ -231,15 +231,25 @@ export function buildExportUrl(params: SearchParams, format: 'csv' | 'xlsx'): st
   return `${API_BASE}/api/export?format=${format}${qs ? `&${qs}` : ''}`
 }
 
-export async function triggerScrape(year: number): Promise<{ task_id: string; status: string }> {
-  const res = await axios.post(`${API_BASE}/api/admin/scrape/${year}`)
+export async function triggerScrape(
+  token: string,
+  year: number,
+): Promise<{ task_id: string; status: string }> {
+  const res = await axios.post(
+    `${API_BASE}/api/admin/scrape/${year}`,
+    {},
+    { headers: { 'X-Admin-Token': token } },
+  )
   return res.data
 }
 
 export async function fetchTaskStatus(
+  token: string,
   taskId: string,
 ): Promise<{ task_id: string; status: string; info: any }> {
-  const res = await axios.get(`${API_BASE}/api/admin/task/${taskId}`)
+  const res = await axios.get(`${API_BASE}/api/admin/task/${taskId}`, {
+    headers: { 'X-Admin-Token': token },
+  })
   return res.data
 }
 

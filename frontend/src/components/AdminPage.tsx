@@ -7,6 +7,8 @@ import {
   adminSeedSources,
   adminSetAnnouncementStatus,
   adminUpdateSource,
+  fetchTaskStatus,
+  triggerScrape,
   type AdminOverview,
   type Announcement,
   type WatchSource,
@@ -29,6 +31,22 @@ export function AdminPage() {
   const [anns, setAnns] = useState<Announcement[]>([])
   const [annFilter, setAnnFilter] = useState<string>('new')
   const [busy, setBusy] = useState<number | null>(null)
+  const [taskId, setTaskId] = useState<string | null>(null)
+  const [taskStatus, setTaskStatus] = useState('')
+
+  useEffect(() => {
+    if (!taskId || !token) return
+    const iv = setInterval(async () => {
+      try {
+        const res = await fetchTaskStatus(token, taskId)
+        setTaskStatus(res.status)
+        if (res.status === 'SUCCESS' || res.status === 'FAILURE') clearInterval(iv)
+      } catch {
+        clearInterval(iv)
+      }
+    }, 3000)
+    return () => clearInterval(iv)
+  }, [taskId, token])
 
   const load = useCallback(
     async (tk: string) => {
@@ -213,6 +231,45 @@ export function AdminPage() {
               )}
             </tbody>
           </table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">抓取任务</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-2">
+          {[2027, 2026, 2025].map((y) => (
+            <Button
+              key={y}
+              size="sm"
+              variant="outline"
+              disabled={taskStatus === 'PENDING' || taskStatus === 'STARTED'}
+              onClick={async () => {
+                const res = await triggerScrape(token, y)
+                setTaskId(res.task_id)
+                setTaskStatus('PENDING')
+              }}
+            >
+              抓取 {y} 年
+            </Button>
+          ))}
+          {taskStatus && (
+            <Badge
+              variant={
+                taskStatus === 'SUCCESS'
+                  ? 'secondary'
+                  : taskStatus === 'FAILURE'
+                    ? 'destructive'
+                    : 'outline'
+              }
+            >
+              {taskStatus}
+            </Badge>
+          )}
+          <span className="text-xs text-muted-foreground">
+            采集调度：每天 6:00 自动检查全部来源
+          </span>
         </CardContent>
       </Card>
 

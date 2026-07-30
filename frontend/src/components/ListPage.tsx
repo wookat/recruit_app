@@ -8,6 +8,7 @@ import {
   type Suggestion,
 } from '@/api'
 import { StatsDashboard } from './StatsDashboard'
+import { DeadlinesCard } from './DeadlinesCard'
 import { buildShareUrl, paramsFromQueryString } from '@/lib/urlFilters'
 import { MultiSelect } from './MultiSelect'
 import { PositionTable } from './PositionTable'
@@ -364,6 +365,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
 
   return (
     <div className="space-y-5">
+      {showStats && <DeadlinesCard />}
       {showStats && (
         <StatsDashboard
           onSelectYear={(y) => updateParam('year', [y])}

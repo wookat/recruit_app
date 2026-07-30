@@ -21,22 +21,31 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState<Position | null>(null)
-  const pageRef = useRef(1)
+  const [exhausted, setExhausted] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const parentRef = useRef<HTMLDivElement>(null)
 
   const loadPage = useCallback(
-    async (page: number, replace: boolean) => {
+    async (cursor: Position | null) => {
       abortRef.current?.abort()
       const controller = new AbortController()
       abortRef.current = controller
       setLoading(true)
       try {
-        const res = await fetcher({ ...params, page, page_size: pageSize })
+        const query: SearchParams = cursor
+          ? { ...params, page: 1, page_size: pageSize, after_id: cursor.id, after_year: cursor.year }
+          : { ...params, page: 1, page_size: pageSize }
+        const res = await fetcher(query)
         if (controller.signal.aborted) return
-        pageRef.current = page
-        setTotal(res.total)
-        setItems((prev) => (replace ? res.items : [...prev, ...res.items]))
+        if (res.total >= 0) setTotal(res.total)
+        if (res.items.length < pageSize) setExhausted(true)
+        setItems((prev) => {
+          if (!cursor) return res.items
+          const seen = new Set(prev.map((p) => p.id))
+          const fresh = res.items.filter((p) => !seen.has(p.id))
+          if (fresh.length === 0) setExhausted(true)
+          return [...prev, ...fresh]
+        })
       } catch (e) {
         if (!controller.signal.aborted) console.error(e)
       } finally {
@@ -50,8 +59,9 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
     const t = setTimeout(() => {
       setItems([])
       setTotal(0)
+      setExhausted(false)
       parentRef.current?.scrollTo({ top: 0 })
-      loadPage(1, true)
+      loadPage(null)
     }, 300)
     return () => {
       clearTimeout(t)
@@ -59,7 +69,7 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
     }
   }, [loadPage])
 
-  const hasMore = items.length < total
+  const hasMore = !exhausted && items.length < total
 
   const virtualizer = useVirtualizer({
     count: hasMore ? items.length + 1 : items.length,
@@ -73,10 +83,10 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
   useEffect(() => {
     const last = virtualItems[virtualItems.length - 1]
     if (!last) return
-    if (last.index >= items.length - 1 && hasMore && !loading) {
-      loadPage(pageRef.current + 1, false)
+    if (last.index >= items.length - 1 && hasMore && !loading && items.length > 0) {
+      loadPage(items[items.length - 1])
     }
-  }, [virtualItems, items.length, hasMore, loading, loadPage])
+  }, [virtualItems, items, hasMore, loading, loadPage])
 
   if (loading && items.length === 0) {
     return (

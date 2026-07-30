@@ -91,6 +91,8 @@ def get_positions(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=200),
     sort: str = Query("year_desc"),
+    after_id: Optional[int] = Query(None, ge=0),
+    after_year: Optional[int] = Query(None),
     db: Session = Depends(get_db),
 ):
     filters = _build_filter(
@@ -108,6 +110,14 @@ def get_positions(
         major_type=major_type,
         category=category,
     )
+    if after_id is not None:
+        items = crud.search_positions_cursor(db, filters, after_id, after_year, page_size, sort)
+        return {
+            "total": -1,
+            "page": page,
+            "page_size": page_size,
+            "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
+        }
     total, items = crud.search_positions(db, filters, page, page_size, sort)
     return {
         "total": total,
@@ -115,6 +125,14 @@ def get_positions(
         "page_size": page_size,
         "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
     }
+
+
+@app.get("/api/positions/{position_id}", response_model=schemas.PositionOut)
+def get_position(position_id: int, db: Session = Depends(get_db)):
+    item = crud.get_position(db, position_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Position not found")
+    return schemas.PositionOut.model_validate(item)
 
 
 @app.get("/api/sources", response_model=schemas.PositionList)

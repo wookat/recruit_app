@@ -74,8 +74,43 @@ class Announcement(Base):
     source_id = Column(Integer, index=True)
     title = Column(Text, nullable=False)
     url = Column(Text, nullable=False, unique=True)
-    status = Column(String(20), default="new", index=True)  # new/processed/ignored
+    status = Column(String(20), default="new", index=True)  # new/processed/ignored/error
     detected_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class CrawlRun(Base):
+    """一次采集运行的记录（每个来源一条）。"""
+
+    __tablename__ = "crawl_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    source_id = Column(Integer, index=True)
+    started_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    finished_at = Column(DateTime(timezone=True))
+    status = Column(String(20), default="running", index=True)  # running/success/partial/error
+    announcements_found = Column(Integer, default=0)
+    attachments_downloaded = Column(Integer, default=0)
+    rows_parsed = Column(Integer, default=0)
+    rows_ingested = Column(Integer, default=0)
+    error = Column(Text)
+
+
+class Attachment(Base):
+    """公告附件下载/解析记录，按 URL + 内容 SHA256 去重。"""
+
+    __tablename__ = "attachments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    announcement_id = Column(Integer, index=True)
+    url = Column(Text, nullable=False, unique=True)
+    sha256 = Column(String(64), index=True)
+    file_name = Column(String(300))
+    size_bytes = Column(Integer)
+    status = Column(String(20), default="new", index=True)  # done/duplicate/error
+    error = Column(Text)
+    parsed_rows = Column(Integer, default=0)
+    ingested_rows = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class Source(Base):

@@ -11,7 +11,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Position, WatchSource, Announcement
+from models import Position, WatchSource, Announcement, CrawlRun
 import collector
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -184,7 +184,7 @@ def update_announcement(ann_id: int, body: AnnouncementPatch, db: Session = Depe
     ann = db.get(Announcement, ann_id)
     if not ann:
         raise HTTPException(status_code=404, detail="公告不存在")
-    if body.status not in ("new", "processed", "ignored"):
+    if body.status not in ("new", "processed", "ignored", "error"):
         raise HTTPException(status_code=422, detail="非法状态")
     ann.status = body.status
     db.commit()
@@ -195,3 +195,42 @@ def update_announcement(ann_id: int, body: AnnouncementPatch, db: Session = Depe
 def check_all(db: Session = Depends(get_db)):
     """立即检查所有到期启用的来源。"""
     return {"results": collector.check_due_sources(db)}
+
+
+def _run_out(r: CrawlRun) -> dict:
+    return {
+        "id": r.id,
+        "source_id": r.source_id,
+        "started_at": r.started_at.isoformat() if r.started_at else None,
+        "finished_at": r.finished_at.isoformat() if r.finished_at else None,
+        "status": r.status,
+        "announcements_found": r.announcements_found,
+        "attachments_downloaded": r.attachments_downloaded,
+        "rows_parsed": r.rows_parsed,
+        "rows_ingested": r.rows_ingested,
+        "error": r.error,
+    }
+
+
+@router.get("/crawl-runs", dependencies=[Depends(require_admin)])
+def list_crawl_runs(
+    source_id: Optional[int] = Query(None),
+    status: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    """分页列出采集运行历史。"""
+    q = db.query(CrawlRun)
+    if source_id is not None:
+        q = q.filter(CrawlRun.source_id == source_id)
+    if status:
+        q = q.filter(CrawlRun.status == status)
+    total = q.count()
+    rows = (
+        q.order_by(CrawlRun.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    return {"total": total, "page": page, "page_size": page_size, "items": [_run_out(r) for r in rows]}

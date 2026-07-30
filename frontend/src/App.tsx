@@ -18,6 +18,30 @@ const AdminPage = lazy(() =>
 
 const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
 
+function BrandMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} role="img" aria-label="上岸罗盘">
+      <defs>
+        <linearGradient id="brand-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#2563EB" />
+          <stop offset="1" stopColor="#0891B2" />
+        </linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="14" fill="url(#brand-bg)" />
+      <path d="M47 13 L23 29 L30 36 Z" fill="#FFFFFF" />
+      <path d="M47 13 L30 36 L37 43 Z" fill="#FFFFFF" opacity="0.55" />
+      <path
+        d="M14 50 Q19 45.5 24 50 T34 50 T44 50 T54 50"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        opacity="0.9"
+      />
+    </svg>
+  )
+}
+
 export default function App() {
   const [tab, setTab] = useState(showAdmin ? 'admin' : 'search')
   const [favOpen, setFavOpen] = useState(false)
@@ -52,11 +76,14 @@ export default function App() {
     <div className="min-h-screen bg-muted/30 font-sans">
       <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Briefcase className="h-5 w-5" />
+          <div className="flex items-center gap-2.5">
+            <BrandMark className="h-9 w-9 shrink-0" />
+            <div className="flex flex-col leading-none">
+              <h1 className="text-lg font-bold tracking-tight">上岸罗盘</h1>
+              <span className="mt-0.5 hidden text-[11px] tracking-widest text-muted-foreground sm:block">
+                全国体制内岗位检索
+              </span>
             </div>
-            <h1 className="text-lg font-bold tracking-tight">体制内岗位通</h1>
           </div>
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setFavOpen(true)}>
             <Star className="h-4 w-4 text-amber-400" />

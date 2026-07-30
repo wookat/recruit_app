@@ -33,6 +33,7 @@ SECTIONS = {
     "gafj": {"job_type": "公务员", "exam_type": "{year}安徽公安法检招录"},
     "szyf": {"job_type": "三支一扶", "exam_type": "{year}安徽三支一扶招募"},
     "jszk": {"job_type": "教师", "exam_type": "{year}安徽教师招考"},
+    "gklx": {"job_type": "公务员", "exam_type": "{year}安徽公开遴选"},
 }
 
 
@@ -206,10 +207,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--sections", nargs="+", default=list(SECTIONS.keys()), choices=list(SECTIONS.keys()))
     parser.add_argument("--out", default=os.path.join(os.path.dirname(__file__), "..", "exports", "anhui"))
+    parser.add_argument("--default-year", type=int, default=2026, help="链接中无 year 参数时使用的年份")
     args = parser.parse_args()
     for section in args.sections:
         print(f"=== scraping anhui {section} ===")
-        df = scrape_section(section)
+        df = scrape_section(section, default_year=args.default_year)
         print(f"{section} rows: {len(df)}")
         if not df.empty:
             n = export_csv_sql(df, f"{args.out}_{section}")

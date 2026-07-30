@@ -31,3 +31,7 @@ frontend/dist/
 
 # Local scraped exports (canonical dump is data/recruit.dump)
 /exports/
+# CSV/SQL deliverables are versioned as an exception
+!/exports/
+!/exports/*.csv
+!/exports/*.sql

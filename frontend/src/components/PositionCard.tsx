@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { MapPin, GraduationCap, Calendar, Building2 } from 'lucide-react'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
+import { STATUS_COLORS, useAppStatuses } from '@/lib/positionStore'
 
 interface Props {
   item: Position
@@ -13,6 +14,8 @@ interface Props {
 }
 
 export const PositionCard = memo(function PositionCard({ item, onDetail }: Props) {
+  const statuses = useAppStatuses()
+  const status = statuses[item.id]
   return (
     <Card className="flex flex-col transition-shadow hover:shadow-md">
       <CardHeader className="pb-2">
@@ -24,6 +27,11 @@ export const PositionCard = memo(function PositionCard({ item, onDetail }: Props
               <Badge variant="outline" className="text-muted-foreground">
                 {item.edu_level_norm}
               </Badge>
+            )}
+            {status && (
+              <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_COLORS[status]}`}>
+                {status}
+              </span>
             )}
           </div>
           <div className="flex shrink-0 items-center">

@@ -8,16 +8,25 @@ import { AlarmClock, ChevronDown, ChevronUp } from 'lucide-react'
 
 const COLLAPSED_COUNT = 3
 
-function daysLeftLabel(e: DeadlineEntry): string {
-  if (e.daysLeft !== null) {
-    if (e.daysLeft <= 0) return '今日截止'
-    return `剩 ${e.daysLeft} 天`
-  }
+function daysLeft(e: DeadlineEntry): number | null {
+  if (e.daysLeft !== null) return e.daysLeft
   const d = new Date(e.deadline)
-  if (isNaN(d.getTime())) return e.deadline
-  const diff = Math.ceil((d.getTime() - Date.now()) / 86400000)
-  if (diff <= 0) return '今日截止'
-  return `剩 ${diff} 天`
+  if (isNaN(d.getTime())) return null
+  return Math.ceil((d.getTime() - Date.now()) / 86400000)
+}
+
+function daysLeftLabel(n: number | null, fallback: string): string {
+  if (n === null) return fallback
+  if (n <= 0) return '今日截止'
+  return `剩 ${n} 天`
+}
+
+function urgencyClass(n: number | null): string {
+  if (n !== null && n <= 1)
+    return 'border-red-300 text-red-700 dark:border-red-800 dark:text-red-400'
+  if (n !== null && n <= 3)
+    return 'border-orange-300 text-orange-700 dark:border-orange-800 dark:text-orange-400'
+  return 'border-amber-300 text-amber-700 dark:border-amber-800 dark:text-amber-400'
 }
 
 export function DeadlinesCard() {
@@ -68,10 +77,11 @@ export function DeadlinesCard() {
         </div>
         <div className="divide-y">
           {visible.map((e, i) => {
+            const n = daysLeft(e)
             const row = (
               <div className="flex items-center gap-2 py-2 text-sm">
-                <Badge variant="outline" className="shrink-0 border-amber-300 text-[11px] text-amber-700 dark:border-amber-800 dark:text-amber-400">
-                  {daysLeftLabel(e)}
+                <Badge variant="outline" className={`shrink-0 text-[11px] ${urgencyClass(n)}`}>
+                  {daysLeftLabel(n, e.deadline)}
                 </Badge>
                 <span className="line-clamp-1 min-w-0 flex-1">
                   {e.title || '-'}

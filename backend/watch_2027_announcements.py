@@ -74,6 +74,29 @@ PROVINCE_SITES = {
     "青海": "https://www.qhpta.com/",
     "西藏": "http://hrss.xizang.gov.cn/",
     "内蒙古": "https://www.impta.com.cn/",
+    # 以下为剩余省份的省考公告官方索引页（人事考试网/公务员局）
+    "北京": "https://rsj.beijing.gov.cn/",
+    "天津": "https://rsks.hrss.tj.gov.cn/",
+    "山西": "http://www.sxpta.com/",
+    "上海": "https://www.shacs.gov.cn/",
+    "江苏": "https://rsks.jshrss.jiangsu.gov.cn/",
+    "浙江": "http://www.zjks.com/",
+    "安徽": "https://www.apta.gov.cn/",
+    "福建": "https://www.fjpta.com/",
+    "江西": "http://www.jxpta.com/",
+    "山东": "https://hrss.shandong.gov.cn/",
+    "河南": "https://www.hnrsks.com/",
+    "湖北": "http://www.hbsrsksy.cn/",
+    "湖南": "https://www.hunanpta.com/",
+    "广东": "https://rsks.gd.gov.cn/",
+    "广西": "https://www.gxpta.com.cn/",
+    "海南": "https://hrss.hainan.gov.cn/",
+    "重庆": "https://rlsbj.cq.gov.cn/",
+    "贵州": "https://pta.guizhou.gov.cn/",
+    "云南": "https://hrss.yn.gov.cn/",
+    "陕西": "https://www.sxrsks.cn/",
+    "宁夏": "https://www.nxpta.com/",
+    "新疆": "https://www.xjrsks.com.cn/",
 }
 for prov, url in PROVINCE_SITES.items():
     WATCHES.append({
@@ -84,6 +107,7 @@ for prov, url in PROVINCE_SITES.items():
         "year": 2027,
         "job_type": "公务员",
         "exam_type": f"2027{prov}公务员考试",
+        "interval_minutes": 1440,
     })
 
 # 职位表常见列名 -> 规范字段（尽力映射，未识别列并入特殊要求）

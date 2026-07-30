@@ -31,6 +31,10 @@ celery_app.conf.update(
             "task": "tasks.refresh_hot_cache",
             "schedule": crontab(hour=6, minute=30),  # 采集入库后刷新 stats/filters 热缓存
         },
+        "data-quality-audit": {
+            "task": "tasks.data_quality_audit",
+            "schedule": crontab(hour=7, minute=0),  # 采集入库后做数据质量审计+deadline 回填
+        },
         "cleanup-exports": {
             "task": "tasks.cleanup_exports",
             "schedule": crontab(hour=5, minute=30),  # 清理超过 24h 的导出文件

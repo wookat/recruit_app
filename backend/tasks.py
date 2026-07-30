@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 import re
 import time
@@ -6,6 +7,7 @@ from datetime import datetime
 
 import requests
 import pandas as pd
+from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session
 from celery_app import celery_app
 from database import SessionLocal
@@ -15,6 +17,8 @@ import crud
 import pipeline
 import precompute
 import import_guopin_2027
+from cache import get_redis
+from etl.normalize_v2 import parse_signup_deadline_v2
 from recruit_parser import (
     crawl_xds_summary,
     extract_official_and_files,
@@ -309,6 +313,105 @@ def cleanup_exports():
 def refresh_hot_cache():
     """预计算 /api/stats 与 /api/filters 的 Redis 热缓存（24h TTL）。"""
     return precompute.refresh_hot_caches()
+
+
+DQ_REPORT_KEY = "dq:report"
+DQ_REPORT_TTL = 48 * 3600
+DQ_BACKFILL_MAX = 50000
+DQ_BACKFILL_BATCH = 2000
+
+_DQ_BACKFILL_UPDATE = sql_text(
+    "UPDATE positions SET signup_deadline = :deadline WHERE id = :id"
+)
+
+
+def _backfill_signup_deadlines(db, max_rows: int = DQ_BACKFILL_MAX) -> dict:
+    """对 signup_deadline 为空但报名时间原文可解析的行分批回填（短事务）。"""
+    scanned, filled, last_id = 0, 0, 0
+    while scanned < max_rows:
+        batch = min(DQ_BACKFILL_BATCH, max_rows - scanned)
+        rows = db.execute(sql_text(
+            "SELECT id, year, signup_time FROM positions "
+            "WHERE id > :last AND signup_deadline IS NULL "
+            "AND signup_time IS NOT NULL AND signup_time <> '' "
+            "ORDER BY id LIMIT :lim"
+        ), {"last": last_id, "lim": batch}).mappings().all()
+        if not rows:
+            break
+        params = []
+        for r in rows:
+            dt = parse_signup_deadline_v2(r["signup_time"], default_year=r["year"])
+            if dt is not None:
+                params.append({"id": r["id"], "deadline": dt})
+        if params:
+            db.execute(_DQ_BACKFILL_UPDATE, params)
+            db.commit()
+            filled += len(params)
+        scanned += len(rows)
+        last_id = rows[-1]["id"]
+    return {"scanned": scanned, "filled": filled}
+
+
+@celery_app.task
+def data_quality_audit():
+    """每日数据质量审计：统计指标写入 Redis dq:report（48h TTL），
+    顺带增量回填可解析的 signup_deadline（限 5 万行/次）。"""
+    db = SessionLocal()
+    try:
+        backfill = _backfill_signup_deadlines(db)
+
+        def scalar(sql, **kw):
+            return db.execute(sql_text(sql), kw).scalar() or 0
+
+        def groups(sql):
+            return [{"name": str(k), "count": c} for k, c in db.execute(sql_text(sql)).all()]
+
+        clean_where = "dup_of_id IS NULL AND invalid_reason IS NULL"
+        total = scalar("SELECT count(*) FROM positions")
+        report = {
+            "generated_at": datetime.now().isoformat(),
+            "rows": {
+                "total": total,
+                "clean": scalar(f"SELECT count(*) FROM positions WHERE {clean_where}"),
+                "dup": scalar("SELECT count(*) FROM positions WHERE dup_of_id IS NOT NULL"),
+                "invalid": scalar("SELECT count(*) FROM positions WHERE invalid_reason IS NOT NULL"),
+                "added_last_7d": scalar(
+                    "SELECT count(*) FROM positions WHERE created_at > now() - interval '7 days'"
+                ),
+            },
+            "by_year": groups(
+                f"SELECT year, count(*) FROM positions WHERE {clean_where} GROUP BY year ORDER BY year DESC"
+            ),
+            "by_job_type": groups(
+                f"SELECT job_type, count(*) FROM positions WHERE {clean_where} "
+                "GROUP BY job_type ORDER BY count(*) DESC"
+            ),
+            "missing_fields": {
+                col: scalar(
+                    f"SELECT count(*) FROM positions WHERE {clean_where} "
+                    f"AND ({col} IS NULL OR {col} = '')"
+                )
+                for col in ("employer", "province", "edu_requirement", "work_location")
+            },
+            "signup_deadline": {
+                "with_signup_time": scalar(
+                    f"SELECT count(*) FROM positions WHERE {clean_where} "
+                    "AND signup_time IS NOT NULL AND signup_time <> ''"
+                ),
+                "parsed": scalar(
+                    f"SELECT count(*) FROM positions WHERE {clean_where} "
+                    "AND signup_time IS NOT NULL AND signup_time <> '' "
+                    "AND signup_deadline IS NOT NULL"
+                ),
+                "backfill": backfill,
+            },
+        }
+        st = report["signup_deadline"]
+        st["parse_rate"] = round(st["parsed"] / st["with_signup_time"], 4) if st["with_signup_time"] else None
+        get_redis().setex(DQ_REPORT_KEY, DQ_REPORT_TTL, json.dumps(report, default=str))
+        return report["rows"] | {"backfill": backfill}
+    finally:
+        db.close()
 
 
 @celery_app.task

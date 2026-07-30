@@ -135,6 +135,7 @@ def get_positions(
     total, items = crud.search_positions(db, filters, page, page_size, sort)
     return {
         "total": total,
+        "total_capped": total >= crud.COUNT_CAP,
         "page": page,
         "page_size": page_size,
         "next_cursor": None,
@@ -184,6 +185,7 @@ def get_sources(
     total, items = crud.search_sources(db, filters, page, page_size)
     return {
         "total": total,
+        "total_capped": total >= crud.COUNT_CAP,
         "page": page,
         "page_size": page_size,
         "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],

@@ -116,6 +116,15 @@ def _apply_filters(query, model, filters: PositionFilter):
     return query
 
 
+COUNT_CAP = 10001
+
+
+def _capped_count(q) -> int:
+    """封顶计数：子查询 LIMIT COUNT_CAP 后 count，大结果集避免全量精确计数。
+    返回值达到 COUNT_CAP 表示实际总数 >= COUNT_CAP。"""
+    return q.order_by(None).limit(COUNT_CAP).count() or 0
+
+
 def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_size: int = 20, sort: str = "year_desc"):
     q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
     q = _apply_filters(q, Position, filters)
@@ -126,7 +135,7 @@ def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_s
     else:
         q = q.order_by(Position.id.desc())
     count_key = "cnt:pos:" + filters.model_dump_json()
-    total = cache.get_or_set(count_key, 1800, q.count)
+    total = cache.get_or_set(count_key, 1800, lambda: _capped_count(q))
     items = q.offset((page - 1) * page_size).limit(page_size).all()
     return total, items
 
@@ -192,7 +201,7 @@ def search_sources(db: Session, filters: PositionFilter, page: int = 1, page_siz
     q = _apply_filters(q, Source, filters)
     q = q.order_by(Source.year.desc(), Source.id.desc())
     count_key = "cnt:src:" + filters.model_dump_json()
-    total = cache.get_or_set(count_key, 1800, q.count)
+    total = cache.get_or_set(count_key, 1800, lambda: _capped_count(q))
     items = q.offset((page - 1) * page_size).limit(page_size).all()
     return total, items
 

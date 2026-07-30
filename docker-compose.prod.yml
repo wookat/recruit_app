@@ -38,7 +38,7 @@ services:
     volumes:
       - ./exports:/app/exports
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8100:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,19 +61,5 @@ services:
       redis:
         condition: service_started
 
-  caddy:
-    image: caddy:2
-    container_name: recruit-caddy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-    depends_on:
-      - app
-
 volumes:
   pgdata:
-  caddy_data:

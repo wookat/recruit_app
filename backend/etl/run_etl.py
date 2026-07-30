@@ -25,10 +25,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy import create_engine, text
 
 from etl.normalize_v2 import (
-    clean_employer, content_hash_v2, normalize_exam_type, parse_location, split_major,
+    clean_employer, content_hash_v2, normalize_exam_type, parse_location,
+    parse_signup_deadline, split_major,
 )
 
-SCHEMA_SQL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "migration_001_schema.sql")
+_ETL_DIR = os.path.dirname(os.path.abspath(__file__))
+SCHEMA_SQL_FILES = [
+    os.path.join(_ETL_DIR, "migration_001_schema.sql"),
+    os.path.join(_ETL_DIR, "migration_002_signup_deadline.sql"),
+]
 
 SELECT_COLS = [
     "id", "year", "job_type", "exam_type", "employer", "position_example",
@@ -41,6 +46,7 @@ UPDATE_SQL = text("""
     UPDATE positions SET
         content_hash_v2 = :h,
         employer = :emp,
+        signup_deadline = :deadline,
         exam_type_norm = :etn,
         province = :prov, city = :city, district = :district,
         location_tags = :tags,
@@ -71,14 +77,16 @@ INVALID_SQL = text("""
 
 
 def step_schema(engine, dry_run):
-    with open(SCHEMA_SQL, encoding="utf-8") as f:
-        sql = f.read()
-    if dry_run:
-        print("[dry-run] would apply migration_001_schema.sql")
-        return
-    with engine.begin() as conn:
-        conn.execute(text(sql))
-    print("schema applied")
+    for path in SCHEMA_SQL_FILES:
+        if dry_run:
+            print(f"[dry-run] would apply {os.path.basename(path)}")
+            continue
+        with open(path, encoding="utf-8") as f:
+            sql = f.read()
+        with engine.begin() as conn:
+            conn.execute(text(sql))
+    if not dry_run:
+        print("schema applied")
 
 
 def step_normalize(engine, dry_run, batch_size, where="TRUE"):
@@ -105,6 +113,7 @@ def step_normalize(engine, dry_run, batch_size, where="TRUE"):
                 "id": rec["id"],
                 "h": content_hash_v2(rec),
                 "emp": rec["employer"],
+                "deadline": parse_signup_deadline(rec.get("signup_time")),
                 "etn": normalize_exam_type(rec.get("exam_type")),
                 "prov": prov, "city": city, "district": district,
                 "tags": tags,

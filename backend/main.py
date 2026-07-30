@@ -116,6 +116,7 @@ def get_positions(
             "total": -1,
             "page": page,
             "page_size": page_size,
+            "next_cursor": items[-1].id if items else None,
             "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
         }
     total, items = crud.search_positions(db, filters, page, page_size, sort)
@@ -123,6 +124,7 @@ def get_positions(
         "total": total,
         "page": page,
         "page_size": page_size,
+        "next_cursor": None,
         "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
     }
 
@@ -195,6 +197,23 @@ def suggest(
 @cache.cached("stats", ttl=3600)
 def stats(db: Session = Depends(get_db)):
     return crud.get_stats(db)
+
+
+@app.get("/api/deadlines", response_model=schemas.PositionList)
+@cache.cached("deadlines", ttl=300)
+def deadlines(
+    days: int = Query(7, ge=1, le=365),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    items = crud.upcoming_deadlines(db, days=days, limit=limit)
+    return {
+        "total": len(items),
+        "page": 1,
+        "page_size": limit,
+        "next_cursor": None,
+        "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
+    }
 
 
 @app.post("/api/admin/scrape/{year}", response_model=schemas.TaskOut)

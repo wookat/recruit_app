@@ -1,5 +1,6 @@
 import re
 from collections import Counter
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel
@@ -163,6 +164,24 @@ def search_positions_cursor(
     else:
         q = q.filter(Position.id < after_id).order_by(Position.id.desc())
     return q.limit(page_size).all()
+
+
+def upcoming_deadlines(db: Session, days: int = 7, limit: int = 50):
+    """即将截止的岗位：signup_deadline 在 [now, now+days] 内，按截止时间升序。"""
+    now = datetime.now()
+    return (
+        db.query(Position)
+        .filter(
+            Position.dup_of_id.is_(None), Position.invalid_reason.is_(None),
+            Position.signup_deadline != None,
+            Position.signup_deadline >= now,
+            Position.signup_deadline <= now + timedelta(days=days),
+        )
+        .options(defer(Position.search_text))
+        .order_by(Position.signup_deadline.asc(), Position.id.asc())
+        .limit(limit)
+        .all()
+    )
 
 
 def search_sources(db: Session, filters: PositionFilter, page: int = 1, page_size: int = 20):

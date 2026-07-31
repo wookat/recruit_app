@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
 import { CompareBar } from '@/components/CompareBar'
 import { useFavorites } from '@/lib/positionStore'
-import { daysUntil, parseSignupDeadline } from '@/lib/deadline'
+import { useBianzhiFavorites, useCampusFavorites } from '@/lib/boardFavorites'
+import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
 
 const JobGuideSheet = lazy(() =>
   import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet })),
@@ -140,16 +141,20 @@ export default function App() {
   const [guideOpen, setGuideOpen] = useState(false)
   const [deepLinked, setDeepLinked] = useState<Position | null>(null)
   const favorites = useFavorites()
-  const dueSoon = useMemo(
-    () =>
-      favorites.filter((p) => {
-        const d = parseSignupDeadline(p)
-        if (!d) return false
-        const n = daysUntil(d)
-        return n >= 0 && n <= 3
-      }).length,
-    [favorites],
-  )
+  const campusFavorites = useCampusFavorites()
+  const bianzhiFavorites = useBianzhiFavorites()
+  const dueSoon = useMemo(() => {
+    const within3 = (d: Date | null) => {
+      if (!d) return false
+      const n = daysUntil(d)
+      return n >= 0 && n <= 3
+    }
+    return (
+      favorites.filter((p) => within3(parseSignupDeadline(p))).length +
+      campusFavorites.filter((j) => within3(parseDeadlineText(j.deadline_text))).length +
+      bianzhiFavorites.filter((j) => within3(parseDeadlineText(j.deadline_text))).length
+    )
+  }, [favorites, campusFavorites, bianzhiFavorites])
 
   useEffect(() => {
     syncSectionUrl(section)
@@ -249,9 +254,9 @@ export default function App() {
                 {dueSoon}
               </span>
             )}
-            {favorites.length > 0 && (
+            {favorites.length + campusFavorites.length + bianzhiFavorites.length > 0 && (
               <Badge variant="secondary" className="px-1.5 text-[11px]">
-                {favorites.length}
+                {favorites.length + campusFavorites.length + bianzhiFavorites.length}
               </Badge>
             )}
           </Button>

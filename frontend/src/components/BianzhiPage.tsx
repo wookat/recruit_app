@@ -22,6 +22,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ExternalLink, GraduationCap, Landmark, Search } from 'lucide-react'
+import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { toggleBianzhiFavorite, useBianzhiFavorites } from '@/lib/boardFavorites'
 import hrSites from '@/data/hrSites.json'
 
 const MajorGuideSheet = lazy(() =>
@@ -82,6 +84,7 @@ export function BianzhiPage({
   const [data, setData] = useState<{ total: number; items: BianzhiJob[] } | null>(null)
   const [filters, setFilters] = useState<BianzhiFilterOptions | null>(null)
   const [loading, setLoading] = useState(true)
+  const bianzhiFavorites = useBianzhiFavorites()
   const [showHrSites, setShowHrSites] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
 
@@ -284,6 +287,7 @@ export function BianzhiPage({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10" aria-label="收藏" />
                 <TableHead className="min-w-[260px]">招聘单位 / 公告</TableHead>
                 <TableHead>分类</TableHead>
                 <TableHead>省份</TableHead>
@@ -309,6 +313,12 @@ export function BianzhiPage({
             <TableBody>
               {data?.items.map((job) => (
                 <TableRow key={job.id}>
+                  <TableCell className="p-1">
+                    <BoardFavoriteButton
+                      active={bianzhiFavorites.some((f) => f.id === job.id)}
+                      onToggle={() => toggleBianzhiFavorite(job)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium" title={job.employer ?? ''}>
                     <span className="line-clamp-2 max-w-[380px] whitespace-normal">
                       {job.employer || (job.category === '大型联考' ? `${job.province ?? ''}${job.job_type ?? ''}联考` : '-')}

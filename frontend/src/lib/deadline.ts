@@ -3,24 +3,32 @@ import type { Position } from '@/api'
 const FULL_DATE = /(\d{4})\s*[年./-]\s*(\d{1,2})\s*[月./-]\s*(\d{1,2})\s*日?/g
 const SHORT_DATE = /(\d{1,2})\s*月\s*(\d{1,2})\s*日?/g
 
-/** 从报名时间原文中提取最后一个日期作为截止日期（无法解析返回 null）。 */
-export function parseSignupDeadline(item: Position): Date | null {
-  const raw = (item.signup_time || '').trim()
-  if (!raw) return null
+/** 从任意日期文本中提取最后一个日期（无法解析返回 null）。 */
+export function parseDeadlineText(
+  raw: string | null | undefined,
+  fallbackYear?: number,
+): Date | null {
+  const text = (raw || '').trim()
+  if (!text) return null
 
   let last: Date | null = null
-  for (const m of raw.matchAll(FULL_DATE)) {
+  for (const m of text.matchAll(FULL_DATE)) {
     const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
     if (!isNaN(d.getTime())) last = d
   }
   if (last) return last
 
-  const year = item.year || new Date().getFullYear()
-  for (const m of raw.matchAll(SHORT_DATE)) {
+  const year = fallbackYear || new Date().getFullYear()
+  for (const m of text.matchAll(SHORT_DATE)) {
     const d = new Date(year, Number(m[1]) - 1, Number(m[2]))
     if (!isNaN(d.getTime())) last = d
   }
   return last
+}
+
+/** 从报名时间原文中提取最后一个日期作为截止日期（无法解析返回 null）。 */
+export function parseSignupDeadline(item: Position): Date | null {
+  return parseDeadlineText(item.signup_time, item.year || undefined)
 }
 
 export function daysUntil(d: Date): number {

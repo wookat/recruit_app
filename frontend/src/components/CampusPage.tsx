@@ -22,6 +22,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
+import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { toggleCampusFavorite, useCampusFavorites } from '@/lib/boardFavorites'
 
 const COMPANY_TYPE_TONES: Record<string, Tone> = {
   民企: 'blue',
@@ -153,6 +155,7 @@ export function CampusPage({
   const [data, setData] = useState<{ total: number; items: CampusJob[] } | null>(null)
   const [filters, setFilters] = useState<CampusFilterOptions | null>(null)
   const [loading, setLoading] = useState(true)
+  const campusFavorites = useCampusFavorites()
   const [view, setView] = useState<'table' | 'card'>(() =>
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'card' : 'table',
   )
@@ -420,6 +423,7 @@ export function CampusPage({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10" aria-label="收藏" />
                 <TableHead className="min-w-[140px]">公司</TableHead>
                 <TableHead>企业类型</TableHead>
                 <TableHead className="min-w-[220px]">招聘岗位</TableHead>
@@ -440,6 +444,12 @@ export function CampusPage({
             <TableBody>
               {data?.items.map((job) => (
                 <TableRow key={job.id}>
+                  <TableCell className="p-1">
+                    <BoardFavoriteButton
+                      active={campusFavorites.some((f) => f.id === job.id)}
+                      onToggle={() => toggleCampusFavorite(job)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium" title={job.company ?? ''}>
                     {job.company}
                     {job.source_table && (
@@ -592,6 +602,11 @@ export function CampusPage({
               className="rounded-xl border bg-background p-4 transition-colors hover:border-primary/20 hover:shadow-md"
             >
               <div className="flex flex-wrap items-center gap-2">
+                <BoardFavoriteButton
+                  className="-ml-2 -my-1"
+                  active={campusFavorites.some((f) => f.id === job.id)}
+                  onToggle={() => toggleCampusFavorite(job)}
+                />
                 <span className="text-base font-semibold">{job.company}</span>
                 {job.company_type && (
                   <Badge variant="secondary" className={cn('border-0', toneClass(COMPANY_TYPE_TONES, job.company_type))}>

@@ -5,7 +5,7 @@ import { PositionSheet } from '@/components/PositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BookOpen, Briefcase, Settings, Star } from 'lucide-react'
+import { BookOpen, Briefcase, Moon, Settings, Star, Sun } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
@@ -64,6 +64,49 @@ interface Section {
   keyword?: string
 }
 
+function initialSection(): Section {
+  const q = new URLSearchParams(window.location.search)
+  const board = q.get('board')
+  if (board === 'campus' || board === 'bianzhi') {
+    return { mode: board, preset: q.get('bpreset') || undefined }
+  }
+  return { mode: 'positions' }
+}
+
+function syncSectionUrl(section: Section) {
+  const q = new URLSearchParams(window.location.search)
+  if (section.mode === 'positions') {
+    q.delete('board')
+    q.delete('bpreset')
+  } else {
+    q.set('board', section.mode)
+    if (section.preset) q.set('bpreset', section.preset)
+    else q.delete('bpreset')
+  }
+  const qs = q.toString()
+  window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname)
+}
+
+function getTheme(): 'light' | 'dark' | 'system' {
+  try {
+    const v = localStorage.getItem('recruit.theme')
+    if (v === 'light' || v === 'dark') return v
+  } catch {
+    // ignore
+  }
+  return 'system'
+}
+
+function setTheme(v: 'light' | 'dark' | 'system') {
+  try {
+    if (v === 'system') localStorage.removeItem('recruit.theme')
+    else localStorage.setItem('recruit.theme', v)
+  } catch {
+    // ignore
+  }
+  window.dispatchEvent(new Event('recruit-theme-change'))
+}
+
 function BrandMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 64 64" className={className} role="img" aria-label="上岸罗盘">
@@ -90,11 +133,24 @@ function BrandMark({ className }: { className?: string }) {
 
 export default function App() {
   const [tab, setTab] = useState(showAdmin ? 'admin' : 'search')
-  const [section, setSection] = useState<Section>({ mode: 'positions' })
+  const [section, setSection] = useState<Section>(initialSection)
+  const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>(getTheme)
   const [favOpen, setFavOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const [deepLinked, setDeepLinked] = useState<Position | null>(null)
   const favorites = useFavorites()
+
+  useEffect(() => {
+    syncSectionUrl(section)
+  }, [section])
+
+  const cycleTheme = useCallback(() => {
+    setThemeState((prev) => {
+      const next = prev === 'system' ? 'dark' : prev === 'dark' ? 'light' : 'system'
+      setTheme(next)
+      return next
+    })
+  }, [])
 
   const goCampus = useCallback((preset?: string, keyword?: string) => {
     setSection({ mode: 'campus', preset, keyword })
@@ -155,6 +211,17 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 px-2"
+            onClick={cycleTheme}
+            title={theme === 'system' ? '主题：跟随系统' : theme === 'dark' ? '主题：暗色' : '主题：亮色'}
+            aria-label="切换主题"
+          >
+            {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+            {theme === 'system' && <span className="hidden text-[11px] text-muted-foreground lg:inline">自动</span>}
+          </Button>
           <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setGuideOpen(true)}>
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">求职攻略</span>

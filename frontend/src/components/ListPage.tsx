@@ -166,6 +166,7 @@ export function ListPage({
   const [filterOpen, setFilterOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [deadlineView, setDeadlineView] = useState(false)
+  const [quickMatchKey, setQuickMatchKey] = useState(0)
   const [params, setParams] = useState<SearchParams>(() => {
     const base = syncUrl
       ? { ...DEFAULT_PARAMS, ...paramsFromQueryString(window.location.search) }
@@ -346,12 +347,15 @@ export function ListPage({
       category: values.category,
       year: values.year.map(Number).filter((n) => !isNaN(n)),
       keyword: '',
+      province: undefined,
+      work_location: undefined,
     }))
   }
 
   function clearFilters() {
     setParams({ ...DEFAULT_PARAMS })
     setRecommendQuery(null)
+    setQuickMatchKey((k) => k + 1)
   }
 
   function applyRecommend(values: QuickMatchValues) {
@@ -604,7 +608,7 @@ export function ListPage({
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="搜索岗位、单位、专业、地点、特殊要求…"
+                placeholder="搜索岗位、单位、专业、地点…"
                 value={params.keyword || ''}
                 onChange={(e) => updateParam('keyword', e.target.value)}
                 className="pl-9"
@@ -924,6 +928,7 @@ export function ListPage({
       </Card>
 
       <QuickMatch
+        key={quickMatchKey}
         filters={filters}
         onSearch={applyQuickMatch}
         onReset={clearFilters}
@@ -989,6 +994,8 @@ export function ListPage({
 
       {deadlineView && <DeadlinesCard days={14} limit={100} defaultExpanded />}
 
+      {!deadlineView && (
+      <>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-bold tracking-tight">{title}</h1>
@@ -1083,6 +1090,8 @@ export function ListPage({
             </Button>
           </div>
         </div>
+      )}
+      </>
       )}
 
       {showStats && (

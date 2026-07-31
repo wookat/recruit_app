@@ -25,6 +25,10 @@ interface QuickMatchProps {
 const EDU_LEVELS = ['大专/中专', '本科', '硕士研究生', '博士研究生']
 const CATEGORIES = ['公务员', '事业单位/事业编', '军队文职', '选调生', '国企/央企', '上市公司', '其他企业']
 const YEARS = ['2027', '2026', '2025']
+const HOT_CITIES = [
+  '北京', '上海', '广州', '深圳', '杭州', '南京', '成都', '武汉',
+  '西安', '苏州', '天津', '重庆', '长沙', '青岛', '郑州', '合肥',
+]
 
 export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMatchProps) {
   const [open, setOpen] = useState(false)
@@ -62,7 +66,13 @@ export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMat
 
   const locationGroups = filters
     ? [
-        { label: '热门城市', options: filters.hot_locations.slice(0, 60) },
+        {
+          label: '热门城市',
+          options: [
+            ...HOT_CITIES.filter((c) => filters.hot_locations.includes(c)),
+            ...filters.hot_locations.filter((c) => !HOT_CITIES.includes(c)),
+          ].slice(0, 60),
+        },
         ...filters.location_tree.map((node) => ({ label: node.province, options: node.cities })),
       ]
     : undefined

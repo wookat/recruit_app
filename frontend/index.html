@@ -22,13 +22,21 @@
     <script>
       ;(function () {
         var mq = window.matchMedia('(prefers-color-scheme: dark)')
-        function apply(dark) {
+        function stored() {
+          try {
+            return localStorage.getItem('recruit.theme')
+          } catch (e) {
+            return null
+          }
+        }
+        function apply() {
+          var pref = stored()
+          var dark = pref === 'dark' || (pref !== 'light' && mq.matches)
           document.documentElement.classList.toggle('dark', dark)
         }
-        apply(mq.matches)
-        mq.addEventListener('change', function (e) {
-          apply(e.matches)
-        })
+        apply()
+        mq.addEventListener('change', apply)
+        window.addEventListener('recruit-theme-change', apply)
       })()
     </script>
   </head>

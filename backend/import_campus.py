@@ -45,6 +45,13 @@ TABLE_SPECS = {
     "央国企事业单位名录": {
         "company": "公司", "apply_url": "链接",
     },
+    "央国企校招": {
+        "company": "招聘企业", "positions": "招聘岗位", "edu_requirement": "学历要求",
+        "no_exam": "是否笔试（供参考）", "major_requirement": "专业要求",
+        "locations": "工作区域", "grad_years": "届次要求", "updated_at_src": "录入日期",
+        "company_type": "企业性质", "industry": "行业分类", "deadline_text": "截止时间",
+        "batch": "招聘批次", "announce_url": "招聘公告", "apply_url": "投递方式",
+    },
 }
 
 

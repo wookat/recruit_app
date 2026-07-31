@@ -154,6 +154,58 @@ export async function fetchCampusFilters(): Promise<CampusFilterOptions> {
   return res.data
 }
 
+// ---------- 编制公告（公务员事业单位/教育/医疗/高校/科研院所/央国企社招/大型联考） ----------
+export interface BianzhiJob {
+  id: number
+  category: string | null
+  province: string | null
+  employer: string | null
+  headcount: string | null
+  job_type: string | null
+  work_location: string | null
+  edu_requirement: string | null
+  major_requirement: string | null
+  deadline_text: string | null
+  signup_start: string | null
+  exam_time: string | null
+  notes: string | null
+  announce_url: string | null
+  apply_url: string | null
+  updated_at_src: string | null
+}
+
+export interface BianzhiList {
+  total: number
+  page: number
+  page_size: number
+  items: BianzhiJob[]
+}
+
+export interface BianzhiParams {
+  keyword?: string
+  category?: string[]
+  province?: string[]
+  job_type?: string
+  edu?: string
+  page?: number
+  page_size?: number
+}
+
+export interface BianzhiFilterOptions {
+  categories: Record<string, number>
+  provinces: string[]
+}
+
+export async function fetchBianzhiJobs(params: BianzhiParams): Promise<BianzhiList> {
+  const res = await axios.get(`${API_BASE}/api/bianzhi?${toQuery(params)}`)
+  return res.data
+}
+
+export async function fetchBianzhiFilters(): Promise<BianzhiFilterOptions> {
+  const res = await axios.get(`${API_BASE}/api/bianzhi/filters`)
+  return res.data
+}
+
 export async function fetchPositions(params: SearchParams): Promise<PositionList> {
   const res = await axios.get(`${API_BASE}/api/positions?${toQuery(params)}`)
   return res.data

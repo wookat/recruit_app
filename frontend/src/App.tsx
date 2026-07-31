@@ -18,6 +18,9 @@ const AdminPage = lazy(() =>
 const CampusPage = lazy(() =>
   import('@/components/CampusPage').then((m) => ({ default: m.CampusPage })),
 )
+const BianzhiPage = lazy(() =>
+  import('@/components/BianzhiPage').then((m) => ({ default: m.BianzhiPage })),
+)
 
 const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
 
@@ -27,6 +30,9 @@ const CAMPUS_CROSS = [
   { key: 'referral', label: '内推码' },
   { key: 'intern', label: '实习' },
   { key: 'autumn', label: '秋招' },
+  { key: 'bz:all', label: '编制公告' },
+  { key: 'bz:edu', label: '教师招聘' },
+  { key: 'bz:med', label: '医疗招聘' },
 ]
 
 const POSITION_CROSS = [
@@ -36,10 +42,20 @@ const POSITION_CROSS = [
   { key: 'jdwz', label: '军队文职' },
   { key: 'gqyq', label: '国企央企' },
   { key: 'xds', label: '选调生' },
+  { key: 'bz:all', label: '编制公告' },
+  { key: 'bz:edu', label: '教师招聘' },
+  { key: 'bz:med', label: '医疗招聘' },
+]
+
+const BIANZHI_CROSS = [
+  { key: 'pos:all', label: '体制内岗位' },
+  { key: 'pos:gwy', label: '公务员' },
+  { key: 'campus:all', label: '校招信息' },
+  { key: 'campus:noexam', label: '免笔试' },
 ]
 
 interface Section {
-  mode: 'positions' | 'campus'
+  mode: 'positions' | 'campus' | 'bianzhi'
   preset?: string
   keyword?: string
 }
@@ -81,6 +97,10 @@ export default function App() {
   }, [])
   const goPositions = useCallback((preset?: string, keyword?: string) => {
     setSection({ mode: 'positions', preset, keyword })
+    window.scrollTo({ top: 0 })
+  }, [])
+  const goBianzhi = useCallback((preset?: string, keyword?: string) => {
+    setSection({ mode: 'bianzhi', preset, keyword })
     window.scrollTo({ top: 0 })
   }, [])
   const campusTotal = useCallback(
@@ -165,7 +185,7 @@ export default function App() {
               initialPresetKey={section.preset}
               initialKeyword={section.keyword}
               crossPresets={CAMPUS_CROSS}
-              onCrossPreset={(k) => goCampus(k)}
+              onCrossPreset={(k) => (k.startsWith('bz:') ? goBianzhi(k.slice(3)) : goCampus(k))}
               crossLabel="校招信息"
               crossFetchTotal={campusTotal}
               onCrossOpen={(kw) => goCampus('all', kw)}
@@ -178,10 +198,21 @@ export default function App() {
                 initialPreset={section.preset}
                 initialKeyword={section.keyword}
                 crossPresets={POSITION_CROSS}
-                onCrossPreset={(k) => goPositions(k)}
+                onCrossPreset={(k) => (k.startsWith('bz:') ? goBianzhi(k.slice(3)) : goPositions(k))}
                 crossLabel="体制内岗位"
                 crossFetchTotal={positionsTotal}
                 onCrossOpen={(kw) => goPositions('all', kw)}
+              />
+            )}
+            {tab !== 'admin' && section.mode === 'bianzhi' && (
+              <BianzhiPage
+                key={`${section.preset ?? ''}|${section.keyword ?? ''}`}
+                initialPreset={section.preset}
+                initialKeyword={section.keyword}
+                crossPresets={BIANZHI_CROSS}
+                onCrossPreset={(k) =>
+                  k.startsWith('pos:') ? goPositions(k.slice(4)) : goCampus(k.slice(7))
+                }
               />
             )}
             {tab === 'admin' && showAdmin && <AdminPage />}

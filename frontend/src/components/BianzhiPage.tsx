@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   fetchBianzhiFilters,
   fetchBianzhiJobs,
@@ -21,7 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ExternalLink, Search } from 'lucide-react'
+import { ExternalLink, GraduationCap, Landmark, Search } from 'lucide-react'
+import hrSites from '@/data/hrSites.json'
+
+const MajorGuideSheet = lazy(() =>
+  import('@/components/MajorGuideSheet').then((m) => ({ default: m.MajorGuideSheet })),
+)
 
 const CATEGORY_TONES: Record<string, Tone> = {
   公务员事业单位: 'blue',
@@ -77,6 +82,8 @@ export function BianzhiPage({
   const [data, setData] = useState<{ total: number; items: BianzhiJob[] } | null>(null)
   const [filters, setFilters] = useState<BianzhiFilterOptions | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showHrSites, setShowHrSites] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
 
   useEffect(() => {
     fetchBianzhiFilters().then(setFilters).catch(console.error)
@@ -182,7 +189,45 @@ export function BianzhiPage({
             className="h-10 pl-9"
           />
         </form>
+        <div className="flex gap-1.5">
+          <Button variant="outline" size="sm" className="h-10 gap-1.5" onClick={() => setGuideOpen(true)}>
+            <GraduationCap className="h-4 w-4" />
+            专业就业方向
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-10 gap-1.5"
+            onClick={() => setShowHrSites((v) => !v)}
+          >
+            <Landmark className="h-4 w-4" />
+            各省人社官网
+          </Button>
+        </div>
       </div>
+
+      {showHrSites && (
+        <div className="rounded-xl border bg-background p-3">
+          <p className="mb-2 text-xs text-muted-foreground">各省份人力资源和社会保障厅官方招聘页（{hrSites.length} 个）</p>
+          <div className="flex flex-wrap gap-1.5">
+            {hrSites.map((s) => (
+              <a
+                key={s.province}
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted"
+              >
+                {s.province} <ExternalLink className="h-3 w-3 text-muted-foreground" />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <Suspense fallback={null}>
+        {guideOpen && <MajorGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
+      </Suspense>
 
       {/* 省份 chips */}
       {filters && filters.provinces.length > 0 && (

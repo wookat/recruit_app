@@ -154,12 +154,15 @@ def _capped_count(q) -> int:
 def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_size: int = 20, sort: str = "year_desc"):
     q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
     q = _apply_filters(q, Position, filters)
+    # 类别筛选是高选择性条件：用 year+0 阻止 planner 走全量 (year,id) 有序索引扫描，
+    # 改走 job_type/exam_type 位图索引后再排序
+    year_col = (Position.year + 0) if filters.category else Position.year
     if sort == "year_desc":
-        q = q.order_by(Position.year.desc(), Position.id.desc())
+        q = q.order_by(year_col.desc(), Position.id.desc())
     elif sort == "year_asc":
-        q = q.order_by(Position.year.asc(), Position.id.asc())
+        q = q.order_by(year_col.asc(), Position.id.asc())
     else:
-        q = q.order_by(Position.id.desc())
+        q = q.order_by((Position.id + 0).desc() if filters.category else Position.id.desc())
     count_key = "cnt:pos:" + filters.model_dump_json()
     total = cache.get_or_set(count_key, 1800, lambda: _capped_count(q))
     items = q.offset((page - 1) * page_size).limit(page_size).all()
@@ -185,22 +188,23 @@ def search_positions_cursor(
 ):
     q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
     q = _apply_filters(q, Position, filters)
+    year_col = (Position.year + 0) if filters.category else Position.year
     if sort == "year_desc" and after_year is not None:
         q = q.filter(
             or_(
                 Position.year < after_year,
                 (Position.year == after_year) & (Position.id < after_id),
             )
-        ).order_by(Position.year.desc(), Position.id.desc())
+        ).order_by(year_col.desc(), Position.id.desc())
     elif sort == "year_asc" and after_year is not None:
         q = q.filter(
             or_(
                 Position.year > after_year,
                 (Position.year == after_year) & (Position.id > after_id),
             )
-        ).order_by(Position.year.asc(), Position.id.asc())
+        ).order_by(year_col.asc(), Position.id.asc())
     else:
-        q = q.filter(Position.id < after_id).order_by(Position.id.desc())
+        q = q.filter(Position.id < after_id).order_by((Position.id + 0).desc() if filters.category else Position.id.desc())
     return q.limit(page_size).all()
 
 

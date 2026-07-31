@@ -85,6 +85,7 @@ const PRESETS: PresetView[] = [
   { key: 'noexam', label: '免笔试', params: { source_table: ['免笔试汇总'] } },
   { key: 'referral', label: '内推码', params: { referral_only: true } },
   { key: 'soe', label: '央国企名录', params: { source_table: ['央国企事业单位名录'] } },
+  { key: 'soecampus', label: '央国企校招', params: { source_table: ['央国企校招'] } },
   { key: 'old', label: '24-25届可投', params: { source_table: ['24-25届可投'] } },
   { key: 'autumn', label: '秋招', params: { batch: '秋招' } },
   { key: 'spring', label: '春招', params: { batch: '春招' } },

@@ -355,7 +355,9 @@ export function CampusPage({
                 <TableHead>开始时间</TableHead>
                 <TableHead>截止时间</TableHead>
                 <TableHead>内推码</TableHead>
-                <TableHead>操作</TableHead>
+                <TableHead className="sticky right-0 z-10 bg-background shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.15)]">
+                  投递/公告
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -476,7 +478,7 @@ export function CampusPage({
                       '-'
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="sticky right-0 z-10 bg-background shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.15)]">
                     <div className="flex gap-1.5">
                       {job.apply_url && job.apply_url.startsWith('http') && (
                         <a

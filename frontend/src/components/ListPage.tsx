@@ -986,7 +986,7 @@ export function ListPage({
         <button
           type="button"
           onClick={() => onCrossOpen((params.keyword || '').trim())}
-          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-left text-sm text-primary transition-colors hover:bg-primary/10"
+          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-left text-sm text-sky-800 transition-colors hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-200 dark:hover:bg-sky-900"
         >
           <Search className="h-4 w-4 shrink-0" />
           <span>

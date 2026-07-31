@@ -129,10 +129,19 @@ export function FavoritesSheet({ open, onClose }: Props) {
     return { status: s, items }
   }).filter((g) => g.items.length > 0 && (!statusFilter || g.status === statusFilter))
 
-  const calendarDays = useMemo(() => {
+  const { calendarDays, undated } = useMemo(() => {
     const byDay = new Map<string, { date: Date; entries: CalendarEntry[] }>()
-    const push = (date: Date | null, entry: Omit<CalendarEntry, 'date'>) => {
-      if (!date) return
+    const undated: { kind: Board; label: string; entry: Omit<CalendarEntry, 'date'> }[] = []
+    const push = (
+      date: Date | null,
+      entry: Omit<CalendarEntry, 'date'>,
+      rawText: string | null | undefined,
+    ) => {
+      if (!date) {
+        const label = (rawText || '').trim()
+        if (label) undated.push({ kind: entry.kind, label, entry })
+        return
+      }
       const n = daysUntil(date)
       if (n < -7 || n > 14) return
       const key = date.toDateString()
@@ -140,15 +149,18 @@ export function FavoritesSheet({ open, onClose }: Props) {
       byDay.get(key)!.entries.push({ ...entry, date })
     }
     for (const p of favorites) {
-      push(parseSignupDeadline(p), { kind: 'positions', position: p })
+      push(parseSignupDeadline(p), { kind: 'positions', position: p }, p.signup_time)
     }
     for (const j of campusFavs) {
-      push(parseDeadlineText(j.deadline_text), { kind: 'campus', campus: j })
+      push(parseDeadlineText(j.deadline_text), { kind: 'campus', campus: j }, j.deadline_text)
     }
     for (const j of bianzhiFavs) {
-      push(parseDeadlineText(j.deadline_text), { kind: 'bianzhi', bianzhi: j })
+      push(parseDeadlineText(j.deadline_text), { kind: 'bianzhi', bianzhi: j }, j.deadline_text)
     }
-    return [...byDay.values()].sort((a, b) => a.date.getTime() - b.date.getTime())
+    return {
+      calendarDays: [...byDay.values()].sort((a, b) => a.date.getTime() - b.date.getTime()),
+      undated,
+    }
   }, [favorites, campusFavs, bianzhiFavs])
 
   function renderMetaRow(opts: {
@@ -658,7 +670,30 @@ export function FavoritesSheet({ open, onClose }: Props) {
                     </div>
                   )
                 })}
-                {calendarDays.length === 0 && (
+                {undated.length > 0 && (
+                  <div>
+                    <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-popover px-4 py-1.5 sm:px-6">
+                      <span className="text-xs font-semibold">无固定截止日期</span>
+                      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
+                        {undated.length} 条（招满为止/详见公告等）
+                      </span>
+                    </div>
+                    <div className="divide-y">
+                      {undated.map(({ kind, label, entry }) => (
+                        <div key={`u-${kind}-${(entry.position ?? entry.campus ?? entry.bianzhi)!.id}`}>
+                          <div className="flex flex-wrap items-center gap-1 px-4 pt-2 sm:px-6">
+                            <span className={cn(PILL_BASE, 'bg-muted/60 text-muted-foreground')}>
+                              {kind === 'positions' ? '体制内' : kind === 'campus' ? '校招' : '编制'}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">{label}</span>
+                          </div>
+                          {renderEntry({ ...entry, date: new Date() })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {calendarDays.length === 0 && undated.length === 0 && (
                   <EmptyState
                     icon={CalendarDays}
                     className="m-4 sm:m-6"

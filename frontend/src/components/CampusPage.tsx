@@ -24,6 +24,7 @@ import {
 import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { toggleCampusFavorite, useCampusFavorites } from '@/lib/boardFavorites'
+import { applySeo } from '@/lib/seo'
 
 const COMPANY_TYPE_TONES: Record<string, Tone> = {
   民企: 'blue',
@@ -169,8 +170,10 @@ export function CampusPage({
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
     if (q.get('board') !== 'campus') return
-    q.set('bpreset', recentOnly && preset === 'all' ? 'recent7' : preset)
+    const urlPreset = recentOnly && preset === 'all' ? 'recent7' : preset
+    q.set('bpreset', urlPreset)
     window.history.replaceState(null, '', `?${q.toString()}`)
+    applySeo('campus', urlPreset)
   }, [preset, recentOnly])
 
   useEffect(() => {

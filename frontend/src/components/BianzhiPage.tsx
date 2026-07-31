@@ -25,6 +25,7 @@ import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } fro
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { toggleBianzhiFavorite, useBianzhiFavorites } from '@/lib/boardFavorites'
 import hrSites from '@/data/hrSites.json'
+import { applySeo } from '@/lib/seo'
 
 const MajorGuideSheet = lazy(() =>
   import('@/components/MajorGuideSheet').then((m) => ({ default: m.MajorGuideSheet })),
@@ -100,6 +101,7 @@ export function BianzhiPage({
     if (q.get('board') !== 'bianzhi') return
     q.set('bpreset', preset)
     window.history.replaceState(null, '', `?${q.toString()}`)
+    applySeo('bianzhi', preset)
   }, [preset])
 
   const params = useMemo<BianzhiParams>(() => {

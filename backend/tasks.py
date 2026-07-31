@@ -3,7 +3,7 @@ import json
 import os
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 import pandas as pd
@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from celery_app import celery_app
 from database import SessionLocal
 from ingest import ingest_positions_df
+from models import CrawlRun
 import collector
 import crud
 import pipeline
@@ -428,6 +429,16 @@ def check_watch_sources():
     """定时任务：对所有到期启用的来源执行采集闭环（公告→附件→解析→入库）。"""
     db = SessionLocal()
     try:
-        return {"results": pipeline.run_due_pipelines(db)}
+        results = pipeline.run_due_pipelines(db)
+        failed = [r["source"] for r in results if r.get("status") in ("error", "partial")]
+        if failed:
+            db.add(CrawlRun(
+                source_id=None,
+                status="alert",
+                finished_at=datetime.now(timezone.utc),
+                error=json.dumps(failed, ensure_ascii=False)[:4000],
+            ))
+            db.commit()
+        return {"results": results, "failed_sources": failed}
     finally:
         db.close()

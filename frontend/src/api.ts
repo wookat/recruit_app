@@ -469,8 +469,46 @@ export interface CrawlRunList {
   items: CrawlRun[]
 }
 
+export interface HealthSourceRun {
+  source_id: number
+  source_name?: string
+  status: string
+  started_at: string | null
+  duration_seconds: number | null
+  rows_ingested: number
+}
+
+export interface HealthSummary {
+  crawl_24h: {
+    success: number
+    failed: number
+    total: number
+    latest_by_source: HealthSourceRun[]
+  }
+  failed_sources_yesterday: {
+    at: string | null
+    sources: string[]
+  }
+  cache_ttl_seconds: {
+    stats: number
+    filters: number
+    dq_report: number
+  }
+  table_estimates: Record<string, number>
+  data_quality: {
+    generated_at: string | null
+    rows: { total: number; clean: number; dup: number; invalid: number; added_last_7d: number } | null
+    deadline_parse_rate: number | null
+  } | null
+}
+
 function adminHeaders(token: string) {
   return { headers: { 'X-Admin-Token': token } }
+}
+
+export async function fetchHealthSummary(token: string): Promise<HealthSummary> {
+  const res = await axios.get(`${API_BASE}/api/admin/health-summary`, adminHeaders(token))
+  return res.data
 }
 
 export async function adminOverview(token: string): Promise<AdminOverview> {

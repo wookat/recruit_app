@@ -8,19 +8,21 @@ import {
   adminSetAnnouncementStatus,
   adminUpdateSource,
   fetchCrawlRuns,
+  fetchHealthSummary,
   fetchTaskStatus,
   triggerScrape,
   type AdminOverview,
   type Announcement,
   type CrawlRun,
   type CrawlRunList,
+  type HealthSummary,
   type WatchSource,
 } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChevronDown, ChevronRight, RefreshCw, ShieldCheck } from 'lucide-react'
+import { Activity, ChevronDown, ChevronRight, RefreshCw, ShieldCheck } from 'lucide-react'
 
 const TOKEN_KEY = 'recruit.adminToken'
 
@@ -37,6 +39,7 @@ export function AdminPage() {
   const [taskId, setTaskId] = useState<string | null>(null)
   const [taskStatus, setTaskStatus] = useState('')
   const [runs, setRuns] = useState<CrawlRunList | null>(null)
+  const [health, setHealth] = useState<HealthSummary | null>(null)
   const [runPage, setRunPage] = useState(1)
   const [expandedRun, setExpandedRun] = useState<number | null>(null)
 
@@ -66,6 +69,7 @@ export function AdminPage() {
         setSources(srcs)
         setAnns(list)
         fetchCrawlRuns(tk, runPage).then(setRuns).catch(() => setRuns(null))
+        fetchHealthSummary(tk).then(setHealth).catch(() => setHealth(null))
         setAuthed(true)
         setError('')
         localStorage.setItem(TOKEN_KEY, tk)
@@ -240,6 +244,8 @@ export function AdminPage() {
           </table>
         </CardContent>
       </Card>
+
+      {health && <HealthCard health={health} />}
 
       <Card>
         <CardHeader className="pb-2">
@@ -424,6 +430,7 @@ const RUN_STATUS_STYLES: Record<string, string> = {
   partial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
   error: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
   running: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  alert: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
 }
 
 const RUN_STATUS_LABELS: Record<string, string> = {
@@ -431,6 +438,149 @@ const RUN_STATUS_LABELS: Record<string, string> = {
   partial: '部分成功',
   error: '失败',
   running: '运行中',
+  alert: '告警',
+}
+
+const HEALTH_BADGE_STYLES: Record<'green' | 'yellow' | 'red', string> = {
+  green: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
+  yellow: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
+  red: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+}
+
+function formatTtl(seconds: number): string {
+  if (seconds <= 0) return '缺失'
+  if (seconds < 3600) return `${Math.round(seconds / 60)} 分`
+  return `${(seconds / 3600).toFixed(1)} 小时`
+}
+
+function HealthBadge({ level, label }: { level: 'green' | 'yellow' | 'red'; label: string }) {
+  return <Badge className={`border-transparent ${HEALTH_BADGE_STYLES[level]}`}>{label}</Badge>
+}
+
+const TABLE_LABELS: Record<string, string> = {
+  positions: '公职岗位',
+  campus_jobs: '校招岗位',
+  bianzhi_jobs: '编制岗位',
+}
+
+function HealthCard({ health }: { health: HealthSummary }) {
+  const cacheMissing = health.cache_ttl_seconds.stats <= 0 || health.cache_ttl_seconds.filters <= 0
+  const hasFailures =
+    health.crawl_24h.failed > 0 || health.failed_sources_yesterday.sources.length > 0
+  const overall: 'green' | 'yellow' | 'red' = cacheMissing ? 'red' : hasFailures ? 'yellow' : 'green'
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Activity className="h-4 w-4" /> 系统健康
+        </CardTitle>
+        <HealthBadge
+          level={overall}
+          label={overall === 'green' ? '正常' : overall === 'yellow' ? '有失败' : '缓存缺失'}
+        />
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div>
+            <div className="text-xs text-muted-foreground">24h 采集成功/失败</div>
+            <div className="text-lg font-bold tabular-nums">
+              <span className="text-green-600 dark:text-green-400">{health.crawl_24h.success}</span>
+              {' / '}
+              <span className={health.crawl_24h.failed > 0 ? 'text-red-600 dark:text-red-400' : ''}>
+                {health.crawl_24h.failed}
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground">共 {health.crawl_24h.total} 次</div>
+          </div>
+          {(['stats', 'filters', 'dq_report'] as const).map((k) => (
+            <div key={k}>
+              <div className="text-xs text-muted-foreground">
+                {{ stats: '统计缓存', filters: '筛选缓存', dq_report: '质量报告' }[k]} TTL
+              </div>
+              <div className="text-lg font-bold tabular-nums">
+                {formatTtl(health.cache_ttl_seconds[k])}
+              </div>
+              <HealthBadge
+                level={health.cache_ttl_seconds[k] > 0 ? 'green' : k === 'dq_report' ? 'yellow' : 'red'}
+                label={health.cache_ttl_seconds[k] > 0 ? '热' : '缺失'}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          {Object.entries(health.table_estimates).map(([name, cnt]) => (
+            <div key={name} className="rounded-lg border p-2">
+              <div className="text-xs text-muted-foreground">{TABLE_LABELS[name] || name}</div>
+              <div className="text-base font-bold tabular-nums">{cnt.toLocaleString()}</div>
+            </div>
+          ))}
+        </div>
+
+        {health.failed_sources_yesterday.sources.length > 0 && (
+          <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-950/30">
+            <div className="mb-1 text-xs font-medium text-yellow-800 dark:text-yellow-300">
+              昨日失败来源（{health.failed_sources_yesterday.sources.length}）
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {health.failed_sources_yesterday.sources.map((s) => (
+                <Badge key={s} variant="outline" className="text-yellow-800 dark:text-yellow-300">
+                  {s}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {health.crawl_24h.latest_by_source.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="py-1.5 pr-3">来源最近一次</th>
+                  <th className="py-1.5 pr-3">状态</th>
+                  <th className="py-1.5 pr-3">时间</th>
+                  <th className="py-1.5 pr-3">耗时</th>
+                  <th className="py-1.5">入库</th>
+                </tr>
+              </thead>
+              <tbody>
+                {health.crawl_24h.latest_by_source.map((s) => (
+                  <tr key={s.source_id} className="border-b last:border-0">
+                    <td className="max-w-[220px] truncate py-1.5 pr-3">{s.source_name || `#${s.source_id}`}</td>
+                    <td className="py-1.5 pr-3">
+                      <Badge className={`border-transparent ${RUN_STATUS_STYLES[s.status] || RUN_STATUS_STYLES.running}`}>
+                        {RUN_STATUS_LABELS[s.status] || s.status}
+                      </Badge>
+                    </td>
+                    <td className="whitespace-nowrap py-1.5 pr-3 text-xs">
+                      {s.started_at ? new Date(s.started_at).toLocaleString('zh-CN') : '-'}
+                    </td>
+                    <td className="whitespace-nowrap py-1.5 pr-3 text-xs tabular-nums">
+                      {s.duration_seconds != null ? `${s.duration_seconds} 秒` : '-'}
+                    </td>
+                    <td className="py-1.5 text-xs tabular-nums">{s.rows_ingested}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {health.data_quality?.rows && (
+          <div className="text-xs text-muted-foreground">
+            质量审计：clean {health.data_quality.rows.clean.toLocaleString()} / 总{' '}
+            {health.data_quality.rows.total.toLocaleString()}，近 7 天新增{' '}
+            {health.data_quality.rows.added_last_7d.toLocaleString()}
+            {health.data_quality.deadline_parse_rate != null &&
+              `，截止日期可解析率 ${(health.data_quality.deadline_parse_rate * 100).toFixed(1)}%`}
+            {health.data_quality.generated_at &&
+              ` · 生成于 ${new Date(health.data_quality.generated_at).toLocaleString('zh-CN')}`}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
 }
 
 function runDuration(started: string | null, finished: string | null): string {

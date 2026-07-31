@@ -32,7 +32,7 @@ const HOT_CITIES = [
 
 export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMatchProps) {
   const [open, setOpen] = useState(false)
-  const [eduLevel, setEduLevel] = useState<string[]>(['本科'])
+  const [eduLevel, setEduLevel] = useState<string[]>([])
   const [major, setMajor] = useState('')
   const [location, setLocation] = useState<string[]>([])
   const [category, setCategory] = useState<string[]>([])
@@ -48,7 +48,7 @@ export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMat
   }
 
   function handleReset() {
-    setEduLevel(['本科'])
+    setEduLevel([])
     setMajor('')
     setLocation([])
     setCategory([])

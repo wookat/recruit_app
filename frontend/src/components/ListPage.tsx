@@ -209,6 +209,7 @@ export function ListPage({
   const [recommendQuery, setRecommendQuery] = useState<RecommendQuery | null>(null)
   const [exportTask, setExportTask] = useState<string | null>(null)
   const [exportError, setExportError] = useState('')
+  const [loadError, setLoadError] = useState(false)
   const suggestDisabledRef = useRef(false)
   const skipSuggestRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -273,6 +274,7 @@ export function ListPage({
     const controller = new AbortController()
     abortRef.current = controller
     setLoading(true)
+    setLoadError(false)
     try {
       const res = await fetcher(params)
       if (controller.signal.aborted) return
@@ -280,7 +282,10 @@ export function ListPage({
       const kw = (params.keyword || '').trim()
       if (kw.length >= 2) setRecent(addRecentSearch(kw))
     } catch (e) {
-      if (!controller.signal.aborted) console.error(e)
+      if (!controller.signal.aborted) {
+        console.error(e)
+        setLoadError(true)
+      }
     } finally {
       if (!controller.signal.aborted) setLoading(false)
     }
@@ -996,7 +1001,16 @@ export function ListPage({
 
       {!deadlineView && (
       <>
+      {loadError && !loading && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+          <span>加载失败，服务器可能正忙，请重试</span>
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => load()}>
+            重试
+          </Button>
+        </div>
+      )}
       {!loading &&
+        !loadError &&
         data &&
         data.total === 0 &&
         ((params.location?.length ?? 0) > 0 || (params.province?.length ?? 0) > 0) && (

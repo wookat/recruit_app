@@ -197,7 +197,7 @@ def get_sources(
 
 
 @app.get("/api/filters", response_model=schemas.FilterOptions)
-@cache.cached("filters", ttl=600)
+@cache.cached("filters", ttl=86400, stale=True)
 def get_filters(db: Session = Depends(get_db)):
     return crud.get_filter_options(db)
 
@@ -213,7 +213,7 @@ def suggest(
 
 
 @app.get("/api/stats", response_model=schemas.StatsOut)
-@cache.cached("stats", ttl=3600)
+@cache.cached("stats", ttl=86400, stale=True)
 def stats(db: Session = Depends(get_db)):
     return crud.get_stats(db)
 

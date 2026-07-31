@@ -81,6 +81,11 @@ const PRESETS: PresetView[] = [
   { key: 'autumn', label: '秋招', params: { batch: '秋招' } },
   { key: 'spring', label: '春招', params: { batch: '春招' } },
   { key: 'intern', label: '实习', params: { batch: '实习' } },
+  { key: 'y27autumn', label: '27届秋招', params: { batch: '秋招', grad_year: '2027' } },
+  { key: 'internet', label: '互联网', params: { industry: ['互联网'] } },
+  { key: 'finance', label: '银行金融', params: { industry: ['银行', '金融'] } },
+  { key: 'soe2', label: '央国企', params: { company_type: ['央国企', '国企'] } },
+  { key: 'foreign', label: '外企', params: { company_type: ['外企', '外企/合资', '合资', '中外合资'] } },
 ]
 
 const PAGE_SIZE = 20
@@ -104,7 +109,7 @@ export function CampusPage() {
     return {
       ...p,
       keyword: keyword || undefined,
-      company_type: companyTypes.length ? companyTypes : undefined,
+      company_type: companyTypes.length ? companyTypes : p.company_type,
       page,
       page_size: PAGE_SIZE,
     }

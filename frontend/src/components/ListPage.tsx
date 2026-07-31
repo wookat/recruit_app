@@ -986,13 +986,13 @@ export function ListPage({
         <button
           type="button"
           onClick={() => onCrossOpen((params.keyword || '').trim())}
-          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-dashed bg-card px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-left text-sm text-primary transition-colors hover:bg-primary/10"
         >
           <Search className="h-4 w-4 shrink-0" />
           <span>
-            {crossLabel || '另一板块'}中另有{' '}
-            <span className="font-semibold text-foreground">{crossTotal.toLocaleString()}</span> 条与「
-            {(params.keyword || '').trim()}」相关，点击查看 →
+            换个板块看看：{crossLabel || '另一板块'}中另有{' '}
+            <span className="font-semibold">{crossTotal.toLocaleString()}</span> 条与「
+            {(params.keyword || '').trim()}」相关 →
           </span>
         </button>
       )}

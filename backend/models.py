@@ -46,6 +46,34 @@ class Position(Base):
     )
 
 
+class CampusJob(Base):
+    """校招/社招信息（企业校园招聘汇总，来源：外部汇总表导入）。"""
+
+    __tablename__ = "campus_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    source_table = Column(String(50), index=True)  # 校招汇总/24-25届可投/免笔试汇总/内推码/央国企名录
+    company = Column(String(300), index=True)
+    positions = Column(Text)
+    company_type = Column(String(50), index=True)  # 民企/央国企/外企/事业单位...
+    industry = Column(String(200), index=True)
+    batch = Column(String(100), index=True)  # 秋招/春招/实习...
+    grad_years = Column(String(100), index=True)  # 招聘届次：2026届/2027届...
+    no_exam = Column(String(50), index=True)  # 是否笔试/免笔试
+    edu_requirement = Column(String(200))
+    major_requirement = Column(Text)
+    locations = Column(String(500), index=True)
+    start_date = Column(String(30))
+    deadline_text = Column(String(200))
+    announce_url = Column(Text)
+    apply_url = Column(Text)
+    referral_code = Column(String(200))
+    notes = Column(Text)
+    updated_at_src = Column(String(30))
+    content_hash = Column(String(32), unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class WatchSource(Base):
     """自动化采集的监控来源（公告索引页）。"""
 

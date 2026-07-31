@@ -5,7 +5,7 @@ import { PositionSheet } from '@/components/PositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Briefcase, Settings, Star } from 'lucide-react'
+import { Briefcase, GraduationCap, Settings, Star } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
@@ -14,6 +14,9 @@ import { useFavorites } from '@/lib/positionStore'
 
 const AdminPage = lazy(() =>
   import('@/components/AdminPage').then((m) => ({ default: m.AdminPage })),
+)
+const CampusPage = lazy(() =>
+  import('@/components/CampusPage').then((m) => ({ default: m.CampusPage })),
 )
 
 const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
@@ -95,28 +98,33 @@ export default function App() {
             )}
           </Button>
         </div>
-        {showAdmin && (
-          <div className="mx-auto max-w-7xl px-4 pb-3">
-            <Tabs value={tab} onValueChange={setTab} className="w-full">
-              <TabsList className="grid h-10 w-full max-w-xs grid-cols-2">
-                <TabsTrigger value="search" className="gap-1.5">
-                  <Briefcase className="h-4 w-4" />
-                  岗位检索
-                </TabsTrigger>
+        <div className="mx-auto max-w-7xl px-4 pb-3">
+          <Tabs value={tab} onValueChange={setTab} className="w-full">
+            <TabsList className={showAdmin ? 'grid h-10 w-full max-w-md grid-cols-3' : 'grid h-10 w-full max-w-xs grid-cols-2'}>
+              <TabsTrigger value="search" className="gap-1.5">
+                <Briefcase className="h-4 w-4" />
+                体制内岗位
+              </TabsTrigger>
+              <TabsTrigger value="campus" className="gap-1.5">
+                <GraduationCap className="h-4 w-4" />
+                校招信息
+              </TabsTrigger>
+              {showAdmin && (
                 <TabsTrigger value="admin" className="gap-1.5">
                   <Settings className="h-4 w-4" />
                   管理
                 </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-        )}
+              )}
+            </TabsList>
+          </Tabs>
+        </div>
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6">
         <div key={tab} className="animate-fade-in-up">
           {tab === 'search' && <SearchPage />}
           <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
+            {tab === 'campus' && <CampusPage />}
             {tab === 'admin' && showAdmin && <AdminPage />}
           </Suspense>
         </div>

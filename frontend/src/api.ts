@@ -92,6 +92,68 @@ function toQuery(params: object) {
   return q.toString()
 }
 
+// ---------- 校招/社招信息 ----------
+export interface CampusJob {
+  id: number
+  source_table: string | null
+  company: string | null
+  positions: string | null
+  company_type: string | null
+  industry: string | null
+  batch: string | null
+  grad_years: string | null
+  no_exam: string | null
+  edu_requirement: string | null
+  major_requirement: string | null
+  locations: string | null
+  start_date: string | null
+  deadline_text: string | null
+  announce_url: string | null
+  apply_url: string | null
+  referral_code: string | null
+  notes: string | null
+  updated_at_src: string | null
+}
+
+export interface CampusList {
+  total: number
+  page: number
+  page_size: number
+  items: CampusJob[]
+}
+
+export interface CampusParams {
+  keyword?: string
+  source_table?: string[]
+  company_type?: string[]
+  industry?: string[]
+  batch?: string
+  grad_year?: string
+  no_exam_only?: boolean
+  referral_only?: boolean
+  location?: string
+  page?: number
+  page_size?: number
+}
+
+export interface CampusFilterOptions {
+  source_tables: Record<string, number>
+  company_types: string[]
+  industries: string[]
+  batches: string[]
+  grad_years: string[]
+}
+
+export async function fetchCampusJobs(params: CampusParams): Promise<CampusList> {
+  const res = await axios.get(`${API_BASE}/api/campus?${toQuery(params)}`)
+  return res.data
+}
+
+export async function fetchCampusFilters(): Promise<CampusFilterOptions> {
+  const res = await axios.get(`${API_BASE}/api/campus/filters`)
+  return res.data
+}
+
 export async function fetchPositions(params: SearchParams): Promise<PositionList> {
   const res = await axios.get(`${API_BASE}/api/positions?${toQuery(params)}`)
   return res.data

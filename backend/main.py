@@ -19,6 +19,7 @@ import crud
 import schemas
 import cache
 from admin import require_admin, router as admin_router
+from campus import router as campus_router
 from tasks import EXPORTS_DIR, export_positions_task, scrape_year
 
 
@@ -44,6 +45,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(admin_router)
+app.include_router(campus_router)
 
 SYNC_EXPORT_MAX_ROWS = 2000  # 同步导出快路径上限，更大请走 POST /api/export 异步任务
 

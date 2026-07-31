@@ -1,4 +1,5 @@
 """编制类招聘公告 API：/api/bianzhi 列表与筛选项。"""
+from datetime import date, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -24,6 +25,7 @@ class BianzhiJobOut(BaseModel):
     edu_requirement: Optional[str] = None
     major_requirement: Optional[str] = None
     deadline_text: Optional[str] = None
+    deadline_date: Optional[date] = None
     signup_start: Optional[str] = None
     exam_time: Optional[str] = None
     notes: Optional[str] = None
@@ -48,6 +50,7 @@ def list_bianzhi_jobs(
     province: Optional[List[str]] = Query(None),
     job_type: Optional[str] = None,
     edu: Optional[str] = None,
+    due_within_days: Optional[int] = Query(None, ge=0, le=365),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -68,9 +71,18 @@ def list_bianzhi_jobs(
             BianzhiJob.work_location.ilike(k),
             BianzhiJob.major_requirement.ilike(k),
         ))
+    if due_within_days is not None:
+        today = date.today()
+        q = q.filter(BianzhiJob.deadline_date >= today,
+                     BianzhiJob.deadline_date <= today + timedelta(days=due_within_days))
     total = q.count()
+    order_by = (
+        (BianzhiJob.deadline_date.asc(), BianzhiJob.id.desc())
+        if due_within_days is not None
+        else (BianzhiJob.updated_at_src.desc().nullslast(), BianzhiJob.id.desc())
+    )
     items = (
-        q.order_by(BianzhiJob.updated_at_src.desc().nullslast(), BianzhiJob.id.desc())
+        q.order_by(*order_by)
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()

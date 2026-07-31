@@ -17,6 +17,7 @@ import collector
 import crud
 import pipeline
 import precompute
+import backfill_deadlines
 import refresh_feishu
 import import_guopin_2027
 from cache import get_redis
@@ -429,9 +430,14 @@ def data_quality_audit():
 def refresh_feishu_data():
     """每日从飞书公开表格增量刷新 campus_jobs / bianzhi_jobs（结果计入 crawl_runs）。"""
     try:
-        return refresh_feishu.refresh_all()
+        results = refresh_feishu.refresh_all()
     except Exception as exc:  # noqa: BLE001  不影响其他 beat 任务
         return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    try:
+        results["deadline_backfill"] = backfill_deadlines.backfill_all()
+    except Exception as exc:  # noqa: BLE001
+        results["deadline_backfill"] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    return results
 
 
 @celery_app.task

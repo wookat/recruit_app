@@ -1,4 +1,5 @@
 """校招/社招信息 API：/api/campus 列表与筛选项。"""
+from datetime import date, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -28,6 +29,7 @@ class CampusJobOut(BaseModel):
     locations: Optional[str] = None
     start_date: Optional[str] = None
     deadline_text: Optional[str] = None
+    deadline_date: Optional[date] = None
     announce_url: Optional[str] = None
     apply_url: Optional[str] = None
     referral_code: Optional[str] = None
@@ -56,6 +58,7 @@ def list_campus_jobs(
     referral_only: bool = False,
     location: Optional[str] = None,
     updated_after: Optional[str] = None,
+    due_within_days: Optional[int] = Query(None, ge=0, le=365),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -87,9 +90,18 @@ def list_campus_jobs(
             CampusJob.industry.ilike(k),
             CampusJob.major_requirement.ilike(k),
         ))
+    if due_within_days is not None:
+        today = date.today()
+        q = q.filter(CampusJob.deadline_date >= today,
+                     CampusJob.deadline_date <= today + timedelta(days=due_within_days))
     total = q.count()
+    order_by = (
+        (CampusJob.deadline_date.asc(), CampusJob.id.desc())
+        if due_within_days is not None
+        else (CampusJob.updated_at_src.desc().nullslast(), CampusJob.id.desc())
+    )
     items = (
-        q.order_by(CampusJob.updated_at_src.desc().nullslast(), CampusJob.id.desc())
+        q.order_by(*order_by)
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()

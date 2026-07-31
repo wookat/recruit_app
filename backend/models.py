@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Index, func
+from sqlalchemy import Column, Date, Integer, String, Text, DateTime, Index, func
 from sqlalchemy.dialects.postgresql import ARRAY
 from database import Base
 
@@ -65,6 +65,7 @@ class CampusJob(Base):
     locations = Column(String(500), index=True)
     start_date = Column(String(30))
     deadline_text = Column(String(200))
+    deadline_date = Column(Date, index=True)
     announce_url = Column(Text)
     apply_url = Column(Text)
     referral_code = Column(String(200))
@@ -89,6 +90,7 @@ class BianzhiJob(Base):
     edu_requirement = Column(String(200), index=True)
     major_requirement = Column(Text)
     deadline_text = Column(String(300))
+    deadline_date = Column(Date, index=True)
     signup_start = Column(String(50))
     exam_time = Column(String(50))
     notes = Column(Text)

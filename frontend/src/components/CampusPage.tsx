@@ -372,12 +372,12 @@ export function CampusPage({
                   <span className="text-muted-foreground">截止：{job.deadline_text}</span>
                 )}
               </div>
-              {job.major_requirement && (
+              {job.major_requirement && job.major_requirement.trim() !== '/' && (
                 <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
                   专业：{job.major_requirement}
                 </p>
               )}
-              {job.notes && (
+              {job.notes && job.notes.trim() !== '/' && (
                 <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">备注：{job.notes}</p>
               )}
               {(job.apply_url || job.announce_url) && (

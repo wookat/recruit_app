@@ -169,9 +169,9 @@ export function CampusPage({
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
     if (q.get('board') !== 'campus') return
-    q.set('bpreset', preset)
+    q.set('bpreset', recentOnly && preset === 'all' ? 'recent7' : preset)
     window.history.replaceState(null, '', `?${q.toString()}`)
-  }, [preset])
+  }, [preset, recentOnly])
 
   useEffect(() => {
     const kw = keyword.trim()

@@ -12,6 +12,7 @@ import { FavoritesSheet } from '@/components/FavoritesSheet'
 import { CompareBar } from '@/components/CompareBar'
 import { useFavorites } from '@/lib/positionStore'
 import { useBianzhiFavorites, useCampusFavorites } from '@/lib/boardFavorites'
+import { applySeo } from '@/lib/seo'
 import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
 
 const JobGuideSheet = lazy(() =>
@@ -158,6 +159,7 @@ export default function App() {
 
   useEffect(() => {
     syncSectionUrl(section)
+    applySeo(section.mode, section.preset)
   }, [section])
 
   const cycleTheme = useCallback(() => {

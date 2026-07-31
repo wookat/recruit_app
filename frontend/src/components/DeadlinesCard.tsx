@@ -35,17 +35,23 @@ function urgencyClass(n: number | null): string {
   return 'border-amber-300 text-amber-700 dark:border-amber-800 dark:text-amber-400'
 }
 
-export function DeadlinesCard() {
+interface Props {
+  days?: number
+  limit?: number
+  defaultExpanded?: boolean
+}
+
+export function DeadlinesCard({ days = 7, limit = 20, defaultExpanded = false }: Props) {
   const [entries, setEntries] = useState<DeadlineEntry[]>([])
   const [failed, setFailed] = useState(false)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(defaultExpanded)
   const [selected, setSelected] = useState<Position | null>(null)
 
   useEffect(() => {
-    fetchDeadlines()
+    fetchDeadlines(days, limit)
       .then(setEntries)
       .catch(() => setFailed(true))
-  }, [])
+  }, [days, limit])
 
   if (failed || entries.length === 0) return null
 

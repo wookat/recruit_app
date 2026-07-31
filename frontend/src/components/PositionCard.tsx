@@ -1,12 +1,13 @@
 import { memo } from 'react'
 import type { Position } from '@/api'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { MapPin, GraduationCap, Calendar, Building2 } from 'lucide-react'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
 import { STATUS_COLORS, useAppStatuses } from '@/lib/positionStore'
+import { eduClass, jobTypeClass, yearClass, PILL_BASE } from '@/lib/badgeColors'
+import { cn } from '@/lib/utils'
 
 interface Props {
   item: Position
@@ -21,12 +22,12 @@ export const PositionCard = memo(function PositionCard({ item, onDetail }: Props
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">{item.year}</Badge>
-            <Badge variant="outline">{item.job_type}</Badge>
+            <span className={cn(PILL_BASE, yearClass(item.year))}>{item.year}</span>
+            <span className={cn(PILL_BASE, jobTypeClass(item.job_type))}>{item.job_type}</span>
             {item.edu_level_norm && (
-              <Badge variant="outline" className="text-muted-foreground">
+              <span className={cn(PILL_BASE, eduClass(item.edu_level_norm))}>
                 {item.edu_level_norm}
-              </Badge>
+              </span>
             )}
             {status && (
               <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_COLORS[status]}`}>

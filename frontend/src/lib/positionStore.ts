@@ -1,8 +1,11 @@
 import { useSyncExternalStore } from 'react'
 import type { Position } from '@/api'
+import type { AppChannel } from '@/lib/badgeColors'
 
 const FAV_KEY = 'recruit.favorites'
 const STATUS_KEY = 'recruit.appStatus'
+const NOTE_KEY = 'recruit.appNote'
+const CHANNEL_KEY = 'recruit.appChannel'
 const FAV_MAX = 200
 export const COMPARE_MAX = 4
 
@@ -47,8 +50,19 @@ function readStatuses(): Record<number, AppStatus> {
   }
 }
 
+function readRecord<T>(key: string): Record<number, T> {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? (JSON.parse(raw) as Record<number, T>) : {}
+  } catch {
+    return {}
+  }
+}
+
 let favorites: Position[] = readFavorites()
 let statuses: Record<number, AppStatus> = readStatuses()
+let notes: Record<number, string> = readRecord<string>(NOTE_KEY)
+let channels: Record<number, AppChannel> = readRecord<AppChannel>(CHANNEL_KEY)
 let compare: Position[] = []
 const listeners = new Set<Listener>()
 
@@ -141,6 +155,47 @@ export function setAppStatus(id: number, status: AppStatus) {
 
 export function useAppStatuses(): Record<number, AppStatus> {
   return useSyncExternalStore(subscribe, () => statuses)
+}
+
+function persistRecord(key: string, value: Record<number, unknown>) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // ignore quota / privacy-mode errors
+  }
+}
+
+export function setAppNote(id: number, note: string) {
+  const trimmed = note.trim()
+  if (!trimmed) {
+    const rest = { ...notes }
+    delete rest[id]
+    notes = rest
+  } else {
+    notes = { ...notes, [id]: trimmed }
+  }
+  persistRecord(NOTE_KEY, notes)
+  emit()
+}
+
+export function setAppChannel(id: number, channel: AppChannel | null) {
+  if (!channel) {
+    const rest = { ...channels }
+    delete rest[id]
+    channels = rest
+  } else {
+    channels = { ...channels, [id]: channel }
+  }
+  persistRecord(CHANNEL_KEY, channels)
+  emit()
+}
+
+export function useAppNotes(): Record<number, string> {
+  return useSyncExternalStore(subscribe, () => notes)
+}
+
+export function useAppChannels(): Record<number, AppChannel> {
+  return useSyncExternalStore(subscribe, () => channels)
 }
 
 export function useFavorites(): Position[] {

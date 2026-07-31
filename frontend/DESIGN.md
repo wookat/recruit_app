@@ -41,6 +41,23 @@
 
 **禁止**：新增无 `dark:` 变体的硬编码色；用状态色做装饰性用途。
 
+### 1.3 分类色板（多维表格风格标签）
+
+分类字段（岗位类型 / 年份 / 学历 / 省份 / 投递渠道）使用柔和底色 + 深色文字的彩色标签，统一维护在 `src/lib/badgeColors.ts`：
+
+- 统一类名模式：`bg-{c}-100 text-{c}-700 dark:bg-{c}-950 dark:text-{c}-300`（中性 `slate` 例外，沿用 `STATUS_COLORS.未投递` 的写法），全部收敛在 `TONE_CLASSES`。
+- 胶囊形态统一用 `PILL_BASE`（`rounded-full px-2 py-0.5 text-[11px] font-medium`），与投递状态 pill 一致。
+
+| 字段 | 映射 | 兜底 |
+|---|---|---|
+| job_type | 公务员=blue、事业单位/事业编=violet、军队文职=green、央企/国企=red、选调生=orange、三支一扶=cyan、教师=pink、银行=indigo、上市公司=teal、其他企业=slate | `hashTone`（固定 hash，排除 red/slate 语义色） |
+| year | ≥2027=red（高亮最新）、2026=orange、2025=green、更早=slate | — |
+| edu_level_norm | 大专/中专=teal、本科=blue、硕士=violet、博士=purple、其他/不限=slate | `hashTone` |
+| province / 工作地点 | 按前 3 字 `hashTone` 淡色底（同省稳定同色） | slate |
+| 投递渠道 | 官网=blue、内推=green、邮箱=orange、招聘平台=cyan、现场招聘=violet、其他=slate | — |
+
+**约束**：新增分类标签必须复用 `TONE_CLASSES` + `PILL_BASE`，不得内联新的色值组合；未知枚举值一律走 `hashTone` 兜底，禁止 hardcode 单个值的颜色到组件里。
+
 ---
 
 ## 2. 字体层级

@@ -81,6 +81,7 @@ function syncSectionUrl(section: Section) {
   if (section.mode === 'positions') {
     q.delete('board')
     q.delete('bpreset')
+    q.delete('due')
   } else {
     q.set('board', section.mode)
     if (section.preset) q.set('bpreset', section.preset)

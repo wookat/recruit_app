@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/table'
 import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { DueBadge } from '@/components/DueBadge'
 import { toggleCampusFavorite, useCampusFavorites } from '@/lib/boardFavorites'
 import { applySeo } from '@/lib/seo'
 
@@ -154,6 +155,9 @@ export function CampusPage({
   const [companyTypes, setCompanyTypes] = useState<string[]>([])
   const [city, setCity] = useState<string | null>(null)
   const [recentOnly, setRecentOnly] = useState(initialPreset === 'recent7')
+  const [dueOnly, setDueOnly] = useState(
+    () => new URLSearchParams(window.location.search).get('due') === '7',
+  )
   const [page, setPage] = useState(1)
   const [data, setData] = useState<{ total: number; items: CampusJob[] } | null>(null)
   const [filters, setFilters] = useState<CampusFilterOptions | null>(null)
@@ -172,9 +176,11 @@ export function CampusPage({
     if (q.get('board') !== 'campus') return
     const urlPreset = recentOnly && preset === 'all' ? 'recent7' : preset
     q.set('bpreset', urlPreset)
+    if (dueOnly) q.set('due', '7')
+    else q.delete('due')
     window.history.replaceState(null, '', `?${q.toString()}`)
     applySeo('campus', urlPreset)
-  }, [preset, recentOnly])
+  }, [preset, recentOnly, dueOnly])
 
   useEffect(() => {
     const kw = keyword.trim()
@@ -204,10 +210,11 @@ export function CampusPage({
       company_type: companyTypes.length ? companyTypes : p.company_type,
       location: city || undefined,
       updated_after: recentOnly ? daysAgoStr(7) : undefined,
+      due_within_days: dueOnly ? 7 : undefined,
       page,
       page_size: PAGE_SIZE,
     }
-  }, [preset, keyword, companyTypes, city, recentOnly, page])
+  }, [preset, keyword, companyTypes, city, recentOnly, dueOnly, page])
 
   useEffect(() => {
     let cancelled = false
@@ -399,6 +406,21 @@ export function CampusPage({
           >
             近7天更新
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setDueOnly((v) => !v)
+              setPage(1)
+            }}
+            className={cn(
+              'whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors',
+              dueOnly
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-foreground hover:bg-muted',
+            )}
+          >
+            即将截止
+          </button>
         </div>
       </div>
 
@@ -556,7 +578,10 @@ export function CampusPage({
                     {job.start_date || '-'}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {job.deadline_text || '-'}
+                    <span className="inline-flex items-center gap-1.5">
+                      {job.deadline_text || '-'}
+                      <DueBadge date={job.deadline_date} />
+                    </span>
                   </TableCell>
                   <TableCell>
                     {job.referral_code ? (
@@ -681,6 +706,7 @@ export function CampusPage({
                 {job.deadline_text && (
                   <span className="text-muted-foreground">截止：{job.deadline_text}</span>
                 )}
+                <DueBadge date={job.deadline_date} />
               </div>
               {job.major_requirement && job.major_requirement.trim() !== '/' && (
                 <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">

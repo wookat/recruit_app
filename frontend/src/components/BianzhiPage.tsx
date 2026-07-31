@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/table'
 import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { DueBadge } from '@/components/DueBadge'
 import { toggleBianzhiFavorite, useBianzhiFavorites } from '@/lib/boardFavorites'
 import hrSites from '@/data/hrSites.json'
 import { applySeo } from '@/lib/seo'
@@ -78,6 +79,9 @@ export function BianzhiPage({
   onCrossPreset,
 }: BianzhiPageProps) {
   const [preset, setPreset] = useState(initialPreset ?? 'all')
+  const [dueOnly, setDueOnly] = useState(
+    () => new URLSearchParams(window.location.search).get('due') === '7',
+  )
   const [keyword, setKeyword] = useState(initialKeyword ?? '')
   const [searchInput, setSearchInput] = useState(initialKeyword ?? '')
   const [provinces, setProvinces] = useState<string[]>([])
@@ -100,9 +104,11 @@ export function BianzhiPage({
     const q = new URLSearchParams(window.location.search)
     if (q.get('board') !== 'bianzhi') return
     q.set('bpreset', preset)
+    if (dueOnly) q.set('due', '7')
+    else q.delete('due')
     window.history.replaceState(null, '', `?${q.toString()}`)
     applySeo('bianzhi', preset)
-  }, [preset])
+  }, [preset, dueOnly])
 
   const params = useMemo<BianzhiParams>(() => {
     const cat = PRESETS.find((v) => v.key === preset)?.category
@@ -110,10 +116,11 @@ export function BianzhiPage({
       category: cat ? [cat] : undefined,
       province: provinces.length ? provinces : undefined,
       keyword: keyword || undefined,
+      due_within_days: dueOnly ? 7 : undefined,
       page,
       page_size: PAGE_SIZE,
     }
-  }, [preset, keyword, provinces, page])
+  }, [preset, keyword, provinces, dueOnly, page])
 
   useEffect(() => {
     let cancelled = false
@@ -168,6 +175,21 @@ export function BianzhiPage({
               )}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              setDueOnly((v) => !v)
+              setPage(1)
+            }}
+            className={cn(
+              'min-h-9 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors',
+              dueOnly
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-foreground hover:bg-muted',
+            )}
+          >
+            即将截止
+          </button>
           {crossPresets && crossPresets.length > 0 && onCrossPreset && (
             <>
               <span className="my-auto h-4 w-px shrink-0 bg-border" aria-hidden="true" />
@@ -371,6 +393,7 @@ export function BianzhiPage({
                     <span className="text-muted-foreground">截止：{job.deadline_text}</span>
                   )
                 )}
+                {!isLiankao && <DueBadge date={job.deadline_date} />}
               </div>
               {job.major_requirement && job.major_requirement.trim() !== '/' && (
                 <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
@@ -522,11 +545,14 @@ export function BianzhiPage({
                     </>
                   ) : (
                     <TableCell className="text-muted-foreground" title={job.deadline_text ?? ''}>
-                      {job.deadline_text
-                        ? job.deadline_text.length > 14
-                          ? job.deadline_text.slice(0, 14) + '…'
-                          : job.deadline_text
-                        : '-'}
+                      <span className="inline-flex items-center gap-1.5">
+                        {job.deadline_text
+                          ? job.deadline_text.length > 14
+                            ? job.deadline_text.slice(0, 14) + '…'
+                            : job.deadline_text
+                          : '-'}
+                        <DueBadge date={job.deadline_date} />
+                      </span>
                     </TableCell>
                   )}
                   <TableCell className="whitespace-nowrap text-muted-foreground">

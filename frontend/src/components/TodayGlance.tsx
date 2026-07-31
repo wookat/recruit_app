@@ -20,14 +20,21 @@ const PILL =
 export function TodayGlance({ onCampus, onBianzhi, onDeadline }: Props) {
   const [campusNew, setCampusNew] = useState<number | null>(null)
   const [bianzhiTotal, setBianzhiTotal] = useState<number | null>(null)
+  const [bianzhiDue, setBianzhiDue] = useState<number | null>(null)
   const [deadlineCount, setDeadlineCount] = useState<number | null>(null)
 
   useEffect(() => {
     fetchCampusJobs({ updated_after: isoDaysAgo(7), page: 1, page_size: 1 })
       .then((r) => setCampusNew(r.total))
       .catch(() => undefined)
-    fetchBianzhiJobs({ page: 1, page_size: 1 })
-      .then((r) => setBianzhiTotal(r.total))
+    fetchBianzhiJobs({ due_within_days: 7, page: 1, page_size: 1 })
+      .then((r) => {
+        if (r.total > 0) {
+          setBianzhiDue(r.total)
+          return
+        }
+        return fetchBianzhiJobs({ page: 1, page_size: 1 }).then((r2) => setBianzhiTotal(r2.total))
+      })
       .catch(() => undefined)
     fetchDeadlines(7, 100)
       .then((list) => setDeadlineCount(list.length))
@@ -42,13 +49,29 @@ export function TodayGlance({ onCampus, onBianzhi, onDeadline }: Props) {
         <ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ),
-    bianzhiTotal !== null && bianzhiTotal > 0 && (
+    bianzhiDue !== null && bianzhiDue > 0 ? (
+      <button
+        key="bianzhi-due"
+        type="button"
+        className={PILL}
+        onClick={() => {
+          const q = new URLSearchParams(window.location.search)
+          q.set('due', '7')
+          window.history.replaceState(null, '', `?${q.toString()}`)
+          onBianzhi()
+        }}
+      >
+        <Landmark className="h-3.5 w-3.5 text-primary" />
+        编制即将截止 <span className="font-semibold text-primary">{bianzhiDue.toLocaleString()}</span> 条
+        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+      </button>
+    ) : bianzhiTotal !== null && bianzhiTotal > 0 ? (
       <button key="bianzhi" type="button" className={PILL} onClick={onBianzhi}>
         <Landmark className="h-3.5 w-3.5 text-primary" />
         编制公告 <span className="font-semibold text-primary">{bianzhiTotal.toLocaleString()}</span> 条
         <ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
-    ),
+    ) : null,
     deadlineCount !== null && deadlineCount > 0 && (
       <button key="deadline" type="button" className={PILL} onClick={onDeadline}>
         <AlarmClock className="h-3.5 w-3.5 text-primary" />

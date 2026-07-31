@@ -113,6 +113,7 @@ export interface CampusJob {
   referral_code: string | null
   notes: string | null
   updated_at_src: string | null
+  deadline_date: string | null
 }
 
 export interface CampusList {
@@ -133,6 +134,7 @@ export interface CampusParams {
   referral_only?: boolean
   location?: string
   updated_after?: string
+  due_within_days?: number
   page?: number
   page_size?: number
 }
@@ -173,6 +175,7 @@ export interface BianzhiJob {
   announce_url: string | null
   apply_url: string | null
   updated_at_src: string | null
+  deadline_date: string | null
 }
 
 export interface BianzhiList {
@@ -188,6 +191,7 @@ export interface BianzhiParams {
   province?: string[]
   job_type?: string
   edu?: string
+  due_within_days?: number
   page?: number
   page_size?: number
 }

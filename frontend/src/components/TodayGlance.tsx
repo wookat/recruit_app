@@ -52,7 +52,11 @@ export function TodayGlance({ onCampus, onBianzhi, onDeadline }: Props) {
     deadlineCount !== null && deadlineCount > 0 && (
       <button key="deadline" type="button" className={PILL} onClick={onDeadline}>
         <AlarmClock className="h-3.5 w-3.5 text-primary" />
-        体制内即将截止 <span className="font-semibold text-primary">{deadlineCount.toLocaleString()}</span> 个
+        体制内即将截止{' '}
+        <span className="font-semibold text-primary">
+          {deadlineCount >= 100 ? '100+' : deadlineCount.toLocaleString()}
+        </span>{' '}
+        个
         <ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ),

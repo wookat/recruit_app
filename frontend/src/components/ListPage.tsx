@@ -985,7 +985,7 @@ export function ListPage({
 
       {showStats && onCrossPreset && (
         <TodayGlance
-          onCampus={() => onCrossPreset('all')}
+          onCampus={() => onCrossPreset('recent7')}
           onBianzhi={() => onCrossPreset('bz:all')}
           onDeadline={() => setDeadlineView(true)}
         />

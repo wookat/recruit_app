@@ -144,13 +144,15 @@ export function CampusPage({
   crossFetchTotal,
   onCrossOpen,
 }: CampusPageProps) {
-  const [preset, setPreset] = useState(initialPreset ?? 'all')
+  const [preset, setPreset] = useState(
+    initialPreset === 'recent7' ? 'all' : initialPreset ?? 'all',
+  )
   const [keyword, setKeyword] = useState(initialKeyword ?? '')
   const [searchInput, setSearchInput] = useState(initialKeyword ?? '')
   const [crossTotal, setCrossTotal] = useState(0)
   const [companyTypes, setCompanyTypes] = useState<string[]>([])
   const [city, setCity] = useState<string | null>(null)
-  const [recentOnly, setRecentOnly] = useState(false)
+  const [recentOnly, setRecentOnly] = useState(initialPreset === 'recent7')
   const [page, setPage] = useState(1)
   const [data, setData] = useState<{ total: number; items: CampusJob[] } | null>(null)
   const [filters, setFilters] = useState<CampusFilterOptions | null>(null)

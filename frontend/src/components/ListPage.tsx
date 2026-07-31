@@ -76,6 +76,13 @@ interface ListPageProps {
   fetcher: (params: SearchParams) => Promise<PositionList>
   showStats?: boolean
   syncUrl?: boolean
+  initialPresetKey?: string
+  initialKeyword?: string
+  crossPresets?: { key: string; label: string }[]
+  onCrossPreset?: (key: string) => void
+  crossLabel?: string
+  crossFetchTotal?: (keyword: string) => Promise<number>
+  onCrossOpen?: (keyword: string) => void
 }
 
 const HOT_SEARCH = [
@@ -139,7 +146,19 @@ function defaultView(): ViewMode {
   return 'table'
 }
 
-export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) {
+export function ListPage({
+  title,
+  fetcher,
+  showStats,
+  syncUrl,
+  initialPresetKey,
+  initialKeyword,
+  crossPresets,
+  onCrossPreset,
+  crossLabel,
+  crossFetchTotal,
+  onCrossOpen,
+}: ListPageProps) {
   const [filters, setFilters] = useState<FilterOptions | null>(null)
   const [data, setData] = useState<PositionList | null>(null)
   const [loading, setLoading] = useState(false)
@@ -147,11 +166,39 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
   const [filterOpen, setFilterOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [deadlineView, setDeadlineView] = useState(false)
-  const [params, setParams] = useState<SearchParams>(() =>
-    syncUrl
+  const [params, setParams] = useState<SearchParams>(() => {
+    const base = syncUrl
       ? { ...DEFAULT_PARAMS, ...paramsFromQueryString(window.location.search) }
-      : { ...DEFAULT_PARAMS },
-  )
+      : { ...DEFAULT_PARAMS }
+    const preset = initialPresetKey
+      ? PRESET_VIEWS.find((p) => p.key === initialPresetKey)
+      : undefined
+    if (preset?.category) base.category = preset.category
+    if (preset?.year) base.year = preset.year
+    if (initialKeyword) base.keyword = initialKeyword
+    return base
+  })
+  const [crossTotal, setCrossTotal] = useState(0)
+
+  useEffect(() => {
+    const kw = (params.keyword || '').trim()
+    if (!crossFetchTotal || kw.length < 2) {
+      setCrossTotal(0)
+      return
+    }
+    let cancelled = false
+    const t = setTimeout(() => {
+      crossFetchTotal(kw)
+        .then((n) => {
+          if (!cancelled) setCrossTotal(n)
+        })
+        .catch(() => {})
+    }, 600)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [params.keyword, crossFetchTotal])
   const [recent, setRecent] = useState<string[]>(() => getRecentSearches())
   const [saved, setSaved] = useState<SavedFilter[]>(() => getSavedFilters())
   const [saveOpen, setSaveOpen] = useState(false)
@@ -908,7 +955,37 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
             </button>
           )
         })}
+        {crossPresets && crossPresets.length > 0 && onCrossPreset && (
+          <>
+            <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+            {crossPresets.map((p) => (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => onCrossPreset(p.key)}
+                className="shrink-0 cursor-pointer rounded-full border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              >
+                {p.label}
+              </button>
+            ))}
+          </>
+        )}
       </div>
+
+      {crossTotal > 0 && onCrossOpen && (
+        <button
+          type="button"
+          onClick={() => onCrossOpen((params.keyword || '').trim())}
+          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-dashed bg-card px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+        >
+          <Search className="h-4 w-4 shrink-0" />
+          <span>
+            {crossLabel || '另一板块'}中另有{' '}
+            <span className="font-semibold text-foreground">{crossTotal.toLocaleString()}</span> 条与「
+            {(params.keyword || '').trim()}」相关，点击查看 →
+          </span>
+        </button>
+      )}
 
       {deadlineView && <DeadlinesCard days={14} limit={100} defaultExpanded />}
 

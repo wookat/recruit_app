@@ -90,10 +90,29 @@ const PRESETS: PresetView[] = [
 
 const PAGE_SIZE = 20
 
-export function CampusPage() {
-  const [preset, setPreset] = useState('all')
-  const [keyword, setKeyword] = useState('')
-  const [searchInput, setSearchInput] = useState('')
+interface CampusPageProps {
+  initialPreset?: string
+  initialKeyword?: string
+  crossPresets?: { key: string; label: string }[]
+  onCrossPreset?: (key: string) => void
+  crossLabel?: string
+  crossFetchTotal?: (keyword: string) => Promise<number>
+  onCrossOpen?: (keyword: string) => void
+}
+
+export function CampusPage({
+  initialPreset,
+  initialKeyword,
+  crossPresets,
+  onCrossPreset,
+  crossLabel,
+  crossFetchTotal,
+  onCrossOpen,
+}: CampusPageProps) {
+  const [preset, setPreset] = useState(initialPreset ?? 'all')
+  const [keyword, setKeyword] = useState(initialKeyword ?? '')
+  const [searchInput, setSearchInput] = useState(initialKeyword ?? '')
+  const [crossTotal, setCrossTotal] = useState(0)
   const [companyTypes, setCompanyTypes] = useState<string[]>([])
   const [page, setPage] = useState(1)
   const [data, setData] = useState<{ total: number; items: CampusJob[] } | null>(null)
@@ -103,6 +122,26 @@ export function CampusPage() {
   useEffect(() => {
     fetchCampusFilters().then(setFilters).catch(console.error)
   }, [])
+
+  useEffect(() => {
+    const kw = keyword.trim()
+    if (!crossFetchTotal || kw.length < 2) {
+      setCrossTotal(0)
+      return
+    }
+    let cancelled = false
+    const t = setTimeout(() => {
+      crossFetchTotal(kw)
+        .then((n) => {
+          if (!cancelled) setCrossTotal(n)
+        })
+        .catch(() => {})
+    }, 600)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [keyword, crossFetchTotal])
 
   const params = useMemo<CampusParams>(() => {
     const p = PRESETS.find((v) => v.key === preset)?.params ?? {}
@@ -167,8 +206,38 @@ export function CampusPage() {
               )}
             </button>
           ))}
+          {crossPresets && crossPresets.length > 0 && onCrossPreset && (
+            <>
+              <span className="my-auto h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+              {crossPresets.map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => onCrossPreset(p.key)}
+                  className="min-h-9 whitespace-nowrap rounded-full border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </>
+          )}
         </div>
       </div>
+
+      {crossTotal > 0 && onCrossOpen && (
+        <button
+          type="button"
+          onClick={() => onCrossOpen(keyword.trim())}
+          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-dashed bg-background px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Search className="h-4 w-4 shrink-0" />
+          <span>
+            {crossLabel || '另一板块'}中另有{' '}
+            <span className="font-semibold text-foreground">{crossTotal.toLocaleString()}</span> 条与「
+            {keyword.trim()}」相关，点击查看 →
+          </span>
+        </button>
+      )}
 
       {/* 搜索 + 企业类型 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

@@ -58,6 +58,30 @@ def _major_columns(model, major_type: str):
     return cols
 
 
+def _distinct_column_values(db, model, col_name: str) -> List[str]:
+    """清洗行上某列的全部去重取值（Redis 缓存 24h），用于把关键词类筛选转成 IN 列表。"""
+    key = f"colvals:{model.__tablename__}:{col_name}"
+
+    def load():
+        col = getattr(model, col_name)
+        rows = db.query(col).filter(col != None, col != "").distinct().limit(2000).all()  # noqa: E711
+        return [r[0] for r in rows if r[0]]
+
+    return cache.get_or_set(key, 86400, load)
+
+
+def _category_value_lists(db, model, categories: List[str]):
+    """把类别筛选映射为 job_type/exam_type 的取值列表（走 IN + 索引，避免全表 ILIKE）。"""
+    kws: List[str] = []
+    for cat in categories:
+        kws.extend(CATEGORY_KEYWORDS.get(cat, [cat]))
+    jt_all = _distinct_column_values(db, model, "job_type")
+    et_all = _distinct_column_values(db, model, "exam_type")
+    jt_vals = [v for v in jt_all if any(kw in v for kw in kws)]
+    et_vals = [v for v in et_all if any(kw in v for kw in kws)]
+    return jt_vals, et_vals
+
+
 def _apply_filters(query, model, filters: PositionFilter):
     if filters.year:
         query = query.filter(model.year.in_(filters.year))
@@ -87,14 +111,16 @@ def _apply_filters(query, model, filters: PositionFilter):
         query = query.filter(or_(*(col.ilike(k) for col in major_cols if col is not None)))
 
     if filters.category:
+        jt_vals, et_vals = _category_value_lists(query.session, model, filters.category)
         cat_clauses = []
-        for cat in filters.category:
-            kws = CATEGORY_KEYWORDS.get(cat, [cat])
-            for kw in kws:
-                cat_clauses.append(model.job_type.ilike(f"%{kw}%"))
-                cat_clauses.append(model.exam_type.ilike(f"%{kw}%"))
+        if jt_vals:
+            cat_clauses.append(model.job_type.in_(jt_vals))
+        if et_vals:
+            cat_clauses.append(model.exam_type.in_(et_vals))
         if cat_clauses:
             query = query.filter(or_(*cat_clauses))
+        else:
+            query = query.filter(model.id.is_(None))
 
     if filters.keyword:
         k = f"%{filters.keyword}%"

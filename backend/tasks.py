@@ -17,6 +17,7 @@ import collector
 import crud
 import pipeline
 import precompute
+import refresh_feishu
 import import_guopin_2027
 from cache import get_redis
 from etl.normalize_v2 import parse_signup_deadline_v2
@@ -422,6 +423,15 @@ def data_quality_audit():
     finally:
         db.close()
         conn.close()
+
+
+@celery_app.task
+def refresh_feishu_data():
+    """每日从飞书公开表格增量刷新 campus_jobs / bianzhi_jobs（结果计入 crawl_runs）。"""
+    try:
+        return refresh_feishu.refresh_all()
+    except Exception as exc:  # noqa: BLE001  不影响其他 beat 任务
+        return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
 
 
 @celery_app.task

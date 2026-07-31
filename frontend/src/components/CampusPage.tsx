@@ -325,8 +325,13 @@ export function CampusPage({
                     内推码 {job.referral_code.length > 16 ? job.referral_code.slice(0, 16) + '…' : job.referral_code}
                   </Badge>
                 )}
+                {job.source_table && (
+                  <Badge variant="secondary" className={cn('border-0', TONE_CLASSES.slate)}>
+                    {job.source_table}
+                  </Badge>
+                )}
                 {job.updated_at_src && (
-                  <span className="ml-auto text-xs text-muted-foreground">{job.updated_at_src}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">更新：{job.updated_at_src}</span>
                 )}
               </div>
               {job.positions && (
@@ -351,12 +356,30 @@ export function CampusPage({
                       ))}
                   </span>
                 )}
+                {job.edu_requirement && (
+                  <Badge variant="secondary" className={cn('border-0', TONE_CLASSES.sky)}>
+                    {job.edu_requirement.length > 20
+                      ? job.edu_requirement.slice(0, 20) + '…'
+                      : job.edu_requirement}
+                  </Badge>
+                )}
                 {job.industry && <span className="text-muted-foreground">{job.industry}</span>}
                 {job.locations && <span className="text-muted-foreground">{job.locations}</span>}
+                {job.start_date && (
+                  <span className="text-muted-foreground">开始：{job.start_date}</span>
+                )}
                 {job.deadline_text && (
                   <span className="text-muted-foreground">截止：{job.deadline_text}</span>
                 )}
               </div>
+              {job.major_requirement && (
+                <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
+                  专业：{job.major_requirement}
+                </p>
+              )}
+              {job.notes && (
+                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">备注：{job.notes}</p>
+              )}
               {(job.apply_url || job.announce_url) && (
                 <div className="mt-2.5 flex flex-wrap gap-2">
                   {job.apply_url && job.apply_url.startsWith('http') && (

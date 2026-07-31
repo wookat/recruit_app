@@ -223,3 +223,33 @@ export function useFavorites(): Position[] {
 export function useCompare(): Position[] {
   return useSyncExternalStore(subscribe, () => compare)
 }
+
+export interface PositionBackup {
+  favorites: Position[]
+  statuses: Record<number, AppStatus>
+  notes: Record<number, string>
+  channels: Record<number, AppChannel>
+  priorities: Record<number, boolean>
+}
+
+export function exportPositionData(): PositionBackup {
+  return { favorites, statuses, notes, channels, priorities }
+}
+
+/** 合并导入备份：同 id 以备份数据覆盖本地。返回合并后收藏总数。 */
+export function mergePositionData(data: PositionBackup): number {
+  const byId = new Map(favorites.map((p) => [p.id, p]))
+  for (const p of data.favorites) byId.set(p.id, p)
+  favorites = [...byId.values()].slice(0, FAV_MAX)
+  statuses = { ...statuses, ...data.statuses }
+  notes = { ...notes, ...data.notes }
+  channels = { ...channels, ...data.channels }
+  priorities = { ...priorities, ...data.priorities }
+  persistFavorites()
+  persistStatuses()
+  persistRecord(NOTE_KEY, notes)
+  persistRecord(CHANNEL_KEY, channels)
+  persistRecord(PRIORITY_KEY, priorities)
+  emit()
+  return favorites.length
+}

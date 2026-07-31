@@ -133,6 +133,41 @@ export function useBianzhiFavorites(): BianzhiJob[] {
   return useSyncExternalStore(subscribe, () => bianzhiFavorites)
 }
 
+export function exportBoardData(kind: BoardKind): {
+  favorites: (CampusJob | BianzhiJob)[]
+  meta: Record<number, BoardMeta>
+} {
+  return kind === 'campus'
+    ? { favorites: campusFavorites, meta: campusMeta }
+    : { favorites: bianzhiFavorites, meta: bianzhiMeta }
+}
+
+/** 合并导入备份：同 id 以备份数据覆盖本地。返回合并后收藏总数。 */
+export function mergeBoardData(
+  kind: BoardKind,
+  favs: (CampusJob | BianzhiJob)[],
+  meta: Record<number, BoardMeta>,
+): number {
+  if (kind === 'campus') {
+    const byId = new Map(campusFavorites.map((j) => [j.id, j]))
+    for (const j of favs) byId.set(j.id, j as CampusJob)
+    campusFavorites = [...byId.values()].slice(0, FAV_MAX)
+    campusMeta = { ...campusMeta, ...meta }
+    writeJson(FAV_KEYS.campus, campusFavorites)
+    writeJson(META_KEYS.campus, campusMeta)
+    emit()
+    return campusFavorites.length
+  }
+  const byId = new Map(bianzhiFavorites.map((j) => [j.id, j]))
+  for (const j of favs) byId.set(j.id, j as BianzhiJob)
+  bianzhiFavorites = [...byId.values()].slice(0, FAV_MAX)
+  bianzhiMeta = { ...bianzhiMeta, ...meta }
+  writeJson(FAV_KEYS.bianzhi, bianzhiFavorites)
+  writeJson(META_KEYS.bianzhi, bianzhiMeta)
+  emit()
+  return bianzhiFavorites.length
+}
+
 export function useCampusMeta(): Record<number, BoardMeta> {
   return useSyncExternalStore(subscribe, () => campusMeta)
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { BianzhiJob, CampusJob, Position } from '@/api'
 import { daysUntil, formatDayLabel, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
 import {
@@ -31,6 +31,7 @@ import {
   type BoardMeta,
 } from '@/lib/boardFavorites'
 import { APP_CHANNELS, channelClass, PILL_BASE, type AppChannel } from '@/lib/badgeColors'
+import { downloadBackup, restoreBackup } from '@/lib/backup'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { copyText, favoritesShareUrl } from '@/lib/clipboard'
@@ -46,7 +47,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Building2, Download, ExternalLink, Flag, MapPin, Search, Star, Trash2, Link2, Check, CalendarDays, ListChecks, StickyNote } from 'lucide-react'
+import { Building2, Download, ExternalLink, Flag, MapPin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote } from 'lucide-react'
 import { EmptyState } from './EmptyState'
 
 interface Props {
@@ -81,6 +82,8 @@ export function FavoritesSheet({ open, onClose }: Props) {
   const [view, setView] = useState<'track' | 'calendar'>('track')
   const [statusFilter, setStatusFilter] = useState<AppStatus | null>(null)
   const [query, setQuery] = useState('')
+  const [restoreMsg, setRestoreMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const totalCount = favorites.length + campusFavs.length + bianzhiFavs.length
   const boardCount =
@@ -556,6 +559,23 @@ export function FavoritesSheet({ open, onClose }: Props) {
     URL.revokeObjectURL(url)
   }
 
+  function handleRestoreFile(file: File) {
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const r = restoreBackup(String(reader.result))
+        setRestoreMsg({
+          ok: true,
+          text: `已恢复：体制内 ${r.positions} · 校招 ${r.campus} · 编制 ${r.bianzhi}`,
+        })
+      } catch (e) {
+        setRestoreMsg({ ok: false, text: e instanceof Error ? e.message : '恢复失败' })
+      }
+    }
+    reader.onerror = () => setRestoreMsg({ ok: false, text: '文件读取失败' })
+    reader.readAsText(file)
+  }
+
   const BOARD_TABS: { key: Board; label: string; count: number }[] = [
     { key: 'positions', label: '体制内', count: favorites.length },
     { key: 'campus', label: '校招', count: campusFavs.length },
@@ -616,6 +636,50 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   </>
                 )}
               </div>
+            )}
+            <div className="flex flex-wrap items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-muted-foreground"
+                onClick={downloadBackup}
+                disabled={totalCount === 0}
+              >
+                <DatabaseBackup className="mr-1 h-3.5 w-3.5" />
+                备份数据
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-muted-foreground"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FileUp className="mr-1 h-3.5 w-3.5" />
+                恢复备份
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) handleRestoreFile(f)
+                  e.target.value = ''
+                }}
+              />
+            </div>
+            {restoreMsg && (
+              <p
+                className={cn(
+                  'text-xs',
+                  restoreMsg.ok
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400',
+                )}
+              >
+                {restoreMsg.text}
+              </p>
             )}
           </SheetHeader>
           <div className="space-y-2 px-4 pb-1 sm:px-6">

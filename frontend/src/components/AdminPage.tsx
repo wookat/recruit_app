@@ -40,6 +40,7 @@ export function AdminPage() {
   const [taskStatus, setTaskStatus] = useState('')
   const [runs, setRuns] = useState<CrawlRunList | null>(null)
   const [health, setHealth] = useState<HealthSummary | null>(null)
+  const [healthAt, setHealthAt] = useState<Date | null>(null)
   const [runPage, setRunPage] = useState(1)
   const [expandedRun, setExpandedRun] = useState<number | null>(null)
 
@@ -69,7 +70,12 @@ export function AdminPage() {
         setSources(srcs)
         setAnns(list)
         fetchCrawlRuns(tk, runPage).then(setRuns).catch(() => setRuns(null))
-        fetchHealthSummary(tk).then(setHealth).catch(() => setHealth(null))
+        fetchHealthSummary(tk)
+          .then((h) => {
+            setHealth(h)
+            setHealthAt(new Date())
+          })
+          .catch(() => setHealth(null))
         setAuthed(true)
         setError('')
         localStorage.setItem(TOKEN_KEY, tk)
@@ -84,6 +90,28 @@ export function AdminPage() {
   useEffect(() => {
     if (token) void load(token)
   }, [token, load])
+
+  useEffect(() => {
+    if (!authed || !token) return
+    const tick = () => {
+      if (document.visibilityState !== 'visible') return
+      fetchHealthSummary(token)
+        .then((h) => {
+          setHealth(h)
+          setHealthAt(new Date())
+        })
+        .catch(() => undefined)
+    }
+    const iv = window.setInterval(tick, 60000)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') tick()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.clearInterval(iv)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [authed, token])
 
   if (!authed) {
     return (
@@ -245,7 +273,7 @@ export function AdminPage() {
         </CardContent>
       </Card>
 
-      {health && <HealthCard health={health} />}
+      {health && <HealthCard health={health} updatedAt={healthAt} />}
 
       <Card>
         <CardHeader className="pb-2">
@@ -463,7 +491,12 @@ const TABLE_LABELS: Record<string, string> = {
   bianzhi_jobs: '编制岗位',
 }
 
-function HealthCard({ health }: { health: HealthSummary }) {
+function formatClock(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+}
+
+function HealthCard({ health, updatedAt }: { health: HealthSummary; updatedAt: Date | null }) {
   const cacheMissing = health.cache_ttl_seconds.stats <= 0 || health.cache_ttl_seconds.filters <= 0
   const hasFailures =
     health.crawl_24h.failed > 0 || health.failed_sources_yesterday.sources.length > 0
@@ -473,6 +506,11 @@ function HealthCard({ health }: { health: HealthSummary }) {
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Activity className="h-4 w-4" /> 系统健康
+          {updatedAt && (
+            <span className="text-xs font-normal text-muted-foreground">
+              更新于 {formatClock(updatedAt)}
+            </span>
+          )}
         </CardTitle>
         <HealthBadge
           level={overall}

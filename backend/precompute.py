@@ -33,6 +33,8 @@ def refresh_hot_caches() -> dict:
 # 组合预热用的热门年份与工作类型
 WARM_YEARS = (2027, 2026)
 WARM_JOB_TYPES = ("公务员", "事业单位")
+# 前端预设视图 chips 使用的类别筛选
+WARM_CATEGORIES = ("公务员", "事业单位/事业编", "军队文职", "国企/央企", "选调生")
 
 
 def _warm_count(db, r, filters: "crud.PositionFilter") -> None:
@@ -56,6 +58,7 @@ def warm_common_queries() -> dict:
             combos.append(crud.PositionFilter(year=[y], job_type=[jt]))
     for jt in WARM_JOB_TYPES:
         combos.append(crud.PositionFilter(job_type=[jt]))
+    combos += [crud.PositionFilter(category=[c]) for c in WARM_CATEGORIES]  # (d) 预设视图 chips
 
     r = cache.get_redis()
     warmed, errors = 0, 0

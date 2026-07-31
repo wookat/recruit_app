@@ -55,6 +55,7 @@ def list_campus_jobs(
     no_exam_only: bool = False,
     referral_only: bool = False,
     location: Optional[str] = None,
+    updated_after: Optional[str] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -76,6 +77,8 @@ def list_campus_jobs(
         q = q.filter(CampusJob.referral_code != None, CampusJob.referral_code != "")  # noqa: E711
     if location:
         q = q.filter(CampusJob.locations.ilike(f"%{location}%"))
+    if updated_after:
+        q = q.filter(CampusJob.updated_at_src >= updated_after)
     if keyword:
         k = f"%{keyword}%"
         q = q.filter(or_(

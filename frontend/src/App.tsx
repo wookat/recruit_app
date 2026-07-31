@@ -5,12 +5,16 @@ import { PositionSheet } from '@/components/PositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Briefcase, Settings, Star } from 'lucide-react'
+import { BookOpen, Briefcase, Settings, Star } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
 import { CompareBar } from '@/components/CompareBar'
 import { useFavorites } from '@/lib/positionStore'
+
+const JobGuideSheet = lazy(() =>
+  import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet })),
+)
 
 const AdminPage = lazy(() =>
   import('@/components/AdminPage').then((m) => ({ default: m.AdminPage })),
@@ -88,6 +92,7 @@ export default function App() {
   const [tab, setTab] = useState(showAdmin ? 'admin' : 'search')
   const [section, setSection] = useState<Section>({ mode: 'positions' })
   const [favOpen, setFavOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
   const [deepLinked, setDeepLinked] = useState<Position | null>(null)
   const favorites = useFavorites()
 
@@ -149,6 +154,12 @@ export default function App() {
               </span>
             </div>
           </div>
+          <div className="flex items-center gap-1.5">
+          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setGuideOpen(true)}>
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">求职攻略</span>
+            <span className="sm:hidden">攻略</span>
+          </Button>
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setFavOpen(true)}>
             <Star className="h-4 w-4 text-amber-400" />
             我的收藏
@@ -158,6 +169,7 @@ export default function App() {
               </Badge>
             )}
           </Button>
+          </div>
         </div>
         {showAdmin && (
           <div className="mx-auto max-w-7xl px-4 pb-3">
@@ -225,6 +237,9 @@ export default function App() {
       </footer>
 
       <FavoritesSheet open={favOpen} onClose={() => setFavOpen(false)} />
+      <Suspense fallback={null}>
+        {guideOpen && <JobGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
+      </Suspense>
       <CompareBar />
       {deepLinked && <PositionSheet item={deepLinked} onClose={() => setDeepLinked(null)} />}
     </div>

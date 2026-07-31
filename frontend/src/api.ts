@@ -132,6 +132,7 @@ export interface CampusParams {
   no_exam_only?: boolean
   referral_only?: boolean
   location?: string
+  updated_after?: string
   page?: number
   page_size?: number
 }

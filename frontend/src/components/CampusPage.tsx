@@ -99,6 +99,30 @@ const PRESETS: PresetView[] = [
 
 const PAGE_SIZE = 20
 
+const CITY_CHIPS = [
+  '北京',
+  '上海',
+  '广州',
+  '深圳',
+  '杭州',
+  '南京',
+  '成都',
+  '武汉',
+  '西安',
+  '苏州',
+  '天津',
+  '重庆',
+  '长沙',
+  '青岛',
+  '郑州',
+  '合肥',
+]
+
+function daysAgoStr(days: number): string {
+  const d = new Date(Date.now() - days * 86400000)
+  return d.toISOString().slice(0, 10)
+}
+
 interface CampusPageProps {
   initialPreset?: string
   initialKeyword?: string
@@ -123,6 +147,8 @@ export function CampusPage({
   const [searchInput, setSearchInput] = useState(initialKeyword ?? '')
   const [crossTotal, setCrossTotal] = useState(0)
   const [companyTypes, setCompanyTypes] = useState<string[]>([])
+  const [city, setCity] = useState<string | null>(null)
+  const [recentOnly, setRecentOnly] = useState(false)
   const [page, setPage] = useState(1)
   const [data, setData] = useState<{ total: number; items: CampusJob[] } | null>(null)
   const [filters, setFilters] = useState<CampusFilterOptions | null>(null)
@@ -161,10 +187,12 @@ export function CampusPage({
       ...p,
       keyword: keyword || undefined,
       company_type: companyTypes.length ? companyTypes : p.company_type,
+      location: city || undefined,
+      updated_after: recentOnly ? daysAgoStr(7) : undefined,
       page,
       page_size: PAGE_SIZE,
     }
-  }, [preset, keyword, companyTypes, page])
+  }, [preset, keyword, companyTypes, city, recentOnly, page])
 
   useEffect(() => {
     let cancelled = false
@@ -316,6 +344,47 @@ export function CampusPage({
             ))}
           </div>
         )}
+      </div>
+
+      {/* 城市筛选 + 近7天更新 */}
+      <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+        <div className="flex w-max items-center gap-1.5">
+          <span className="mr-0.5 shrink-0 text-xs text-muted-foreground">城市</span>
+          {CITY_CHIPS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => {
+                setCity((prev) => (prev === c ? null : c))
+                setPage(1)
+              }}
+              className={cn(
+                'whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors',
+                city === c
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border bg-background text-foreground hover:bg-muted',
+              )}
+            >
+              {c}
+            </button>
+          ))}
+          <span className="mx-1 h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => {
+              setRecentOnly((v) => !v)
+              setPage(1)
+            }}
+            className={cn(
+              'whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors',
+              recentOnly
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-foreground hover:bg-muted',
+            )}
+          >
+            近7天更新
+          </button>
+        </div>
       </div>
 
       {/* 计数 */}

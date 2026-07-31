@@ -8,8 +8,10 @@ import {
   setAppChannel,
   setAppNote,
   setAppStatus,
+  toggleAppPriority,
   toggleFavorite,
   useAppChannels,
+  useAppPriorities,
   useAppNotes,
   useAppStatuses,
   useFavorites,
@@ -31,7 +33,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Building2, MapPin, Star, Trash2, Link2, Check, CalendarDays, ListChecks, StickyNote } from 'lucide-react'
+import { Building2, Flag, MapPin, Star, Trash2, Link2, Check, CalendarDays, ListChecks, StickyNote } from 'lucide-react'
 import { EmptyState } from './EmptyState'
 
 interface Props {
@@ -44,6 +46,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
   const statuses = useAppStatuses()
   const notes = useAppNotes()
   const channels = useAppChannels()
+  const priorities = useAppPriorities()
   const [selected, setSelected] = useState<Position | null>(null)
   const [noteEditing, setNoteEditing] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
@@ -58,7 +61,9 @@ export function FavoritesSheet({ open, onClose }: Props) {
 
   const groups = APP_STATUSES.map((s) => ({
     status: s,
-    items: favorites.filter((p) => (statuses[p.id] || '未投递') === s),
+    items: favorites
+      .filter((p) => (statuses[p.id] || '未投递') === s)
+      .sort((a, b) => Number(!!priorities[b.id]) - Number(!!priorities[a.id])),
   })).filter((g) => g.items.length > 0 && (!statusFilter || g.status === statusFilter))
 
   const calendarDays = useMemo(() => {
@@ -129,6 +134,20 @@ export function FavoritesSheet({ open, onClose }: Props) {
         </Button>
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          aria-pressed={!!priorities[p.id]}
+          className={cn(
+            'inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors',
+            priorities[p.id]
+              ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+              : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground',
+          )}
+          onClick={() => toggleAppPriority(p.id)}
+        >
+          <Flag className="h-3 w-3" />
+          {priorities[p.id] ? '优先' : '一般'}
+        </button>
         <Select
           value={channels[p.id] || ''}
           onValueChange={(v) => setAppChannel(p.id, (v || null) as AppChannel | null)}

@@ -6,6 +6,7 @@ const FAV_KEY = 'recruit.favorites'
 const STATUS_KEY = 'recruit.appStatus'
 const NOTE_KEY = 'recruit.appNote'
 const CHANNEL_KEY = 'recruit.appChannel'
+const PRIORITY_KEY = 'recruit.appPriority'
 const FAV_MAX = 200
 export const COMPARE_MAX = 4
 
@@ -63,6 +64,7 @@ let favorites: Position[] = readFavorites()
 let statuses: Record<number, AppStatus> = readStatuses()
 let notes: Record<number, string> = readRecord<string>(NOTE_KEY)
 let channels: Record<number, AppChannel> = readRecord<AppChannel>(CHANNEL_KEY)
+let priorities: Record<number, boolean> = readRecord<boolean>(PRIORITY_KEY)
 let compare: Position[] = []
 const listeners = new Set<Listener>()
 
@@ -188,6 +190,22 @@ export function setAppChannel(id: number, channel: AppChannel | null) {
   }
   persistRecord(CHANNEL_KEY, channels)
   emit()
+}
+
+export function toggleAppPriority(id: number) {
+  if (priorities[id]) {
+    const rest = { ...priorities }
+    delete rest[id]
+    priorities = rest
+  } else {
+    priorities = { ...priorities, [id]: true }
+  }
+  persistRecord(PRIORITY_KEY, priorities)
+  emit()
+}
+
+export function useAppPriorities(): Record<number, boolean> {
+  return useSyncExternalStore(subscribe, () => priorities)
 }
 
 export function useAppNotes(): Record<number, string> {

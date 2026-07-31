@@ -21,7 +21,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
@@ -30,7 +29,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ListFilter } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { eduClass, jobTypeClass, provinceClass, yearClass, PILL_BASE } from '@/lib/badgeColors'
+import { cn } from '@/lib/utils'
 
 const columns: ColumnDef<Position>[] = [
   { accessorKey: 'year', header: '年份', size: 70 },
@@ -49,6 +58,13 @@ const columns: ColumnDef<Position>[] = [
   { accessorKey: 'exam_time', header: '考试时间', size: 160 },
 ]
 
+export interface ColumnFilterConfig {
+  label: string
+  options: string[]
+  selected: string[]
+  onChange: (values: string[]) => void
+}
+
 interface Props {
   data: Position[]
   total: number
@@ -58,6 +74,7 @@ interface Props {
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
   loading: boolean
+  columnFilters?: Partial<Record<string, ColumnFilterConfig>>
 }
 
 export function PositionTable({
@@ -69,6 +86,7 @@ export function PositionTable({
   onPageChange,
   onPageSizeChange,
   loading,
+  columnFilters,
 }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
@@ -122,7 +140,14 @@ export function PositionTable({
                       className="whitespace-nowrap"
                       style={{ width: h.column.getSize() }}
                     >
-                      {flexRender(h.column.columnDef.header, h.getContext())}
+                      {columnFilters?.[h.column.id] ? (
+                        <span className="inline-flex items-center gap-0.5">
+                          {flexRender(h.column.columnDef.header, h.getContext())}
+                          <HeaderFilter config={columnFilters[h.column.id]!} />
+                        </span>
+                      ) : (
+                        flexRender(h.column.columnDef.header, h.getContext())
+                      )}
                     </TableHead>
                   ))}
                   <TableHead className="w-32">操作</TableHead>
@@ -164,9 +189,27 @@ export function PositionTable({
                         title={String(cell.getValue() || '')}
                       >
                         {cell.column.id === 'year' ? (
-                          <Badge variant="outline" className="font-medium">
+                          <span className={cn(PILL_BASE, yearClass(row.original.year))}>
                             {String(cell.getValue() || '-')}
-                          </Badge>
+                          </span>
+                        ) : cell.column.id === 'job_type' ? (
+                          <span className={cn(PILL_BASE, jobTypeClass(row.original.job_type))}>
+                            {String(cell.getValue() || '-')}
+                          </span>
+                        ) : cell.column.id === 'edu_level_norm' ? (
+                          <span className={cn(PILL_BASE, eduClass(String(cell.getValue() || '')))}>
+                            {String(cell.getValue() || '-')}
+                          </span>
+                        ) : cell.column.id === 'work_location' && cell.getValue() ? (
+                          <span
+                            className={cn(
+                              PILL_BASE,
+                              'max-w-full truncate',
+                              provinceClass(String(cell.getValue())),
+                            )}
+                          >
+                            {truncate(String(cell.getValue()), 12)}
+                          </span>
                         ) : (
                           truncate(String(cell.getValue() || '-'))
                         )}
@@ -279,5 +322,56 @@ export function PositionTable({
 
       {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} />}
     </div>
+  )
+}
+
+function HeaderFilter({ config }: { config: ColumnFilterConfig }) {
+  const active = config.selected.length > 0
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            aria-label={`筛选${config.label}`}
+            className={cn('relative h-6 w-6', active ? 'text-primary' : 'text-muted-foreground')}
+          >
+            <ListFilter className="h-3.5 w-3.5" />
+            {active && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-semibold text-primary-foreground">
+                {config.selected.length}
+              </span>
+            )}
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="start" className="max-h-72 min-w-40 overflow-y-auto">
+        {config.options.map((opt) => (
+          <DropdownMenuCheckboxItem
+            key={opt}
+            checked={config.selected.includes(opt)}
+            closeOnClick={false}
+            onCheckedChange={(checked) =>
+              config.onChange(
+                checked
+                  ? [...config.selected, opt]
+                  : config.selected.filter((v) => v !== opt),
+              )
+            }
+          >
+            {opt}
+          </DropdownMenuCheckboxItem>
+        ))}
+        {active && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => config.onChange([])}>
+              清除{config.label}筛选
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

@@ -5,12 +5,19 @@ import {
   APP_STATUSES,
   STATUS_COLORS,
   clearFavorites,
+  setAppChannel,
+  setAppNote,
   setAppStatus,
   toggleFavorite,
+  useAppChannels,
+  useAppNotes,
   useAppStatuses,
   useFavorites,
   type AppStatus,
 } from '@/lib/positionStore'
+import { APP_CHANNELS, channelClass, PILL_BASE, type AppChannel } from '@/lib/badgeColors'
+import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
 import { copyText, favoritesShareUrl } from '@/lib/clipboard'
 import { PositionSheet } from './PositionSheet'
 import { CompareButton } from './CompareButton'
@@ -24,7 +31,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Building2, MapPin, Star, Trash2, Link2, Check, CalendarDays, ListChecks } from 'lucide-react'
+import { Building2, MapPin, Star, Trash2, Link2, Check, CalendarDays, ListChecks, StickyNote } from 'lucide-react'
 import { EmptyState } from './EmptyState'
 
 interface Props {
@@ -35,7 +42,10 @@ interface Props {
 export function FavoritesSheet({ open, onClose }: Props) {
   const favorites = useFavorites()
   const statuses = useAppStatuses()
+  const notes = useAppNotes()
+  const channels = useAppChannels()
   const [selected, setSelected] = useState<Position | null>(null)
+  const [noteEditing, setNoteEditing] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
   const [view, setView] = useState<'track' | 'calendar'>('track')
   const [statusFilter, setStatusFilter] = useState<AppStatus | null>(null)
@@ -67,7 +77,8 @@ export function FavoritesSheet({ open, onClose }: Props) {
 
   function renderRow(p: Position) {
     return (
-      <div key={p.id} className="flex items-start gap-2 px-4 py-3 hover:bg-muted/50 sm:px-6">
+      <div key={p.id} className="px-4 py-3 hover:bg-muted/50 sm:px-6">
+      <div className="flex items-start gap-2">
         <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setSelected(p)}>
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="secondary" className="text-[11px]">
@@ -116,6 +127,65 @@ export function FavoritesSheet({ open, onClose }: Props) {
         >
           <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
         </Button>
+      </div>
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <Select
+          value={channels[p.id] || ''}
+          onValueChange={(v) => setAppChannel(p.id, (v || null) as AppChannel | null)}
+        >
+          <SelectTrigger
+            size="sm"
+            className={cn(
+              'h-6 w-auto gap-1 border-none px-2 text-[11px] font-medium shadow-none',
+              channels[p.id]
+                ? channelClass(channels[p.id])
+                : 'bg-muted/60 text-muted-foreground',
+            )}
+          >
+            {channels[p.id] || '渠道'}
+          </SelectTrigger>
+          <SelectContent>
+            {APP_CHANNELS.map((c) => (
+              <SelectItem key={c} value={c} className="text-xs">
+                <span className={cn(PILL_BASE, channelClass(c))}>{c}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {noteEditing === p.id ? (
+          <Input
+            autoFocus
+            defaultValue={notes[p.id] || ''}
+            placeholder="添加备注，回车保存"
+            className="h-7 flex-1 text-xs"
+            onBlur={(e) => {
+              setAppNote(p.id, e.target.value)
+              setNoteEditing(null)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setAppNote(p.id, (e.target as HTMLInputElement).value)
+                setNoteEditing(null)
+              } else if (e.key === 'Escape') {
+                setNoteEditing(null)
+              }
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            className="inline-flex min-w-0 cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+            onClick={() => setNoteEditing(p.id)}
+          >
+            <StickyNote className="h-3 w-3 shrink-0" />
+            {notes[p.id] ? (
+              <span className="truncate">{notes[p.id]}</span>
+            ) : (
+              '备注'
+            )}
+          </button>
+        )}
+      </div>
       </div>
     )
   }

@@ -69,6 +69,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 interface ListPageProps {
   title: string
@@ -110,6 +111,25 @@ const DEFAULT_PARAMS: SearchParams = {
 const SYNC_EXPORT_MAX = 2000
 const ASYNC_EXPORT_MAX = 50000
 
+interface PresetView {
+  key: string
+  label: string
+  category?: string[]
+  year?: number[]
+  deadline?: boolean
+}
+
+const PRESET_VIEWS: PresetView[] = [
+  { key: 'all', label: '全部' },
+  { key: 'gwy', label: '公务员', category: ['公务员'] },
+  { key: 'sye', label: '事业编', category: ['事业单位/事业编'] },
+  { key: 'jdwz', label: '军队文职', category: ['军队文职'] },
+  { key: 'gqyq', label: '国企央企', category: ['国企/央企'] },
+  { key: 'xds', label: '选调生', category: ['选调生'] },
+  { key: 'y2027', label: '2027 最新', year: [2027] },
+  { key: 'deadline', label: '即将截止', deadline: true },
+]
+
 type ViewMode = 'table' | 'card' | 'list'
 
 function defaultView(): ViewMode {
@@ -126,6 +146,7 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
   const [view, setView] = useState<ViewMode>(defaultView)
   const [filterOpen, setFilterOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [deadlineView, setDeadlineView] = useState(false)
   const [params, setParams] = useState<SearchParams>(() =>
     syncUrl
       ? { ...DEFAULT_PARAMS, ...paramsFromQueryString(window.location.search) }
@@ -225,6 +246,30 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
       abortRef.current?.abort()
     }
   }, [load, view])
+
+  function applyPreset(preset: PresetView) {
+    if (preset.deadline) {
+      setDeadlineView((v) => !v)
+      return
+    }
+    setDeadlineView(false)
+    setParams((p) => ({
+      ...p,
+      category: preset.category ?? [],
+      year: preset.year ?? [],
+      page: 1,
+    }))
+  }
+
+  function isPresetActive(preset: PresetView): boolean {
+    if (preset.deadline) return deadlineView
+    const cat = params.category ?? []
+    const yr = params.year ?? []
+    if (preset.category)
+      return cat.length === 1 && cat[0] === preset.category[0] && yr.length === 0
+    if (preset.year) return yr.length === 1 && yr[0] === preset.year[0] && cat.length === 0
+    return cat.length === 0 && yr.length === 0 && !deadlineView
+  }
 
   function updateParam<K extends keyof SearchParams>(key: K, value: SearchParams[K]) {
     setParams((p) => {
@@ -844,6 +889,29 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
 
       {showStats && <DeadlinesCard />}
 
+      <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5">
+        {PRESET_VIEWS.map((preset) => {
+          const active = isPresetActive(preset)
+          return (
+            <button
+              key={preset.key}
+              type="button"
+              onClick={() => applyPreset(preset)}
+              className={cn(
+                'shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                active
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+              )}
+            >
+              {preset.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {deadlineView && <DeadlinesCard days={14} limit={100} defaultExpanded />}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-bold tracking-tight">{title}</h1>
@@ -865,6 +933,44 @@ export function ListPage({ title, fetcher, showStats, syncUrl }: ListPageProps) 
           loading={loading}
           onPageChange={(page) => updateParam('page', page)}
           onPageSizeChange={(size) => updateParam('page_size', size)}
+          columnFilters={
+            filters
+              ? {
+                  year: {
+                    label: '年份',
+                    options: filters.years.map(String),
+                    selected: (params.year ?? []).map(String),
+                    onChange: (v) =>
+                      updateParam('year', v.map(Number).filter((n) => !isNaN(n))),
+                  },
+                  job_type: {
+                    label: '类型',
+                    options: filters.categories,
+                    selected: params.category ?? [],
+                    onChange: (v) => updateParam('category', v),
+                  },
+                  edu_level_norm: {
+                    label: '学历',
+                    options: filters.edu_levels,
+                    selected: params.edu_level ?? [],
+                    onChange: (v) => updateParam('edu_level', v),
+                  },
+                  work_location: {
+                    label: '省份',
+                    options: filters.provinces,
+                    selected: (params.location ?? []).filter((l) =>
+                      filters.provinces.includes(l),
+                    ),
+                    onChange: (v) => {
+                      const nonProvince = (params.location ?? []).filter(
+                        (l) => !filters.provinces.includes(l),
+                      )
+                      updateParam('location', [...nonProvince, ...v])
+                    },
+                  },
+                }
+              : undefined
+          }
         />
       )}
       {view === 'card' && <PositionCardGrid data={data?.items || []} loading={loading} />}

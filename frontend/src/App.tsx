@@ -82,10 +82,19 @@ function syncSectionUrl(section: Section) {
     q.delete('board')
     q.delete('bpreset')
     q.delete('due')
+    q.delete('city')
+    q.delete('ctype')
+    q.delete('prov')
+    q.delete('bkw')
   } else {
     q.set('board', section.mode)
     if (section.preset) q.set('bpreset', section.preset)
     else q.delete('bpreset')
+    if (section.mode === 'campus') q.delete('prov')
+    else {
+      q.delete('city')
+      q.delete('ctype')
+    }
   }
   const qs = q.toString()
   window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname)
@@ -171,18 +180,36 @@ export default function App() {
     })
   }, [])
 
-  const goCampus = useCallback((preset?: string, keyword?: string) => {
-    setSection({ mode: 'campus', preset, keyword })
-    window.scrollTo({ top: 0 })
+  const clearBoardParams = useCallback(() => {
+    const q = new URLSearchParams(window.location.search)
+    for (const k of ['city', 'ctype', 'prov', 'bkw']) q.delete(k)
+    const qs = q.toString()
+    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname)
   }, [])
-  const goPositions = useCallback((preset?: string, keyword?: string) => {
-    setSection({ mode: 'positions', preset, keyword })
-    window.scrollTo({ top: 0 })
-  }, [])
-  const goBianzhi = useCallback((preset?: string, keyword?: string) => {
-    setSection({ mode: 'bianzhi', preset, keyword })
-    window.scrollTo({ top: 0 })
-  }, [])
+  const goCampus = useCallback(
+    (preset?: string, keyword?: string) => {
+      clearBoardParams()
+      setSection({ mode: 'campus', preset, keyword })
+      window.scrollTo({ top: 0 })
+    },
+    [clearBoardParams],
+  )
+  const goPositions = useCallback(
+    (preset?: string, keyword?: string) => {
+      clearBoardParams()
+      setSection({ mode: 'positions', preset, keyword })
+      window.scrollTo({ top: 0 })
+    },
+    [clearBoardParams],
+  )
+  const goBianzhi = useCallback(
+    (preset?: string, keyword?: string) => {
+      clearBoardParams()
+      setSection({ mode: 'bianzhi', preset, keyword })
+      window.scrollTo({ top: 0 })
+    },
+    [clearBoardParams],
+  )
   const campusTotal = useCallback(
     (kw: string) => fetchCampusJobs({ keyword: kw, page: 1, page_size: 1 }).then((r) => r.total),
     [],

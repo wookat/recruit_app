@@ -146,14 +146,18 @@ export function CampusPage({
   crossFetchTotal,
   onCrossOpen,
 }: CampusPageProps) {
+  const urlQuery = useMemo(() => new URLSearchParams(window.location.search), [])
   const [preset, setPreset] = useState(
     initialPreset === 'recent7' ? 'all' : initialPreset ?? 'all',
   )
-  const [keyword, setKeyword] = useState(initialKeyword ?? '')
-  const [searchInput, setSearchInput] = useState(initialKeyword ?? '')
+  const [keyword, setKeyword] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
+  const [searchInput, setSearchInput] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
   const [crossTotal, setCrossTotal] = useState(0)
-  const [companyTypes, setCompanyTypes] = useState<string[]>([])
-  const [city, setCity] = useState<string | null>(null)
+  const [companyTypes, setCompanyTypes] = useState<string[]>(() => {
+    const v = urlQuery.get('ctype')
+    return v ? v.split(',').filter(Boolean) : []
+  })
+  const [city, setCity] = useState<string | null>(urlQuery.get('city'))
   const [recentOnly, setRecentOnly] = useState(initialPreset === 'recent7')
   const [dueOnly, setDueOnly] = useState(
     () => new URLSearchParams(window.location.search).get('due') === '7',
@@ -178,9 +182,15 @@ export function CampusPage({
     q.set('bpreset', urlPreset)
     if (dueOnly) q.set('due', '7')
     else q.delete('due')
+    if (city) q.set('city', city)
+    else q.delete('city')
+    if (companyTypes.length) q.set('ctype', companyTypes.join(','))
+    else q.delete('ctype')
+    if (keyword.trim()) q.set('bkw', keyword.trim())
+    else q.delete('bkw')
     window.history.replaceState(null, '', `?${q.toString()}`)
     applySeo('campus', urlPreset)
-  }, [preset, recentOnly, dueOnly])
+  }, [preset, recentOnly, dueOnly, city, companyTypes, keyword])
 
   useEffect(() => {
     const kw = keyword.trim()

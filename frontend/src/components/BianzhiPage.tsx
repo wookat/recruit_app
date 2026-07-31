@@ -78,13 +78,15 @@ export function BianzhiPage({
   crossPresets,
   onCrossPreset,
 }: BianzhiPageProps) {
+  const urlQuery = useMemo(() => new URLSearchParams(window.location.search), [])
   const [preset, setPreset] = useState(initialPreset ?? 'all')
-  const [dueOnly, setDueOnly] = useState(
-    () => new URLSearchParams(window.location.search).get('due') === '7',
-  )
-  const [keyword, setKeyword] = useState(initialKeyword ?? '')
-  const [searchInput, setSearchInput] = useState(initialKeyword ?? '')
-  const [provinces, setProvinces] = useState<string[]>([])
+  const [dueOnly, setDueOnly] = useState(urlQuery.get('due') === '7')
+  const [keyword, setKeyword] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
+  const [searchInput, setSearchInput] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
+  const [provinces, setProvinces] = useState<string[]>(() => {
+    const v = urlQuery.get('prov')
+    return v ? v.split(',').filter(Boolean) : []
+  })
   const [page, setPage] = useState(1)
   const [data, setData] = useState<{ total: number; items: BianzhiJob[] } | null>(null)
   const [filters, setFilters] = useState<BianzhiFilterOptions | null>(null)
@@ -106,9 +108,13 @@ export function BianzhiPage({
     q.set('bpreset', preset)
     if (dueOnly) q.set('due', '7')
     else q.delete('due')
+    if (provinces.length) q.set('prov', provinces.join(','))
+    else q.delete('prov')
+    if (keyword.trim()) q.set('bkw', keyword.trim())
+    else q.delete('bkw')
     window.history.replaceState(null, '', `?${q.toString()}`)
     applySeo('bianzhi', preset)
-  }, [preset, dueOnly])
+  }, [preset, dueOnly, provinces, keyword])
 
   const params = useMemo<BianzhiParams>(() => {
     const cat = PRESETS.find((v) => v.key === preset)?.category

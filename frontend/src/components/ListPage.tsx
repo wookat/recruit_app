@@ -1036,8 +1036,12 @@ export function ListPage({
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-bold tracking-tight">{title}</h1>
           {data && (
-            <Badge variant="secondary" className="text-sm font-medium">
-              共 {formatTotal(data.total, data.total_capped)} 条
+            <Badge
+              variant="secondary"
+              className="text-sm font-medium"
+              title={data.total_capped ? '结果超过 10,000 条，计数已达统计上限' : undefined}
+            >
+              共 {formatTotal(data.total, data.total_capped)} 条{data.total_capped ? '（已达统计上限）' : ''}
             </Badge>
           )}
         </div>

@@ -491,13 +491,23 @@ export function FavoritesSheet({ open, onClose }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const exportPositions = favorites.filter(matchPosition)
+  const exportCampus = campusFavs.filter(matchCampus)
+  const exportBianzhi = bianzhiFavs.filter(matchBianzhi)
+  const exportCount =
+    board === 'positions'
+      ? exportPositions.length
+      : board === 'campus'
+      ? exportCampus.length
+      : exportBianzhi.length
+
   function exportCsv() {
     const esc = (v: string | number | null | undefined) =>
       `"${String(v ?? '').replace(/"/g, '""')}"`
     const header = ['板块', '单位/公司', '岗位', '地点', '截止', '投递状态', '渠道', '优先级', '备注', '链接']
     let rows: (string | number | null | undefined)[][]
     if (board === 'positions') {
-      rows = favorites.map((p) => [
+      rows = exportPositions.map((p) => [
         '体制内',
         p.employer,
         p.position_example || p.exam_type,
@@ -510,7 +520,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
         p.source_url || '',
       ])
     } else if (board === 'campus') {
-      rows = campusFavs.map((j) => [
+      rows = exportCampus.map((j) => [
         '校招',
         j.company,
         j.positions,
@@ -523,7 +533,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
         j.apply_url || j.announce_url || '',
       ])
     } else {
-      rows = bianzhiFavs.map((j) => [
+      rows = exportBianzhi.map((j) => [
         '编制',
         j.employer || j.category,
         j.job_type,
@@ -569,9 +579,10 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   size="sm"
                   className="h-7 text-xs text-muted-foreground"
                   onClick={exportCsv}
+                  disabled={exportCount === 0}
                 >
                   <Download className="mr-1 h-3.5 w-3.5" />
-                  导出 CSV
+                  {q ? `导出 CSV (${exportCount})` : '导出 CSV'}
                 </Button>
                 {board === 'positions' && (
                   <>

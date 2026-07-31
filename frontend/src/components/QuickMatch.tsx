@@ -69,7 +69,7 @@ export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMat
         {
           label: '热门城市',
           options: [
-            ...HOT_CITIES.filter((c) => filters.hot_locations.includes(c)),
+            ...HOT_CITIES,
             ...filters.hot_locations.filter((c) => !HOT_CITIES.includes(c)),
           ].slice(0, 60),
         },

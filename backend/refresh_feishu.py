@@ -41,8 +41,8 @@ SOURCES = [
     },
     {
         "name": "feishu_bianzhi",
-        "base_url": "https://hcnloqo02okq.feishu.cn",
-        "share_token": "FO7ebOTFta07OusANytcSERwnKc",
+        "base_url": "https://acnahk1qvcna.feishu.cn",
+        "share_token": "HVc8bY4ryaBtHKsxFRjc5tYynMf",
         "kind": "bianzhi",
     },
 ]
@@ -230,8 +230,8 @@ def _cell_url(cell) -> str:
 
 
 def _norm_name(name: str) -> str:
-    """表名归一化用于匹配（去掉括号后缀与符号）。"""
-    return re.sub(r"[&＆\s]", "", re.sub(r"[（(].*$", "", name or ""))
+    """表名归一化用于匹配（去掉括号后缀、符号与 emoji）。"""
+    return re.sub(r"[^0-9A-Za-z\u4e00-\u9fff]", "", re.sub(r"[（(].*$", "", name or ""))
 
 
 def _match_spec(table_name: str, specs: dict):
@@ -306,11 +306,16 @@ def _refresh_campus(client: FeishuShareClient, db, dry_run: bool) -> dict:
 def _refresh_bianzhi(client: FeishuShareClient, db, dry_run: bool) -> dict:
     existing = {h for (h,) in db.execute(text("SELECT content_hash FROM bianzhi_jobs"))}
     counts = {"fetched": 0, "added": 0, "skipped": 0, "failed": 0, "tables": {}}
-    matched = [(tbl, spec) for tbl in client.list_tables()
+    tables = client.list_tables()
+    matched = [(tbl, spec) for tbl in tables
                if (spec := _match_spec(tbl["name"], import_bianzhi.TABLE_SPECS))]
     if not matched:
         raise RuntimeError("base 内未发现可映射到 bianzhi_jobs 的数据表（表名/列名与预期不符）")
-    payloads = client.load_tables([tbl["id"] for tbl, _ in matched])
+    # 该 base 内的「央国企校招」表属于 campus_jobs 口径（import_campus 同名 spec）
+    matched_ids = {tbl["id"] for tbl, _ in matched}
+    campus_extra = [(tbl, spec) for tbl in tables if tbl["id"] not in matched_ids
+                    and (spec := _match_spec(tbl["name"], {"央国企校招": import_campus.TABLE_SPECS["央国企校招"]}))]
+    payloads = client.load_tables([tbl["id"] for tbl, _ in matched + campus_extra])
     for tbl, (spec_key, colmap) in matched:
         category = import_bianzhi.CATEGORY_NAMES.get(spec_key, spec_key)
         added = skipped = 0
@@ -337,6 +342,34 @@ def _refresh_bianzhi(client: FeishuShareClient, db, dry_run: bool) -> dict:
         counts["added"] += added
         counts["skipped"] += skipped
         counts["tables"][tbl["name"]] = {"fetched": len(rows), "added": added, "skipped": skipped}
+    if campus_extra:
+        campus_existing = {h for (h,) in db.execute(text("SELECT content_hash FROM campus_jobs"))}
+        for tbl, (source_table, colmap) in campus_extra:
+            added = skipped = 0
+            rows = _extract_rows(client, tbl["id"], payloads[tbl["id"]], colmap)
+            counts["fetched"] += len(rows)
+            for d in rows:
+                if not d.get("company"):
+                    skipped += 1
+                    continue
+                h = import_campus.row_hash(source_table, d)
+                if h in campus_existing:
+                    skipped += 1
+                    continue
+                campus_existing.add(h)
+                added += 1
+                if dry_run:
+                    continue
+                for k, lim in CAMPUS_LIMITS.items():
+                    if k in d and d[k]:
+                        d[k] = d[k][:lim]
+                db.add(CampusJob(source_table=source_table, content_hash=h, **d))
+            if not dry_run:
+                db.commit()
+            counts["added"] += added
+            counts["skipped"] += skipped
+            counts["tables"][tbl["name"]] = {"fetched": len(rows), "added": added,
+                                             "skipped": skipped, "target": "campus_jobs"}
     return counts
 
 

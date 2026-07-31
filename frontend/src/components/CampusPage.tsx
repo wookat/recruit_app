@@ -13,7 +13,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
-import { ExternalLink, Search, Ticket } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
 
 const COMPANY_TYPE_TONES: Record<string, Tone> = {
   民企: 'blue',
@@ -118,6 +126,9 @@ export function CampusPage({
   const [data, setData] = useState<{ total: number; items: CampusJob[] } | null>(null)
   const [filters, setFilters] = useState<CampusFilterOptions | null>(null)
   const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<'table' | 'card'>(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'card' : 'table',
+  )
 
   useEffect(() => {
     fetchCampusFilters().then(setFilters).catch(console.error)
@@ -257,6 +268,34 @@ export function CampusPage({
             className="h-10 pl-9"
           />
         </form>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            aria-label="卡片视图"
+            onClick={() => setView('card')}
+            className={cn(
+              'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
+              view === 'card'
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-muted-foreground hover:bg-muted',
+            )}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="表格视图"
+            onClick={() => setView('table')}
+            className={cn(
+              'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
+              view === 'table'
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-muted-foreground hover:bg-muted',
+            )}
+          >
+            <Table2 className="h-4 w-4" />
+          </button>
+        </div>
         {filters && (
           <div className="flex flex-wrap gap-1.5">
             {filters.company_types.slice(0, 6).map((t) => (
@@ -294,6 +333,178 @@ export function CampusPage({
         </div>
       ) : data && data.items.length === 0 ? (
         <EmptyState title="没有匹配的校招信息" description="试试更换预设视图或调整搜索关键词" />
+      ) : view === 'table' ? (
+        <div
+          className={cn(
+            'overflow-x-auto rounded-xl border bg-background',
+            loading && 'pointer-events-none opacity-60',
+          )}
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[140px]">公司</TableHead>
+                <TableHead>企业类型</TableHead>
+                <TableHead className="min-w-[220px]">招聘岗位</TableHead>
+                <TableHead>批次</TableHead>
+                <TableHead>届次</TableHead>
+                <TableHead>学历要求</TableHead>
+                <TableHead>笔试</TableHead>
+                <TableHead>行业</TableHead>
+                <TableHead className="min-w-[120px]">工作地点</TableHead>
+                <TableHead>开始时间</TableHead>
+                <TableHead>截止时间</TableHead>
+                <TableHead>内推码</TableHead>
+                <TableHead>操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data?.items.map((job) => (
+                <TableRow key={job.id}>
+                  <TableCell className="font-medium" title={job.company ?? ''}>
+                    {job.company}
+                    {job.source_table && (
+                      <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                        {job.source_table}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {job.company_type ? (
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          'whitespace-nowrap border-0',
+                          toneClass(COMPANY_TYPE_TONES, job.company_type),
+                        )}
+                      >
+                        {job.company_type}
+                      </Badge>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell title={job.positions ?? ''}>
+                    <span className="line-clamp-2 max-w-[340px] whitespace-normal">
+                      {job.positions || '-'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <SplitBadges value={job.batch} map={BATCH_TONES} />
+                  </TableCell>
+                  <TableCell>
+                    {job.grad_years ? (
+                      <span className="flex flex-wrap gap-1">
+                        {job.grad_years
+                          .split(/\s*\|\s*/)
+                          .filter(Boolean)
+                          .slice(0, 3)
+                          .map((y) => (
+                            <Badge
+                              key={y}
+                              variant="secondary"
+                              className={cn(
+                                'whitespace-nowrap border-0',
+                                y.includes('2027') || y.includes('2028')
+                                  ? TONE_CLASSES.red
+                                  : TONE_CLASSES.orange,
+                              )}
+                            >
+                              {y}
+                            </Badge>
+                          ))}
+                      </span>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell title={job.edu_requirement ?? ''}>
+                    {job.edu_requirement ? (
+                      <Badge variant="secondary" className={cn('whitespace-nowrap border-0', TONE_CLASSES.sky)}>
+                        {job.edu_requirement.length > 12
+                          ? job.edu_requirement.slice(0, 12) + '…'
+                          : job.edu_requirement}
+                      </Badge>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {job.no_exam && job.no_exam !== '/' ? (
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          'whitespace-nowrap border-0',
+                          job.no_exam.includes('免') ? TONE_CLASSES.green : TONE_CLASSES.amber,
+                        )}
+                      >
+                        {job.no_exam}
+                      </Badge>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground" title={job.industry ?? ''}>
+                    {job.industry
+                      ? job.industry.length > 10
+                        ? job.industry.slice(0, 10) + '…'
+                        : job.industry
+                      : '-'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground" title={job.locations ?? ''}>
+                    {job.locations
+                      ? job.locations.length > 16
+                        ? job.locations.slice(0, 16) + '…'
+                        : job.locations
+                      : '-'}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                    {job.start_date || '-'}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                    {job.deadline_text || '-'}
+                  </TableCell>
+                  <TableCell>
+                    {job.referral_code ? (
+                      <Badge variant="secondary" className={cn('gap-1 whitespace-nowrap border-0', TONE_CLASSES.emerald)}>
+                        <Ticket className="h-3 w-3" />
+                        {job.referral_code.length > 10
+                          ? job.referral_code.slice(0, 10) + '…'
+                          : job.referral_code}
+                      </Badge>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1.5">
+                      {job.apply_url && job.apply_url.startsWith('http') && (
+                        <a
+                          href={job.apply_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                        >
+                          投递 <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                      {job.announce_url && job.announce_url.startsWith('http') && (
+                        <a
+                          href={job.announce_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md border border-border bg-background px-2 text-xs font-medium transition-colors hover:bg-muted"
+                        >
+                          公告 <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
         <div className={cn('space-y-2', loading && 'pointer-events-none opacity-60')}>
           {data?.items.map((job) => (

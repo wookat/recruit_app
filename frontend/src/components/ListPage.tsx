@@ -10,6 +10,7 @@ import {
 } from '@/api'
 import { StatsDashboard } from './StatsDashboard'
 import { DeadlinesCard } from './DeadlinesCard'
+import { TodayGlance } from './TodayGlance'
 import { buildShareUrl, paramsFromQueryString } from '@/lib/urlFilters'
 import { MultiSelect } from './MultiSelect'
 import { PositionTable } from './PositionTable'
@@ -981,6 +982,14 @@ export function ListPage({
           </>
         )}
       </div>
+
+      {showStats && onCrossPreset && (
+        <TodayGlance
+          onCampus={() => onCrossPreset('all')}
+          onBianzhi={() => onCrossPreset('bz:all')}
+          onDeadline={() => setDeadlineView(true)}
+        />
+      )}
 
       {crossTotal > 0 && onCrossOpen && (
         <button

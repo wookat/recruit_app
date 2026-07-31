@@ -162,6 +162,13 @@ export function CampusPage({
   }, [])
 
   useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('board') !== 'campus') return
+    q.set('bpreset', preset)
+    window.history.replaceState(null, '', `?${q.toString()}`)
+  }, [preset])
+
+  useEffect(() => {
     const kw = keyword.trim()
     if (!crossFetchTotal || kw.length < 2) {
       setCrossTotal(0)

@@ -996,6 +996,28 @@ export function ListPage({
 
       {!deadlineView && (
       <>
+      {!loading &&
+        data &&
+        data.total === 0 &&
+        ((params.location?.length ?? 0) > 0 || (params.province?.length ?? 0) > 0) && (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+            <span>
+              没有结果，可能是地域筛选（
+              {[...(params.province ?? []), ...(params.location ?? [])].join('、')}
+              ）与其他条件冲突
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                setParams((p) => ({ ...p, location: [], province: undefined, page: 1 }))
+              }}
+            >
+              清除地域筛选
+            </Button>
+          </div>
+        )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-bold tracking-tight">{title}</h1>

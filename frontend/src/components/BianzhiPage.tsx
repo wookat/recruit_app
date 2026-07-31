@@ -89,6 +89,13 @@ export function BianzhiPage({
     fetchBianzhiFilters().then(setFilters).catch(console.error)
   }, [])
 
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('board') !== 'bianzhi') return
+    q.set('bpreset', preset)
+    window.history.replaceState(null, '', `?${q.toString()}`)
+  }, [preset])
+
   const params = useMemo<BianzhiParams>(() => {
     const cat = PRESETS.find((v) => v.key === preset)?.category
     return {

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchCampusJobs, fetchPosition, fetchPositions, type Position } from '@/api'
 import { importFavorites } from '@/lib/positionStore'
 import { PositionSheet } from '@/components/PositionSheet'
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
 import { CompareBar } from '@/components/CompareBar'
 import { useFavorites } from '@/lib/positionStore'
+import { daysUntil, parseSignupDeadline } from '@/lib/deadline'
 
 const JobGuideSheet = lazy(() =>
   import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet })),
@@ -139,6 +140,16 @@ export default function App() {
   const [guideOpen, setGuideOpen] = useState(false)
   const [deepLinked, setDeepLinked] = useState<Position | null>(null)
   const favorites = useFavorites()
+  const dueSoon = useMemo(
+    () =>
+      favorites.filter((p) => {
+        const d = parseSignupDeadline(p)
+        if (!d) return false
+        const n = daysUntil(d)
+        return n >= 0 && n <= 3
+      }).length,
+    [favorites],
+  )
 
   useEffect(() => {
     syncSectionUrl(section)
@@ -227,9 +238,17 @@ export default function App() {
             <span className="hidden sm:inline">求职攻略</span>
             <span className="sm:hidden">攻略</span>
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setFavOpen(true)}>
+          <Button variant="outline" size="sm" className="relative gap-1.5" onClick={() => setFavOpen(true)}>
             <Star className="h-4 w-4 text-amber-400" />
             我的收藏
+            {dueSoon > 0 && (
+              <span
+                className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
+                title={`${dueSoon} 个收藏岗位 3 天内截止`}
+              >
+                {dueSoon}
+              </span>
+            )}
             {favorites.length > 0 && (
               <Badge variant="secondary" className="px-1.5 text-[11px]">
                 {favorites.length}

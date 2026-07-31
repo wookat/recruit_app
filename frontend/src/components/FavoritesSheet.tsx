@@ -46,7 +46,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Building2, ExternalLink, Flag, MapPin, Star, Trash2, Link2, Check, CalendarDays, ListChecks, StickyNote } from 'lucide-react'
+import { Building2, Download, ExternalLink, Flag, MapPin, Search, Star, Trash2, Link2, Check, CalendarDays, ListChecks, StickyNote } from 'lucide-react'
 import { EmptyState } from './EmptyState'
 
 interface Props {
@@ -80,6 +80,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
   const [board, setBoard] = useState<Board>('positions')
   const [view, setView] = useState<'track' | 'calendar'>('track')
   const [statusFilter, setStatusFilter] = useState<AppStatus | null>(null)
+  const [query, setQuery] = useState('')
 
   const totalCount = favorites.length + campusFavs.length + bianzhiFavs.length
   const boardCount =
@@ -90,6 +91,24 @@ export function FavoritesSheet({ open, onClose }: Props) {
     const meta = kind === 'campus' ? campusMeta : bianzhiMeta
     return meta[id]?.status || '未投递'
   }
+
+  const q = query.trim().toLowerCase()
+
+  const hitQuery = (fields: (string | null | undefined)[]): boolean =>
+    !q || fields.some((f) => f && f.toLowerCase().includes(q))
+
+  const matchPosition = (p: Position) =>
+    hitQuery([p.employer, p.position_example, p.exam_type, p.work_location, notes[p.id]])
+  const matchCampus = (j: CampusJob) =>
+    hitQuery([j.company, j.positions, j.industry, campusMeta[j.id]?.note])
+  const matchBianzhi = (j: BianzhiJob) =>
+    hitQuery([j.employer, j.category, j.province, j.work_location, bianzhiMeta[j.id]?.note])
+  const matchEntry = (e: Omit<CalendarEntry, 'date'>) =>
+    e.kind === 'positions'
+      ? matchPosition(e.position!)
+      : e.kind === 'campus'
+      ? matchCampus(e.campus!)
+      : matchBianzhi(e.bianzhi!)
 
   const statusCounts = useMemo(() => {
     const acc: Record<string, number> = {}
@@ -113,16 +132,16 @@ export function FavoritesSheet({ open, onClose }: Props) {
     let items: (Position | CampusJob | BianzhiJob)[]
     if (board === 'positions') {
       items = favorites
-        .filter((p) => statusOf('positions', p.id) === s)
+        .filter((p) => statusOf('positions', p.id) === s && matchPosition(p))
         .sort((a, b) => Number(!!priorities[b.id]) - Number(!!priorities[a.id]))
     } else if (board === 'campus') {
       items = sortByPriority(
-        campusFavs.filter((j) => statusOf('campus', j.id) === s),
+        campusFavs.filter((j) => statusOf('campus', j.id) === s && matchCampus(j)),
         campusMeta,
       )
     } else {
       items = sortByPriority(
-        bianzhiFavs.filter((j) => statusOf('bianzhi', j.id) === s),
+        bianzhiFavs.filter((j) => statusOf('bianzhi', j.id) === s && matchBianzhi(j)),
         bianzhiMeta,
       )
     }
@@ -162,6 +181,11 @@ export function FavoritesSheet({ open, onClose }: Props) {
       undated,
     }
   }, [favorites, campusFavs, bianzhiFavs])
+
+  const filteredCalendarDays = calendarDays
+    .map((d) => ({ ...d, entries: d.entries.filter(matchEntry) }))
+    .filter((d) => d.entries.length > 0)
+  const filteredUndated = undated.filter((u) => matchEntry(u.entry))
 
   function renderMetaRow(opts: {
     kind: BoardKind
@@ -467,6 +491,61 @@ export function FavoritesSheet({ open, onClose }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  function exportCsv() {
+    const esc = (v: string | number | null | undefined) =>
+      `"${String(v ?? '').replace(/"/g, '""')}"`
+    const header = ['板块', '单位/公司', '岗位', '地点', '截止', '投递状态', '渠道', '优先级', '备注', '链接']
+    let rows: (string | number | null | undefined)[][]
+    if (board === 'positions') {
+      rows = favorites.map((p) => [
+        '体制内',
+        p.employer,
+        p.position_example || p.exam_type,
+        p.work_location,
+        p.signup_time,
+        statusOf('positions', p.id),
+        channels[p.id] || '',
+        priorities[p.id] ? '优先' : '',
+        notes[p.id] || '',
+        p.source_url || '',
+      ])
+    } else if (board === 'campus') {
+      rows = campusFavs.map((j) => [
+        '校招',
+        j.company,
+        j.positions,
+        j.locations,
+        j.deadline_text,
+        statusOf('campus', j.id),
+        '',
+        campusMeta[j.id]?.priority ? '优先' : '',
+        campusMeta[j.id]?.note || '',
+        j.apply_url || j.announce_url || '',
+      ])
+    } else {
+      rows = bianzhiFavs.map((j) => [
+        '编制',
+        j.employer || j.category,
+        j.job_type,
+        j.province || j.work_location,
+        j.deadline_text,
+        statusOf('bianzhi', j.id),
+        '',
+        bianzhiMeta[j.id]?.priority ? '优先' : '',
+        bianzhiMeta[j.id]?.note || '',
+        j.announce_url || j.apply_url || '',
+      ])
+    }
+    const csv = '\uFEFF' + [header, ...rows].map((r) => r.map(esc).join(',')).join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `收藏_${board === 'positions' ? '体制内' : board === 'campus' ? '校招' : '编制'}_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const BOARD_TABS: { key: Board; label: string; count: number }[] = [
     { key: 'positions', label: '体制内', count: favorites.length },
     { key: 'campus', label: '校招', count: campusFavs.length },
@@ -483,8 +562,19 @@ export function FavoritesSheet({ open, onClose }: Props) {
               我的收藏
               <Badge variant="secondary">{totalCount}</Badge>
             </SheetTitle>
-            {board === 'positions' && favorites.length > 0 && (
+            {boardCount > 0 && (
               <div className="flex flex-wrap items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-muted-foreground"
+                  onClick={exportCsv}
+                >
+                  <Download className="mr-1 h-3.5 w-3.5" />
+                  导出 CSV
+                </Button>
+                {board === 'positions' && (
+                  <>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -512,6 +602,8 @@ export function FavoritesSheet({ open, onClose }: Props) {
                     <Trash2 className="mr-1 h-3.5 w-3.5" />
                     清空
                   </Button>
+                  </>
+                )}
               </div>
             )}
           </SheetHeader>
@@ -538,6 +630,17 @@ export function FavoritesSheet({ open, onClose }: Props) {
                 </button>
               ))}
             </div>
+            {boardCount > 0 && (
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="搜单位 / 公司 / 岗位 / 备注…"
+                  className="h-9 pl-8 text-xs"
+                />
+              </div>
+            )}
             {boardCount > 0 && (
               <div className="flex items-center gap-1">
                 <Button
@@ -626,15 +729,17 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   {groups.length === 0 && (
                     <EmptyState
                       className="m-4 sm:m-6"
-                      title="该状态下暂无岗位"
-                      description="点击上方状态徽章可切换筛选"
+                      title={q ? '无匹配收藏' : '该状态下暂无岗位'}
+                      description={
+                        q ? '换个关键词试试，或清空搜索框' : '点击上方状态徽章可切换筛选'
+                      }
                     />
                   )}
                 </div>
               )
             ) : (
               <div className="space-y-1 pb-4">
-                {calendarDays.map(({ date, entries }) => {
+                {filteredCalendarDays.map(({ date, entries }) => {
                   const n = daysUntil(date)
                   const expired = n < 0
                   return (
@@ -670,16 +775,16 @@ export function FavoritesSheet({ open, onClose }: Props) {
                     </div>
                   )
                 })}
-                {undated.length > 0 && (
+                {filteredUndated.length > 0 && (
                   <div>
                     <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-popover px-4 py-1.5 sm:px-6">
                       <span className="text-xs font-semibold">无固定截止日期</span>
                       <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
-                        {undated.length} 条（招满为止/详见公告等）
+                        {filteredUndated.length} 条（招满为止/详见公告等）
                       </span>
                     </div>
                     <div className="divide-y">
-                      {undated.map(({ kind, label, entry }) => (
+                      {filteredUndated.map(({ kind, label, entry }) => (
                         <div key={`u-${kind}-${(entry.position ?? entry.campus ?? entry.bianzhi)!.id}`}>
                           <div className="flex flex-wrap items-center gap-1 px-4 pt-2 sm:px-6">
                             <span className={cn(PILL_BASE, 'bg-muted/60 text-muted-foreground')}>
@@ -693,12 +798,16 @@ export function FavoritesSheet({ open, onClose }: Props) {
                     </div>
                   </div>
                 )}
-                {calendarDays.length === 0 && undated.length === 0 && (
+                {filteredCalendarDays.length === 0 && filteredUndated.length === 0 && (
                   <EmptyState
                     icon={CalendarDays}
                     className="m-4 sm:m-6"
-                    title="近 14 天内没有即将截止的收藏岗位"
-                    description="收藏更多岗位后，这里会按截止日期提醒你报名"
+                    title={q ? '无匹配收藏' : '近 14 天内没有即将截止的收藏岗位'}
+                    description={
+                      q
+                        ? '换个关键词试试，或清空搜索框'
+                        : '收藏更多岗位后，这里会按截止日期提醒你报名'
+                    }
                   />
                 )}
               </div>

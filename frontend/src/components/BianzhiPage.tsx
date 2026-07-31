@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ExternalLink, GraduationCap, Landmark, Search } from 'lucide-react'
+import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { toggleBianzhiFavorite, useBianzhiFavorites } from '@/lib/boardFavorites'
 import hrSites from '@/data/hrSites.json'
@@ -87,6 +87,9 @@ export function BianzhiPage({
   const bianzhiFavorites = useBianzhiFavorites()
   const [showHrSites, setShowHrSites] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
+  const [view, setView] = useState<'table' | 'card'>(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'card' : 'table',
+  )
 
   useEffect(() => {
     fetchBianzhiFilters().then(setFilters).catch(console.error)
@@ -199,6 +202,34 @@ export function BianzhiPage({
             className="h-10 pl-9"
           />
         </form>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            aria-label="卡片视图"
+            onClick={() => setView('card')}
+            className={cn(
+              'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
+              view === 'card'
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-muted-foreground hover:bg-muted',
+            )}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="表格视图"
+            onClick={() => setView('table')}
+            className={cn(
+              'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
+              view === 'table'
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-muted-foreground hover:bg-muted',
+            )}
+          >
+            <Table2 className="h-4 w-4" />
+          </button>
+        </div>
         <div className="flex gap-1.5">
           <Button variant="outline" size="sm" className="h-10 gap-1.5" onClick={() => setGuideOpen(true)}>
             <GraduationCap className="h-4 w-4" />
@@ -277,6 +308,100 @@ export function BianzhiPage({
         </div>
       ) : data && data.items.length === 0 ? (
         <EmptyState title="没有匹配的编制公告" description="试试更换分类或调整搜索关键词" />
+      ) : view === 'card' ? (
+        <div className={cn('space-y-2', loading && 'pointer-events-none opacity-60')}>
+          {data?.items.map((job) => (
+            <div
+              key={job.id}
+              className="rounded-xl border bg-background p-4 transition-colors hover:border-primary/20 hover:shadow-md"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <BoardFavoriteButton
+                  className="-ml-2 -my-1"
+                  active={bianzhiFavorites.some((f) => f.id === job.id)}
+                  onToggle={() => toggleBianzhiFavorite(job)}
+                />
+                <span className="text-base font-semibold">
+                  {job.employer ||
+                    (job.category === '大型联考'
+                      ? `${job.province ?? ''}${job.job_type ?? ''}联考`
+                      : '-')}
+                </span>
+                {job.category && (
+                  <Badge variant="secondary" className={cn('border-0', toneClass(CATEGORY_TONES, job.category))}>
+                    {job.category}
+                  </Badge>
+                )}
+                {job.updated_at_src && (
+                  <span className="ml-auto text-xs text-muted-foreground">更新：{job.updated_at_src}</span>
+                )}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
+                {job.province && <span className="text-muted-foreground">{job.province}</span>}
+                {job.work_location && (
+                  <span className="text-muted-foreground">{job.work_location}</span>
+                )}
+                {job.job_type && <span className="text-muted-foreground">{job.job_type}</span>}
+                {job.headcount && (
+                  <span className="text-muted-foreground">招 {job.headcount} 人</span>
+                )}
+                {job.edu_requirement && (
+                  <Badge variant="secondary" className={cn('border-0', TONE_CLASSES.sky)}>
+                    {job.edu_requirement.length > 12
+                      ? job.edu_requirement.slice(0, 12) + '…'
+                      : job.edu_requirement}
+                  </Badge>
+                )}
+                {isLiankao ? (
+                  <>
+                    {job.signup_start && (
+                      <span className="text-muted-foreground">报名：{job.signup_start}</span>
+                    )}
+                    {job.exam_time && (
+                      <span className="text-muted-foreground">考试：{job.exam_time}</span>
+                    )}
+                  </>
+                ) : (
+                  job.deadline_text && (
+                    <span className="text-muted-foreground">截止：{job.deadline_text}</span>
+                  )
+                )}
+              </div>
+              {job.major_requirement && job.major_requirement.trim() !== '/' && (
+                <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
+                  专业：{job.major_requirement}
+                </p>
+              )}
+              {job.notes && job.notes.trim() !== '/' && (
+                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">备注：{job.notes}</p>
+              )}
+              {(job.announce_url || job.apply_url) && (
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  {job.announce_url && job.announce_url.startsWith('http') && (
+                    <a
+                      href={job.announce_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-11 items-center gap-1 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:h-8"
+                    >
+                      查看公告 <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                  {job.apply_url && job.apply_url.startsWith('http') && (
+                    <a
+                      href={job.apply_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-11 items-center gap-1 rounded-md border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted sm:h-8"
+                    >
+                      报名入口 <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       ) : (
         <div
           className={cn(

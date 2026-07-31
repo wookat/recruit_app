@@ -343,7 +343,10 @@ export function BianzhiPage({
                 )}
                 {job.job_type && <span className="text-muted-foreground">{job.job_type}</span>}
                 {job.headcount && (
-                  <span className="text-muted-foreground">招 {job.headcount} 人</span>
+                  <span className="text-muted-foreground">
+                    招 {job.headcount}
+                    {/[人名]$/.test(String(job.headcount)) ? '' : ' 人'}
+                  </span>
                 )}
                 {job.edu_requirement && (
                   <Badge variant="secondary" className={cn('border-0', TONE_CLASSES.sky)}>

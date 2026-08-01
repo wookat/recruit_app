@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
-import { Search, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowRight, CalendarDays, Search, ThumbsUp, X } from 'lucide-react'
+import { fetchBianzhiJobs, type BianzhiJob } from '@/api'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Highlight } from '@/components/Highlight'
@@ -18,6 +19,105 @@ interface GuideSection {
   title: string
   blocks: { heading?: string; items: string[] }[]
 }
+
+interface TimelineStage {
+  months: number[]
+  label: string
+  title: string
+  tasks: string[]
+  links: { label: string; href: string }[]
+}
+
+const TIMELINE_STAGES: TimelineStage[] = [
+  {
+    months: [7, 8],
+    label: '7-8 月',
+    title: '秋招提前批',
+    tasks: [
+      '完善简历并针对目标岗位定制，准备好一分钟自我介绍',
+      '海投提前批：多免笔试、竞争小，是抢跑的黄金机会',
+    ],
+    links: [
+      { label: '投提前批', href: '?board=campus&bpreset=autumn&bkw=%E6%8F%90%E5%89%8D%E6%89%B9' },
+      { label: '免笔试专区', href: '?board=campus&bpreset=noexam' },
+    ],
+  },
+  {
+    months: [9, 10],
+    label: '9-10 月',
+    title: '秋招正式批（黄金窗口）',
+    tasks: [
+      '岗位量最大的爆发期，每周保持投递节奏，同步刷笔试题准备面试',
+      '10 月国考报名，体制内路线同步启动两手准备',
+    ],
+    links: [
+      { label: '投秋招正式批', href: '?board=campus&bpreset=autumn' },
+      { label: '搜国考岗位', href: '/?keyword=%E5%9B%BD%E8%80%83' },
+    ],
+  },
+  {
+    months: [11, 12],
+    label: '11-12 月',
+    title: '秋招补录',
+    tasks: [
+      '关注补录与捕捞未招满岗位，复盘笔面试迭代表现',
+      '11 月底国考笔试，兼顾备考与补录投递',
+    ],
+    links: [
+      { label: '看全部校招', href: '?board=campus&bpreset=all' },
+      { label: '截止日历', href: '?board=calendar' },
+    ],
+  },
+  {
+    months: [1],
+    label: '1 月',
+    title: '寒假蓄力',
+    tasks: [
+      '复盘秋招、备考省考/事业编联考，关注寒假实习',
+    ],
+    links: [
+      { label: '实习专区', href: '?board=campus&bpreset=intern' },
+      { label: '编制公告', href: '?board=bianzhi' },
+    ],
+  },
+  {
+    months: [2, 3],
+    label: '2-3 月',
+    title: '春招爆发期',
+    tasks: [
+      '春招启动、3 月爆发：岗位少于秋招，投3周内新发岗位成功率最高',
+      '省考联考集中报名，编制线同步推进',
+    ],
+    links: [
+      { label: '投春招', href: '?board=campus&bpreset=spring' },
+      { label: '编制公告', href: '?board=bianzhi' },
+    ],
+  },
+  {
+    months: [4, 5],
+    label: '4-5 月',
+    title: '春招收尾 / 补录',
+    tasks: [
+      '抓住春招补录和事业编联考面试，处理 offer 取舍',
+    ],
+    links: [
+      { label: '春招补录', href: '?board=campus&bpreset=spring' },
+      { label: '截止日历', href: '?board=calendar' },
+    ],
+  },
+  {
+    months: [6],
+    label: '6 月',
+    title: '毕业季 / 秋招预热',
+    tasks: [
+      '应届末班车与下届提前批预热，实习转正窗口',
+    ],
+    links: [
+      { label: '实习专区', href: '?board=campus&bpreset=intern' },
+      { label: '看全部校招', href: '?board=campus&bpreset=all' },
+    ],
+  },
+]
 
 const SECTIONS: GuideSection[] = [
   {
@@ -83,17 +183,18 @@ const SECTIONS: GuideSection[] = [
   {
     key: 'timeline',
     title: '秋招/春招时间线',
+    blocks: TIMELINE_STAGES.map((st) => ({
+      heading: `${st.label} ${st.title}`,
+      items: st.tasks,
+    })),
+  },
+  {
+    key: 'biancal',
+    title: '编制考试日历',
     blocks: [
       {
-        heading: '秋招（大四上）',
         items: [
-          '7-8 月提前批 → 9-10 月正式批爆发期（黄金窗口）→ 11-12 月补录，越早投越有优势。',
-        ],
-      },
-      {
-        heading: '春招（大四下）',
-        items: [
-          '2-3 月启动，3 月是爆发期，4-5 月收尾补录；春招岗位少于秋招，是最后的批量机会。',
+          '大型联考（省考联考、事业编联考等）是编制岗最大的批量招录窗口，下方自动列出最近场次，点击可直达公告详情。',
         ],
       },
     ],
@@ -171,6 +272,137 @@ const SECTIONS: GuideSection[] = [
 
 export const GUIDE_SECTION_KEYS = SECTIONS.map((s) => s.key)
 
+const VOTES_KEY = 'recruit.guideVotes'
+
+function readVotes(): Record<string, number> {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(VOTES_KEY) || '{}')
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, number>) : {}
+  } catch {
+    return {}
+  }
+}
+
+function GuideTimeline() {
+  const curMonth = new Date().getMonth() + 1
+  return (
+    <ol className="space-y-3">
+      {TIMELINE_STAGES.map((st) => {
+        const current = st.months.includes(curMonth)
+        return (
+          <li key={st.label} className="relative pl-5">
+            <span
+              className={cn(
+                'absolute left-0 top-4 h-2.5 w-2.5 rounded-full',
+                current ? 'bg-primary ring-4 ring-primary/20' : 'bg-border',
+              )}
+              aria-hidden="true"
+            />
+            <div
+              className={cn(
+                'rounded-lg border bg-background p-3',
+                current && 'border-primary/40 bg-primary/5',
+              )}
+            >
+              <div className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
+                <span className="text-xs text-muted-foreground">{st.label}</span>
+                {st.title}
+                {current && (
+                  <Badge className="border-0 bg-primary/15 text-[11px] text-primary">当前阶段</Badge>
+                )}
+              </div>
+              <ul className="mt-1.5 space-y-1 text-sm leading-relaxed text-muted-foreground">
+                {st.tasks.map((t, i) => (
+                  <li key={i}>· {t}</li>
+                ))}
+              </ul>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {st.links.map((l) => (
+                  <a
+                    key={l.label}
+                    href={l.href}
+                    className="inline-flex min-h-11 items-center gap-1 rounded-full border border-primary/30 bg-background px-2.5 py-1 text-xs text-primary transition-colors hover:bg-primary/10 sm:min-h-0"
+                  >
+                    {l.label}
+                    <ArrowRight className="h-3 w-3" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+function BianzhiExamCalendar() {
+  const [jobs, setJobs] = useState<BianzhiJob[] | null>(null)
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    let alive = true
+    fetchBianzhiJobs({ category: ['大型联考'], page_size: 100 })
+      .then((res) => {
+        if (alive) setJobs(res.items)
+      })
+      .catch(() => {
+        if (alive) setFailed(true)
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+  if (failed) return <p className="text-sm text-muted-foreground">联考场次加载失败，可前往编制公告板块查看。</p>
+  if (!jobs) return <p className="text-sm text-muted-foreground">正在加载联考场次…</p>
+  const todayIso = new Date().toISOString().slice(0, 10)
+  const dated = jobs.filter((j) => j.deadline_date)
+  const future = dated
+    .filter((j) => j.deadline_date! >= todayIso)
+    .sort((a, b) => a.deadline_date!.localeCompare(b.deadline_date!))
+  const history = dated
+    .filter((j) => j.deadline_date! < todayIso)
+    .sort((a, b) => b.deadline_date!.localeCompare(a.deadline_date!))
+  const list = (future.length > 0 ? future : history).slice(0, 5)
+  const showingHistory = future.length === 0
+  if (list.length === 0)
+    return <p className="text-sm text-muted-foreground">暂无带日期的联考场次数据，可前往编制公告板块查看全部公告。</p>
+  return (
+    <div className="space-y-2">
+      {showingHistory && (
+        <p className="text-xs text-muted-foreground">
+          暂无未来场次，以下为最近的历史场次，下一轮联考公告发布后会自动更新：
+        </p>
+      )}
+      <ul className="space-y-1.5">
+        {list.map((j) => (
+          <li key={j.id}>
+            <a
+              href={`?board=bianzhi&job=bianzhi:${j.id}`}
+              className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border bg-background px-3 py-2 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+            >
+              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <span className="font-medium">
+                {j.employer || `${j.province ?? ''}${j.job_type ?? ''}联考`}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {[j.province, j.job_type].filter(Boolean).join(' · ')}
+              </span>
+              <span className="ml-auto text-xs text-muted-foreground">截止 {j.deadline_text || j.deadline_date}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <a
+        href="?board=bianzhi"
+        className="inline-flex min-h-11 items-center gap-1 text-xs text-primary underline-offset-2 hover:underline sm:min-h-0"
+      >
+        前往编制公告板块查看全部
+        <ArrowRight className="h-3 w-3" />
+      </a>
+    </div>
+  )
+}
+
 function setGuideHash(key: string | null) {
   const base = window.location.pathname + window.location.search
   window.history.replaceState(null, '', key ? `${base}#${key}` : base)
@@ -182,7 +414,16 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
     return SECTIONS.some((s) => s.key === h) ? h : SECTIONS[0].key
   })
   const [query, setQuery] = useState('')
+  const [votes, setVotes] = useState<Record<string, number>>(readVotes)
   const section = SECTIONS.find((s) => s.key === active) ?? SECTIONS[0]
+
+  const toggleVote = (key: string) => {
+    setVotes((cur) => {
+      const next = { ...cur, [key]: cur[key] ? 0 : 1 }
+      localStorage.setItem(VOTES_KEY, JSON.stringify(next))
+      return next
+    })
+  }
 
   const q = query.trim()
   const results = useMemo(() => {
@@ -290,25 +531,55 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
             )
           ) : (
           <div className="space-y-4 pb-6">
-            {section.blocks.map((b, i) => (
-              <div key={i} className="space-y-2">
-                {b.heading && (
-                  <Badge variant="secondary" className="text-xs">
-                    {b.heading}
-                  </Badge>
-                )}
-                <ul className="space-y-2">
-                  {b.items.map((item, j) => (
-                    <li
-                      key={j}
-                      className="rounded-lg border bg-background p-3 text-sm leading-relaxed text-muted-foreground"
-                    >
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+            {active === 'timeline' ? (
+              <GuideTimeline />
+            ) : active === 'biancal' ? (
+              <div className="space-y-3">
+                <p className="rounded-lg border bg-background p-3 text-sm leading-relaxed text-muted-foreground">
+                  {section.blocks[0].items[0]}
+                </p>
+                <BianzhiExamCalendar />
               </div>
-            ))}
+            ) : (
+              section.blocks.map((b, i) => (
+                <div key={i} className="space-y-2">
+                  {b.heading && (
+                    <Badge variant="secondary" className="text-xs">
+                      {b.heading}
+                    </Badge>
+                  )}
+                  <ul className="space-y-2">
+                    {b.items.map((item, j) => (
+                      <li
+                        key={j}
+                        className="rounded-lg border bg-background p-3 text-sm leading-relaxed text-muted-foreground"
+                      >
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))
+            )}
+            <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+              <button
+                type="button"
+                aria-pressed={!!votes[active]}
+                onClick={() => toggleVote(active)}
+                className={cn(
+                  'inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors sm:min-h-8',
+                  votes[active]
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
+                )}
+              >
+                <ThumbsUp className={cn('h-3.5 w-3.5', votes[active] && 'fill-primary/20')} />
+                {votes[active] ? '已觉得有用' : '有用'}
+              </button>
+              <span className="text-xs text-muted-foreground">
+                共 {votes[active] || 0} 人觉得有用（本地统计）
+              </span>
+            </div>
           </div>
           )}
         </div>

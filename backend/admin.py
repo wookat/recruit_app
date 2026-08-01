@@ -307,7 +307,31 @@ def health_summary(db: Session = Depends(get_db)):
             "deadline_parse_rate": (report.get("signup_deadline") or {}).get("parse_rate"),
         }
 
+    # 最近 14 天趋势：每日成功/失败次数与飞书两源新增条数（started_at 索引范围扫描）
+    trend = [
+        {
+            "date": str(row.d),
+            "crawl_success": row.crawl_success,
+            "crawl_fail": row.crawl_fail,
+            "campus_added": int(row.campus_added),
+            "bianzhi_added": int(row.bianzhi_added),
+        }
+        for row in db.execute(text("""
+            SELECT date(cr.started_at) AS d,
+                   count(*) FILTER (WHERE cr.status = 'success') AS crawl_success,
+                   count(*) FILTER (WHERE cr.status IN ('error', 'partial')) AS crawl_fail,
+                   coalesce(sum(cr.rows_ingested) FILTER (WHERE ws.name = 'feishu_campus'), 0) AS campus_added,
+                   coalesce(sum(cr.rows_ingested) FILTER (WHERE ws.name = 'feishu_bianzhi'), 0) AS bianzhi_added
+            FROM crawl_runs cr
+            LEFT JOIN watch_sources ws ON ws.id = cr.source_id
+            WHERE cr.started_at >= now() - interval '14 days'
+              AND cr.source_id IS NOT NULL
+            GROUP BY 1 ORDER BY 1
+        """)).all()
+    ]
+
     return {
+        "trend": trend,
         "crawl_24h": {
             "success": success,
             "failed": failed,

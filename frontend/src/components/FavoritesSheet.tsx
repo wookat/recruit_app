@@ -38,6 +38,7 @@ import {
 import { APP_CHANNELS, channelClass, PILL_BASE, type AppChannel } from '@/lib/badgeColors'
 import { downloadBackup, restoreBackup } from '@/lib/backup'
 import { downloadIcs, type IcsEvent } from '@/lib/ics'
+import { REMIND_OPTIONS, setRemindDays, useRemindDays } from '@/lib/reminderPref'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { copyText, favoritesShareUrl } from '@/lib/clipboard'
@@ -286,6 +287,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
     return evts
   }, [favorites, campusFavs, bianzhiFavs])
 
+  const remindDays = useRemindDays()
   const dueAlert = useMemo(() => {
     let red = 0
     let yellow = 0
@@ -293,12 +295,12 @@ export function FavoritesSheet({ open, onClose }: Props) {
       const n = daysUntil(d.date)
       if (n < 0) continue
       if (n <= 3) red += d.entries.length
-      else if (n <= 7) yellow += d.entries.length
+      else if (n <= remindDays) yellow += d.entries.length
     }
     if (red > 0) return { level: 'red' as const, count: red }
     if (yellow > 0) return { level: 'yellow' as const, count: yellow }
     return null
-  }, [calendarDays])
+  }, [calendarDays, remindDays])
 
   const firstDueRef = useRef<HTMLDivElement>(null)
 
@@ -936,9 +938,30 @@ export function FavoritesSheet({ open, onClose }: Props) {
                 )}
               >
                 <AlarmClock className="h-4 w-4 shrink-0" />
-                {dueAlert.count} 条收藏{dueAlert.level === 'red' ? '即将截止（3 天内）' : '将于 7 天内截止'}，点击查看
+                {dueAlert.count} 条收藏{dueAlert.level === 'red' ? '即将截止（3 天内）' : `将于 ${remindDays} 天内截止`}，点击查看
               </button>
             )}
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+              <AlarmClock className="h-3.5 w-3.5 shrink-0" />
+              提前提醒
+              {REMIND_OPTIONS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-pressed={remindDays === n}
+                  onClick={() => setRemindDays(n)}
+                  className={cn(
+                    'min-h-9 cursor-pointer rounded-full border px-2.5 py-0.5 transition-colors sm:min-h-6',
+                    remindDays === n
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
+                  )}
+                >
+                  {n} 天
+                </button>
+              ))}
+              <span className="hidden sm:inline">顶栏红点与横幅按此计算</span>
+            </div>
             <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5">
               {BOARD_TABS.map((t) => (
                 <button

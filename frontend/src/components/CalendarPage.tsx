@@ -22,6 +22,7 @@ import {
   useCampusFavorites,
 } from '@/lib/boardFavorites'
 import { cn } from '@/lib/utils'
+import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
@@ -54,9 +55,25 @@ interface DayData {
   bianzhi: BianzhiJob[]
 }
 
+type CalView = 'month' | 'week'
+
+function initialView(): CalView {
+  return new URLSearchParams(window.location.search).get('cview') === 'week' ? 'week' : 'month'
+}
+
+function syncViewParam(view: CalView) {
+  const q = new URLSearchParams(window.location.search)
+  if (q.get('board') !== 'calendar') return
+  if (view === 'week') q.set('cview', 'week')
+  else q.delete('cview')
+  window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
+}
+
 export function CalendarPage() {
   const today = useMemo(() => new Date(), [])
   const [monthOffset, setMonthOffset] = useState(0)
+  const [view, setView] = useState<CalView>(initialView)
+  const [weekOffset, setWeekOffset] = useState(0)
   const [selectedIso, setSelectedIso] = useState<string | null>(null)
   const [campusJobs, setCampusJobs] = useState<CampusJob[] | null>(null)
   const [bianzhiJobs, setBianzhiJobs] = useState<BianzhiJob[] | null>(null)
@@ -152,6 +169,20 @@ export function CalendarPage() {
     return out
   }, [monthStart])
 
+  useEffect(() => {
+    syncViewParam(view)
+  }, [view])
+
+  const weekDays = useMemo(() => {
+    const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7) + weekOffset * 7)
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday)
+      d.setDate(monday.getDate() + i)
+      return d
+    })
+  }, [today, weekOffset])
+
   const todayIso = isoOf(today)
   const loading = campusJobs === null || bianzhiJobs === null
   const selectedDay = selectedIso ? byDate[selectedIso] : null
@@ -184,35 +215,60 @@ export function CalendarPage() {
             未来 60 天校招 / 编制截止汇总
           </span>
         </h2>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
+            {(['month', 'week'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={view === v}
+                onClick={() => setView(v)}
+                className={cn(
+                  'min-h-9 cursor-pointer rounded-md px-3 py-1 text-xs font-medium transition-colors sm:min-h-7',
+                  view === v
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {v === 'month' ? '月' : '周'}
+              </button>
+            ))}
+          </div>
           <Button
             variant="outline"
             size="sm"
             className="h-8 w-8 p-0"
-            aria-label="上个月"
-            onClick={() => setMonthOffset((m) => m - 1)}
+            aria-label={view === 'month' ? '上个月' : '上一周'}
+            onClick={() =>
+              view === 'month' ? setMonthOffset((m) => m - 1) : setWeekOffset((w) => w - 1)
+            }
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="min-w-24 text-center text-sm font-medium">
-            {monthStart.getFullYear()} 年 {monthStart.getMonth() + 1} 月
+            {view === 'month'
+              ? `${monthStart.getFullYear()} 年 ${monthStart.getMonth() + 1} 月`
+              : `${weekDays[0].getMonth() + 1}月${weekDays[0].getDate()}日 – ${weekDays[6].getMonth() + 1}月${weekDays[6].getDate()}日`}
           </span>
           <Button
             variant="outline"
             size="sm"
             className="h-8 w-8 p-0"
-            aria-label="下个月"
-            onClick={() => setMonthOffset((m) => m + 1)}
+            aria-label={view === 'month' ? '下个月' : '下一周'}
+            onClick={() =>
+              view === 'month' ? setMonthOffset((m) => m + 1) : setWeekOffset((w) => w + 1)
+            }
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
-          {monthOffset !== 0 && (
+          {(view === 'month' ? monthOffset !== 0 : weekOffset !== 0) && (
             <Button
               variant="ghost"
               size="sm"
               className="h-8 px-2 text-xs"
               onClick={() => {
                 setMonthOffset(0)
+                setWeekOffset(0)
                 setSelectedIso(todayIso)
               }}
             >
@@ -236,6 +292,98 @@ export function CalendarPage() {
 
       {loading ? (
         <Skeleton className="h-96 w-full rounded-xl" />
+      ) : view === 'week' ? (
+        <div className="space-y-2">
+          {weekDays.map((d) => {
+            const iso = isoOf(d)
+            const day = byDate[iso]
+            const isToday = iso === todayIso
+            const entries = (day?.campus.length ?? 0) + (day?.bianzhi.length ?? 0)
+            return (
+              <section
+                key={iso}
+                className={cn(
+                  'rounded-xl border bg-card p-3 shadow-sm',
+                  isToday && 'ring-1 ring-primary/40',
+                )}
+              >
+                <h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+                  {d.getMonth() + 1} 月 {d.getDate()} 日
+                  <span className="text-xs font-normal text-muted-foreground">
+                    周{WEEKDAYS[(d.getDay() + 6) % 7]}
+                  </span>
+                  {isToday && (
+                    <Badge className="border-0 bg-primary/15 text-primary">今天</Badge>
+                  )}
+                  {favDates.has(iso) && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="收藏岗位截止" />
+                  )}
+                  {entries > 0 && (
+                    <span className="text-xs font-normal text-muted-foreground">{entries} 条截止</span>
+                  )}
+                </h3>
+                {entries === 0 ? (
+                  <p className="mt-1 text-xs text-muted-foreground">无截止岗位</p>
+                ) : (
+                  <ul className="mt-1 divide-y">
+                    {(day?.campus ?? []).map((j) => (
+                      <li key={`c-${j.id}`} className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="flex min-h-11 w-full flex-wrap items-center gap-2 py-2 text-left hover:bg-muted/50"
+                          onClick={() => {
+                            setSelectedIso(iso)
+                            setCampusDetail(j)
+                          }}
+                        >
+                          <Badge className="border-0 bg-blue-500/15 text-blue-600 dark:text-blue-400">校招</Badge>
+                          <span className="text-sm font-medium">{j.company || '-'}</span>
+                          {j.positions && (
+                            <span className="line-clamp-1 text-xs text-muted-foreground">{j.positions}</span>
+                          )}
+                          {j.locations && (
+                            <span className="line-clamp-1 text-xs text-muted-foreground">{j.locations}</span>
+                          )}
+                        </button>
+                        <BoardFavoriteButton
+                          active={campusFavs.some((f) => f.id === j.id)}
+                          onToggle={() => toggleCampusFavorite(j)}
+                        />
+                      </li>
+                    ))}
+                    {(day?.bianzhi ?? []).map((j) => (
+                      <li key={`b-${j.id}`} className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="flex min-h-11 w-full flex-wrap items-center gap-2 py-2 text-left hover:bg-muted/50"
+                          onClick={() => {
+                            setSelectedIso(iso)
+                            setBianzhiDetail(j)
+                          }}
+                        >
+                          <Badge className="border-0 bg-violet-500/15 text-violet-600 dark:bg-purple-500/25 dark:text-purple-300">编制</Badge>
+                          <span className="text-sm font-medium">{bianzhiTitle(j)}</span>
+                          {j.job_type && (
+                            <span className="line-clamp-1 text-xs text-muted-foreground">{j.job_type}</span>
+                          )}
+                          {(j.work_location || j.province) && (
+                            <span className="line-clamp-1 text-xs text-muted-foreground">
+                              {j.work_location || j.province}
+                            </span>
+                          )}
+                        </button>
+                        <BoardFavoriteButton
+                          active={bianzhiFavs.some((f) => f.id === j.id)}
+                          onToggle={() => toggleBianzhiFavorite(j)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )
+          })}
+        </div>
       ) : (
         <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
           <div className="grid grid-cols-7 border-b bg-muted/40 text-center text-xs text-muted-foreground">
@@ -292,7 +440,7 @@ export function CalendarPage() {
         </div>
       )}
 
-      {selectedIso && (
+      {view === 'month' && selectedIso && (
         <section className="rounded-xl border bg-card p-4 shadow-sm">
           <h3 className="text-sm font-semibold">
             {Number(selectedIso.slice(5, 7))} 月 {Number(selectedIso.slice(8, 10))} 日截止
@@ -302,7 +450,7 @@ export function CalendarPage() {
           ) : (
             <ul className="mt-2 divide-y">
               {selectedDay.campus.map((j) => (
-                <li key={`c-${j.id}`}>
+                <li key={`c-${j.id}`} className="flex items-center gap-1">
                   <button
                     type="button"
                     className="flex w-full min-h-11 flex-wrap items-center gap-2 py-2 text-left hover:bg-muted/50"
@@ -314,10 +462,14 @@ export function CalendarPage() {
                       <span className="line-clamp-1 text-xs text-muted-foreground">{j.positions}</span>
                     )}
                   </button>
+                  <BoardFavoriteButton
+                    active={campusFavs.some((f) => f.id === j.id)}
+                    onToggle={() => toggleCampusFavorite(j)}
+                  />
                 </li>
               ))}
               {selectedDay.bianzhi.map((j) => (
-                <li key={`b-${j.id}`}>
+                <li key={`b-${j.id}`} className="flex items-center gap-1">
                   <button
                     type="button"
                     className="flex w-full min-h-11 flex-wrap items-center gap-2 py-2 text-left hover:bg-muted/50"
@@ -329,6 +481,10 @@ export function CalendarPage() {
                       <span className="line-clamp-1 text-xs text-muted-foreground">{j.job_type}</span>
                     )}
                   </button>
+                  <BoardFavoriteButton
+                    active={bianzhiFavs.some((f) => f.id === j.id)}
+                    onToggle={() => toggleBianzhiFavorite(j)}
+                  />
                 </li>
               ))}
             </ul>

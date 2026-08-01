@@ -18,6 +18,7 @@ import { GlobalSearch, type SearchBoard } from '@/components/GlobalSearch'
 import { applySeo } from '@/lib/seo'
 import { readJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
+import { useRemindDays } from '@/lib/reminderPref'
 
 const JobGuideSheet = lazy(() =>
   import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet })),
@@ -96,11 +97,13 @@ function syncSectionUrl(section: Section) {
     q.delete('ctype')
     q.delete('prov')
     q.delete('bkw')
+    q.delete('cview')
   } else if (section.mode === 'calendar') {
     q.set('board', 'calendar')
     for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bkw']) q.delete(k)
   } else {
     q.set('board', section.mode)
+    q.delete('cview')
     if (section.preset) q.set('bpreset', section.preset)
     else q.delete('bpreset')
     if (section.mode === 'campus') q.delete('prov')
@@ -172,18 +175,19 @@ export default function App() {
   const favorites = useFavorites()
   const campusFavorites = useCampusFavorites()
   const bianzhiFavorites = useBianzhiFavorites()
+  const remindDays = useRemindDays()
   const dueSoon = useMemo(() => {
-    const within3 = (d: Date | null) => {
+    const within = (d: Date | null) => {
       if (!d) return false
       const n = daysUntil(d)
-      return n >= 0 && n <= 3
+      return n >= 0 && n <= remindDays
     }
     return (
-      favorites.filter((p) => within3(parseSignupDeadline(p))).length +
-      campusFavorites.filter((j) => within3(parseDeadlineText(j.deadline_text))).length +
-      bianzhiFavorites.filter((j) => within3(parseDeadlineText(j.deadline_text))).length
+      favorites.filter((p) => within(parseSignupDeadline(p))).length +
+      campusFavorites.filter((j) => within(parseDeadlineText(j.deadline_text))).length +
+      bianzhiFavorites.filter((j) => within(parseDeadlineText(j.deadline_text))).length
     )
-  }, [favorites, campusFavorites, bianzhiFavorites])
+  }, [favorites, campusFavorites, bianzhiFavorites, remindDays])
 
   useEffect(() => {
     syncSectionUrl(section)
@@ -370,7 +374,7 @@ export default function App() {
             {dueSoon > 0 && (
               <span
                 className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
-                title={`${dueSoon} 个收藏岗位 3 天内截止`}
+                title={`${dueSoon} 个收藏岗位 ${remindDays} 天内截止`}
               >
                 {dueSoon}
               </span>

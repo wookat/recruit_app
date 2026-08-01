@@ -57,7 +57,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote } from 'lucide-react'
+import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, Scale, Square, SquareCheck } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,6 +65,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { EmptyState } from './EmptyState'
+import { FavCompareDialog, type FavCompareColumn } from './FavCompareDialog'
 
 interface Props {
   open: boolean
@@ -106,6 +107,10 @@ export function FavoritesSheet({ open, onClose }: Props) {
   const [query, setQuery] = useState('')
   const [restoreMsg, setRestoreMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [compareMode, setCompareMode] = useState(false)
+  const [compareSel, setCompareSel] = useState<{ kind: Board; id: number }[]>([])
+  const [compareHint, setCompareHint] = useState<string | null>(null)
+  const [compareOpen, setCompareOpen] = useState(false)
 
   const totalCount = favorites.length + campusFavs.length + bianzhiFavs.length
   const boardCount =
@@ -115,6 +120,151 @@ export function FavoritesSheet({ open, onClose }: Props) {
     if (kind === 'positions') return statuses[id] || '未投递'
     const meta = kind === 'campus' ? campusMeta : bianzhiMeta
     return meta[id]?.status || '未投递'
+  }
+
+  const compareSelected = (kind: Board, id: number) =>
+    compareSel.some((s) => s.kind === kind && s.id === id)
+
+  const toggleCompareSel = (kind: Board, id: number) => {
+    if (compareSelected(kind, id)) {
+      setCompareHint(null)
+      setCompareSel((cur) => cur.filter((s) => !(s.kind === kind && s.id === id)))
+      return
+    }
+    if (compareSel.length > 0 && compareSel[0].kind !== kind) {
+      setCompareHint('仅支持同板块收藏对比，请先移除已选或在同一板块内勾选')
+      return
+    }
+    if (compareSel.length >= 3) {
+      setCompareHint('最多同时对比 3 条')
+      return
+    }
+    setCompareHint(null)
+    setCompareSel((cur) => [...cur, { kind, id }])
+  }
+
+  const exitCompare = () => {
+    setCompareMode(false)
+    setCompareSel([])
+    setCompareHint(null)
+    setCompareOpen(false)
+  }
+
+  const removeCompareSel = (kind: Board, id: number) => {
+    setCompareSel((cur) => {
+      const next = cur.filter((s) => !(s.kind === kind && s.id === id))
+      if (next.length < 2) setCompareOpen(false)
+      return next
+    })
+  }
+
+  const compareColumns: FavCompareColumn[] = compareSel.flatMap((s): FavCompareColumn[] => {
+    const priorityText = (v: boolean) => (v ? '优先' : '一般')
+    if (s.kind === 'positions') {
+      const p = favorites.find((x) => x.id === s.id)
+      if (!p) return []
+      return [
+        {
+          key: `positions-${p.id}`,
+          title:
+            (p.position_example && stripOrgPrefix(p.position_example, p.employer)) ||
+            p.exam_type ||
+            '-',
+          badge: String(p.year),
+          onRemove: () => removeCompareSel('positions', p.id),
+          onOpenDetail: () => {
+            setCompareOpen(false)
+            setSelected(p)
+          },
+          fields: [
+            { label: '单位', value: p.employer || '-' },
+            { label: '考试类型', value: p.exam_type || '-' },
+            { label: '工作地点', value: p.work_location || '-' },
+            { label: '学历要求', value: p.edu_level_norm || p.edu_requirement || '-' },
+            { label: '本科专业', value: p.undergrad_major || '-' },
+            { label: '研究生专业', value: p.grad_major || '-' },
+            { label: '报名时间', value: p.signup_time || '-' },
+            { label: '状态', value: statusOf('positions', p.id) },
+            { label: '优先级', value: priorityText(!!priorities[p.id]) },
+            { label: '备注', value: notes[p.id] || '-' },
+          ],
+        },
+      ]
+    }
+    if (s.kind === 'campus') {
+      const j = campusFavs.find((x) => x.id === s.id)
+      if (!j) return []
+      return [
+        {
+          key: `campus-${j.id}`,
+          title: j.company || '-',
+          badge: j.company_type || undefined,
+          onRemove: () => removeCompareSel('campus', j.id),
+          onOpenDetail: () => {
+            setCompareOpen(false)
+            setCampusDetail(j)
+          },
+          fields: [
+            { label: '岗位', value: j.positions || '-' },
+            { label: '行业', value: j.industry || '-' },
+            { label: '工作地点', value: j.locations || '-' },
+            { label: '学历要求', value: j.edu_requirement || '-' },
+            { label: '专业要求', value: j.major_requirement || '-' },
+            { label: '截止', value: j.deadline_text || '-' },
+            { label: '状态', value: statusOf('campus', j.id) },
+            { label: '优先级', value: priorityText(!!campusMeta[j.id]?.priority) },
+            { label: '备注', value: campusMeta[j.id]?.note || '-' },
+          ],
+        },
+      ]
+    }
+    const j = bianzhiFavs.find((x) => x.id === s.id)
+    if (!j) return []
+    return [
+      {
+        key: `bianzhi-${j.id}`,
+        title: j.employer || j.category || '-',
+        badge: j.category || undefined,
+        onRemove: () => removeCompareSel('bianzhi', j.id),
+        onOpenDetail: () => {
+          setCompareOpen(false)
+          setBianzhiDetail(j)
+        },
+        fields: [
+          { label: '省份', value: j.province || '-' },
+          { label: '岗位类型', value: j.job_type || '-' },
+          { label: '招聘人数', value: j.headcount || '-' },
+          { label: '工作地点', value: j.work_location || '-' },
+          { label: '学历要求', value: j.edu_requirement || '-' },
+          { label: '专业要求', value: j.major_requirement || '-' },
+          { label: '截止', value: j.deadline_text || '-' },
+          { label: '状态', value: statusOf('bianzhi', j.id) },
+          { label: '优先级', value: priorityText(!!bianzhiMeta[j.id]?.priority) },
+          { label: '备注', value: bianzhiMeta[j.id]?.note || '-' },
+        ],
+      },
+    ]
+  })
+
+  const renderCompareCheck = (kind: Board, id: number) => {
+    if (!compareMode) return null
+    const checked = compareSelected(kind, id)
+    return (
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={checked}
+        aria-label={checked ? '移出对比' : '加入对比'}
+        className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center sm:min-h-8 sm:min-w-8"
+        onClick={() => toggleCompareSel(kind, id)}
+      >
+        {checked ? (
+          <SquareCheck className="h-4.5 w-4.5 text-primary" />
+        ) : (
+          <Square className="h-4.5 w-4.5 text-muted-foreground" />
+        )}
+      </button>
+    )
   }
 
   const q = query.trim().toLowerCase()
@@ -420,9 +570,13 @@ export function FavoritesSheet({ open, onClose }: Props) {
     return (
       <div key={j.id} className="px-4 py-3 hover:bg-muted/50 sm:px-6">
         <div className="flex items-start gap-2 max-sm:flex-wrap">
+          {renderCompareCheck('campus', j.id)}
           <div
-            className="min-w-0 flex-1 cursor-pointer max-sm:w-full max-sm:flex-none"
-            onClick={() => setCampusDetail(j)}
+            className={cn(
+              'min-w-0 flex-1 cursor-pointer',
+              compareMode ? 'max-sm:w-auto max-sm:flex-1' : 'max-sm:w-full max-sm:flex-none',
+            )}
+            onClick={() => (compareMode ? toggleCompareSel('campus', j.id) : setCampusDetail(j))}
           >
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="line-clamp-1 text-sm font-medium">{j.company || '-'}</span>
@@ -486,9 +640,13 @@ export function FavoritesSheet({ open, onClose }: Props) {
     return (
       <div key={j.id} className="px-4 py-3 hover:bg-muted/50 sm:px-6">
         <div className="flex items-start gap-2 max-sm:flex-wrap">
+          {renderCompareCheck('bianzhi', j.id)}
           <div
-            className="min-w-0 flex-1 cursor-pointer max-sm:w-full max-sm:flex-none"
-            onClick={() => setBianzhiDetail(j)}
+            className={cn(
+              'min-w-0 flex-1 cursor-pointer',
+              compareMode ? 'max-sm:w-auto max-sm:flex-1' : 'max-sm:w-full max-sm:flex-none',
+            )}
+            onClick={() => (compareMode ? toggleCompareSel('bianzhi', j.id) : setBianzhiDetail(j))}
           >
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="line-clamp-1 text-sm font-medium">{j.employer || j.category || '-'}</span>
@@ -555,10 +713,14 @@ export function FavoritesSheet({ open, onClose }: Props) {
     return (
       <div key={p.id} className="px-4 py-3 hover:bg-muted/50 sm:px-6">
       <div className="flex items-start gap-2 max-sm:flex-wrap">
+        {renderCompareCheck('positions', p.id)}
         <button
           type="button"
-          className="min-w-0 flex-1 text-left max-sm:w-full max-sm:flex-none"
-          onClick={() => setSelected(p)}
+          className={cn(
+            'min-w-0 flex-1 text-left',
+            compareMode ? 'max-sm:w-auto max-sm:flex-1' : 'max-sm:w-full max-sm:flex-none',
+          )}
+          onClick={() => (compareMode ? toggleCompareSel('positions', p.id) : setSelected(p))}
         >
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="secondary" className="text-[11px]">
@@ -1022,6 +1184,18 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   <CalendarDays className="h-3.5 w-3.5" />
                   截止日历
                 </Button>
+                {view === 'track' && (
+                  <Button
+                    variant={compareMode ? 'secondary' : 'ghost'}
+                    size="sm"
+                    aria-pressed={compareMode}
+                    className="h-auto min-h-11 gap-1 text-xs sm:h-7 sm:min-h-0"
+                    onClick={() => (compareMode ? exitCompare() : setCompareMode(true))}
+                  >
+                    <Scale className="h-3.5 w-3.5" />
+                    对比
+                  </Button>
+                )}
               </div>
             )}
             {boardCount > 0 && view === 'track' && (
@@ -1275,8 +1449,43 @@ export function FavoritesSheet({ open, onClose }: Props) {
               </div>
             )}
           </ScrollArea>
+          {compareMode && (
+            <div className="shrink-0 border-t bg-background/95 px-4 py-2.5 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] backdrop-blur sm:px-6">
+              {compareHint && (
+                <p className="mb-1.5 text-xs text-amber-600 dark:text-amber-400">{compareHint}</p>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <Scale className="h-4 w-4 shrink-0 text-primary" />
+                <span className="text-sm font-medium">已选 {compareSel.length}/3</span>
+                <span className="text-xs text-muted-foreground">勾选同板块 2-3 条收藏</span>
+                <div className="ml-auto flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto min-h-11 text-xs text-muted-foreground sm:h-8 sm:min-h-0"
+                    onClick={exitCompare}
+                  >
+                    退出对比
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-auto min-h-11 text-xs sm:h-8 sm:min-h-0"
+                    disabled={compareSel.length < 2}
+                    onClick={() => setCompareOpen(true)}
+                  >
+                    开始对比{compareSel.length < 2 ? '（至少 2 条）' : ''}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </SheetContent>
       </Sheet>
+      <FavCompareDialog
+        open={compareOpen && compareColumns.length >= 2}
+        onClose={() => setCompareOpen(false)}
+        columns={compareColumns}
+      />
       {selected && (
         <PositionSheet item={selected} onClose={() => setSelected(null)} snapshotNote />
       )}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 
 import {
   useReactTable,
@@ -94,6 +94,7 @@ interface Props {
   onPageSizeChange: (size: number) => void
   loading: boolean
   columnFilters?: Partial<Record<string, ColumnFilterConfig>>
+  emptyAction?: ReactNode
 }
 
 export function PositionTable({
@@ -106,6 +107,7 @@ export function PositionTable({
   onPageSizeChange,
   loading,
   columnFilters,
+  emptyAction,
 }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
   const [sort, setSort] = useState<SortState | null>(null)
@@ -207,7 +209,8 @@ export function PositionTable({
                     <EmptyState
                       className="rounded-none border-0 bg-transparent"
                       title="没有找到匹配的岗位"
-                      description="试试减少筛选条件、更换关键词，或使用一键匹配推荐岗位"
+                      description="建议优先移除关键词，其次地区、类型筛选"
+                      action={emptyAction}
                     />
                   </TableCell>
                 </TableRow>

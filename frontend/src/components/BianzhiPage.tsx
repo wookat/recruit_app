@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
+import { ActiveFilterChips, type RemovableFilter } from '@/components/ActiveFilterChips'
 import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
 import { formatDueDayLabel } from '@/lib/deadline'
@@ -182,6 +183,32 @@ export function BianzhiPage({
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
   const isLiankao = preset === 'lk'
+
+  const activeFilters: RemovableFilter[] = []
+  if (keyword)
+    activeFilters.push({
+      label: `关键词：${keyword}`,
+      onRemove: () => {
+        setKeyword('')
+        setSearchInput('')
+        setPage(1)
+      },
+    })
+  for (const p of provinces)
+    activeFilters.push({ label: `省份：${p}`, onRemove: () => toggleProvince(p) })
+  if (preset !== 'all') {
+    const presetLabel = PRESETS.find((v) => v.key === preset)?.label
+    if (presetLabel)
+      activeFilters.push({ label: `分类：${presetLabel}`, onRemove: () => selectPreset('all') })
+  }
+  if (dueOnly)
+    activeFilters.push({
+      label: '即将截止',
+      onRemove: () => {
+        setDueOnly(false)
+        setPage(1)
+      },
+    })
 
   const sortedItems = useMemo(() => {
     if (!data) return []
@@ -395,7 +422,11 @@ export function BianzhiPage({
           ))}
         </div>
       ) : data && data.items.length === 0 ? (
-        <EmptyState title="没有匹配的编制公告" description="试试更换分类或调整搜索关键词" />
+        <EmptyState
+          title="没有匹配的编制公告"
+          description="建议优先移除关键词，其次省份、分类筛选"
+          action={<ActiveFilterChips filters={activeFilters} />}
+        />
       ) : view === 'card' ? (
         <div className={cn('space-y-2', loading && 'pointer-events-none opacity-60')}>
           {(data?.items ?? []).map((job, i, arr) => (

@@ -34,6 +34,7 @@ import {
 } from '@/lib/boardFavorites'
 import { APP_CHANNELS, channelClass, PILL_BASE, type AppChannel } from '@/lib/badgeColors'
 import { downloadBackup, restoreBackup } from '@/lib/backup'
+import { downloadIcs, type IcsEvent } from '@/lib/ics'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { copyText, favoritesShareUrl } from '@/lib/clipboard'
@@ -186,6 +187,41 @@ export function FavoritesSheet({ open, onClose }: Props) {
       calendarDays: [...byDay.values()].sort((a, b) => a.date.getTime() - b.date.getTime()),
       undated,
     }
+  }, [favorites, campusFavs, bianzhiFavs])
+
+  const icsEvents = useMemo(() => {
+    const evts: IcsEvent[] = []
+    for (const p of favorites) {
+      const d = parseSignupDeadline(p)
+      if (!d) continue
+      evts.push({
+        uid: `recruit-positions-${p.id}@jobs.zalize.com`,
+        date: d,
+        summary: `报名截止：${p.employer}${p.position_example ? ` ${p.position_example}` : ''}`,
+        description: p.source_url || undefined,
+      })
+    }
+    for (const j of campusFavs) {
+      const d = j.deadline_date ? parseDeadlineText(j.deadline_date) : parseDeadlineText(j.deadline_text)
+      if (!d) continue
+      evts.push({
+        uid: `recruit-campus-${j.id}@jobs.zalize.com`,
+        date: d,
+        summary: `投递截止：${j.company || '未知公司'}${j.positions ? ` ${j.positions}` : ''}`,
+        description: j.apply_url || j.announce_url || undefined,
+      })
+    }
+    for (const j of bianzhiFavs) {
+      const d = j.deadline_date ? parseDeadlineText(j.deadline_date) : parseDeadlineText(j.deadline_text)
+      if (!d) continue
+      evts.push({
+        uid: `recruit-bianzhi-${j.id}@jobs.zalize.com`,
+        date: d,
+        summary: `报名截止：${j.employer || '未知单位'}`,
+        description: j.announce_url || j.apply_url || undefined,
+      })
+    }
+    return evts
   }, [favorites, campusFavs, bianzhiFavs])
 
   const filteredCalendarDays = calendarDays
@@ -835,6 +871,20 @@ export function FavoritesSheet({ open, onClose }: Props) {
               )
             ) : (
               <div className="space-y-1 pb-4">
+                <div className="flex items-center justify-end px-4 pt-2 sm:px-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-11 gap-1 text-xs sm:h-7"
+                    disabled={icsEvents.length === 0}
+                    onClick={() =>
+                      downloadIcs(icsEvents, `上岸罗盘截止日历_${new Date().toISOString().slice(0, 10)}.ics`)
+                    }
+                  >
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    导出到日历 (.ics{icsEvents.length ? ` · ${icsEvents.length}` : ''})
+                  </Button>
+                </div>
                 {filteredCalendarDays.map(({ date, entries }) => {
                   const n = daysUntil(date)
                   const expired = n < 0

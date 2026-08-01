@@ -72,6 +72,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { ActiveFilterChips, type RemovableFilter } from './ActiveFilterChips'
 
 interface ListPageProps {
   title: string
@@ -358,6 +359,42 @@ export function ListPage({
       work_location: undefined,
     }))
   }
+
+  const activeFilters: RemovableFilter[] = []
+  if (params.keyword)
+    activeFilters.push({ label: `关键词：${params.keyword}`, onRemove: () => updateParam('keyword', '') })
+  if (params.major)
+    activeFilters.push({ label: `专业：${params.major}`, onRemove: () => updateParam('major', undefined) })
+  for (const l of params.location ?? [])
+    activeFilters.push({
+      label: `地区：${l}`,
+      onRemove: () => updateParam('location', (params.location ?? []).filter((x) => x !== l)),
+    })
+  for (const p of params.province ?? [])
+    activeFilters.push({
+      label: `省份：${p}`,
+      onRemove: () => updateParam('province', (params.province ?? []).filter((x) => x !== p)),
+    })
+  for (const w of params.work_location ?? [])
+    activeFilters.push({
+      label: `地点：${w}`,
+      onRemove: () => updateParam('work_location', (params.work_location ?? []).filter((x) => x !== w)),
+    })
+  for (const c of params.category ?? [])
+    activeFilters.push({
+      label: `类型：${c}`,
+      onRemove: () => updateParam('category', (params.category ?? []).filter((x) => x !== c)),
+    })
+  for (const e of params.edu_level ?? [])
+    activeFilters.push({
+      label: `学历：${e}`,
+      onRemove: () => updateParam('edu_level', (params.edu_level ?? []).filter((x) => x !== e)),
+    })
+  for (const y of params.year ?? [])
+    activeFilters.push({
+      label: `年份：${y}`,
+      onRemove: () => updateParam('year', (params.year ?? []).filter((x) => x !== y)),
+    })
 
   function clearFilters() {
     setParams({ ...DEFAULT_PARAMS })
@@ -1061,6 +1098,7 @@ export function ListPage({
 
       {view === 'table' && (
         <PositionTable
+          emptyAction={<ActiveFilterChips filters={activeFilters} />}
           data={data?.items || []}
           total={data?.total || 0}
           totalCapped={data?.total_capped}
@@ -1109,7 +1147,13 @@ export function ListPage({
           }
         />
       )}
-      {view === 'card' && <PositionCardGrid data={data?.items || []} loading={loading} />}
+      {view === 'card' && (
+        <PositionCardGrid
+          data={data?.items || []}
+          loading={loading}
+          emptyAction={<ActiveFilterChips filters={activeFilters} />}
+        />
+      )}
       {view === 'list' && <VirtualPositionList fetcher={fetcher} params={params} />}
 
       {view === 'card' && data && data.total > 0 && (

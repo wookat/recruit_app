@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
+import { ActiveFilterChips, type RemovableFilter } from '@/components/ActiveFilterChips'
 import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
 import { formatDueDayLabel } from '@/lib/deadline'
@@ -272,6 +273,43 @@ export function CampusPage({
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
 
+  const activeFilters: RemovableFilter[] = []
+  if (keyword)
+    activeFilters.push({
+      label: `关键词：${keyword}`,
+      onRemove: () => {
+        setKeyword('')
+        setSearchInput('')
+        setPage(1)
+      },
+    })
+  if (city)
+    activeFilters.push({
+      label: `城市：${city}`,
+      onRemove: () => {
+        setCity(null)
+        setPage(1)
+      },
+    })
+  for (const t of companyTypes)
+    activeFilters.push({ label: `类型：${t}`, onRemove: () => toggleCompanyType(t) })
+  if (recentOnly)
+    activeFilters.push({
+      label: '近7天更新',
+      onRemove: () => {
+        setRecentOnly(false)
+        setPage(1)
+      },
+    })
+  if (dueOnly)
+    activeFilters.push({
+      label: '即将截止',
+      onRemove: () => {
+        setDueOnly(false)
+        setPage(1)
+      },
+    })
+
   const sortedItems = useMemo(() => {
     if (!data) return []
     if (!sort) return data.items
@@ -489,7 +527,11 @@ export function CampusPage({
           ))}
         </div>
       ) : data && data.items.length === 0 ? (
-        <EmptyState title="没有匹配的校招信息" description="试试更换预设视图或调整搜索关键词" />
+        <EmptyState
+          title="没有匹配的校招信息"
+          description="建议优先移除关键词，其次城市、企业类型筛选"
+          action={<ActiveFilterChips filters={activeFilters} />}
+        />
       ) : view === 'table' ? (
         <div
           className={cn(

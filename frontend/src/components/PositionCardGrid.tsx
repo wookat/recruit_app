@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Position } from '@/api'
 import { PositionCard } from './PositionCard'
 import { PositionSheet } from './PositionSheet'
@@ -9,9 +9,10 @@ import { EmptyState } from './EmptyState'
 interface Props {
   data: Position[]
   loading: boolean
+  emptyAction?: ReactNode
 }
 
-export function PositionCardGrid({ data, loading }: Props) {
+export function PositionCardGrid({ data, loading, emptyAction }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
 
   if (loading) {
@@ -44,7 +45,8 @@ export function PositionCardGrid({ data, loading }: Props) {
     return (
       <EmptyState
         title="没有找到匹配的岗位"
-        description="试试减少筛选条件、更换关键词，或使用一键匹配推荐岗位"
+        description="建议优先移除关键词，其次地区、类型筛选"
+        action={emptyAction}
       />
     )
   }

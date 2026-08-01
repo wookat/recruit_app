@@ -387,7 +387,9 @@ function BianzhiExamCalendar() {
               <span className="text-xs text-muted-foreground">
                 {[j.province, j.job_type].filter(Boolean).join(' · ')}
               </span>
-              <span className="ml-auto text-xs text-muted-foreground">截止 {j.deadline_text || j.deadline_date}</span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {j.exam_time ? `考试 ${j.deadline_date || j.exam_time}` : `截止 ${j.deadline_text || j.deadline_date}`}
+              </span>
             </a>
           </li>
         ))}

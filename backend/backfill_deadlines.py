@@ -5,8 +5,11 @@
 无年份的后段沿用前段年份；不可解析（招满为止/详见公告等）与非法
 日期（如 2月31日）保持 NULL，不伪造。
 
+大型联考行（bianzhi_jobs.category='大型联考'）没有 deadline_text，改从
+exam_time（考试时间，优先）或 signup_start 解析日期回填 deadline_date。
+
 用法：
-    python backfill_deadlines.py            # 全量回填两表
+    python backfill_deadlines.py            # 全量回填两表（含大型联考行）
 """
 import re
 from datetime import date, datetime, timedelta, timezone
@@ -105,12 +108,47 @@ def backfill_model(db, model, batch: int = BATCH) -> dict:
     return {"scanned": scanned, "parsed": parsed}
 
 
+def backfill_lianko(db, batch: int = BATCH) -> dict:
+    """回填大型联考行：从 exam_time（优先）/ signup_start 解析日期，幂等。"""
+    today = _today_cn()
+    parsed = scanned = 0
+    last_id = 0
+    while True:
+        rows = (
+            db.query(BianzhiJob.id, BianzhiJob.exam_time, BianzhiJob.signup_start)
+            .filter(BianzhiJob.category == "大型联考",
+                    BianzhiJob.deadline_date.is_(None),
+                    BianzhiJob.id > last_id)
+            .order_by(BianzhiJob.id)
+            .limit(batch)
+            .all()
+        )
+        if not rows:
+            break
+        updates = []
+        for rid, exam_time, signup_start in rows:
+            scanned += 1
+            d = parse_deadline_date(exam_time or "", today) or parse_deadline_date(signup_start or "", today)
+            if d is not None:
+                updates.append({"rid": rid, "d": d})
+        if updates:
+            db.execute(
+                text("UPDATE bianzhi_jobs SET deadline_date = :d WHERE id = :rid"),
+                updates,
+            )
+            db.commit()
+            parsed += len(updates)
+        last_id = rows[-1][0]
+    return {"scanned": scanned, "parsed": parsed}
+
+
 def backfill_all() -> dict:
     db = SessionLocal()
     try:
         return {
             "campus_jobs": backfill_model(db, CampusJob),
             "bianzhi_jobs": backfill_model(db, BianzhiJob),
+            "bianzhi_lianko": backfill_lianko(db),
         }
     finally:
         db.close()

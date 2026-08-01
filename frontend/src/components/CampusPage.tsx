@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table'
 import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { BoardCompareButton } from '@/components/BoardCompareButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
@@ -879,6 +880,7 @@ export function CampusPage({
                         active={campusFavorites.some((f) => f.id === job.id)}
                         onToggle={() => toggleCampusFavorite(job)}
                       />
+                      <BoardCompareButton item={{ board: 'campus', job }} />
                       <ShareTextButton text={campusShareText(job)} />
                     </div>
                   </TableCell>
@@ -1052,6 +1054,7 @@ export function CampusPage({
                   active={campusFavorites.some((f) => f.id === job.id)}
                   onToggle={() => toggleCampusFavorite(job)}
                 />
+                <BoardCompareButton className="-ml-1 -my-1" item={{ board: 'campus', job }} />
                 <ShareTextButton className="-ml-1 -my-1" text={campusShareText(job)} />
                 <span className="text-base font-semibold">
                   <Highlight text={job.company} query={keyword} />

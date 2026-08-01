@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
 import { CompareBar } from '@/components/CompareBar'
+import { BoardCompareBar } from '@/components/BoardCompareBar'
 import { MobileBottomNav } from '@/components/MobileBottomNav'
 import { OnboardingCard } from '@/components/OnboardingCard'
 import { useFavorites } from '@/lib/positionStore'
@@ -531,6 +532,7 @@ export default function App() {
         {guideOpen && <JobGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
       </Suspense>
       <CompareBar />
+      <BoardCompareBar onOpenJob={(board, id) => openSearchJob(board, id, '')} />
       {deepLinked && <PositionSheet item={deepLinked} onClose={() => setDeepLinked(null)} onOpenItem={setDeepLinked} />}
     </div>
   )

@@ -816,7 +816,7 @@ export function ListPage({
               <Button
                 variant="link"
                 size="sm"
-                className="h-auto p-0 text-xs"
+                className="h-auto min-h-11 p-0 text-xs sm:min-h-0"
                 onClick={() => setSaveOpen(true)}
               >
                 <BookmarkPlus className="mr-0.5 h-3.5 w-3.5" />
@@ -926,7 +926,7 @@ export function ListPage({
                   </button>
                 </Badge>
               ))}
-              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={clearFilters}>
+              <Button variant="link" size="sm" className="h-auto min-h-11 p-0 text-xs sm:min-h-0" onClick={clearFilters}>
                 清空全部
               </Button>
             </div>
@@ -957,7 +957,7 @@ export function ListPage({
               type="button"
               onClick={() => applyPreset(preset)}
               className={cn(
-                'shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                'min-h-11 shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
                 active
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
@@ -975,7 +975,7 @@ export function ListPage({
                 key={p.key}
                 type="button"
                 onClick={() => onCrossPreset(p.key)}
-                className="shrink-0 cursor-pointer rounded-full border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                className="min-h-11 shrink-0 cursor-pointer rounded-full border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground sm:min-h-0"
               >
                 {p.label}
               </button>
@@ -1043,15 +1043,16 @@ export function ListPage({
           </div>
         )}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold tracking-tight">{title}</h1>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h1 className="shrink-0 whitespace-nowrap text-xl font-bold tracking-tight">{title}</h1>
           {data && (
             <Badge
               variant="secondary"
               className="text-sm font-medium"
               title={data.total_capped ? '结果超过 10,000 条，计数已达统计上限' : undefined}
             >
-              共 {formatTotal(data.total, data.total_capped)} 条{data.total_capped ? '（已达统计上限）' : ''}
+              共 {formatTotal(data.total, data.total_capped)} 条
+              {data.total_capped && <span className="hidden sm:inline">（已达统计上限）</span>}
             </Badge>
           )}
           <FreshnessNote board="positions" />

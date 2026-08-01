@@ -163,7 +163,7 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
                 setGuideHash(s.key)
               }}
               className={cn(
-                'rounded-full border px-3 py-1 text-xs transition-colors',
+                'min-h-11 rounded-full border px-3 py-1 text-xs transition-colors sm:min-h-0',
                 active === s.key
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-background text-foreground hover:bg-muted',
@@ -173,7 +173,7 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
             </button>
           ))}
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="h-auto min-h-0 max-h-full overflow-y-auto">
           <div className="space-y-4 pb-6">
             {section.blocks.map((b, i) => (
               <div key={i} className="space-y-2">

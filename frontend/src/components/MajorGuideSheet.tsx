@@ -16,7 +16,16 @@ interface MajorGuideEntry {
   guide: string
 }
 
-const ENTRIES = majorGuide as MajorGuideEntry[]
+/** 专业名应为短词条：过滤长度 >10 或含标点/口语的脏数据。 */
+function isValidMajor(name: string): boolean {
+  const s = name.trim()
+  if (!s || s.length > 10) return false
+  if (/[，。！？；：“”…~～,.!?;:"']/.test(s)) return false
+  if (/学姐|学长|老哥|老师|强调|这里|大家|同学/.test(s)) return false
+  return true
+}
+
+const ENTRIES = (majorGuide as MajorGuideEntry[]).filter((e) => isValidMajor(e.major))
 
 export function MajorGuideSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [query, setQuery] = useState('')
@@ -72,12 +81,12 @@ export function MajorGuideSheet({ open, onClose }: { open: boolean; onClose: () 
               </div>
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2 pb-6 pt-1">
+            <div className="flex max-w-full flex-wrap gap-2 overflow-x-hidden pb-6 pt-1">
               {filtered.map((e) => (
-                <button key={e.major} type="button" onClick={() => setSelected(e)}>
+                <button key={e.major} type="button" className="max-w-full" onClick={() => setSelected(e)}>
                   <Badge
                     variant="secondary"
-                    className="cursor-pointer px-2.5 py-1 text-xs transition-colors hover:bg-primary hover:text-primary-foreground"
+                    className="max-w-full cursor-pointer truncate px-2.5 py-1 text-xs transition-colors hover:bg-primary hover:text-primary-foreground"
                   >
                     {e.major}
                   </Badge>

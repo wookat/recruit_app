@@ -597,7 +597,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs text-muted-foreground"
+                  className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
                   onClick={exportCsv}
                   disabled={exportCount === 0}
                 >
@@ -609,7 +609,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 text-xs text-muted-foreground"
+                    className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
                     onClick={shareFavorites}
                   >
                     {copied ? (
@@ -627,7 +627,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 text-xs text-muted-foreground"
+                    className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
                     onClick={clearFavorites}
                   >
                     <Trash2 className="mr-1 h-3.5 w-3.5" />
@@ -641,7 +641,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-xs text-muted-foreground"
+                className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
                 onClick={downloadBackup}
                 disabled={totalCount === 0}
               >
@@ -651,7 +651,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-xs text-muted-foreground"
+                className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <FileUp className="mr-1 h-3.5 w-3.5" />
@@ -721,7 +721,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                 <Button
                   variant={view === 'track' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="h-7 gap-1 text-xs"
+                  className="h-auto min-h-11 gap-1 text-xs sm:h-7 sm:min-h-0"
                   onClick={() => setView('track')}
                 >
                   <ListChecks className="h-3.5 w-3.5" />
@@ -730,7 +730,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                 <Button
                   variant={view === 'calendar' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="h-7 gap-1 text-xs"
+                  className="h-auto min-h-11 gap-1 text-xs sm:h-7 sm:min-h-0"
                   onClick={() => setView('calendar')}
                 >
                   <CalendarDays className="h-3.5 w-3.5" />

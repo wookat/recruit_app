@@ -92,9 +92,8 @@ export function jobTypeClass(value: string | null | undefined): string {
 
 export function yearClass(year: number | null | undefined): string {
   if (!year) return TONE_CLASSES.slate
-  if (year >= 2027) return TONE_CLASSES.red
-  if (year === 2026) return TONE_CLASSES.orange
-  if (year === 2025) return TONE_CLASSES.green
+  if (year >= 2027) return TONE_CLASSES.blue
+  if (year === 2026) return TONE_CLASSES.sky
   return TONE_CLASSES.slate
 }
 

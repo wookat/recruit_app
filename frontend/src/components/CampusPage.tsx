@@ -276,14 +276,14 @@ export function CampusPage({
   return (
     <div className="space-y-4">
       {/* 预设视图 chips */}
-      <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+      <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
         <div className="flex w-max gap-2">
           {PRESETS.map((v) => (
             <button
               key={v.key}
               onClick={() => selectPreset(v.key)}
               className={cn(
-                'min-h-9 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors',
+                'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
                 preset === v.key
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-background text-foreground hover:bg-muted',
@@ -305,7 +305,7 @@ export function CampusPage({
                   key={p.key}
                   type="button"
                   onClick={() => onCrossPreset(p.key)}
-                  className="min-h-9 whitespace-nowrap rounded-full border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="min-h-11 whitespace-nowrap rounded-full border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-9"
                 >
                   {p.label}
                 </button>
@@ -383,7 +383,7 @@ export function CampusPage({
                 key={t}
                 onClick={() => toggleCompanyType(t)}
                 className={cn(
-                  'rounded-full px-2.5 py-1 text-xs transition-colors',
+                  'min-h-11 rounded-full px-2.5 py-1 text-xs transition-colors sm:min-h-0',
                   companyTypes.includes(t)
                     ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
                     : 'opacity-80 hover:opacity-100',
@@ -398,7 +398,7 @@ export function CampusPage({
       </div>
 
       {/* 城市筛选 + 近7天更新 */}
-      <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+      <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
         <div className="flex w-max items-center gap-1.5">
           <span className="mr-0.5 shrink-0 text-xs text-muted-foreground">城市</span>
           {CITY_CHIPS.map((c) => (
@@ -410,7 +410,7 @@ export function CampusPage({
                 setPage(1)
               }}
               className={cn(
-                'whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors',
+                'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors sm:min-h-0',
                 city === c
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-background text-foreground hover:bg-muted',
@@ -427,7 +427,7 @@ export function CampusPage({
               setPage(1)
             }}
             className={cn(
-              'whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors',
+              'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors sm:min-h-0',
               recentOnly
                 ? 'border-primary bg-primary text-primary-foreground'
                 : 'border-border bg-background text-foreground hover:bg-muted',
@@ -442,7 +442,7 @@ export function CampusPage({
               setPage(1)
             }}
             className={cn(
-              'whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors',
+              'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors sm:min-h-0',
               dueOnly
                 ? 'border-primary bg-primary text-primary-foreground'
                 : 'border-border bg-background text-foreground hover:bg-muted',
@@ -561,8 +561,8 @@ export function CampusPage({
                               className={cn(
                                 'whitespace-nowrap border-0',
                                 y.includes('2027') || y.includes('2028')
-                                  ? TONE_CLASSES.red
-                                  : TONE_CLASSES.orange,
+                                  ? TONE_CLASSES.blue
+                                  : TONE_CLASSES.slate,
                               )}
                             >
                               {y}
@@ -726,7 +726,7 @@ export function CampusPage({
                         <Badge
                           key={y}
                           variant="secondary"
-                          className={cn('border-0', y.includes('2027') || y.includes('2028') ? TONE_CLASSES.red : TONE_CLASSES.orange)}
+                          className={cn('border-0', y.includes('2027') || y.includes('2028') ? TONE_CLASSES.blue : TONE_CLASSES.slate)}
                         >
                           {y}
                         </Badge>

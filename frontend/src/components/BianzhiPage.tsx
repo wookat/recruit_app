@@ -177,14 +177,14 @@ export function BianzhiPage({
   return (
     <div className="space-y-4">
       {/* 分类 chips */}
-      <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+      <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
         <div className="flex w-max gap-2">
           {PRESETS.map((v) => (
             <button
               key={v.key}
               onClick={() => selectPreset(v.key)}
               className={cn(
-                'min-h-9 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors',
+                'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
                 preset === v.key
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-background text-foreground hover:bg-muted',
@@ -205,7 +205,7 @@ export function BianzhiPage({
               setPage(1)
             }}
             className={cn(
-              'min-h-9 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors',
+              'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
               dueOnly
                 ? 'border-primary bg-primary text-primary-foreground'
                 : 'border-border bg-background text-foreground hover:bg-muted',
@@ -221,7 +221,7 @@ export function BianzhiPage({
                   key={p.key}
                   type="button"
                   onClick={() => onCrossPreset(p.key)}
-                  className="min-h-9 whitespace-nowrap rounded-full border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="min-h-11 whitespace-nowrap rounded-full border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-9"
                 >
                   {p.label}
                 </button>
@@ -278,14 +278,14 @@ export function BianzhiPage({
           </button>
         </div>
         <div className="flex gap-1.5">
-          <Button variant="outline" size="sm" className="h-10 gap-1.5" onClick={() => setGuideOpen(true)}>
+          <Button variant="outline" size="sm" className="h-11 gap-1.5 sm:h-10" onClick={() => setGuideOpen(true)}>
             <GraduationCap className="h-4 w-4" />
             专业就业方向
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-10 gap-1.5"
+            className="h-11 gap-1.5 sm:h-10"
             onClick={() => setShowHrSites((v) => !v)}
           >
             <Landmark className="h-4 w-4" />
@@ -304,7 +304,7 @@ export function BianzhiPage({
                 href={s.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted"
+                className="inline-flex min-h-11 items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted sm:min-h-0"
               >
                 {s.province} <ExternalLink className="h-3 w-3 text-muted-foreground" />
               </a>
@@ -319,14 +319,14 @@ export function BianzhiPage({
 
       {/* 省份 chips */}
       {filters && filters.provinces.length > 0 && (
-        <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+        <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
           <div className="flex w-max gap-1.5">
             {filters.provinces.slice(0, 32).map((p) => (
               <button
                 key={p}
                 onClick={() => toggleProvince(p)}
                 className={cn(
-                  'whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors',
+                  'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors sm:min-h-0',
                   provinces.includes(p)
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -353,7 +353,19 @@ export function BianzhiPage({
       {loading && !data ? (
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
+            <div key={i} className="space-y-2.5 rounded-xl border bg-background p-4">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-16 rounded-4xl" />
+                <Skeleton className="h-5 w-12 rounded-4xl" />
+                <Skeleton className="ml-auto h-4 w-20" />
+              </div>
+              <Skeleton className="h-5 w-3/5" />
+              <div className="flex gap-4">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            </div>
           ))}
         </div>
       ) : data && data.items.length === 0 ? (
@@ -603,7 +615,7 @@ export function BianzhiPage({
                           href={job.announce_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                          className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md border border-border bg-background px-2 text-xs font-medium text-primary transition-colors hover:bg-muted"
                         >
                           公告 <ExternalLink className="h-3 w-3" />
                         </a>
@@ -613,7 +625,7 @@ export function BianzhiPage({
                           href={job.apply_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md border border-border bg-background px-2 text-xs font-medium transition-colors hover:bg-muted"
+                          className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md border border-border bg-background px-2 text-xs font-medium text-primary transition-colors hover:bg-muted"
                         >
                           报名 <ExternalLink className="h-3 w-3" />
                         </a>

@@ -259,7 +259,7 @@ export default function App() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-muted/30 font-sans">
+    <div className="flex min-h-screen flex-col bg-muted/30 font-sans">
       <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
@@ -283,12 +283,12 @@ export default function App() {
             {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             {theme === 'system' && <span className="hidden text-[11px] text-muted-foreground lg:inline">自动</span>}
           </Button>
-          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setGuideOpen(true)}>
+          <Button variant="ghost" size="sm" className="min-h-11 gap-1.5 sm:min-h-8" onClick={() => setGuideOpen(true)}>
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">求职攻略</span>
             <span className="sm:hidden">攻略</span>
           </Button>
-          <Button variant="outline" size="sm" className="relative gap-1.5" onClick={() => setFavOpen(true)}>
+          <Button variant="outline" size="sm" className="relative min-h-11 gap-1.5 sm:min-h-8" onClick={() => setFavOpen(true)}>
             <Star className="h-4 w-4 text-amber-400" />
             我的收藏
             {dueSoon > 0 && (
@@ -325,7 +325,7 @@ export default function App() {
         )}
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
         <div key={tab === 'admin' ? 'admin' : section.mode} className="animate-fade-in-up">
           {tab !== 'admin' && section.mode === 'positions' && (
             <SearchPage

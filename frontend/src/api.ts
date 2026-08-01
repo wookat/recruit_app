@@ -29,6 +29,7 @@ export interface Position {
 export interface PositionList {
   total: number
   total_capped?: boolean
+  timed_out?: boolean
   page: number
   page_size: number
   items: Position[]

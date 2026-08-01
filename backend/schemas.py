@@ -39,6 +39,7 @@ class PositionOut(PositionBase):
 class PositionList(BaseModel):
     total: int
     total_capped: bool = False  # True 表示 total 为封顶值（实际结果数 >= total）
+    timed_out: bool = False  # True 表示查询超时被取消，结果降级为空（提示换关键词）
     page: int
     page_size: int
     next_cursor: Optional[int] = None

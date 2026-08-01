@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from database import engine, Base, get_db
@@ -149,16 +150,31 @@ def get_positions(
         category=category,
         hide_expired=hide_expired,
     )
-    if after_id is not None:
-        items = crud.search_positions_cursor(db, filters, after_id, after_year, page_size, sort)
+    try:
+        if after_id is not None:
+            items = crud.search_positions_cursor(db, filters, after_id, after_year, page_size, sort)
+            return {
+                "total": -1,
+                "page": page,
+                "page_size": page_size,
+                "next_cursor": items[-1].id if items else None,
+                "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
+            }
+        total, items = crud.search_positions(db, filters, page, page_size, sort)
+    except OperationalError as e:
+        # statement_timeout 取消（如低选择性关键词全表扫）：降级为空结果而非 500
+        if "QueryCanceled" not in type(getattr(e, "orig", None) or e).__name__ and "canceling statement" not in str(e):
+            raise
+        db.rollback()
         return {
-            "total": -1,
+            "total": 0,
+            "total_capped": False,
             "page": page,
             "page_size": page_size,
-            "next_cursor": items[-1].id if items else None,
-            "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
+            "next_cursor": None,
+            "items": [],
+            "timed_out": True,
         }
-    total, items = crud.search_positions(db, filters, page, page_size, sort)
     return {
         "total": total,
         "total_capped": total >= crud.COUNT_CAP,

@@ -642,7 +642,11 @@ export function BianzhiPage({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchSuggestInput
           value={searchInput}
-          onValueChange={setSearchInput}
+          onValueChange={(v) => {
+            setSearchInput(v)
+            setKeyword(v)
+            setPage(1)
+          }}
           onSelect={(text) => {
             setSearchInput(text)
             setKeyword(text)

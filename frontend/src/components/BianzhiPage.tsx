@@ -28,6 +28,7 @@ import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Table2 } from 'lucid
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
+import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { addRecentSearch } from '@/lib/storage'
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
@@ -139,6 +140,7 @@ export function BianzhiPage({
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'card' : 'table',
   )
   const [sort, setSort] = useState<SortState | null>(null)
+  const [detail, setDetail] = useState<BianzhiJob | null>(null)
   const toggleSort = useCallback((key: string) => setSort((s) => nextSort(s, key)), [])
 
   useEffect(() => {
@@ -545,7 +547,8 @@ export function BianzhiPage({
                 </div>
               )}
             <div
-              className="rounded-xl border bg-background p-4 transition-colors hover:border-primary/20 hover:shadow-md"
+              className="cursor-pointer rounded-xl border bg-background p-4 transition-colors hover:border-primary/20 hover:shadow-md"
+              onClick={() => setDetail(job)}
             >
               <div className="flex flex-wrap items-center gap-2">
                 <BoardFavoriteButton
@@ -622,7 +625,7 @@ export function BianzhiPage({
                   {job.announce_url && job.announce_url.startsWith('http') && (
                     <a
                       href={job.announce_url}
-                      target="_blank"
+                      target="_blank" onClick={(e) => e.stopPropagation()}
                       rel="noopener noreferrer"
                       className="inline-flex h-11 items-center gap-1 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:h-8"
                     >
@@ -632,7 +635,7 @@ export function BianzhiPage({
                   {job.apply_url && job.apply_url.startsWith('http') && (
                     <a
                       href={job.apply_url}
-                      target="_blank"
+                      target="_blank" onClick={(e) => e.stopPropagation()}
                       rel="noopener noreferrer"
                       className="inline-flex h-11 items-center gap-1 rounded-md border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted sm:h-8"
                     >
@@ -703,7 +706,7 @@ export function BianzhiPage({
                       </TableCell>
                     </TableRow>
                   )}
-                <TableRow>
+                <TableRow className="cursor-pointer" onClick={() => setDetail(job)}>
                   <TableCell className="p-1">
                     <div className="flex items-center">
                       <BoardFavoriteButton
@@ -812,7 +815,7 @@ export function BianzhiPage({
                       {job.announce_url && job.announce_url.startsWith('http') && (
                         <a
                           href={job.announce_url}
-                          target="_blank"
+                          target="_blank" onClick={(e) => e.stopPropagation()}
                           rel="noopener noreferrer"
                           className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md border border-border bg-background px-2 text-xs font-medium text-primary transition-colors hover:bg-muted"
                         >
@@ -822,7 +825,7 @@ export function BianzhiPage({
                       {job.apply_url && job.apply_url.startsWith('http') && (
                         <a
                           href={job.apply_url}
-                          target="_blank"
+                          target="_blank" onClick={(e) => e.stopPropagation()}
                           rel="noopener noreferrer"
                           className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md border border-border bg-background px-2 text-xs font-medium text-primary transition-colors hover:bg-muted"
                         >
@@ -859,6 +862,46 @@ export function BianzhiPage({
             </Button>
           </div>
         </div>
+      )}
+
+      {detail && (
+        <BoardJobSheet
+          open={!!detail}
+          onClose={() => setDetail(null)}
+          title={
+            detail.employer ||
+            (detail.category === '大型联考'
+              ? `${detail.province ?? ''}${detail.job_type ?? ''}联考`
+              : '-')
+          }
+          badges={[detail.category, detail.province].filter((b): b is string => !!b)}
+          shareText={bianzhiShareText(detail)}
+          favActive={bianzhiFavorites.some((f) => f.id === detail.id)}
+          onFavToggle={() => toggleBianzhiFavorite(detail)}
+          basics={[
+            { label: '招聘单位', value: detail.employer },
+            { label: '分类', value: detail.category },
+            { label: '省份', value: detail.province },
+            { label: '岗位类型', value: detail.job_type },
+            { label: '招聘人数', value: detail.headcount },
+            { label: '工作地点', value: detail.work_location },
+            { label: '备注', value: detail.notes },
+          ]}
+          requirements={[
+            { label: '学历要求', value: detail.edu_requirement },
+            { label: '专业要求', value: detail.major_requirement },
+          ]}
+          schedule={[
+            { label: '报名开始', value: detail.signup_start },
+            { label: '报名截止', value: detail.deadline_text },
+            { label: '考试时间', value: detail.exam_time },
+            { label: '更新时间', value: detail.updated_at_src },
+          ]}
+          links={[
+            { label: '公告链接', url: detail.announce_url },
+            { label: '报名入口', url: detail.apply_url },
+          ]}
+        />
       )}
     </div>
   )

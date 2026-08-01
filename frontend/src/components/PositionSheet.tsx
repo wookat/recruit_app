@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
+import { ShareTextButton, buildShareText } from './ShareTextButton'
 import {
   APP_STATUSES,
   STATUS_COLORS,
@@ -120,7 +121,7 @@ export function PositionSheet({ item, onClose }: Props) {
 
   return (
     <Sheet open={!!item} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full max-w-2xl p-0 sm:max-w-xl">
+      <SheetContent side="right" className="w-full max-w-2xl p-0 data-[side=right]:w-full sm:max-w-xl">
         <SheetHeader className="space-y-2 px-4 pt-6 sm:px-6">
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             岗位详情
@@ -157,6 +158,16 @@ export function PositionSheet({ item, onClose }: Props) {
                 ))}
               </SelectContent>
             </Select>
+            <ShareTextButton
+              className="h-8 w-8"
+              text={buildShareText({
+                org: item.employer,
+                title: item.position_example,
+                location: item.work_location,
+                deadline: item.signup_time,
+                url: item.source_url || positionShareUrl(item.id),
+              })}
+            />
             <FavoriteButton item={item} />
             <CompareButton item={item} />
           </div>

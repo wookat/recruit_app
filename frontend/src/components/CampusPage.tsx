@@ -28,6 +28,7 @@ import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
+import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { addRecentSearch } from '@/lib/storage'
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
@@ -235,6 +236,7 @@ export function CampusPage({
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'card' : 'table',
   )
   const [sort, setSort] = useState<SortState | null>(null)
+  const [detail, setDetail] = useState<CampusJob | null>(null)
   const toggleSort = useCallback((key: string) => setSort((s) => nextSort(s, key)), [])
 
   useEffect(() => {
@@ -658,7 +660,7 @@ export function CampusPage({
                       </TableCell>
                     </TableRow>
                   )}
-                <TableRow>
+                <TableRow className="cursor-pointer" onClick={() => setDetail(job)}>
                   <TableCell className="p-1">
                     <div className="flex items-center">
                       <BoardFavoriteButton
@@ -794,7 +796,7 @@ export function CampusPage({
                       {job.apply_url && job.apply_url.startsWith('http') && (
                         <a
                           href={job.apply_url}
-                          target="_blank"
+                          target="_blank" onClick={(e) => e.stopPropagation()}
                           rel="noopener noreferrer"
                           className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                         >
@@ -804,7 +806,7 @@ export function CampusPage({
                       {job.announce_url && job.announce_url.startsWith('http') && (
                         <a
                           href={job.announce_url}
-                          target="_blank"
+                          target="_blank" onClick={(e) => e.stopPropagation()}
                           rel="noopener noreferrer"
                           className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md border border-border bg-background px-2 text-xs font-medium transition-colors hover:bg-muted"
                         >
@@ -829,7 +831,8 @@ export function CampusPage({
                 </div>
               )}
             <div
-              className="rounded-xl border bg-background p-4 transition-colors hover:border-primary/20 hover:shadow-md"
+              className="cursor-pointer rounded-xl border bg-background p-4 transition-colors hover:border-primary/20 hover:shadow-md"
+              onClick={() => setDetail(job)}
             >
               <div className="flex flex-wrap items-center gap-2">
                 <BoardFavoriteButton
@@ -926,7 +929,7 @@ export function CampusPage({
                   {job.apply_url && job.apply_url.startsWith('http') && (
                     <a
                       href={job.apply_url}
-                      target="_blank"
+                      target="_blank" onClick={(e) => e.stopPropagation()}
                       rel="noopener noreferrer"
                       className="inline-flex h-8 items-center gap-1 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                     >
@@ -936,7 +939,7 @@ export function CampusPage({
                   {job.announce_url && job.announce_url.startsWith('http') && (
                     <a
                       href={job.announce_url}
-                      target="_blank"
+                      target="_blank" onClick={(e) => e.stopPropagation()}
                       rel="noopener noreferrer"
                       className="inline-flex h-8 items-center gap-1 rounded-md border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted"
                     >
@@ -971,6 +974,44 @@ export function CampusPage({
             </Button>
           </div>
         </div>
+      )}
+
+      {detail && (
+        <BoardJobSheet
+          open={!!detail}
+          onClose={() => setDetail(null)}
+          title={detail.company || '-'}
+          badges={[detail.company_type, detail.source_table].filter((b): b is string => !!b)}
+          shareText={campusShareText(detail)}
+          favActive={campusFavorites.some((f) => f.id === detail.id)}
+          onFavToggle={() => toggleCampusFavorite(detail)}
+          basics={[
+            { label: '公司', value: detail.company },
+            { label: '招聘岗位', value: detail.positions },
+            { label: '企业类型', value: detail.company_type },
+            { label: '行业', value: detail.industry },
+            { label: '批次', value: detail.batch },
+            { label: '届别', value: detail.grad_years },
+            { label: '免笔试', value: detail.no_exam },
+            { label: '内推码', value: detail.referral_code },
+            { label: '工作地点', value: detail.locations },
+            { label: '来源', value: detail.source_table },
+            { label: '备注', value: detail.notes },
+          ]}
+          requirements={[
+            { label: '学历要求', value: detail.edu_requirement },
+            { label: '专业要求', value: detail.major_requirement },
+          ]}
+          schedule={[
+            { label: '开始时间', value: detail.start_date },
+            { label: '截止时间', value: detail.deadline_text },
+            { label: '更新时间', value: detail.updated_at_src },
+          ]}
+          links={[
+            { label: '投递入口', url: detail.apply_url },
+            { label: '公告链接', url: detail.announce_url },
+          ]}
+        />
       )}
     </div>
   )

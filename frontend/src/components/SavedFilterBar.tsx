@@ -3,6 +3,7 @@ import { Bookmark, BookmarkPlus, Check, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { markSavedFilterSeen, useSavedNews } from '@/lib/savedNews'
 import {
   deleteQuery,
   getSavedQueries,
@@ -27,10 +28,12 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveName, setSaveName] = useState('')
   const [hint, setHint] = useState<string | null>(null)
+  const news = useSavedNews()
 
   if (saved.length === 0 && !canSave) return null
 
   const apply = (f: SavedQuery) => {
+    markSavedFilterSeen(board, f.name)
     const q = new URLSearchParams(f.query)
     q.set('board', board)
     window.location.href = `${window.location.pathname}?${q.toString()}`
@@ -57,6 +60,11 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
           <span className="cursor-pointer truncate" onClick={() => apply(f)}>
             {f.name}
           </span>
+          {(news.counts[`${board}|${f.name}`] ?? 0) > 0 && (
+            <span className="shrink-0 rounded-full bg-red-500/15 px-1.5 text-[10px] font-medium text-red-600 dark:text-red-400">
+              +{news.counts[`${board}|${f.name}`]} 新
+            </span>
+          )}
           <button
             type="button"
             aria-label={`删除筛选 ${f.name}`}

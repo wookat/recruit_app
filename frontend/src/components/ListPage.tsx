@@ -31,6 +31,7 @@ import {
   type SavedFilter,
 } from '@/lib/storage'
 import { pinyinMatch } from '@/lib/pinyin'
+import { markSavedFilterSeen, useSavedNews } from '@/lib/savedNews'
 import {
   Search,
   Filter,
@@ -233,6 +234,11 @@ export function ListPage({
   }, [params.keyword, crossFetchTotal])
   const [recent, setRecent] = useState<string[]>(() => getRecentSearches())
   const [saved, setSaved] = useState<SavedFilter[]>(() => getSavedFilters())
+  const savedNews = useSavedNews()
+  const positionsNewSum = saved.reduce(
+    (a, f) => a + (savedNews.counts[`positions|${f.name}`] ?? 0),
+    0,
+  )
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveHint, setSaveHint] = useState<string | null>(null)
   const [saveName, setSaveName] = useState('')
@@ -540,6 +546,7 @@ export function ListPage({
   }
 
   function applySavedFilter(f: SavedFilter) {
+    markSavedFilterSeen('positions', f.name)
     setParams({ ...DEFAULT_PARAMS, ...f.params, page: 1 })
   }
 
@@ -750,9 +757,12 @@ export function ListPage({
               <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
                 <SheetTrigger
                   render={
-                    <Button variant="outline" size="sm" className="h-11 shrink-0 gap-1.5 sm:h-9 lg:hidden" aria-label="筛选">
+                    <Button variant="outline" size="sm" className="relative h-11 shrink-0 gap-1.5 sm:h-9 lg:hidden" aria-label="筛选">
                       <Filter className="h-4 w-4" />
                       筛选
+                      {positionsNewSum > 0 && (
+                        <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label="常用筛选有上新" />
+                      )}
                     </Button>
                   }
                 />
@@ -771,11 +781,14 @@ export function ListPage({
               <Button
                 variant={advancedOpen ? 'secondary' : 'outline'}
                 size="sm"
-                className="hidden h-9 shrink-0 gap-1.5 lg:inline-flex"
+                className="relative hidden h-9 shrink-0 gap-1.5 lg:inline-flex"
                 onClick={() => setAdvancedOpen((v) => !v)}
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 高级筛选
+                {positionsNewSum > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label="常用筛选有上新" />
+                )}
                 {advancedOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               </Button>
               <Button
@@ -861,6 +874,11 @@ export function ListPage({
                 <span className="cursor-pointer" onClick={() => applySavedFilter(f)}>
                   {f.name}
                 </span>
+                {(savedNews.counts[`positions|${f.name}`] ?? 0) > 0 && (
+                  <span className="shrink-0 rounded-full bg-red-500/15 px-1.5 text-[10px] font-medium text-red-600 dark:text-red-400">
+                    +{savedNews.counts[`positions|${f.name}`]} 新
+                  </span>
+                )}
                 <button
                   type="button"
                   aria-label={`删除筛选 ${f.name}`}

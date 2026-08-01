@@ -20,6 +20,7 @@ import { readJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { POSITION_URL_KEYS } from '@/lib/urlFilters'
 import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
 import { useRemindDays } from '@/lib/reminderPref'
+import { refreshSavedNews, useSavedNews } from '@/lib/savedNews'
 
 const JobGuideSheet = lazy(() =>
   import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet })),
@@ -206,6 +207,11 @@ export default function App() {
     if (GUIDE_SECTION_KEYS.includes(h)) setGuideOpen(true)
   }, [])
 
+  const savedNews = useSavedNews()
+  useEffect(() => {
+    refreshSavedNews()
+  }, [])
+
   const cycleTheme = useCallback(() => {
     setThemeState((prev) => {
       const next = prev === 'system' ? 'dark' : prev === 'dark' ? 'light' : 'system'
@@ -336,12 +342,15 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
-            className="min-h-11 gap-1.5 px-2 sm:min-h-8"
+            className="relative min-h-11 gap-1.5 px-2 sm:min-h-8"
             aria-label="全站搜索"
             title="全站搜索（Ctrl K）"
             onClick={() => setSearchOpen(true)}
           >
             <Search className="h-4 w-4" />
+            {savedNews.sum > 0 && (
+              <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label="常用筛选有上新" />
+            )}
             <kbd className="hidden rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline">
               Ctrl K
             </kbd>

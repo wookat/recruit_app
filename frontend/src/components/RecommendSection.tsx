@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { useFavorites } from '@/lib/positionStore'
+import { stripOrgPrefix } from '@/lib/orgPrefix'
 
 const COLLAPSED_KEY = 'recruit.recoCollapsed'
 const SHOW_COUNT = 5
@@ -151,10 +152,7 @@ export function RecommendSection() {
               </div>
               {p.position_example && (
                 <span className="line-clamp-1 text-xs text-muted-foreground">
-                  {p.employer && p.position_example.startsWith(p.employer)
-                    ? p.position_example.slice(p.employer.length).replace(/^[\s\-—·：:]+/, '') ||
-                      p.position_example
-                    : p.position_example}
+                  {stripOrgPrefix(p.position_example, p.employer)}
                 </span>
               )}
               <div className="mt-auto flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">

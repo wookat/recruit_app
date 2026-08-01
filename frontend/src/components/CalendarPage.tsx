@@ -281,7 +281,7 @@ export function CalendarPage() {
                     </span>
                   )}
                   {day && day.bianzhi.length > 0 && (
-                    <span className="rounded bg-violet-500/15 px-1 text-[10px] font-medium leading-4 text-violet-600 dark:text-violet-400">
+                    <span className="rounded bg-violet-500/15 px-1 text-[10px] font-medium leading-4 text-violet-600 dark:bg-purple-500/25 dark:text-purple-300">
                       {day.bianzhi.length}
                     </span>
                   )}
@@ -323,7 +323,7 @@ export function CalendarPage() {
                     className="flex w-full min-h-11 flex-wrap items-center gap-2 py-2 text-left hover:bg-muted/50"
                     onClick={() => setBianzhiDetail(j)}
                   >
-                    <Badge className="border-0 bg-violet-500/15 text-violet-600 dark:text-violet-400">编制</Badge>
+                    <Badge className="border-0 bg-violet-500/15 text-violet-600 dark:bg-purple-500/25 dark:text-purple-300">编制</Badge>
                     <span className="text-sm font-medium">{bianzhiTitle(j)}</span>
                     {j.job_type && (
                       <span className="line-clamp-1 text-xs text-muted-foreground">{j.job_type}</span>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Position } from '@/api'
 import { copyText, positionShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
+import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { ExternalLink, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check } from 'lucide-react'
 import {
   Sheet,
@@ -239,7 +240,14 @@ export function PositionSheet({
           <div className="space-y-5 pb-8 pt-2">
             <Section icon={Info} title="基本信息">
               <Field label="用人单位/系统" value={item.employer} />
-              <Field label="岗位示例" value={item.position_example} />
+              <Field
+                label="岗位示例"
+                value={
+                  item.position_example
+                    ? stripOrgPrefix(item.position_example, item.employer)
+                    : item.position_example
+                }
+              />
               <Field label="考试/招聘类型" value={item.exam_type} />
               <div className="flex items-start gap-1.5">
                 <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />

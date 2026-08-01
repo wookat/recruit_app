@@ -352,7 +352,7 @@ export default function App() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
-        {tab !== 'admin' && (
+        {tab !== 'admin' && section.mode !== 'calendar' && (
           <OnboardingCard
             onOpenTips={() => {
               window.history.replaceState(

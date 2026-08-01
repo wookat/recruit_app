@@ -52,7 +52,13 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, MapPin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote } from 'lucide-react'
+import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, MapPin, MoreHorizontal, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { EmptyState } from './EmptyState'
 
 interface Props {
@@ -709,90 +715,90 @@ export function FavoritesSheet({ open, onClose }: Props) {
               我的收藏
               <Badge variant="secondary">{totalCount}</Badge>
             </SheetTitle>
-            {boardCount > 0 && (
-              <div className="flex flex-wrap items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
-                  onClick={exportCsv}
-                  disabled={exportCount === 0}
-                >
-                  <Download className="mr-1 h-3.5 w-3.5" />
-                  {q ? `导出 CSV (${exportCount})` : '导出 CSV'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
-                  onClick={copyFavoritesList}
-                  disabled={boardCount === 0}
-                >
-                  {listCopied ? (
-                    <>
-                      <Check className="mr-1 h-3.5 w-3.5 text-green-600" />
-                      已复制
-                    </>
-                  ) : (
-                    <>
-                      <ClipboardList className="mr-1 h-3.5 w-3.5" />
-                      复制收藏清单
-                    </>
-                  )}
-                </Button>
-                {board === 'positions' && (
-                  <>
+            <div className="flex flex-wrap items-center gap-1">
+              {boardCount > 0 && (
+                <>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
-                    onClick={shareFavorites}
+                    onClick={exportCsv}
+                    disabled={exportCount === 0}
                   >
-                    {copied ? (
+                    <Download className="mr-1 h-3.5 w-3.5" />
+                    {q ? `导出 CSV (${exportCount})` : '导出 CSV'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
+                    onClick={copyFavoritesList}
+                    disabled={boardCount === 0}
+                  >
+                    {listCopied ? (
                       <>
                         <Check className="mr-1 h-3.5 w-3.5 text-green-600" />
                         已复制
                       </>
                     ) : (
                       <>
-                        <Link2 className="mr-1 h-3.5 w-3.5" />
-                        分享收藏夹
+                        <ClipboardList className="mr-1 h-3.5 w-3.5" />
+                        复制收藏清单
                       </>
                     )}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
-                    onClick={clearFavorites}
-                  >
-                    <Trash2 className="mr-1 h-3.5 w-3.5" />
-                    清空
-                  </Button>
-                  </>
-                )}
-              </div>
-            )}
-            <div className="flex flex-wrap items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
-                onClick={downloadBackup}
-                disabled={totalCount === 0}
-              >
-                <DatabaseBackup className="mr-1 h-3.5 w-3.5" />
-                备份数据
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <FileUp className="mr-1 h-3.5 w-3.5" />
-                恢复备份
-              </Button>
+                  {board === 'positions' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
+                      onClick={shareFavorites}
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="mr-1 h-3.5 w-3.5 text-green-600" />
+                          已复制
+                        </>
+                      ) : (
+                        <>
+                          <Link2 className="mr-1 h-3.5 w-3.5" />
+                          分享收藏夹
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
+                    >
+                      <MoreHorizontal className="mr-1 h-3.5 w-3.5" />
+                      更多
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={downloadBackup} disabled={totalCount === 0}>
+                    <DatabaseBackup className="mr-1.5 h-3.5 w-3.5" />
+                    备份数据
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                    <FileUp className="mr-1.5 h-3.5 w-3.5" />
+                    恢复备份
+                  </DropdownMenuItem>
+                  {board === 'positions' && boardCount > 0 && (
+                    <DropdownMenuItem onClick={clearFavorites}>
+                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                      清空收藏
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <input
                 ref={fileInputRef}
                 type="file"

@@ -9,7 +9,7 @@ export function DueBadge({ date }: { date: string | null | undefined }) {
   const n = daysUntil(d)
   if (n < 0) {
     return (
-      <Badge className="whitespace-nowrap border-0 bg-muted text-muted-foreground">
+      <Badge className="whitespace-nowrap border-0 bg-muted text-foreground/80 dark:text-muted-foreground">
         已截止
       </Badge>
     )

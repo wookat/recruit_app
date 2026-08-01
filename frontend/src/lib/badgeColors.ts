@@ -23,6 +23,28 @@ export type Tone =
   | 'rose'
   | 'slate'
 
+/** 亮色下更深的文字色（-900 级），用于小字号统计 chips 达到 4.5:1 对比度；暗色保持 -300。 */
+export const TONE_TEXT_STRONG: Record<Tone, string> = {
+  red: 'text-red-900 dark:text-red-300',
+  orange: 'text-orange-900 dark:text-orange-300',
+  amber: 'text-amber-900 dark:text-amber-300',
+  yellow: 'text-yellow-900 dark:text-yellow-300',
+  lime: 'text-lime-900 dark:text-lime-300',
+  green: 'text-green-900 dark:text-green-300',
+  emerald: 'text-emerald-900 dark:text-emerald-300',
+  teal: 'text-teal-900 dark:text-teal-300',
+  cyan: 'text-cyan-900 dark:text-cyan-300',
+  sky: 'text-sky-900 dark:text-sky-300',
+  blue: 'text-blue-900 dark:text-blue-300',
+  indigo: 'text-indigo-900 dark:text-indigo-300',
+  violet: 'text-violet-900 dark:text-violet-300',
+  purple: 'text-purple-900 dark:text-purple-300',
+  fuchsia: 'text-fuchsia-900 dark:text-fuchsia-300',
+  pink: 'text-pink-900 dark:text-pink-300',
+  rose: 'text-rose-900 dark:text-rose-300',
+  slate: 'text-slate-900 dark:text-slate-300',
+}
+
 export const TONE_CLASSES: Record<Tone, string> = {
   red: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 [&_[data-count]]:text-red-900 dark:[&_[data-count]]:text-red-300',
   orange: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300 [&_[data-count]]:text-orange-900 dark:[&_[data-count]]:text-orange-300',

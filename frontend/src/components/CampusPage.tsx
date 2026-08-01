@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from '@/components/ActiveFilterChips'
 import { Highlight } from '@/components/Highlight'
-import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
+import { TONE_CLASSES, TONE_TEXT_STRONG, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
 import { formatDueDayLabel } from '@/lib/deadline'
 import {
@@ -501,8 +501,9 @@ export function CampusPage({
             'min-h-11 rounded-full px-2.5 py-1 text-xs transition-colors md:min-h-0',
             companyTypes.includes(t)
               ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
-              : 'opacity-80 hover:opacity-100',
+              : 'hover:brightness-95 dark:hover:brightness-110',
             toneClass(COMPANY_TYPE_TONES, t),
+            TONE_TEXT_STRONG[COMPANY_TYPE_TONES[t] || hashTone(t)],
           )}
         >
           {t}

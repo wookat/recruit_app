@@ -1248,7 +1248,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   aria-pressed={statusFilter === null}
                   className={`cursor-pointer rounded-full px-2 py-0.5 text-[11px] font-medium transition-shadow ${
                     statusFilter === null
-                      ? 'bg-primary/10 text-primary ring-2 ring-primary/50'
+                      ? 'bg-primary text-primary-foreground ring-2 ring-primary/50'
                       : 'bg-muted text-muted-foreground'
                   }`}
                   onClick={() => {

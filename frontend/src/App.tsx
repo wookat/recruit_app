@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
 import { CompareBar } from '@/components/CompareBar'
+import { OnboardingCard } from '@/components/OnboardingCard'
 import { useFavorites } from '@/lib/positionStore'
 import { useBianzhiFavorites, useCampusFavorites } from '@/lib/boardFavorites'
 import { applySeo } from '@/lib/seo'
@@ -351,6 +352,18 @@ export default function App() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
+        {tab !== 'admin' && (
+          <OnboardingCard
+            onOpenTips={() => {
+              window.history.replaceState(
+                null,
+                '',
+                window.location.pathname + window.location.search + '#tips',
+              )
+              setGuideOpen(true)
+            }}
+          />
+        )}
         <div key={tab === 'admin' ? 'admin' : section.mode} className="animate-fade-in-up">
           {tab !== 'admin' && section.mode === 'positions' && (
             <SearchPage
@@ -395,6 +408,27 @@ export default function App() {
       </main>
 
       <footer className="border-t bg-background py-6 pb-16 text-center text-xs text-muted-foreground">
+        <div className="mb-2 flex items-center justify-center gap-4">
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:min-h-0"
+            onClick={() => {
+              setSection({ mode: 'calendar' })
+              window.scrollTo({ top: 0 })
+            }}
+          >
+            <CalendarDays className="h-3.5 w-3.5" />
+            日历
+          </button>
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:min-h-0"
+            onClick={() => setGuideOpen(true)}
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            求职攻略
+          </button>
+        </div>
         数据来源：国家公务员局、军队人才网、国聘网及各省官方/汇总页面 · 仅供参考
       </footer>
 

@@ -52,7 +52,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, Building2, ClipboardList, Download, ExternalLink, Flag, MapPin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote } from 'lucide-react'
+import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, MapPin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote } from 'lucide-react'
 import { EmptyState } from './EmptyState'
 
 interface Props {
@@ -941,7 +941,27 @@ export function FavoritesSheet({ open, onClose }: Props) {
                       ? '还没有收藏校招信息'
                       : '还没有收藏编制公告'
                   }
-                  description="点击列表里的星标即可收藏，方便追踪投递进度"
+                  description="点击列表里的星标即可收藏，之后在这里管理投递全流程"
+                  action={
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/10">
+                          <Star className="h-4 w-4 text-amber-500" />
+                        </span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                          <ClipboardList className="h-4 w-4 text-primary" />
+                        </span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500/10">
+                          <AlarmClock className="h-4 w-4 text-red-500" />
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        星标收藏 → 投递状态追踪 → 截止自动提醒
+                      </div>
+                    </div>
+                  }
                 />
               ) : (
                 <div>

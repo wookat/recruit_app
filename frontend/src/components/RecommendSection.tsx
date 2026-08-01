@@ -30,6 +30,7 @@ export function RecommendSection() {
   const [page, setPage] = useState(1)
   const [items, setItems] = useState<Position[] | null>(null)
   const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
 
   const basis = useMemo(() => {
     if (!favorites.length) return null
@@ -49,15 +50,21 @@ export function RecommendSection() {
   const favIds = useMemo(() => new Set(favorites.map((p) => p.id)), [favorites])
 
   useEffect(() => {
-    if (!basis || collapsed) return
+    if (!basis || collapsed || failed) return
     let cancelled = false
     setLoading(true)
-    fetchPositions({
-      province: basis.province ? [basis.province] : undefined,
-      exam_type: basis.examType ? [basis.examType] : undefined,
-      page,
-      page_size: 12,
+    const timeout = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('timeout')), 10000)
     })
+    Promise.race([
+      fetchPositions({
+        province: basis.province ? [basis.province] : undefined,
+        exam_type: basis.examType ? [basis.examType] : undefined,
+        page,
+        page_size: 12,
+      }),
+      timeout,
+    ])
       .then((res) => {
         if (cancelled) return
         const fresh = res.items.filter((p) => !favIds.has(p.id))
@@ -68,7 +75,10 @@ export function RecommendSection() {
         setItems(fresh.slice(0, SHOW_COUNT))
       })
       .catch(() => {
-        if (!cancelled) setItems(null)
+        if (!cancelled) {
+          setItems(null)
+          setFailed(true)
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -78,9 +88,9 @@ export function RecommendSection() {
     }
     // 收藏变动不重拉，避免在推荐区收藏后卡片立刻消失
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [basis, page, collapsed])
+  }, [basis, page, collapsed, failed])
 
-  if (!basis) return null
+  if (!basis || failed) return null
 
   const toggle = () => {
     setCollapsed((c) => {

@@ -419,9 +419,9 @@ export function FavoritesSheet({ open, onClose }: Props) {
   function renderCampusRow(j: CampusJob) {
     return (
       <div key={j.id} className="px-4 py-3 hover:bg-muted/50 sm:px-6">
-        <div className="flex items-start gap-2">
+        <div className="flex items-start gap-2 max-sm:flex-wrap">
           <div
-            className="min-w-0 flex-1 cursor-pointer"
+            className="min-w-0 flex-1 cursor-pointer max-sm:w-full max-sm:flex-none"
             onClick={() => setCampusDetail(j)}
           >
             <div className="flex flex-wrap items-center gap-1.5">
@@ -485,9 +485,9 @@ export function FavoritesSheet({ open, onClose }: Props) {
   function renderBianzhiRow(j: BianzhiJob) {
     return (
       <div key={j.id} className="px-4 py-3 hover:bg-muted/50 sm:px-6">
-        <div className="flex items-start gap-2">
+        <div className="flex items-start gap-2 max-sm:flex-wrap">
           <div
-            className="min-w-0 flex-1 cursor-pointer"
+            className="min-w-0 flex-1 cursor-pointer max-sm:w-full max-sm:flex-none"
             onClick={() => setBianzhiDetail(j)}
           >
             <div className="flex flex-wrap items-center gap-1.5">
@@ -554,8 +554,12 @@ export function FavoritesSheet({ open, onClose }: Props) {
   function renderRow(p: Position) {
     return (
       <div key={p.id} className="px-4 py-3 hover:bg-muted/50 sm:px-6">
-      <div className="flex items-start gap-2">
-        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setSelected(p)}>
+      <div className="flex items-start gap-2 max-sm:flex-wrap">
+        <button
+          type="button"
+          className="min-w-0 flex-1 text-left max-sm:w-full max-sm:flex-none"
+          onClick={() => setSelected(p)}
+        >
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="secondary" className="text-[11px]">
               {p.year}

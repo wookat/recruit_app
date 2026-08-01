@@ -1018,7 +1018,7 @@ export function ListPage({
 
           {activeChips.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground">已选条件：</span>
+              <span className="text-xs text-muted-foreground">已选筛选：</span>
               {activeChips.map((chip, idx) => (
                 <Badge key={idx} variant="secondary" className="gap-1 text-xs font-normal">
                   {chip.label}
@@ -1033,7 +1033,7 @@ export function ListPage({
                 </Badge>
               ))}
               <Button variant="link" size="sm" className="h-auto min-h-11 p-0 text-xs sm:min-h-0" onClick={clearFilters}>
-                清空全部
+                清除全部
               </Button>
             </div>
           )}

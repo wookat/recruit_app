@@ -192,6 +192,7 @@ export interface BianzhiParams {
   province?: string[]
   job_type?: string
   edu?: string
+  updated_after?: string
   due_within_days?: number
   hide_expired?: boolean
   page?: number

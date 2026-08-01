@@ -94,6 +94,12 @@ const PRESETS: PresetView[] = [
 
 const PAGE_SIZE = 20
 
+function daysAgoStr(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - days)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 interface BianzhiPageProps {
   initialPreset?: string
   initialKeyword?: string
@@ -114,7 +120,10 @@ export function BianzhiPage({
   onCrossOpen,
 }: BianzhiPageProps) {
   const urlQuery = useMemo(() => new URLSearchParams(window.location.search), [])
-  const [preset, setPreset] = useState(initialPreset ?? 'all')
+  const [preset, setPreset] = useState(
+    initialPreset === 'recent7' ? 'all' : initialPreset ?? 'all',
+  )
+  const [recentOnly, setRecentOnly] = useState(initialPreset === 'recent7')
   const [dueOnly, setDueOnly] = useState(urlQuery.get('due') === '7')
   const [hideExpired, setHideExpired] = useState(urlQuery.get('hexp') === '1')
   const [provinceCounts, setProvinceCounts] = useState<Record<string, number> | null>(null)
@@ -197,7 +206,7 @@ export function BianzhiPage({
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
     if (q.get('board') !== 'bianzhi') return
-    q.set('bpreset', preset)
+    q.set('bpreset', recentOnly && preset === 'all' ? 'recent7' : preset)
     if (dueOnly) q.set('due', '7')
     else q.delete('due')
     if (hideExpired) q.set('hexp', '1')
@@ -208,7 +217,7 @@ export function BianzhiPage({
     else q.delete('bkw')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('bianzhi', preset)
-  }, [preset, dueOnly, hideExpired, provinces, keyword])
+  }, [preset, recentOnly, dueOnly, hideExpired, provinces, keyword])
 
   const isLiankaoPreset = preset === 'lk'
   const fetchPage = isLiankaoPreset ? 1 : page
@@ -219,12 +228,13 @@ export function BianzhiPage({
       category: cat ? [cat] : undefined,
       province: provinces.length ? provinces : undefined,
       keyword: keyword || undefined,
+      updated_after: recentOnly ? daysAgoStr(7) : undefined,
       due_within_days: dueOnly ? 7 : undefined,
       hide_expired: !dueOnly && hideExpired ? true : undefined,
       page: fetchPage,
       page_size: isLiankaoPreset ? 100 : PAGE_SIZE,
     }
-  }, [preset, keyword, provinces, dueOnly, hideExpired, fetchPage, isLiankaoPreset])
+  }, [preset, recentOnly, keyword, provinces, dueOnly, hideExpired, fetchPage, isLiankaoPreset])
 
   useEffect(() => {
     let cancelled = false
@@ -300,6 +310,14 @@ export function BianzhiPage({
         setPage(1)
       },
     })
+  if (recentOnly)
+    activeFilters.push({
+      label: '近7天更新',
+      onRemove: () => {
+        setRecentOnly(false)
+        setPage(1)
+      },
+    })
 
   const bianzhiSuggestWords = useMemo(
     () => [
@@ -355,6 +373,33 @@ export function BianzhiPage({
       isLiankao ? sortedItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) : sortedItems,
     [isLiankao, sortedItems, page],
   )
+
+  const [relatedJobs, setRelatedJobs] = useState<BianzhiJob[]>([])
+
+  useEffect(() => {
+    const employer = detail?.employer?.trim()
+    const detailId = detail?.id
+    if (!employer) {
+      setRelatedJobs([])
+      return
+    }
+    let cancelled = false
+    fetchBianzhiJobs({ keyword: employer, page: 1, page_size: 20 })
+      .then((res) => {
+        if (cancelled) return
+        setRelatedJobs(
+          res.items
+            .filter((j) => j.id !== detailId && (j.employer ?? '').trim() === employer)
+            .slice(0, 5),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setRelatedJobs([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [detail?.employer, detail?.id])
 
   const [cardMore, setCardMore] = useState<Set<number>>(new Set())
   const toggleCardMore = useCallback((id: number) => {
@@ -417,6 +462,21 @@ export function BianzhiPage({
               )}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              setRecentOnly((v) => !v)
+              setPage(1)
+            }}
+            className={cn(
+              'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+              recentOnly
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-foreground hover:bg-muted',
+            )}
+          >
+            近7天更新
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -513,7 +573,8 @@ export function BianzhiPage({
         board="bianzhi"
         snapshot={(() => {
           const s: Record<string, string> = {}
-          if (preset !== 'all') s.bpreset = preset
+          if (recentOnly && preset === 'all') s.bpreset = 'recent7'
+          else if (preset !== 'all') s.bpreset = preset
           if (dueOnly) s.due = '7'
           if (provinces.length) s.prov = provinces.join(',')
           if (keyword.trim()) s.bkw = keyword.trim()
@@ -529,7 +590,7 @@ export function BianzhiPage({
             .filter(Boolean)
             .join('·') || '编制筛选'
         }
-        canSave={preset !== 'all' || dueOnly || provinces.length > 0 || !!keyword.trim()}
+        canSave={preset !== 'all' || recentOnly || dueOnly || provinces.length > 0 || !!keyword.trim()}
       />
 
       {/* 搜索 + 省份 */}
@@ -765,12 +826,18 @@ export function BianzhiPage({
                 {!isLiankao && <DueBadge date={job.deadline_date} />}
               </div>
               {job.major_requirement && job.major_requirement.trim() !== '/' && (
-                <p className={cn('mt-1.5 line-clamp-2 text-xs text-muted-foreground', cardMore.has(job.id) ? 'block' : 'hidden sm:block')}>
+                <p
+                  title={job.major_requirement}
+                  className={cn('mt-1.5 text-xs text-muted-foreground', cardMore.has(job.id) ? 'block whitespace-pre-wrap' : 'hidden sm:line-clamp-2')}
+                >
                   专业：{job.major_requirement}
                 </p>
               )}
               {job.notes && job.notes.trim() !== '/' && (
-                <p className={cn('mt-1 line-clamp-2 text-xs text-muted-foreground', cardMore.has(job.id) ? 'block' : 'hidden sm:block')}>
+                <p
+                  title={job.notes}
+                  className={cn('mt-1 text-xs text-muted-foreground', cardMore.has(job.id) ? 'block whitespace-pre-wrap' : 'hidden sm:line-clamp-2')}
+                >
                   备注：{job.notes}
                 </p>
               )}
@@ -778,13 +845,13 @@ export function BianzhiPage({
                 (job.notes && job.notes.trim() !== '/')) && (
                 <button
                   type="button"
-                  className="mt-1 flex min-h-8 items-center text-xs text-muted-foreground underline-offset-2 hover:underline sm:hidden"
+                  className="mt-1 flex min-h-8 items-center text-xs text-muted-foreground underline-offset-2 hover:underline sm:min-h-0"
                   onClick={(e) => {
                     e.stopPropagation()
                     toggleCardMore(job.id)
                   }}
                 >
-                  {cardMore.has(job.id) ? '收起' : '更多'}
+                  {cardMore.has(job.id) ? '收起' : '展开全文'}
                 </button>
               )}
               {(job.announce_url || job.apply_url) && (
@@ -1070,6 +1137,24 @@ export function BianzhiPage({
             { label: '公告链接', url: detail.announce_url },
             { label: '报名入口', url: detail.apply_url },
           ]}
+          related={
+            relatedJobs.length > 0
+              ? {
+                  title: '同单位其他公告',
+                  items: relatedJobs.map((j) => ({
+                    key: String(j.id),
+                    label: [j.job_type, j.category].filter(Boolean).join(' · ') || j.employer || '-',
+                    sub: [j.work_location || j.province, j.deadline_text ? `截止：${j.deadline_text}` : null]
+                      .filter(Boolean)
+                      .join(' · '),
+                  })),
+                  onSelect: (key) => {
+                    const hit = relatedJobs.find((j) => String(j.id) === key)
+                    if (hit) setDetail(hit)
+                  },
+                }
+              : undefined
+          }
         />
       )}
     </div>

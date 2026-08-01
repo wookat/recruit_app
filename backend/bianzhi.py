@@ -50,6 +50,7 @@ def list_bianzhi_jobs(
     province: Optional[List[str]] = Query(None),
     job_type: Optional[str] = None,
     edu: Optional[str] = None,
+    updated_after: Optional[str] = None,
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
     hide_expired: bool = False,
     page: int = Query(1, ge=1),
@@ -68,6 +69,8 @@ def list_bianzhi_jobs(
         q = q.filter(BianzhiJob.job_type.ilike(f"%{job_type}%"))
     if edu:
         q = q.filter(BianzhiJob.edu_requirement.ilike(f"%{edu}%"))
+    if updated_after:
+        q = q.filter(BianzhiJob.updated_at_src >= updated_after)
     if keyword:
         k = f"%{keyword}%"
         q = q.filter(or_(

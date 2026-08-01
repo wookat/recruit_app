@@ -1,6 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { Highlight } from '@/components/Highlight'
+import { Input } from '@/components/ui/input'
+import { EmptyState } from '@/components/EmptyState'
 import {
   Sheet,
   SheetContent,
@@ -177,7 +181,26 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
     const h = window.location.hash.slice(1)
     return SECTIONS.some((s) => s.key === h) ? h : SECTIONS[0].key
   })
+  const [query, setQuery] = useState('')
   const section = SECTIONS.find((s) => s.key === active) ?? SECTIONS[0]
+
+  const q = query.trim()
+  const results = useMemo(() => {
+    if (!q) return null
+    const lq = q.toLowerCase()
+    return SECTIONS.map((s) => ({
+      section: s,
+      hits: s.blocks.flatMap((b) =>
+        b.items
+          .filter(
+            (item) =>
+              item.toLowerCase().includes(lq) ||
+              (b.heading ?? '').toLowerCase().includes(lq),
+          )
+          .map((item) => ({ heading: b.heading, item })),
+      ),
+    })).filter((r) => r.hits.length > 0)
+  }, [q])
 
   return (
     <Sheet
@@ -194,6 +217,26 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
           <SheetTitle>求职攻略</SheetTitle>
           <SheetDescription>整理自校招汇总表使用说明与学姐求职经验分享</SheetDescription>
         </SheetHeader>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="搜索攻略内容…"
+            className="h-9 pl-8 pr-8"
+          />
+          {query && (
+            <button
+              type="button"
+              aria-label="清空搜索"
+              onClick={() => setQuery('')}
+              className="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        {!results && (
         <div className="flex flex-wrap gap-1.5">
           {SECTIONS.map((s) => (
             <button
@@ -214,7 +257,38 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
             </button>
           ))}
         </div>
+        )}
         <div className="h-auto min-h-0 max-h-full overflow-y-auto">
+          {results ? (
+            results.length === 0 ? (
+              <EmptyState title="没有匹配的攻略内容" description="换个关键词试试，或清空搜索恢复全文" />
+            ) : (
+              <div className="space-y-4 pb-6">
+                {results.map((r) => (
+                  <div key={r.section.key} className="space-y-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {r.section.title}
+                    </Badge>
+                    <ul className="space-y-2">
+                      {r.hits.map((h, j) => (
+                        <li
+                          key={j}
+                          className="rounded-lg border bg-background p-3 text-sm leading-relaxed text-muted-foreground"
+                        >
+                          {h.heading && (
+                            <span className="mr-1 font-medium text-foreground">
+                              <Highlight text={h.heading} query={q} />：
+                            </span>
+                          )}
+                          <Highlight text={h.item} query={q} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : (
           <div className="space-y-4 pb-6">
             {section.blocks.map((b, i) => (
               <div key={i} className="space-y-2">
@@ -236,6 +310,7 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
               </div>
             ))}
           </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>

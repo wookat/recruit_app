@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { fetchBianzhiJobs, fetchCampusJobs, fetchDeadlines } from '@/api'
-import { AlarmClock, Landmark, Sparkles, ChevronRight } from 'lucide-react'
+import { AlarmClock, BriefcaseBusiness, Landmark, Sparkles, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+// hide_expired 计数模块级缓存，会话内只请求一次
+let campusActiveCache: number | null = null
+let bianzhiActiveCache: number | null = null
 
 interface Props {
   onCampus: () => void
@@ -19,6 +23,8 @@ const PILL =
 
 export function TodayGlance({ onCampus, onBianzhi, onDeadline }: Props) {
   const [campusNew, setCampusNew] = useState<number | null>(null)
+  const [campusActive, setCampusActive] = useState<number | null>(campusActiveCache)
+  const [bianzhiActive, setBianzhiActive] = useState<number | null>(bianzhiActiveCache)
   const [bianzhiTotal, setBianzhiTotal] = useState<number | null>(null)
   const [bianzhiDue, setBianzhiDue] = useState<number | null>(null)
   const [deadlineCount, setDeadlineCount] = useState<number | null>(null)
@@ -39,6 +45,22 @@ export function TodayGlance({ onCampus, onBianzhi, onDeadline }: Props) {
     fetchDeadlines(7, 100)
       .then((list) => setDeadlineCount(list.length))
       .catch(() => undefined)
+    if (campusActiveCache === null) {
+      fetchCampusJobs({ hide_expired: true, page: 1, page_size: 1 })
+        .then((r) => {
+          campusActiveCache = r.total
+          setCampusActive(r.total)
+        })
+        .catch(() => undefined)
+    }
+    if (bianzhiActiveCache === null) {
+      fetchBianzhiJobs({ hide_expired: true, page: 1, page_size: 1 })
+        .then((r) => {
+          bianzhiActiveCache = r.total
+          setBianzhiActive(r.total)
+        })
+        .catch(() => undefined)
+    }
   }, [])
 
   const items = [
@@ -72,6 +94,40 @@ export function TodayGlance({ onCampus, onBianzhi, onDeadline }: Props) {
         <ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ) : null,
+    campusActive !== null && campusActive > 0 && (
+      <button
+        key="campus-active"
+        type="button"
+        className={PILL}
+        onClick={() => {
+          const q = new URLSearchParams(window.location.search)
+          q.set('hexp', '1')
+          window.history.replaceState(null, '', `?${q.toString()}`)
+          onCampus()
+        }}
+      >
+        <BriefcaseBusiness className="h-3.5 w-3.5 text-primary" />
+        校招有效岗位 <span className="font-semibold text-primary">{campusActive.toLocaleString()}</span> 条
+        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+      </button>
+    ),
+    bianzhiActive !== null && bianzhiActive > 0 && (
+      <button
+        key="bianzhi-active"
+        type="button"
+        className={PILL}
+        onClick={() => {
+          const q = new URLSearchParams(window.location.search)
+          q.set('hexp', '1')
+          window.history.replaceState(null, '', `?${q.toString()}`)
+          onBianzhi()
+        }}
+      >
+        <Landmark className="h-3.5 w-3.5 text-primary" />
+        编制有效岗位 <span className="font-semibold text-primary">{bianzhiActive.toLocaleString()}</span> 条
+        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+      </button>
+    ),
     deadlineCount !== null && deadlineCount > 0 && (
       <button key="deadline" type="button" className={PILL} onClick={onDeadline}>
         <AlarmClock className="h-3.5 w-3.5 text-primary" />

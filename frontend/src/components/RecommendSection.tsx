@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { useFavorites } from '@/lib/positionStore'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
+import { PositionSheet } from '@/components/PositionSheet'
+import { sheetNavProps } from '@/lib/sheetNav'
 
 const COLLAPSED_KEY = 'recruit.recoCollapsed'
 const SHOW_COUNT = 5
@@ -32,6 +34,7 @@ export function RecommendSection() {
   const [items, setItems] = useState<Position[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
+  const [detail, setDetail] = useState<Position | null>(null)
 
   const basis = useMemo(() => {
     if (!favorites.length) return null
@@ -144,7 +147,8 @@ export function RecommendSection() {
           {(items ?? []).map((p) => (
             <div
               key={p.id}
-              className="flex w-60 shrink-0 flex-col gap-1.5 rounded-lg border bg-background p-3"
+              className="flex w-60 shrink-0 cursor-pointer flex-col gap-1.5 rounded-lg border bg-background p-3 transition-colors hover:bg-muted/50"
+              onClick={() => setDetail(p)}
             >
               <div className="flex items-start justify-between gap-1">
                 <span className="line-clamp-2 text-sm font-medium">{p.employer || p.position_example || '-'}</span>
@@ -177,6 +181,13 @@ export function RecommendSection() {
             <div className="py-6 text-center text-xs text-muted-foreground">暂无更多推荐</div>
           )}
         </div>
+      )}
+      {detail && (
+        <PositionSheet
+          item={detail}
+          onClose={() => setDetail(null)}
+          {...sheetNavProps(items ?? [], detail, setDetail)}
+        />
       )}
     </div>
   )

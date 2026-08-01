@@ -475,7 +475,10 @@ export function CampusPage({
         }}
       />
 
-      <BoardRecommendSection board="campus" />
+      <BoardRecommendSection
+        board="campus"
+        onOpenDetail={(j) => setDetail(j as CampusJob)}
+      />
 
       <SavedFilterBar
         board="campus"

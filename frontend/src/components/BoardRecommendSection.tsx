@@ -44,10 +44,11 @@ function countTop<T>(items: T[], pick: (item: T) => string | null): string | nul
 
 interface Props {
   board: 'campus' | 'bianzhi'
+  onOpenDetail?: (job: CampusJob | BianzhiJob) => void
 }
 
 /** 校招/编制「为你推荐」：基于画像或收藏偏好推荐未收藏岗位；两者皆空时不渲染。 */
-export function BoardRecommendSection({ board }: Props) {
+export function BoardRecommendSection({ board, onOpenDetail }: Props) {
   const profile = useProfile()
   const campusFavs = useCampusFavorites()
   const bianzhiFavs = useBianzhiFavorites()
@@ -172,9 +173,9 @@ export function BoardRecommendSection({ board }: Props) {
         <div className="scrollbar-none mt-3 flex gap-3 overflow-x-auto pb-1">
           {(items ?? []).map((j) =>
             board === 'campus' ? (
-              <CampusCard key={j.id} job={j as CampusJob} />
+              <CampusCard key={j.id} job={j as CampusJob} onOpen={onOpenDetail} />
             ) : (
-              <BianzhiCard key={j.id} job={j as BianzhiJob} />
+              <BianzhiCard key={j.id} job={j as BianzhiJob} onOpen={onOpenDetail} />
             ),
           )}
           {loading && !items?.length && (
@@ -189,11 +190,20 @@ export function BoardRecommendSection({ board }: Props) {
   )
 }
 
-function CampusCard({ job }: { job: CampusJob }) {
+function CampusCard({
+  job,
+  onOpen,
+}: {
+  job: CampusJob
+  onOpen?: (job: CampusJob) => void
+}) {
   const favs = useCampusFavorites()
   const active = favs.some((f) => f.id === job.id)
   return (
-    <div className="flex w-60 shrink-0 flex-col gap-1.5 rounded-lg border bg-background p-3">
+    <div
+      className="flex w-60 shrink-0 cursor-pointer flex-col gap-1.5 rounded-lg border bg-background p-3 transition-colors hover:bg-muted/50"
+      onClick={() => onOpen?.(job)}
+    >
       <div className="flex items-start justify-between gap-1">
         <span className="line-clamp-2 text-sm font-medium">{job.company || '-'}</span>
         <BoardFavoriteButton
@@ -222,11 +232,20 @@ function CampusCard({ job }: { job: CampusJob }) {
   )
 }
 
-function BianzhiCard({ job }: { job: BianzhiJob }) {
+function BianzhiCard({
+  job,
+  onOpen,
+}: {
+  job: BianzhiJob
+  onOpen?: (job: BianzhiJob) => void
+}) {
   const favs = useBianzhiFavorites()
   const active = favs.some((f) => f.id === job.id)
   return (
-    <div className="flex w-60 shrink-0 flex-col gap-1.5 rounded-lg border bg-background p-3">
+    <div
+      className="flex w-60 shrink-0 cursor-pointer flex-col gap-1.5 rounded-lg border bg-background p-3 transition-colors hover:bg-muted/50"
+      onClick={() => onOpen?.(job)}
+    >
       <div className="flex items-start justify-between gap-1">
         <span className="line-clamp-2 text-sm font-medium">{job.employer || '-'}</span>
         <BoardFavoriteButton

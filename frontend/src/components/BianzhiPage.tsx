@@ -405,7 +405,10 @@ export function BianzhiPage({
         }}
       />
 
-      <BoardRecommendSection board="bianzhi" />
+      <BoardRecommendSection
+        board="bianzhi"
+        onOpenDetail={(j) => setDetail(j as BianzhiJob)}
+      />
 
       <SavedFilterBar
         board="bianzhi"

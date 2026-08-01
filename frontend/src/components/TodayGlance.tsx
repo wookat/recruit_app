@@ -9,6 +9,8 @@ let bianzhiActiveCache: number | null = null
 
 interface Props {
   onCampus: () => void
+  /** 直达校招全部预设（有效岗位胶囊用，区别于近7天回调） */
+  onCampusAll: () => void
   onBianzhi: () => void
   onDeadline: () => void
 }
@@ -21,7 +23,7 @@ function isoDaysAgo(n: number): string {
 const PILL =
   'flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 sm:min-h-9'
 
-export function TodayGlance({ onCampus, onBianzhi, onDeadline }: Props) {
+export function TodayGlance({ onCampus, onCampusAll, onBianzhi, onDeadline }: Props) {
   const [campusNew, setCampusNew] = useState<number | null>(null)
   const [campusActive, setCampusActive] = useState<number | null>(campusActiveCache)
   const [bianzhiActive, setBianzhiActive] = useState<number | null>(bianzhiActiveCache)
@@ -103,7 +105,7 @@ export function TodayGlance({ onCampus, onBianzhi, onDeadline }: Props) {
           const q = new URLSearchParams(window.location.search)
           q.set('hexp', '1')
           window.history.replaceState(null, '', `?${q.toString()}`)
-          onCampus()
+          onCampusAll()
         }}
       >
         <BriefcaseBusiness className="h-3.5 w-3.5 text-primary" />

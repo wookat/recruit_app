@@ -16,12 +16,14 @@ interface MajorGuideEntry {
   guide: string
 }
 
-/** 专业名应为短词条：过滤长度 >10 或含标点/口语的脏数据。 */
+/** 专业名应为短词条：过滤长度 >10、含标点/口语、尾部语气词或纯泛词的脏数据。 */
 function isValidMajor(name: string): boolean {
   const s = name.trim()
   if (!s || s.length > 10) return false
   if (/[，。！？；：“”…~～,.!?;:"']/.test(s)) return false
   if (/学姐|学长|老哥|老师|强调|这里|大家|同学/.test(s)) return false
+  if (/[呢呀啊哦嘛吧]$/.test(s)) return false
+  if (s === '专业' || s === '其他' || s === '等等') return false
   return true
 }
 

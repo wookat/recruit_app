@@ -265,7 +265,7 @@ export default function App() {
           <div className="flex items-center gap-2.5">
             <BrandMark className="h-9 w-9 shrink-0" />
             <div className="flex flex-col leading-none">
-              <h1 className="text-lg font-bold tracking-tight">上岸罗盘</h1>
+              <h1 className="whitespace-nowrap text-lg font-bold tracking-tight">上岸罗盘</h1>
               <span className="mt-0.5 hidden text-[11px] tracking-widest text-muted-foreground sm:block">
                 体制内岗位 · 校招信息 一站检索
               </span>

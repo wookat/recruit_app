@@ -44,7 +44,7 @@ const BATCH_TONES: Record<string, Tone> = {
   秋招: 'violet',
   春招: 'green',
   实习: 'cyan',
-  秋招提前批: 'red',
+  秋招提前批: 'amber',
   寒假实习: 'sky',
   暑期实习: 'teal',
   补录: 'amber',

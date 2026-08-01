@@ -41,6 +41,8 @@ import {
 import { eduClass, jobTypeClass, provinceClass, yearClass, PILL_BASE } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
 import { Highlight } from '@/components/Highlight'
+import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
+import { positionShareUrl } from '@/lib/clipboard'
 import { SortableHead } from '@/components/SortableHead'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
@@ -269,6 +271,16 @@ export function PositionTable({
                       <div className="flex items-center gap-0.5">
                         <FavoriteButton item={row.original} />
                         <CompareButton item={row.original} />
+                        <ShareTextButton
+                          className="h-8 w-8"
+                          text={buildShareText({
+                            org: row.original.employer,
+                            title: row.original.position_example,
+                            location: row.original.work_location,
+                            deadline: row.original.signup_time,
+                            url: row.original.source_url || positionShareUrl(row.original.id),
+                          })}
+                        />
                         <Button
                           variant="ghost"
                           size="sm"

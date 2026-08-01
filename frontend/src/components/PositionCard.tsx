@@ -9,6 +9,8 @@ import { STATUS_COLORS, useAppStatuses } from '@/lib/positionStore'
 import { eduClass, jobTypeClass, yearClass, PILL_BASE } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
 import { Highlight } from './Highlight'
+import { ShareTextButton, buildShareText } from './ShareTextButton'
+import { positionShareUrl } from '@/lib/clipboard'
 
 interface Props {
   item: Position
@@ -40,6 +42,15 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
           <div className="flex shrink-0 items-center">
             <FavoriteButton item={item} />
             <CompareButton item={item} />
+            <ShareTextButton
+              text={buildShareText({
+                org: item.employer,
+                title: item.position_example,
+                location: item.work_location,
+                deadline: item.signup_time,
+                url: item.source_url || positionShareUrl(item.id),
+              })}
+            />
           </div>
         </div>
         <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">

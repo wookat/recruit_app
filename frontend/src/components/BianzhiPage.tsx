@@ -16,7 +16,7 @@ import { ActiveFilterChips, type RemovableFilter } from '@/components/ActiveFilt
 import { Highlight } from '@/components/Highlight'
 import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
-import { formatDueDayLabel } from '@/lib/deadline'
+import { formatDueDayLabel, parseDeadlineText } from '@/lib/deadline'
 import {
   Table,
   TableBody,
@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table'
 import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
 import { FreshnessNote } from '@/components/FreshnessNote'
 import { SortableHead } from '@/components/SortableHead'
@@ -51,6 +52,18 @@ const CATEGORY_TONES: Record<string, Tone> = {
 
 function toneClass(map: Record<string, Tone>, value: string): string {
   return TONE_CLASSES[map[value] || hashTone(value)]
+}
+
+function bianzhiShareText(job: BianzhiJob): string {
+  return buildShareText({
+    org:
+      job.employer ||
+      (job.category === '大型联考' ? `${job.province ?? ''}${job.job_type ?? ''}联考` : null),
+    title: job.job_type,
+    location: job.work_location || job.province,
+    deadline: job.deadline_text || job.deadline_date,
+    url: job.announce_url || job.apply_url,
+  })
 }
 
 interface PresetView {
@@ -211,8 +224,34 @@ export function BianzhiPage({
       },
     })
 
+  const liankaoInfo = useMemo(() => {
+    if (!isLiankao || !data) return null
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const withDate = data.items.map((j) => ({ j, d: parseDeadlineText(j.exam_time) }))
+    const items = [...withDate]
+      .sort((a, b) => {
+        if (!a.d && !b.d) return 0
+        if (!a.d) return 1
+        if (!b.d) return -1
+        return a.d.getTime() - b.d.getTime()
+      })
+      .map((x) => x.j)
+    const upcoming = withDate
+      .filter((x): x is { j: BianzhiJob; d: Date } => !!x.d && x.d.getTime() >= today.getTime())
+      .sort((a, b) => a.d.getTime() - b.d.getTime())[0]
+    if (!upcoming) return { items, banner: null }
+    const days = Math.round((upcoming.d.getTime() - today.getTime()) / 86400000)
+    const name =
+      upcoming.j.employer ||
+      `${upcoming.j.province ?? ''}${upcoming.j.job_type ?? ''}联考`.trim() ||
+      '联考'
+    return { items, banner: { name, days } }
+  }, [isLiankao, data])
+
   const sortedItems = useMemo(() => {
     if (!data) return []
+    if (liankaoInfo && !sort) return liankaoInfo.items
     if (!sort) return data.items
     const field = (j: BianzhiJob) =>
       sort.key === 'employer'
@@ -221,7 +260,7 @@ export function BianzhiPage({
           ? j.deadline_date
           : j.updated_at_src
     return [...data.items].sort((a, b) => cmpNullableStr(field(a), field(b), sort.dir))
-  }, [data, sort])
+  }, [data, sort, liankaoInfo])
 
   return (
     <div className="space-y-4">
@@ -403,6 +442,21 @@ export function BianzhiPage({
         </div>
       )}
 
+      {liankaoInfo?.banner && (
+        <div
+          className={cn(
+            'flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium',
+            liankaoInfo.banner.days <= 7
+              ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300'
+              : 'border-primary/20 bg-primary/5 text-primary',
+          )}
+        >
+          <Landmark className="h-4 w-4 shrink-0" />
+          距 {liankaoInfo.banner.name} 还有{' '}
+          {liankaoInfo.banner.days === 0 ? '不到 1 天（今日开考）' : `${liankaoInfo.banner.days} 天`}
+        </div>
+      )}
+
       {/* 列表 */}
       {loading && !data ? (
         <div className="space-y-2">
@@ -446,6 +500,7 @@ export function BianzhiPage({
                   active={bianzhiFavorites.some((f) => f.id === job.id)}
                   onToggle={() => toggleBianzhiFavorite(job)}
                 />
+                <ShareTextButton className="-ml-1 -my-1" text={bianzhiShareText(job)} />
                 <span className="text-base font-semibold">
                   <Highlight
                     text={
@@ -597,10 +652,13 @@ export function BianzhiPage({
                   )}
                 <TableRow>
                   <TableCell className="p-1">
-                    <BoardFavoriteButton
-                      active={bianzhiFavorites.some((f) => f.id === job.id)}
-                      onToggle={() => toggleBianzhiFavorite(job)}
-                    />
+                    <div className="flex items-center">
+                      <BoardFavoriteButton
+                        active={bianzhiFavorites.some((f) => f.id === job.id)}
+                        onToggle={() => toggleBianzhiFavorite(job)}
+                      />
+                      <ShareTextButton text={bianzhiShareText(job)} />
+                    </div>
                   </TableCell>
                   <TableCell className="font-medium" title={job.employer ?? ''}>
                     <span className="line-clamp-2 max-w-[380px] whitespace-normal">

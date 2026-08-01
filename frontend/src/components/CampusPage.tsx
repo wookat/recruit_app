@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table'
 import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
 import { FreshnessNote } from '@/components/FreshnessNote'
 import { SortableHead } from '@/components/SortableHead'
@@ -128,6 +129,16 @@ const CITY_CHIPS = [
   '郑州',
   '合肥',
 ]
+
+function campusShareText(job: CampusJob): string {
+  return buildShareText({
+    org: job.company,
+    title: job.positions,
+    location: job.locations,
+    deadline: job.deadline_text || job.deadline_date,
+    url: job.apply_url || job.announce_url,
+  })
+}
 
 function daysAgoStr(days: number): string {
   const d = new Date(Date.now() - days * 86400000)
@@ -583,10 +594,13 @@ export function CampusPage({
                   )}
                 <TableRow>
                   <TableCell className="p-1">
-                    <BoardFavoriteButton
-                      active={campusFavorites.some((f) => f.id === job.id)}
-                      onToggle={() => toggleCampusFavorite(job)}
-                    />
+                    <div className="flex items-center">
+                      <BoardFavoriteButton
+                        active={campusFavorites.some((f) => f.id === job.id)}
+                        onToggle={() => toggleCampusFavorite(job)}
+                      />
+                      <ShareTextButton text={campusShareText(job)} />
+                    </div>
                   </TableCell>
                   <TableCell className="font-medium" title={job.company ?? ''}>
                     <Highlight text={job.company} query={keyword} />
@@ -757,6 +771,7 @@ export function CampusPage({
                   active={campusFavorites.some((f) => f.id === job.id)}
                   onToggle={() => toggleCampusFavorite(job)}
                 />
+                <ShareTextButton className="-ml-1 -my-1" text={campusShareText(job)} />
                 <span className="text-base font-semibold">
                   <Highlight text={job.company} query={keyword} />
                 </span>

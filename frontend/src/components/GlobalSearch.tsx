@@ -160,7 +160,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob }: Props) {
                 </CommandItem>
               ))}
               {hits.positions.total > hits.positions.items.length && (
-                <CommandItem value="positions-all" onSelect={() => pickAll('positions')}>
+                <CommandItem value="positions-all" className="max-sm:min-h-11" onSelect={() => pickAll('positions')}>
                   <ArrowRight className="text-muted-foreground" />
                   <span className="text-muted-foreground">
                     查看全部 {hits.positions.total.toLocaleString()} 条体制内结果
@@ -189,7 +189,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob }: Props) {
                   </CommandItem>
                 ))}
                 {hits.campus.total > hits.campus.items.length && (
-                  <CommandItem value="campus-all" onSelect={() => pickAll('campus')}>
+                  <CommandItem value="campus-all" className="max-sm:min-h-11" onSelect={() => pickAll('campus')}>
                     <ArrowRight className="text-muted-foreground" />
                     <span className="text-muted-foreground">
                       查看全部 {hits.campus.total.toLocaleString()} 条校招结果
@@ -219,7 +219,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob }: Props) {
                   </CommandItem>
                 ))}
                 {hits.bianzhi.total > hits.bianzhi.items.length && (
-                  <CommandItem value="bianzhi-all" onSelect={() => pickAll('bianzhi')}>
+                  <CommandItem value="bianzhi-all" className="max-sm:min-h-11" onSelect={() => pickAll('bianzhi')}>
                     <ArrowRight className="text-muted-foreground" />
                     <span className="text-muted-foreground">
                       查看全部 {hits.bianzhi.total.toLocaleString()} 条编制结果

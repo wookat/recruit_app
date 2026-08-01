@@ -40,6 +40,7 @@ import { downloadBackup, restoreBackup } from '@/lib/backup'
 import { downloadIcs, type IcsEvent } from '@/lib/ics'
 import { REMIND_OPTIONS, setRemindDays, useRemindDays } from '@/lib/reminderPref'
 import { cn } from '@/lib/utils'
+import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { Input } from '@/components/ui/input'
 import { copyText, favoritesShareUrl } from '@/lib/clipboard'
 import { PositionSheet } from './PositionSheet'
@@ -560,7 +561,9 @@ export function FavoritesSheet({ open, onClose }: Props) {
               {p.year}
             </Badge>
             <span className="line-clamp-1 text-sm font-medium">
-              {p.position_example || p.exam_type || '-'}
+              {(p.position_example && stripOrgPrefix(p.position_example, p.employer)) ||
+                p.exam_type ||
+                '-'}
             </span>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
@@ -951,7 +954,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   aria-pressed={remindDays === n}
                   onClick={() => setRemindDays(n)}
                   className={cn(
-                    'min-h-9 cursor-pointer rounded-full border px-2.5 py-0.5 transition-colors sm:min-h-6',
+                    'min-h-11 cursor-pointer rounded-full border px-2.5 py-0.5 transition-colors sm:min-h-6',
                     remindDays === n
                       ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',

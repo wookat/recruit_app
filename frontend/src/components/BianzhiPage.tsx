@@ -880,7 +880,7 @@ export function BianzhiPage({
                 (job.notes && job.notes.trim() !== '/')) && (
                 <button
                   type="button"
-                  className="mt-1 flex min-h-8 items-center text-xs text-muted-foreground underline-offset-2 hover:underline sm:min-h-0"
+                  className="mt-1 flex min-h-11 items-center text-xs text-muted-foreground underline-offset-2 hover:underline sm:min-h-0"
                   onClick={(e) => {
                     e.stopPropagation()
                     toggleCardMore(job.id)

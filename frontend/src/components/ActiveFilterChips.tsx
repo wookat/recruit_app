@@ -44,7 +44,7 @@ export function ActiveFilterChips({ filters }: { filters: RemovableFilter[] }) {
   if (filters.length === 0) return null
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="text-xs text-muted-foreground">当前生效的筛选（点击移除）：</div>
+      <div className="text-xs text-muted-foreground">已选筛选（点击移除）：</div>
       <div className="flex max-w-md flex-wrap justify-center gap-1.5">
         {filters.map((f) => (
           <button

@@ -305,6 +305,7 @@ export function CalendarPage() {
                 className={cn(
                   'rounded-xl border bg-card p-3 shadow-sm',
                   isToday && 'ring-1 ring-primary/40',
+                  entries === 0 && !isToday && 'max-sm:py-2',
                 )}
               >
                 <h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
@@ -321,9 +322,19 @@ export function CalendarPage() {
                   {entries > 0 && (
                     <span className="text-xs font-normal text-muted-foreground">{entries} 条截止</span>
                   )}
+                  {entries === 0 && !isToday && (
+                    <span className="text-xs font-normal text-muted-foreground sm:hidden">无截止</span>
+                  )}
                 </h3>
                 {entries === 0 ? (
-                  <p className="mt-1 text-xs text-muted-foreground">无截止岗位</p>
+                  <p
+                    className={cn(
+                      'mt-1 text-xs text-muted-foreground',
+                      !isToday && 'max-sm:hidden',
+                    )}
+                  >
+                    无截止岗位
+                  </p>
                 ) : (
                   <ul className="mt-1 divide-y">
                     {(day?.campus ?? []).map((j) => (

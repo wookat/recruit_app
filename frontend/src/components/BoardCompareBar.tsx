@@ -6,6 +6,7 @@ import { useCompare } from '@/lib/positionStore'
 import {
   BOARD_COMPARE_MAX,
   clearBoardCompare,
+  clearBoardCompareHint,
   removeBoardCompare,
   toggleBoardCompare,
   useBoardCompare,
@@ -29,6 +30,12 @@ export function BoardCompareBar({
   useEffect(() => {
     if (open && items.length < 2) setOpen(false)
   }, [open, items.length])
+
+  useEffect(() => {
+    if (!hint) return
+    const t = setTimeout(clearBoardCompareHint, 2500)
+    return () => clearTimeout(t)
+  }, [hint])
 
   if (items.length === 0) return null
 
@@ -121,7 +128,7 @@ export function BoardCompareBar({
           </div>
         </div>
       </div>
-      <FavCompareDialog open={open} onClose={() => setOpen(false)} columns={columns} />
+      <FavCompareDialog open={open} onClose={() => setOpen(false)} columns={columns} title="岗位对比" />
     </>
   )
 }

@@ -25,11 +25,9 @@ export function BoardCompareButton({ item, className }: Props) {
       size="icon"
       aria-label={active ? '移出对比' : '加入对比'}
       title={full ? `最多对比 ${BOARD_COMPARE_MAX} 条` : active ? '移出对比' : '加入对比'}
-      aria-disabled={full}
       className={cn('h-11 w-11 sm:h-8 sm:w-8', full && 'opacity-50', className)}
       onClick={(e) => {
         e.stopPropagation()
-        if (full) return
         toggleBoardCompare(item)
       }}
     >

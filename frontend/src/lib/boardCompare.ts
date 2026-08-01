@@ -57,6 +57,12 @@ export function removeBoardCompare(board: BoardCompareBoard, id: number) {
   emit()
 }
 
+export function clearBoardCompareHint() {
+  if (hint === null) return
+  hint = null
+  emit()
+}
+
 export function clearBoardCompare() {
   items = []
   hint = null

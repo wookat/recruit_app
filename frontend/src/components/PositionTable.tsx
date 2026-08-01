@@ -193,7 +193,9 @@ export function PositionTable({
                     </TableHead>
                     ),
                   )}
-                  <TableHead className="w-32">操作</TableHead>
+                  <TableHead className="sticky right-0 w-32 bg-card shadow-[-6px_0_8px_-6px_rgba(0,0,0,0.12)]">
+                    操作
+                  </TableHead>
                 </TableRow>
               ))}
             </TableHeader>
@@ -267,7 +269,7 @@ export function PositionTable({
                         )}
                       </TableCell>
                     ))}
-                    <TableCell>
+                    <TableCell className="sticky right-0 bg-card shadow-[-6px_0_8px_-6px_rgba(0,0,0,0.12)] group-hover:bg-muted">
                       <div className="flex items-center gap-0.5">
                         <FavoriteButton item={row.original} />
                         <CompareButton item={row.original} />

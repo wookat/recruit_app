@@ -157,6 +157,9 @@ export function BianzhiPage({
     applySeo('bianzhi', preset)
   }, [preset, dueOnly, provinces, keyword])
 
+  const isLiankaoPreset = preset === 'lk'
+  const fetchPage = isLiankaoPreset ? 1 : page
+
   const params = useMemo<BianzhiParams>(() => {
     const cat = PRESETS.find((v) => v.key === preset)?.category
     return {
@@ -164,18 +167,29 @@ export function BianzhiPage({
       province: provinces.length ? provinces : undefined,
       keyword: keyword || undefined,
       due_within_days: dueOnly ? 7 : undefined,
-      page,
-      page_size: PAGE_SIZE,
+      page: fetchPage,
+      page_size: isLiankaoPreset ? 200 : PAGE_SIZE,
     }
-  }, [preset, keyword, provinces, dueOnly, page])
+  }, [preset, keyword, provinces, dueOnly, fetchPage, isLiankaoPreset])
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    fetchBianzhiJobs(params)
-      .then((res) => {
-        if (!cancelled) setData({ total: res.total, items: res.items })
-      })
+    const load = async () => {
+      const first = await fetchBianzhiJobs(params)
+      const items = [...first.items]
+      if (params.page_size === 200) {
+        let p = 2
+        while (items.length < first.total && p <= 10) {
+          const res = await fetchBianzhiJobs({ ...params, page: p })
+          if (!res.items.length) break
+          items.push(...res.items)
+          p += 1
+        }
+      }
+      if (!cancelled) setData({ total: first.total, items })
+    }
+    load()
       .catch(console.error)
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -196,7 +210,7 @@ export function BianzhiPage({
   }, [])
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
-  const isLiankao = preset === 'lk'
+  const isLiankao = isLiankaoPreset
 
   const activeFilters: RemovableFilter[] = []
   if (keyword)
@@ -261,6 +275,12 @@ export function BianzhiPage({
           : j.updated_at_src
     return [...data.items].sort((a, b) => cmpNullableStr(field(a), field(b), sort.dir))
   }, [data, sort, liankaoInfo])
+
+  const pageItems = useMemo(
+    () =>
+      isLiankao ? sortedItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) : sortedItems,
+    [isLiankao, sortedItems, page],
+  )
 
   return (
     <div className="space-y-4">
@@ -484,7 +504,7 @@ export function BianzhiPage({
         />
       ) : view === 'card' ? (
         <div className={cn('space-y-2', loading && 'pointer-events-none opacity-60')}>
-          {(data?.items ?? []).map((job, i, arr) => (
+          {pageItems.map((job, i, arr) => (
             <Fragment key={job.id}>
               {dueOnly && (i === 0 || arr[i - 1].deadline_date !== job.deadline_date) && (
                 <div className="pt-1 text-xs font-medium text-muted-foreground">
@@ -638,7 +658,7 @@ export function BianzhiPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedItems.map((job, i, arr) => (
+              {pageItems.map((job, i, arr) => (
                 <Fragment key={job.id}>
                   {dueOnly && !sort && (i === 0 || arr[i - 1].deadline_date !== job.deadline_date) && (
                     <TableRow className="hover:bg-transparent">

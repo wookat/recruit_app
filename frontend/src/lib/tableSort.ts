@@ -25,3 +25,11 @@ export function cmpNullableStr(
   const base = av.localeCompare(bv, 'zh-Hans-CN')
   return dir === 'asc' ? base : -base
 }
+
+/** 日期字符串归一化：分隔符统一为 -，年月日补零，便于字典序即时间序。 */
+export function normalizeDateStr(s: string | null | undefined): string | null {
+  if (!s) return null
+  const m = s.trim().match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/)
+  if (!m) return s
+  return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`
+}

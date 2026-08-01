@@ -32,7 +32,7 @@ import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
 import { FreshnessNote } from '@/components/FreshnessNote'
 import { SortableHead } from '@/components/SortableHead'
-import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
+import { cmpNullableStr, nextSort, normalizeDateStr, type SortState } from '@/lib/tableSort'
 import { toggleBianzhiFavorite, useBianzhiFavorites } from '@/lib/boardFavorites'
 import hrSites from '@/data/hrSites.json'
 import { applySeo } from '@/lib/seo'
@@ -284,7 +284,7 @@ export function BianzhiPage({
         ? j.employer
         : sort.key === 'deadline'
           ? j.deadline_date
-          : j.updated_at_src
+          : normalizeDateStr(j.updated_at_src)
     return [...data.items].sort((a, b) => cmpNullableStr(field(a), field(b), sort.dir))
   }, [data, sort, liankaoInfo])
 

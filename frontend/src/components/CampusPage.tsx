@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { ActiveFilterChips, type RemovableFilter } from '@/components/ActiveFilterChips'
+import { Highlight } from '@/components/Highlight'
 import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
 import { formatDueDayLabel } from '@/lib/deadline'
@@ -588,7 +589,7 @@ export function CampusPage({
                     />
                   </TableCell>
                   <TableCell className="font-medium" title={job.company ?? ''}>
-                    {job.company}
+                    <Highlight text={job.company} query={keyword} />
                     {job.source_table && (
                       <span className="mt-0.5 block text-[11px] text-muted-foreground">
                         {job.source_table}
@@ -612,7 +613,7 @@ export function CampusPage({
                   </TableCell>
                   <TableCell title={job.positions ?? ''}>
                     <span className="line-clamp-2 max-w-[340px] whitespace-normal">
-                      {job.positions || '-'}
+                      <Highlight text={job.positions || '-'} query={keyword} />
                     </span>
                   </TableCell>
                   <TableCell>
@@ -756,7 +757,9 @@ export function CampusPage({
                   active={campusFavorites.some((f) => f.id === job.id)}
                   onToggle={() => toggleCampusFavorite(job)}
                 />
-                <span className="text-base font-semibold">{job.company}</span>
+                <span className="text-base font-semibold">
+                  <Highlight text={job.company} query={keyword} />
+                </span>
                 {job.company_type && (
                   <Badge variant="secondary" className={cn('border-0', toneClass(COMPANY_TYPE_TONES, job.company_type))}>
                     {job.company_type}
@@ -789,7 +792,9 @@ export function CampusPage({
                 )}
               </div>
               {job.positions && (
-                <p className="mt-1.5 line-clamp-2 text-sm text-foreground/90">{job.positions}</p>
+                <p className="mt-1.5 line-clamp-2 text-sm text-foreground/90">
+                  <Highlight text={job.positions} query={keyword} />
+                </p>
               )}
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
                 <SplitBadges value={job.batch} map={BATCH_TONES} />

@@ -1099,6 +1099,7 @@ export function ListPage({
       {view === 'table' && (
         <PositionTable
           emptyAction={<ActiveFilterChips filters={activeFilters} />}
+          highlight={params.keyword}
           data={data?.items || []}
           total={data?.total || 0}
           totalCapped={data?.total_capped}
@@ -1152,6 +1153,7 @@ export function ListPage({
           data={data?.items || []}
           loading={loading}
           emptyAction={<ActiveFilterChips filters={activeFilters} />}
+          highlight={params.keyword}
         />
       )}
       {view === 'list' && <VirtualPositionList fetcher={fetcher} params={params} />}

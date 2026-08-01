@@ -8,13 +8,15 @@ import { CompareButton } from './CompareButton'
 import { STATUS_COLORS, useAppStatuses } from '@/lib/positionStore'
 import { eduClass, jobTypeClass, yearClass, PILL_BASE } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
+import { Highlight } from './Highlight'
 
 interface Props {
   item: Position
   onDetail: (item: Position) => void
+  highlight?: string
 }
 
-export const PositionCard = memo(function PositionCard({ item, onDetail }: Props) {
+export const PositionCard = memo(function PositionCard({ item, onDetail, highlight }: Props) {
   const statuses = useAppStatuses()
   const status = statuses[item.id]
   return (
@@ -41,13 +43,15 @@ export const PositionCard = memo(function PositionCard({ item, onDetail }: Props
           </div>
         </div>
         <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
-          {item.position_example || '-'}
+          <Highlight text={item.position_example || '-'} query={highlight} />
         </h3>
       </CardHeader>
       <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
         <div className="flex items-start gap-2">
           <Building2 className="mt-0.5 h-4 w-4 shrink-0" />
-          <span className="line-clamp-2">{item.employer || '-'}</span>
+          <span className="line-clamp-2">
+            <Highlight text={item.employer || '-'} query={highlight} />
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <GraduationCap className="h-4 w-4 shrink-0" />

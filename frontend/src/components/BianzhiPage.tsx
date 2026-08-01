@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { ActiveFilterChips, type RemovableFilter } from '@/components/ActiveFilterChips'
+import { Highlight } from '@/components/Highlight'
 import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
 import { formatDueDayLabel } from '@/lib/deadline'
@@ -446,10 +447,15 @@ export function BianzhiPage({
                   onToggle={() => toggleBianzhiFavorite(job)}
                 />
                 <span className="text-base font-semibold">
-                  {job.employer ||
-                    (job.category === '大型联考'
-                      ? `${job.province ?? ''}${job.job_type ?? ''}联考`
-                      : '-')}
+                  <Highlight
+                    text={
+                      job.employer ||
+                      (job.category === '大型联考'
+                        ? `${job.province ?? ''}${job.job_type ?? ''}联考`
+                        : '-')
+                    }
+                    query={keyword}
+                  />
                 </span>
                 {job.category && (
                   <Badge variant="secondary" className={cn('border-0', toneClass(CATEGORY_TONES, job.category))}>
@@ -598,7 +604,15 @@ export function BianzhiPage({
                   </TableCell>
                   <TableCell className="font-medium" title={job.employer ?? ''}>
                     <span className="line-clamp-2 max-w-[380px] whitespace-normal">
-                      {job.employer || (job.category === '大型联考' ? `${job.province ?? ''}${job.job_type ?? ''}联考` : '-')}
+                      <Highlight
+                        text={
+                          job.employer ||
+                          (job.category === '大型联考'
+                            ? `${job.province ?? ''}${job.job_type ?? ''}联考`
+                            : '-')
+                        }
+                        query={keyword}
+                      />
                     </span>
                     {job.notes && job.notes.trim() !== '/' && (
                       <span className="mt-0.5 block max-w-[380px] truncate text-[11px] text-muted-foreground" title={job.notes}>

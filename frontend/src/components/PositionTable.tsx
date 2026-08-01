@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { eduClass, jobTypeClass, provinceClass, yearClass, PILL_BASE } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
+import { Highlight } from '@/components/Highlight'
 import { SortableHead } from '@/components/SortableHead'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
@@ -95,6 +96,7 @@ interface Props {
   loading: boolean
   columnFilters?: Partial<Record<string, ColumnFilterConfig>>
   emptyAction?: ReactNode
+  highlight?: string
 }
 
 export function PositionTable({
@@ -108,6 +110,7 @@ export function PositionTable({
   loading,
   columnFilters,
   emptyAction,
+  highlight,
 }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
   const [sort, setSort] = useState<SortState | null>(null)
@@ -251,6 +254,12 @@ export function PositionTable({
                           </span>
                         ) : cell.column.id === 'created_at' ? (
                           String(cell.getValue() || '-').slice(0, 10)
+                        ) : cell.column.id === 'employer' ||
+                          cell.column.id === 'position_example' ? (
+                          <Highlight
+                            text={truncate(String(cell.getValue() || '-'))}
+                            query={highlight}
+                          />
                         ) : (
                           truncate(String(cell.getValue() || '-'))
                         )}

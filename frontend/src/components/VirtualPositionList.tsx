@@ -4,6 +4,7 @@ import type { Position, PositionList, SearchParams } from '@/api'
 import { formatTotal } from '@/api'
 import { PositionSheet } from './PositionSheet'
 import { EmptyState } from './EmptyState'
+import { Highlight } from './Highlight'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
 import { Badge } from '@/components/ui/badge'
@@ -151,13 +152,18 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
                         {item.job_type || '-'}
                       </Badge>
                       <span className="line-clamp-1 text-sm font-medium">
-                        {item.position_example || item.exam_type || '-'}
+                        <Highlight
+                          text={item.position_example || item.exam_type || '-'}
+                          query={params.keyword}
+                        />
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                       <span className="inline-flex max-w-[60%] items-center gap-1">
                         <Building2 className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{item.employer || '-'}</span>
+                        <span className="truncate">
+                          <Highlight text={item.employer || '-'} query={params.keyword} />
+                        </span>
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <GraduationCap className="h-3.5 w-3.5 shrink-0" />

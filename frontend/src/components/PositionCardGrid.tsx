@@ -10,9 +10,10 @@ interface Props {
   data: Position[]
   loading: boolean
   emptyAction?: ReactNode
+  highlight?: string
 }
 
-export function PositionCardGrid({ data, loading, emptyAction }: Props) {
+export function PositionCardGrid({ data, loading, emptyAction, highlight }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
 
   if (loading) {
@@ -60,7 +61,7 @@ export function PositionCardGrid({ data, loading, emptyAction }: Props) {
             className="h-full animate-fade-in-up"
             style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
           >
-            <PositionCard item={item} onDetail={setSelected} />
+            <PositionCard item={item} onDetail={setSelected} highlight={highlight} />
           </div>
         ))}
       </div>

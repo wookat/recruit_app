@@ -28,6 +28,7 @@ import {
 import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { BoardCompareButton } from '@/components/BoardCompareButton'
+import { CrossBoardZeroHint } from '@/components/CrossBoardZeroHint'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
@@ -110,6 +111,7 @@ interface BianzhiPageProps {
   crossLabel?: string
   crossFetchTotal?: (keyword: string) => Promise<number>
   onCrossOpen?: (keyword: string) => void
+  onOpenBoardKw?: (board: 'positions' | 'campus' | 'bianzhi', keyword: string) => void
 }
 
 export function BianzhiPage({
@@ -120,6 +122,7 @@ export function BianzhiPage({
   crossLabel,
   crossFetchTotal,
   onCrossOpen,
+  onOpenBoardKw,
 }: BianzhiPageProps) {
   const urlQuery = useMemo(() => new URLSearchParams(window.location.search), [])
   const [preset, setPreset] = useState(
@@ -797,11 +800,16 @@ export function BianzhiPage({
         </div>
         )
       ) : data && data.items.length === 0 ? (
-        <EmptyState
-          title="没有匹配的编制公告"
-          description="建议优先移除关键词，其次省份、分类筛选"
-          action={<ActiveFilterChips filters={activeFilters} />}
-        />
+        <div className="space-y-3">
+          <EmptyState
+            title="没有匹配的编制公告"
+            description="建议优先移除关键词，其次省份、分类筛选"
+            action={<ActiveFilterChips filters={activeFilters} />}
+          />
+          {keyword.trim() && onOpenBoardKw && (
+            <CrossBoardZeroHint from="bianzhi" keyword={keyword} onOpen={onOpenBoardKw} />
+          )}
+        </div>
       ) : view === 'card' ? (
         <div className={cn('space-y-2', loading && 'pointer-events-none opacity-60')}>
           {pageItems.map((job, i, arr) => (

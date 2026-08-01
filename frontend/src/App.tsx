@@ -283,6 +283,15 @@ export default function App() {
     },
     [goPositions, goCampus, goBianzhi],
   )
+  const openBoardKw = useCallback(
+    (board: 'positions' | 'campus' | 'bianzhi', kw: string) => {
+      if (board === 'positions') goPositions('all', kw || undefined)
+      else if (board === 'campus') goCampus('all', kw || undefined)
+      else goBianzhi('all', kw || undefined)
+    },
+    [goPositions, goCampus, goBianzhi],
+  )
+
   const openSearchJob = useCallback(
     (board: SearchBoard, id: number, kw: string) => {
       if (board === 'positions') {
@@ -446,6 +455,7 @@ export default function App() {
               crossLabel="校招信息"
               crossFetchTotal={campusTotal}
               onCrossOpen={(kw) => goCampus('all', kw)}
+              onOpenBoardKw={openBoardKw}
             />
           )}
           <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
@@ -459,6 +469,7 @@ export default function App() {
                 crossLabel="体制内岗位"
                 crossFetchTotal={positionsTotal}
                 onCrossOpen={(kw) => goPositions('all', kw)}
+                onOpenBoardKw={openBoardKw}
               />
             )}
             {tab !== 'admin' && section.mode === 'bianzhi' && (
@@ -473,6 +484,7 @@ export default function App() {
                 crossLabel="校招信息"
                 crossFetchTotal={campusTotal}
                 onCrossOpen={(kw) => goCampus('all', kw)}
+                onOpenBoardKw={openBoardKw}
               />
             )}
             {tab !== 'admin' && section.mode === 'calendar' && <CalendarPage />}

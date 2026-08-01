@@ -39,6 +39,12 @@ export function addRecentSearch(keyword: string): string[] {
   return next
 }
 
+export function removeRecentSearch(keyword: string): string[] {
+  const next = getRecentSearches().filter((k) => k !== keyword)
+  writeJson(RECENT_KEY, next)
+  return next
+}
+
 export function clearRecentSearches(): string[] {
   writeJson(RECENT_KEY, [])
   return []

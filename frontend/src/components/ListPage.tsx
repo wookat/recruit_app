@@ -76,6 +76,7 @@ import { cn } from '@/lib/utils'
 import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from './ActiveFilterChips'
 import { SearchSuggestInput } from './SearchSuggestInput'
 import { RecommendSection } from './RecommendSection'
+import { CrossBoardZeroHint } from './CrossBoardZeroHint'
 
 interface ListPageProps {
   title: string
@@ -89,6 +90,7 @@ interface ListPageProps {
   crossLabel?: string
   crossFetchTotal?: (keyword: string) => Promise<number>
   onCrossOpen?: (keyword: string) => void
+  onOpenBoardKw?: (board: 'positions' | 'campus' | 'bianzhi', keyword: string) => void
 }
 
 const HOT_SEARCH = [
@@ -189,6 +191,7 @@ export function ListPage({
   crossLabel,
   crossFetchTotal,
   onCrossOpen,
+  onOpenBoardKw,
 }: ListPageProps) {
   const [filters, setFilters] = useState<FilterOptions | null>(null)
   const [data, setData] = useState<PositionList | null>(null)
@@ -1255,6 +1258,10 @@ export function ListPage({
       </div>
 
       <FilterSummaryBar filters={activeFilters} onClearAll={clearFilters} />
+
+      {data && !loading && data.total === 0 && (params.keyword || '').trim() && onOpenBoardKw && (
+        <CrossBoardZeroHint from="positions" keyword={params.keyword || ''} onOpen={onOpenBoardKw} />
+      )}
 
       {data?.timed_out && (
         <div

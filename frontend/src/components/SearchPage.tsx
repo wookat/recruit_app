@@ -9,6 +9,7 @@ interface SearchPageProps {
   crossLabel?: string
   crossFetchTotal?: (keyword: string) => Promise<number>
   onCrossOpen?: (keyword: string) => void
+  onOpenBoardKw?: (board: 'positions' | 'campus' | 'bianzhi', keyword: string) => void
 }
 
 export function SearchPage(props: SearchPageProps) {

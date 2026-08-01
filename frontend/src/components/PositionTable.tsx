@@ -10,6 +10,7 @@ import type { Position } from '@/api'
 import { formatTotal } from '@/api'
 import { PositionSheet } from './PositionSheet'
 import { sheetNavProps } from '@/lib/sheetNav'
+import { DueBadge } from './DueBadge'
 import { EmptyState } from './EmptyState'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
@@ -266,6 +267,11 @@ export function PositionTable({
                             )}
                           >
                             {truncate(String(cell.getValue()), 12)}
+                          </span>
+                        ) : cell.column.id === 'signup_time' ? (
+                          <span className="inline-flex max-w-full items-center gap-1.5">
+                            <span className="truncate">{truncate(String(cell.getValue() || '-'))}</span>
+                            <DueBadge date={row.original.signup_deadline?.slice(0, 10)} />
                           </span>
                         ) : cell.column.id === 'created_at' ? (
                           String(cell.getValue() || '-').slice(0, 10)

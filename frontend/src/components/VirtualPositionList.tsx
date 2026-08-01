@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Building2, MapPin, GraduationCap, Loader2 } from 'lucide-react'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
+import { DueBadge } from './DueBadge'
 
 interface Props {
   fetcher: (params: SearchParams) => Promise<PositionList>
@@ -153,6 +154,7 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
                       <Badge variant="outline" className="text-[11px]">
                         {item.job_type || '-'}
                       </Badge>
+                      <DueBadge date={item.signup_deadline?.slice(0, 10)} />
                       <span className="line-clamp-1 text-sm font-medium">
                         <Highlight
                           text={

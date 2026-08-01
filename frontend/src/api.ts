@@ -22,6 +22,7 @@ export interface Position {
   source_url: string
   notes: string
   raw_major: string
+  signup_deadline?: string | null
   created_at: string
 }
 

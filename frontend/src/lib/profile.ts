@@ -54,6 +54,16 @@ export function saveProfile(p: UserProfile) {
   listeners.forEach((l) => l())
 }
 
+export function clearProfile() {
+  profile = { eduLevel: [], major: '', location: [] }
+  try {
+    localStorage.removeItem(KEY)
+  } catch {
+    // ignore
+  }
+  listeners.forEach((l) => l())
+}
+
 export function useProfile(): UserProfile {
   return useSyncExternalStore(subscribe, () => profile)
 }

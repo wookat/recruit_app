@@ -26,7 +26,7 @@ export function paramsToQueryString(params: SearchParams): string {
       q.set(key, String(v))
     }
   }
-  if (params.hide_expired) q.set('hide_expired', '1')
+  if (params.hide_expired) q.set('hexp', '1')
   return q.toString()
 }
 
@@ -53,7 +53,7 @@ export function paramsFromQueryString(search: string): Partial<SearchParams> {
   }
   const sort = q.get('sort')
   if (sort) out.sort = sort
-  if (q.get('hide_expired') === '1') out.hide_expired = true
+  if (q.get('hexp') === '1' || q.get('hide_expired') === '1') out.hide_expired = true
   return out
 }
 

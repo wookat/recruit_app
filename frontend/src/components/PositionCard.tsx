@@ -12,6 +12,7 @@ import { Highlight } from './Highlight'
 import { ShareTextButton, buildShareText } from './ShareTextButton'
 import { positionShareUrl } from '@/lib/clipboard'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
+import { DueBadge } from './DueBadge'
 
 interface Props {
   item: Position
@@ -83,6 +84,7 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 shrink-0" />
             <span className="line-clamp-1">{item.signup_time}</span>
+            <DueBadge date={item.signup_deadline?.slice(0, 10)} />
           </div>
         )}
       </CardContent>

@@ -257,6 +257,21 @@ export function ListPage({
   }, [])
 
   useEffect(() => {
+    if (!syncUrl) return
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('board')) return
+    if (q.get('hide_expired')) q.delete('hide_expired')
+    if (params.hide_expired) q.set('hexp', '1')
+    else q.delete('hexp')
+    const qs = q.toString()
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`,
+    )
+  }, [syncUrl, params.hide_expired])
+
+  useEffect(() => {
     const kw = (params.keyword || '').trim()
     if (
       suggestDisabledRef.current ||

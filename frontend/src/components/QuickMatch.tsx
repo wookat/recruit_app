@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MultiSelect } from './MultiSelect'
 import { Search, Sparkles, RotateCcw, Wand2, ChevronDown, ChevronUp } from 'lucide-react'
-import { getProfile, saveProfile } from '@/lib/profile'
+import { clearProfile, getProfile, saveProfile } from '@/lib/profile'
 
 export interface QuickMatchValues {
   eduLevel: string[]
@@ -56,6 +56,7 @@ export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMat
     setLocation([])
     setCategory([])
     setYear(['2027', '2026', '2025'])
+    clearProfile()
     onReset()
   }
 

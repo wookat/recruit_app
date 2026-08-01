@@ -14,8 +14,10 @@ import {
   useAppPriorities,
   useAppNotes,
   useAppStatuses,
+  useAppStatusHistory,
   useFavorites,
   type AppStatus,
+  type StatusEvent,
 } from '@/lib/positionStore'
 import {
   setBoardNote,
@@ -75,6 +77,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
   const notes = useAppNotes()
   const channels = useAppChannels()
   const priorities = useAppPriorities()
+  const statusHistory = useAppStatusHistory()
   const [selected, setSelected] = useState<Position | null>(null)
   const [noteEditing, setNoteEditing] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -190,6 +193,22 @@ export function FavoritesSheet({ open, onClose }: Props) {
     .filter((d) => d.entries.length > 0)
   const filteredUndated = undated.filter((u) => matchEntry(u.entry))
 
+  function renderTimeline(history: StatusEvent[] | undefined) {
+    if (!history || history.length === 0) return null
+    const fmt = (iso: string) => {
+      const d = new Date(iso)
+      return isNaN(d.getTime()) ? '' : `${d.getMonth() + 1}-${d.getDate()}`
+    }
+    return (
+      <div className="mt-1 w-full text-[11px] text-muted-foreground">
+        {history
+          .slice(-4)
+          .map((e) => `${fmt(e.at)} ${e.status}`.trim())
+          .join(' → ')}
+      </div>
+    )
+  }
+
   function renderMetaRow(opts: {
     kind: BoardKind
     id: number
@@ -242,6 +261,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
             {meta?.note ? <span className="truncate">{meta.note}</span> : '备注'}
           </button>
         )}
+        {renderTimeline(meta?.history)}
       </div>
     )
   }
@@ -476,6 +496,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
             )}
           </button>
         )}
+        {renderTimeline(statusHistory[p.id])}
       </div>
       </div>
     )

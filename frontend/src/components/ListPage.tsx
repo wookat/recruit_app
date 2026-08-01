@@ -760,7 +760,7 @@ export function ListPage({
               <Button
                 variant="link"
                 size="sm"
-                className="h-auto p-0 text-xs text-muted-foreground"
+                className="h-auto min-h-11 p-0 text-xs text-muted-foreground sm:min-h-0"
                 onClick={() => setRecent(clearRecentSearches())}
               >
                 清除

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { BianzhiJob, CampusJob } from '@/api'
-import type { AppStatus } from '@/lib/positionStore'
+import type { AppStatus, StatusEvent } from '@/lib/positionStore'
 
 export type BoardKind = 'campus' | 'bianzhi'
 
@@ -8,6 +8,7 @@ export interface BoardMeta {
   status?: AppStatus
   note?: string
   priority?: boolean
+  history?: StatusEvent[]
 }
 
 const FAV_KEYS: Record<BoardKind, string> = {
@@ -103,7 +104,7 @@ function setMeta(kind: BoardKind, next: Record<number, BoardMeta>) {
 function patchMeta(kind: BoardKind, id: number, patch: Partial<BoardMeta>) {
   const current = metaOf(kind)
   const merged: BoardMeta = { ...current[id], ...patch }
-  if (!merged.status && !merged.note && !merged.priority) {
+  if (!merged.status && !merged.note && !merged.priority && !merged.history?.length) {
     const rest = { ...current }
     delete rest[id]
     setMeta(kind, rest)
@@ -113,7 +114,12 @@ function patchMeta(kind: BoardKind, id: number, patch: Partial<BoardMeta>) {
 }
 
 export function setBoardStatus(kind: BoardKind, id: number, status: AppStatus) {
-  patchMeta(kind, id, { status: status === '未投递' ? undefined : status })
+  const current = metaOf(kind)[id]
+  if ((current?.status ?? '未投递') === status) return
+  patchMeta(kind, id, {
+    status: status === '未投递' ? undefined : status,
+    history: [...(current?.history ?? []), { status, at: new Date().toISOString() }],
+  })
 }
 
 export function setBoardNote(kind: BoardKind, id: number, note: string) {

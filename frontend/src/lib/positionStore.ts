@@ -7,6 +7,7 @@ const STATUS_KEY = 'recruit.appStatus'
 const NOTE_KEY = 'recruit.appNote'
 const CHANNEL_KEY = 'recruit.appChannel'
 const PRIORITY_KEY = 'recruit.appPriority'
+const STATUS_HISTORY_KEY = 'recruit.appStatusHistory'
 const FAV_MAX = 200
 export const COMPARE_MAX = 4
 
@@ -20,6 +21,11 @@ export const APP_STATUSES = [
   '已挂',
 ] as const
 export type AppStatus = (typeof APP_STATUSES)[number]
+
+export interface StatusEvent {
+  status: AppStatus
+  at: string
+}
 
 export const STATUS_COLORS: Record<AppStatus, string> = {
   未投递: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
@@ -65,6 +71,7 @@ let statuses: Record<number, AppStatus> = readStatuses()
 let notes: Record<number, string> = readRecord<string>(NOTE_KEY)
 let channels: Record<number, AppChannel> = readRecord<AppChannel>(CHANNEL_KEY)
 let priorities: Record<number, boolean> = readRecord<boolean>(PRIORITY_KEY)
+let statusHistory: Record<number, StatusEvent[]> = readRecord<StatusEvent[]>(STATUS_HISTORY_KEY)
 let compare: Position[] = []
 const listeners = new Set<Listener>()
 
@@ -144,6 +151,7 @@ function persistStatuses() {
 }
 
 export function setAppStatus(id: number, status: AppStatus) {
+  if ((statuses[id] ?? '未投递') === status) return
   if (status === '未投递') {
     const rest = { ...statuses }
     delete rest[id]
@@ -151,8 +159,17 @@ export function setAppStatus(id: number, status: AppStatus) {
   } else {
     statuses = { ...statuses, [id]: status }
   }
+  statusHistory = {
+    ...statusHistory,
+    [id]: [...(statusHistory[id] ?? []), { status, at: new Date().toISOString() }],
+  }
   persistStatuses()
+  persistRecord(STATUS_HISTORY_KEY, statusHistory)
   emit()
+}
+
+export function useAppStatusHistory(): Record<number, StatusEvent[]> {
+  return useSyncExternalStore(subscribe, () => statusHistory)
 }
 
 export function useAppStatuses(): Record<number, AppStatus> {
@@ -230,10 +247,11 @@ export interface PositionBackup {
   notes: Record<number, string>
   channels: Record<number, AppChannel>
   priorities: Record<number, boolean>
+  statusHistory?: Record<number, StatusEvent[]>
 }
 
 export function exportPositionData(): PositionBackup {
-  return { favorites, statuses, notes, channels, priorities }
+  return { favorites, statuses, notes, channels, priorities, statusHistory }
 }
 
 /** 合并导入备份：同 id 以备份数据覆盖本地。返回合并后收藏总数。 */
@@ -245,6 +263,10 @@ export function mergePositionData(data: PositionBackup): number {
   notes = { ...notes, ...data.notes }
   channels = { ...channels, ...data.channels }
   priorities = { ...priorities, ...data.priorities }
+  if (data.statusHistory) {
+    statusHistory = { ...statusHistory, ...data.statusHistory }
+    persistRecord(STATUS_HISTORY_KEY, statusHistory)
+  }
   persistFavorites()
   persistStatuses()
   persistRecord(NOTE_KEY, notes)

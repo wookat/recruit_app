@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import {
   useReactTable,
@@ -40,6 +40,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { eduClass, jobTypeClass, provinceClass, yearClass, PILL_BASE } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
+import { SortableHead } from '@/components/SortableHead'
+import { parseSignupDeadline } from '@/lib/deadline'
+import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
 
 const columns: ColumnDef<Position>[] = [
   { accessorKey: 'year', header: '年份', size: 70 },
@@ -56,7 +59,23 @@ const columns: ColumnDef<Position>[] = [
   { accessorKey: 'work_location', header: '工作地点', size: 120 },
   { accessorKey: 'signup_time', header: '报名时间', size: 160 },
   { accessorKey: 'exam_time', header: '考试时间', size: 160 },
+  { accessorKey: 'created_at', header: '更新', size: 100 },
 ]
+
+const SORTABLE_COLUMNS: Record<string, string> = {
+  employer: 'employer',
+  signup_time: 'deadline',
+  created_at: 'created',
+}
+
+function sortField(p: Position, key: string): string | null {
+  if (key === 'employer') return p.employer
+  if (key === 'deadline') {
+    const d = parseSignupDeadline(p)
+    return d ? d.toISOString() : null
+  }
+  return p.created_at
+}
 
 export interface ColumnFilterConfig {
   label: string
@@ -89,10 +108,16 @@ export function PositionTable({
   columnFilters,
 }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
+  const [sort, setSort] = useState<SortState | null>(null)
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
+  const sortedData = useMemo(() => {
+    if (!sort) return data
+    return [...data].sort((a, b) => cmpNullableStr(sortField(a, sort.key), sortField(b, sort.key), sort.dir))
+  }, [data, sort])
+
   const table = useReactTable({
-    data,
+    data: sortedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
   })
@@ -134,7 +159,17 @@ export function PositionTable({
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id} className="hover:bg-transparent">
-                  {hg.headers.map((h) => (
+                  {hg.headers.map((h) =>
+                    SORTABLE_COLUMNS[h.column.id] ? (
+                      <SortableHead
+                        key={h.id}
+                        label={String(h.column.columnDef.header)}
+                        sortKey={SORTABLE_COLUMNS[h.column.id]}
+                        sort={sort}
+                        onToggle={(k) => setSort((prev) => nextSort(prev, k))}
+                        className="whitespace-nowrap"
+                      />
+                    ) : (
                     <TableHead
                       key={h.id}
                       className="whitespace-nowrap"
@@ -149,7 +184,8 @@ export function PositionTable({
                         flexRender(h.column.columnDef.header, h.getContext())
                       )}
                     </TableHead>
-                  ))}
+                    ),
+                  )}
                   <TableHead className="w-32">操作</TableHead>
                 </TableRow>
               ))}
@@ -210,6 +246,8 @@ export function PositionTable({
                           >
                             {truncate(String(cell.getValue()), 12)}
                           </span>
+                        ) : cell.column.id === 'created_at' ? (
+                          String(cell.getValue() || '-').slice(0, 10)
                         ) : (
                           truncate(String(cell.getValue() || '-'))
                         )}

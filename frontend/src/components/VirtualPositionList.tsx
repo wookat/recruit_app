@@ -202,6 +202,7 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
           item={selected}
           onClose={() => setSelected(null)}
           {...sheetNavProps(items, selected, setSelected)}
+          onOpenItem={setSelected}
         />
       )}
     </div>

@@ -423,6 +423,8 @@ export function ListPage({
       label: `年份：${y}`,
       onRemove: () => updateParam('year', (params.year ?? []).filter((x) => x !== y)),
     })
+  if (params.hide_expired)
+    activeFilters.push({ label: '隐藏已截止', onRemove: () => updateParam('hide_expired', undefined) })
 
   function clearFilters() {
     setParams({ ...DEFAULT_PARAMS })
@@ -1054,6 +1056,18 @@ export function ListPage({
             </button>
           )
         })}
+        <button
+          type="button"
+          onClick={() => updateParam('hide_expired', params.hide_expired ? undefined : true)}
+          className={cn(
+            'min-h-11 shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
+            params.hide_expired
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+          )}
+        >
+          隐藏已截止
+        </button>
         {crossPresets && crossPresets.length > 0 && onCrossPreset && (
           <>
             <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />

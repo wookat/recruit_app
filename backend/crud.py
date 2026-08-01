@@ -35,6 +35,7 @@ class PositionFilter(BaseModel):
     major: Optional[str] = None
     major_type: Optional[str] = "any"  # undergrad | grad | any
     category: Optional[List[str]] = None
+    hide_expired: Optional[bool] = None
 
 
 # ---------- 职位类型关键词 ----------
@@ -121,6 +122,12 @@ def _apply_filters(query, model, filters: PositionFilter):
             query = query.filter(or_(*cat_clauses))
         else:
             query = query.filter(model.id.is_(None))
+
+    if filters.hide_expired and hasattr(model, "signup_deadline"):
+        query = query.filter(or_(
+            model.signup_deadline == None,  # noqa: E711
+            model.signup_deadline >= datetime.now(),
+        ))
 
     if filters.keyword:
         k = f"%{filters.keyword}%"

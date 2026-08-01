@@ -187,6 +187,7 @@ export function RecommendSection() {
           item={detail}
           onClose={() => setDetail(null)}
           {...sheetNavProps(items ?? [], detail, setDetail)}
+          onOpenItem={setDetail}
         />
       )}
     </div>

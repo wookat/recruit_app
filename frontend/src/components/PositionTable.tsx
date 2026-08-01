@@ -400,6 +400,7 @@ export function PositionTable({
           item={selected}
           onClose={() => setSelected(null)}
           {...sheetNavProps(sortedData, selected, setSelected)}
+          onOpenItem={setSelected}
         />
       )}
     </div>

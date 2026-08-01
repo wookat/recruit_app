@@ -71,6 +71,7 @@ export function PositionCardGrid({ data, loading, emptyAction, highlight }: Prop
           item={selected}
           onClose={() => setSelected(null)}
           {...sheetNavProps(data, selected, setSelected)}
+          onOpenItem={setSelected}
         />
       )}
     </div>

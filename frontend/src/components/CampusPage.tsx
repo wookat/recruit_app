@@ -246,6 +246,32 @@ export function CampusPage({
   )
   const [sort, setSort] = useState<SortState | null>(null)
   const [detail, setDetail] = useState<CampusJob | null>(null)
+  const [relatedJobs, setRelatedJobs] = useState<CampusJob[]>([])
+
+  useEffect(() => {
+    const company = detail?.company?.trim()
+    const detailId = detail?.id
+    if (!company) {
+      setRelatedJobs([])
+      return
+    }
+    let cancelled = false
+    fetchCampusJobs({ keyword: company, page: 1, page_size: 20 })
+      .then((res) => {
+        if (cancelled) return
+        setRelatedJobs(
+          res.items
+            .filter((j) => j.id !== detailId && (j.company ?? '').trim() === company)
+            .slice(0, 5),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setRelatedJobs([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [detail?.company, detail?.id])
   const [profileMatched, setProfileMatched] = useState(() => {
     const p = getProfile()
     if (!profileUsable(p)) return false
@@ -1171,6 +1197,24 @@ export function CampusPage({
             { label: '投递入口', url: detail.apply_url },
             { label: '公告链接', url: detail.announce_url },
           ]}
+          related={
+            relatedJobs.length > 0
+              ? {
+                  title: '同公司其他岗位',
+                  items: relatedJobs.map((j) => ({
+                    key: String(j.id),
+                    label: j.positions || j.batch || j.company || '-',
+                    sub: [j.locations, j.deadline_text ? `截止：${j.deadline_text}` : null]
+                      .filter(Boolean)
+                      .join(' · '),
+                  })),
+                  onSelect: (key) => {
+                    const hit = relatedJobs.find((j) => String(j.id) === key)
+                    if (hit) setDetail(hit)
+                  },
+                }
+              : undefined
+          }
         />
       )}
     </div>

@@ -119,7 +119,7 @@ export function DeadlinesCard({ days = 7, limit = 20, defaultExpanded = false }:
           })}
         </div>
       </CardContent>
-      {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} />}
+      {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} onOpenItem={setSelected} />}
     </Card>
   )
 }

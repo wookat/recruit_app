@@ -66,6 +66,7 @@ def _build_filter(
     major: Optional[str] = None,
     major_type: Optional[str] = "any",
     category: Optional[List[str]] = None,
+    hide_expired: bool = False,
 ) -> crud.PositionFilter:
     return crud.PositionFilter(
         year=year,
@@ -81,6 +82,7 @@ def _build_filter(
         major=major,
         major_type=major_type,
         category=category,
+        hide_expired=hide_expired,
     )
 
 
@@ -123,6 +125,7 @@ def get_positions(
     major: Optional[str] = Query(None),
     major_type: Optional[str] = Query("any"),
     category: Optional[List[str]] = Query(None),
+    hide_expired: bool = Query(False),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=200),
     sort: str = Query("year_desc"),
@@ -144,6 +147,7 @@ def get_positions(
         major=major,
         major_type=major_type,
         category=category,
+        hide_expired=hide_expired,
     )
     if after_id is not None:
         items = crud.search_positions_cursor(db, filters, after_id, after_year, page_size, sort)

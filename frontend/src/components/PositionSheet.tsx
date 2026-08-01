@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import type { Position } from '@/api'
+import { fetchPositions, type Position } from '@/api'
 import { copyText, positionShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
-import { ExternalLink, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check } from 'lucide-react'
+import { Building2, ExternalLink, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -40,6 +40,8 @@ interface Props {
   nextDisabled?: boolean
   /** 收藏面板打开时标注数据为收藏时快照。 */
   snapshotNote?: boolean
+  /** 传入时展示「同单位其他岗位」区块，点击切换详情。 */
+  onOpenItem?: (p: Position) => void
 }
 
 function parseMajors(raw: string): string[] {
@@ -119,10 +121,36 @@ export function PositionSheet({
   prevDisabled,
   nextDisabled,
   snapshotNote,
+  onOpenItem,
 }: Props) {
   const [copied, setCopied] = useState(false)
   const statuses = useAppStatuses()
+  const [related, setRelated] = useState<Position[]>([])
   const itemId = item?.id
+  const employer = item?.employer?.trim()
+
+  useEffect(() => {
+    if (!employer || !onOpenItem) {
+      setRelated([])
+      return
+    }
+    let cancelled = false
+    fetchPositions({ keyword: employer, page: 1, page_size: 20 })
+      .then((res) => {
+        if (cancelled) return
+        setRelated(
+          res.items
+            .filter((p) => p.id !== itemId && (p.employer ?? '').trim() === employer)
+            .slice(0, 5),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setRelated([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [employer, itemId, onOpenItem])
 
   useEffect(() => {
     if (!itemId) return
@@ -316,6 +344,36 @@ export function PositionSheet({
                       </a>
                     </div>
                   )}
+                </Section>
+              </>
+            )}
+
+            {onOpenItem && related.length > 0 && (
+              <>
+                <Separator />
+                <Section icon={Building2} title="同单位其他岗位">
+                  <ul className="space-y-1">
+                    {related.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          className="flex min-h-11 w-full cursor-pointer flex-wrap items-center gap-x-2 rounded-lg border bg-background px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                          onClick={() => onOpenItem(p)}
+                        >
+                          <span className="font-medium">
+                            {p.position_example
+                              ? stripOrgPrefix(p.position_example, p.employer)
+                              : p.job_type || p.exam_type || '-'}
+                          </span>
+                          <span className="line-clamp-1 text-xs text-muted-foreground">
+                            {[p.work_location, p.year ? `${p.year} 年` : null]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </Section>
               </>
             )}

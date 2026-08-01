@@ -515,7 +515,7 @@ export default function App() {
         {guideOpen && <JobGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
       </Suspense>
       <CompareBar />
-      {deepLinked && <PositionSheet item={deepLinked} onClose={() => setDeepLinked(null)} />}
+      {deepLinked && <PositionSheet item={deepLinked} onClose={() => setDeepLinked(null)} onOpenItem={setDeepLinked} />}
     </div>
   )
 }

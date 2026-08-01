@@ -72,6 +72,7 @@ export interface SearchParams {
   major?: string
   major_type?: 'undergrad' | 'grad' | 'any'
   category?: string[]
+  hide_expired?: boolean
   page?: number
   page_size?: number
   sort?: string

@@ -27,6 +27,7 @@ import {
 import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
+import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { addRecentSearch } from '@/lib/storage'
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
@@ -350,6 +351,29 @@ export function BianzhiPage({
           )}
         </div>
       </div>
+
+      <SavedFilterBar
+        board="bianzhi"
+        snapshot={(() => {
+          const s: Record<string, string> = {}
+          if (preset !== 'all') s.bpreset = preset
+          if (dueOnly) s.due = '7'
+          if (provinces.length) s.prov = provinces.join(',')
+          if (keyword.trim()) s.bkw = keyword.trim()
+          return s
+        })()}
+        defaultName={
+          [
+            provinces[0],
+            preset !== 'all' ? PRESETS.find((p) => p.key === preset)?.label : null,
+            dueOnly ? '即将截止' : null,
+            keyword.trim() || null,
+          ]
+            .filter(Boolean)
+            .join('·') || '编制筛选'
+        }
+        canSave={preset !== 'all' || dueOnly || provinces.length > 0 || !!keyword.trim()}
+      />
 
       {/* 搜索 + 省份 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

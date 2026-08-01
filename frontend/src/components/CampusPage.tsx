@@ -27,6 +27,7 @@ import {
 import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
+import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { addRecentSearch } from '@/lib/storage'
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
@@ -426,6 +427,40 @@ export function CampusPage({
           </span>
         </button>
       )}
+
+      <SavedFilterBar
+        board="campus"
+        snapshot={(() => {
+          const s: Record<string, string> = {}
+          const urlPreset = recentOnly && preset === 'all' ? 'recent7' : preset
+          if (urlPreset !== 'all') s.bpreset = urlPreset
+          if (dueOnly) s.due = '7'
+          if (city) s.city = city
+          if (companyTypes.length) s.ctype = companyTypes.join(',')
+          if (keyword.trim()) s.bkw = keyword.trim()
+          return s
+        })()}
+        defaultName={
+          [
+            city,
+            companyTypes[0],
+            preset !== 'all' ? PRESETS.find((p) => p.key === preset)?.label : null,
+            recentOnly ? '近7天更新' : null,
+            dueOnly ? '即将截止' : null,
+            keyword.trim() || null,
+          ]
+            .filter(Boolean)
+            .join('·') || '校招筛选'
+        }
+        canSave={
+          preset !== 'all' ||
+          recentOnly ||
+          dueOnly ||
+          !!city ||
+          companyTypes.length > 0 ||
+          !!keyword.trim()
+        }
+      />
 
       {/* 搜索 + 企业类型 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

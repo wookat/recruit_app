@@ -233,6 +233,7 @@ export function ListPage({
   const [recent, setRecent] = useState<string[]>(() => getRecentSearches())
   const [saved, setSaved] = useState<SavedFilter[]>(() => getSavedFilters())
   const [saveOpen, setSaveOpen] = useState(false)
+  const [saveHint, setSaveHint] = useState<string | null>(null)
   const [saveName, setSaveName] = useState('')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [copied, setCopied] = useState(false)
@@ -496,12 +497,27 @@ export function ListPage({
     setTimeout(() => setExportError(''), 6000)
   }
 
+  const defaultFilterName =
+    [
+      params.location?.[0] ?? params.province?.[0] ?? params.work_location?.[0],
+      params.category?.[0],
+      params.edu_level?.[0],
+      params.year?.[0],
+      deadlineView ? '即将截止' : null,
+      (params.keyword || '').trim() || null,
+    ]
+      .filter(Boolean)
+      .join('·') || '岗位筛选'
+
   function handleSaveFilter() {
-    const name = saveName.trim()
+    const name = saveName.trim() || defaultFilterName
     if (!name) return
-    setSaved(saveFilter(name, params))
+    const { list, dropped } = saveFilter(name, params)
+    setSaved(list)
     setSaveName('')
     setSaveOpen(false)
+    setSaveHint(dropped ? `已达 10 组上限，删除了最旧的「${dropped}」` : null)
+    if (dropped) setTimeout(() => setSaveHint(null), 4000)
   }
 
   function applySavedFilter(f: SavedFilter) {
@@ -843,7 +859,7 @@ export function ListPage({
                   value={saveName}
                   onChange={(e) => setSaveName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveFilter()}
-                  placeholder="筛选名称"
+                  placeholder={defaultFilterName}
                   className="h-7 w-32 text-xs"
                 />
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSaveFilter} aria-label="确认保存">
@@ -867,12 +883,17 @@ export function ListPage({
                 variant="link"
                 size="sm"
                 className="h-auto min-h-11 p-0 text-xs sm:min-h-0"
-                onClick={() => setSaveOpen(true)}
+                disabled={activeFilters.length === 0 && !deadlineView}
+                onClick={() => {
+                  setSaveName(defaultFilterName)
+                  setSaveOpen(true)
+                }}
               >
                 <BookmarkPlus className="mr-0.5 h-3.5 w-3.5" />
                 保存当前筛选
               </Button>
             )}
+            {saveHint && <span className="text-muted-foreground">{saveHint}</span>}
             {exportTask ? (
               <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />

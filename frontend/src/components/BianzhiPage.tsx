@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Table2 } from 'lucide-react'
+import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
@@ -99,6 +99,9 @@ interface BianzhiPageProps {
   initialKeyword?: string
   crossPresets?: { key: string; label: string }[]
   onCrossPreset?: (key: string) => void
+  crossLabel?: string
+  crossFetchTotal?: (keyword: string) => Promise<number>
+  onCrossOpen?: (keyword: string) => void
 }
 
 export function BianzhiPage({
@@ -106,6 +109,9 @@ export function BianzhiPage({
   initialKeyword,
   crossPresets,
   onCrossPreset,
+  crossLabel,
+  crossFetchTotal,
+  onCrossOpen,
 }: BianzhiPageProps) {
   const urlQuery = useMemo(() => new URLSearchParams(window.location.search), [])
   const [preset, setPreset] = useState(initialPreset ?? 'all')
@@ -132,11 +138,32 @@ export function BianzhiPage({
   }, [])
   const [keyword, setKeyword] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
   const [searchInput, setSearchInput] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
+
+  useEffect(() => {
+    const kw = keyword.trim()
+    if (!crossFetchTotal || kw.length < 2) {
+      setCrossTotal(0)
+      return
+    }
+    let cancelled = false
+    const t = setTimeout(() => {
+      crossFetchTotal(kw)
+        .then((n) => {
+          if (!cancelled) setCrossTotal(n)
+        })
+        .catch(() => {})
+    }, 600)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [keyword, crossFetchTotal])
   const [provinces, setProvinces] = useState<string[]>(() => {
     const v = urlQuery.get('prov')
     return v ? v.split(',').filter(Boolean) : []
   })
   const [page, setPage] = useState(1)
+  const [crossTotal, setCrossTotal] = useState(0)
   const [data, setData] = useState<{ total: number; items: BianzhiJob[] } | null>(null)
   const [filters, setFilters] = useState<BianzhiFilterOptions | null>(null)
   const [loading, setLoading] = useState(true)
@@ -437,6 +464,21 @@ export function BianzhiPage({
           )}
         </div>
       </div>
+
+      {crossTotal > 0 && onCrossOpen && (
+        <button
+          type="button"
+          onClick={() => onCrossOpen(keyword.trim())}
+          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-dashed bg-background px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Search className="h-4 w-4 shrink-0" />
+          <span>
+            {crossLabel || '另一板块'}中另有{' '}
+            <span className="font-semibold text-foreground">{crossTotal.toLocaleString()}</span> 条与「
+            {keyword.trim()}」相关，点击查看 →
+          </span>
+        </button>
+      )}
 
       <MatchByProfileButton
         note="按省份+专业匹配（编制无学历字段，已跳过该维度）"

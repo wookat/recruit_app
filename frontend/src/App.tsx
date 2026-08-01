@@ -5,7 +5,7 @@ import { PositionSheet } from '@/components/PositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BookOpen, Briefcase, CalendarDays, Moon, Settings, Star, Sun } from 'lucide-react'
+import { BookOpen, Briefcase, CalendarDays, Moon, Search, Settings, Star, Sun } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
@@ -14,8 +14,9 @@ import { MobileBottomNav } from '@/components/MobileBottomNav'
 import { OnboardingCard } from '@/components/OnboardingCard'
 import { useFavorites } from '@/lib/positionStore'
 import { useBianzhiFavorites, useCampusFavorites } from '@/lib/boardFavorites'
+import { GlobalSearch, type SearchBoard } from '@/components/GlobalSearch'
 import { applySeo } from '@/lib/seo'
-import { readJobParam } from '@/lib/jobDeepLink'
+import { readJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
 
 const JobGuideSheet = lazy(() =>
@@ -166,6 +167,7 @@ export default function App() {
   const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>(getTheme)
   const [favOpen, setFavOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [deepLinked, setDeepLinked] = useState<Position | null>(null)
   const favorites = useFavorites()
   const campusFavorites = useCampusFavorites()
@@ -245,6 +247,42 @@ export default function App() {
   )
 
   useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        setSearchOpen((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  const openSearchBoard = useCallback(
+    (board: SearchBoard, kw: string) => {
+      if (board === 'positions') goPositions('all', kw || undefined)
+      else if (board === 'campus') goCampus('all', kw || undefined)
+      else goBianzhi('all', kw || undefined)
+    },
+    [goPositions, goCampus, goBianzhi],
+  )
+  const openSearchJob = useCallback(
+    (board: SearchBoard, id: number, kw: string) => {
+      if (board === 'positions') {
+        goPositions('all', kw || undefined)
+        fetchPosition(id)
+          .then(setDeepLinked)
+          .catch(() => undefined)
+        return
+      }
+      if (board === 'campus') goCampus('all', kw || undefined)
+      else goBianzhi('all', kw || undefined)
+      setJobParam(`${board}:${id}`)
+    },
+    [goPositions, goCampus, goBianzhi],
+  )
+
+
+  useEffect(() => {
     const q = new URLSearchParams(window.location.search)
     const positionId = Number(q.get('position_id')) || readJobParam('positions') || 0
     if (positionId > 0) {
@@ -284,6 +322,19 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-11 gap-1.5 px-2 sm:min-h-8"
+            aria-label="全站搜索"
+            title="全站搜索（Ctrl K）"
+            onClick={() => setSearchOpen(true)}
+          >
+            <Search className="h-4 w-4" />
+            <kbd className="hidden rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline">
+              Ctrl K
+            </kbd>
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -398,6 +449,9 @@ export default function App() {
                 onCrossPreset={(k) =>
                   k.startsWith('pos:') ? goPositions(k.slice(4)) : goCampus(k.slice(7))
                 }
+                crossLabel="校招信息"
+                crossFetchTotal={campusTotal}
+                onCrossOpen={(kw) => goCampus('all', kw)}
               />
             )}
             {tab !== 'admin' && section.mode === 'calendar' && <CalendarPage />}
@@ -445,6 +499,12 @@ export default function App() {
         }}
         onFavorites={() => setFavOpen(true)}
         onGuide={() => setGuideOpen(true)}
+      />
+      <GlobalSearch
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onOpenBoard={openSearchBoard}
+        onOpenJob={openSearchJob}
       />
       <FavoritesSheet open={favOpen} onClose={() => setFavOpen(false)} />
       <Suspense fallback={null}>

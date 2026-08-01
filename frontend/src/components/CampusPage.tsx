@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
-import { ActiveFilterChips, type RemovableFilter } from '@/components/ActiveFilterChips'
+import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from '@/components/ActiveFilterChips'
 import { Highlight } from '@/components/Highlight'
 import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
@@ -400,6 +400,11 @@ export function CampusPage({
     })
   for (const t of companyTypes)
     activeFilters.push({ label: `类型：${t}`, onRemove: () => toggleCompanyType(t) })
+  if (preset !== 'all') {
+    const presetLabel = PRESETS.find((v) => v.key === preset)?.label
+    if (presetLabel)
+      activeFilters.push({ label: `视图：${presetLabel}`, onRemove: () => selectPreset('all') })
+  }
   if (recentOnly)
     activeFilters.push({
       label: '近7天更新',
@@ -416,6 +421,38 @@ export function CampusPage({
         setPage(1)
       },
     })
+  if (hideExpired)
+    activeFilters.push({
+      label: '隐藏已截止',
+      onRemove: () => {
+        setHideExpired(false)
+        setPage(1)
+      },
+    })
+  if (profileMatched)
+    activeFilters.push({
+      label: '按我的条件匹配',
+      onRemove: () => {
+        setSearchInput('')
+        setKeyword('')
+        setCity(null)
+        setPage(1)
+        setProfileMatched(false)
+      },
+    })
+
+  function clearAllFilters() {
+    setPreset('all')
+    setRecentOnly(false)
+    setDueOnly(false)
+    setHideExpired(false)
+    setCity(null)
+    setCompanyTypes([])
+    setSearchInput('')
+    setKeyword('')
+    setProfileMatched(false)
+    setPage(1)
+  }
 
   const sortedItems = useMemo(() => {
     if (!data) return []
@@ -725,6 +762,8 @@ export function CampusPage({
           <FreshnessNote board="campus" />
         </div>
       )}
+
+      <FilterSummaryBar filters={activeFilters} onClearAll={clearAllFilters} />
 
       {/* 列表 */}
       {loading && !data ? (

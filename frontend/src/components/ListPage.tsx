@@ -72,7 +72,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { ActiveFilterChips, type RemovableFilter } from './ActiveFilterChips'
+import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from './ActiveFilterChips'
 import { SearchSuggestInput } from './SearchSuggestInput'
 import { RecommendSection } from './RecommendSection'
 
@@ -263,13 +263,16 @@ export function ListPage({
     if (q.get('hide_expired')) q.delete('hide_expired')
     if (params.hide_expired) q.set('hexp', '1')
     else q.delete('hexp')
+    const kw = (params.keyword || '').trim()
+    if (kw) q.set('keyword', kw)
+    else q.delete('keyword')
     const qs = q.toString()
     window.history.replaceState(
       null,
       '',
       `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`,
     )
-  }, [syncUrl, params.hide_expired])
+  }, [syncUrl, params.hide_expired, params.keyword])
 
   useEffect(() => {
     const kw = (params.keyword || '').trim()
@@ -1177,6 +1180,8 @@ export function ListPage({
           <FreshnessNote board="positions" />
         </div>
       </div>
+
+      <FilterSummaryBar filters={activeFilters} onClearAll={clearFilters} />
 
       {view === 'table' && (
         <PositionTable

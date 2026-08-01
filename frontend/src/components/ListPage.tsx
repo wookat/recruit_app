@@ -74,6 +74,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { ActiveFilterChips, type RemovableFilter } from './ActiveFilterChips'
 import { SearchSuggestInput } from './SearchSuggestInput'
+import { RecommendSection } from './RecommendSection'
 
 interface ListPageProps {
   title: string
@@ -1006,6 +1007,8 @@ export function ListPage({
           onDeadline={() => setDeadlineView(true)}
         />
       )}
+
+      {showStats && <RecommendSection />}
 
       {crossTotal > 0 && onCrossOpen && (
         <button

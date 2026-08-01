@@ -3,6 +3,7 @@ import { Clock, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { getRecentSearches } from '@/lib/storage'
+import { pinyinMatch } from '@/lib/pinyin'
 
 export interface SuggestItem {
   text: string
@@ -66,11 +67,11 @@ export function SearchSuggestInput({
       out.push(it)
     }
     for (const r of getRecentSearches()) {
-      if (r.toLowerCase().includes(q)) push({ text: r, recent: true })
+      if (pinyinMatch(r, q)) push({ text: r, recent: true })
     }
     for (const it of extraItems || []) push(it)
     for (const w of words) {
-      if (w.toLowerCase().includes(q)) push({ text: w })
+      if (pinyinMatch(w, q)) push({ text: w })
     }
     return out
   }, [debounced, words, extraItems])

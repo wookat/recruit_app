@@ -50,6 +50,20 @@ SOURCES = [
 # 超链接字段：取 URL 而非显示文字
 URL_FIELDS = {"announce_url", "apply_url"}
 
+# 说明文案行（非岗位）：单位名含引导提示词
+NOTE_PHRASE_RE = re.compile(r"请到|特此提示|【提示】|更多.*查看")
+
+
+def is_bianzhi_note_row(d: dict) -> bool:
+    """保守判定说明文案行：单位名含提示词 且 无截止/考试日期 且 公告链接缺失或无效。"""
+    employer = (d.get("employer") or "").strip()
+    if not employer or not NOTE_PHRASE_RE.search(employer):
+        return False
+    if (d.get("deadline_text") or "").strip() or (d.get("exam_time") or "").strip():
+        return False
+    announce = (d.get("announce_url") or "").strip()
+    return announce in ("", "http://", "https://")
+
 
 def _unpack(blob: str):
     """飞书接口的 base64+gzip JSON 负载。"""
@@ -323,6 +337,9 @@ def _refresh_bianzhi(client: FeishuShareClient, db, dry_run: bool) -> dict:
         counts["fetched"] += len(rows)
         for d in rows:
             if not d.get("employer") and not d.get("province"):
+                skipped += 1
+                continue
+            if is_bianzhi_note_row(d):
                 skipped += 1
                 continue
             h = import_bianzhi.row_hash(category, d)

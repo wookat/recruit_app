@@ -9,7 +9,6 @@ import {
 } from '@/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { ActiveFilterChips, type RemovableFilter } from '@/components/ActiveFilterChips'
@@ -27,6 +26,8 @@ import {
 } from '@/components/ui/table'
 import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { SearchSuggestInput } from '@/components/SearchSuggestInput'
+import { addRecentSearch } from '@/lib/storage'
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
 import { FreshnessNote } from '@/components/FreshnessNote'
@@ -128,6 +129,39 @@ const CITY_CHIPS = [
   '青岛',
   '郑州',
   '合肥',
+]
+
+const CAMPUS_SUGGEST_WORDS = [
+  '央国企',
+  '国企',
+  '银行',
+  '外企',
+  '互联网',
+  '金融',
+  '中国移动',
+  '中国电信',
+  '中国联通',
+  '国家电网',
+  '中石油',
+  '中石化',
+  '中烟',
+  '铁路',
+  '中国邮政',
+  '工商银行',
+  '农业银行',
+  '中国银行',
+  '建设银行',
+  '产品经理',
+  '算法',
+  '软件开发',
+  '数据分析',
+  '运营',
+  '管培生',
+  '实习',
+  '秋招',
+  '春招',
+  '免笔试',
+  '内推',
 ]
 
 function campusShareText(job: CampusJob): string {
@@ -395,22 +429,19 @@ export function CampusPage({
 
       {/* 搜索 + 企业类型 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <form
-          className="relative flex-1"
-          onSubmit={(e) => {
-            e.preventDefault()
-            setKeyword(searchInput.trim())
+        <SearchSuggestInput
+          value={searchInput}
+          onValueChange={setSearchInput}
+          onSelect={(text) => {
+            setSearchInput(text)
+            setKeyword(text)
             setPage(1)
+            if (text.length >= 2) addRecentSearch(text)
           }}
-        >
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="搜索公司 / 岗位 / 行业 / 专业…"
-            className="h-10 pl-9"
-          />
-        </form>
+          words={CAMPUS_SUGGEST_WORDS}
+          placeholder="搜索公司 / 岗位 / 行业 / 专业…"
+          inputClassName="h-10"
+        />
         <div className="flex gap-1">
           <button
             type="button"

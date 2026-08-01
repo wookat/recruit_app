@@ -9,7 +9,6 @@ import {
 } from '@/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { ActiveFilterChips, type RemovableFilter } from '@/components/ActiveFilterChips'
@@ -25,8 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
+import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { SearchSuggestInput } from '@/components/SearchSuggestInput'
+import { addRecentSearch } from '@/lib/storage'
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
 import { FreshnessNote } from '@/components/FreshnessNote'
@@ -238,6 +239,17 @@ export function BianzhiPage({
       },
     })
 
+  const bianzhiSuggestWords = useMemo(
+    () => [
+      ...PRESETS.filter((p) => p.category).map((p) => p.category as string),
+      '教师招聘',
+      '医院',
+      '事业编',
+      ...(filters?.provinces ?? []),
+    ],
+    [filters],
+  )
+
   const liankaoInfo = useMemo(() => {
     if (!isLiankao || !data) return null
     const today = new Date()
@@ -341,22 +353,19 @@ export function BianzhiPage({
 
       {/* 搜索 + 省份 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <form
-          className="relative flex-1"
-          onSubmit={(e) => {
-            e.preventDefault()
-            setKeyword(searchInput.trim())
+        <SearchSuggestInput
+          value={searchInput}
+          onValueChange={setSearchInput}
+          onSelect={(text) => {
+            setSearchInput(text)
+            setKeyword(text)
             setPage(1)
+            if (text.length >= 2) addRecentSearch(text)
           }}
-        >
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="搜索招聘单位 / 工作地 / 专业…"
-            className="h-10 pl-9"
-          />
-        </form>
+          words={bianzhiSuggestWords}
+          placeholder="搜索招聘单位 / 工作地 / 专业…"
+          inputClassName="h-10"
+        />
         <div className="flex gap-1">
           <button
             type="button"

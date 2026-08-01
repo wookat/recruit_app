@@ -73,6 +73,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { ActiveFilterChips, type RemovableFilter } from './ActiveFilterChips'
+import { SearchSuggestInput } from './SearchSuggestInput'
 
 interface ListPageProps {
   title: string
@@ -481,6 +482,22 @@ export function ListPage({
     setParams({ ...DEFAULT_PARAMS, ...f.params, page: 1 })
   }
 
+  const positionSuggestWords = useMemo(
+    () =>
+      filters
+        ? [
+            ...new Set([
+              ...filters.hot_locations,
+              ...filters.provinces,
+              ...filters.categories,
+              ...filters.edu_levels,
+              ...HOT_SEARCH.map((h) => h.value),
+            ]),
+          ]
+        : HOT_SEARCH.map((h) => h.value),
+    [filters],
+  )
+
   const pinyinSuggestions = useMemo(() => {
     const kw = (params.keyword || '').trim()
     if (!/^[a-zA-Z]{2,}$/.test(kw) || !filters) return []
@@ -648,56 +665,17 @@ export function ListPage({
       <Card>
         <CardContent className="space-y-4 p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="搜索岗位、单位、专业、地点…"
-                value={params.keyword || ''}
-                onChange={(e) => updateParam('keyword', e.target.value)}
-                className="pl-9"
-                onKeyDown={(e) => e.key === 'Enter' && load()}
-              />
-              {(suggestions.length > 0 || pinyinSuggestions.length > 0) && (
-                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg bg-popover shadow-md ring-1 ring-foreground/10">
-                  {suggestions.length > 0 && (
-                    <>
-                      <div className="px-3 py-1.5 text-[11px] text-muted-foreground">关键词联想（点击替换关键词）</div>
-                      {suggestions.map((s) => (
-                        <button
-                          key={s.text}
-                          type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
-                          onClick={() => applySuggestion(s.text)}
-                        >
-                          <Search className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="flex-1">{s.text}</span>
-                          {s.count !== undefined && (
-                            <span className="text-xs text-muted-foreground">{s.count.toLocaleString()} 条</span>
-                          )}
-                        </button>
-                      ))}
-                    </>
-                  )}
-                  {suggestions.length === 0 && pinyinSuggestions.length > 0 && (
-                    <>
-                      <div className="px-3 py-1.5 text-[11px] text-muted-foreground">拼音联想（点击替换关键词）</div>
-                      {pinyinSuggestions.map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
-                          onClick={() => updateParam('keyword', s)}
-                        >
-                          <Search className="h-3.5 w-3.5 text-muted-foreground" />
-                          {s}
-                        </button>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+            <SearchSuggestInput
+              value={params.keyword || ''}
+              onValueChange={(v) => updateParam('keyword', v)}
+              onSelect={(text) => applySuggestion(text)}
+              words={positionSuggestWords}
+              extraItems={[
+                ...suggestions.map((s) => ({ text: s.text, count: s.count })),
+                ...pinyinSuggestions.map((s) => ({ text: s })),
+              ]}
+              placeholder="搜索岗位、单位、专业、地点…"
+            />
             <div className="flex items-center gap-2">
               <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
                 <SheetTrigger

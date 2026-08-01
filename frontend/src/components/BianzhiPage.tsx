@@ -1,4 +1,4 @@
-import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchBianzhiCounts,
   fetchBianzhiFilters,
@@ -29,6 +29,8 @@ import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
+import { readJobParam } from '@/lib/jobDeepLink'
+import { sheetNavProps } from '@/lib/sheetNav'
 import { addRecentSearch } from '@/lib/storage'
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
@@ -141,6 +143,7 @@ export function BianzhiPage({
   )
   const [sort, setSort] = useState<SortState | null>(null)
   const [detail, setDetail] = useState<BianzhiJob | null>(null)
+  const deepLinkDone = useRef(false)
   const toggleSort = useCallback((key: string) => setSort((s) => nextSort(s, key)), [])
 
   useEffect(() => {
@@ -191,7 +194,16 @@ export function BianzhiPage({
           p += 1
         }
       }
-      if (!cancelled) setData({ total: first.total, items })
+      if (cancelled) return
+      setData({ total: first.total, items })
+      if (!deepLinkDone.current) {
+        deepLinkDone.current = true
+        const id = readJobParam('bianzhi')
+        if (id) {
+          const hit = items.find((j) => j.id === id)
+          if (hit) setDetail(hit)
+        }
+      }
     }
     load()
       .catch(console.error)
@@ -878,6 +890,8 @@ export function BianzhiPage({
           shareText={bianzhiShareText(detail)}
           favActive={bianzhiFavorites.some((f) => f.id === detail.id)}
           onFavToggle={() => toggleBianzhiFavorite(detail)}
+          jobKey={`bianzhi:${detail.id}`}
+          {...sheetNavProps(pageItems, detail, setDetail)}
           basics={[
             { label: '招聘单位', value: detail.employer },
             { label: '分类', value: detail.category },

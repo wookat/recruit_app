@@ -13,6 +13,7 @@ import { CompareBar } from '@/components/CompareBar'
 import { useFavorites } from '@/lib/positionStore'
 import { useBianzhiFavorites, useCampusFavorites } from '@/lib/boardFavorites'
 import { applySeo } from '@/lib/seo'
+import { readJobParam } from '@/lib/jobDeepLink'
 import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
 
 const JobGuideSheet = lazy(() =>
@@ -236,9 +237,11 @@ export default function App() {
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
-    const positionId = Number(q.get('position_id'))
+    const positionId = Number(q.get('position_id')) || readJobParam('positions') || 0
     if (positionId > 0) {
-      fetchPosition(positionId).then(setDeepLinked).catch(console.error)
+      fetchPosition(positionId)
+        .then(setDeepLinked)
+        .catch(() => undefined)
     }
     const favIds = (q.get('favorites') || '')
       .split(',')

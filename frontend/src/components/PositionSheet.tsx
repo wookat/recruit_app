@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Position } from '@/api'
 import { copyText, positionShareUrl } from '@/lib/clipboard'
-import { ExternalLink, GraduationCap, CalendarClock, Info, AlertTriangle, MapPin, Link2, Check } from 'lucide-react'
+import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
+import { ExternalLink, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -32,6 +33,12 @@ import {
 interface Props {
   item: Position | null
   onClose: () => void
+  onPrev?: () => void
+  onNext?: () => void
+  prevDisabled?: boolean
+  nextDisabled?: boolean
+  /** 收藏面板打开时标注数据为收藏时快照。 */
+  snapshotNote?: boolean
 }
 
 function parseMajors(raw: string): string[] {
@@ -103,9 +110,36 @@ function safeUrl(u: string | null | undefined): string | null {
   }
 }
 
-export function PositionSheet({ item, onClose }: Props) {
+export function PositionSheet({
+  item,
+  onClose,
+  onPrev,
+  onNext,
+  prevDisabled,
+  nextDisabled,
+  snapshotNote,
+}: Props) {
   const [copied, setCopied] = useState(false)
   const statuses = useAppStatuses()
+  const itemId = item?.id
+
+  useEffect(() => {
+    if (!itemId) return
+    const key = `positions:${itemId}`
+    setJobParam(key)
+    return () => clearJobParam(key)
+  }, [itemId])
+
+  useEffect(() => {
+    if (!itemId || (!onPrev && !onNext)) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && onPrev && !prevDisabled) onPrev()
+      else if (e.key === 'ArrowRight' && onNext && !nextDisabled) onNext()
+    }
+    document.addEventListener('keydown', handler, true)
+    return () => document.removeEventListener('keydown', handler, true)
+  }, [itemId, onPrev, onNext, prevDisabled, nextDisabled])
+
   if (!item) return null
 
   async function copyLink() {
@@ -170,6 +204,35 @@ export function PositionSheet({ item, onClose }: Props) {
             />
             <FavoriteButton item={item} />
             <CompareButton item={item} />
+            {(onPrev || onNext) && (
+              <span className="ml-auto inline-flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-0.5 px-2 text-xs"
+                  disabled={prevDisabled}
+                  onClick={onPrev}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  上一条
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-0.5 px-2 text-xs"
+                  disabled={nextDisabled}
+                  onClick={onNext}
+                >
+                  下一条
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </span>
+            )}
+            {snapshotNote && (
+              <Badge variant="outline" className="text-[11px] font-normal text-muted-foreground">
+                收藏时快照
+              </Badge>
+            )}
           </div>
         </SheetHeader>
         <ScrollArea className="min-h-0 flex-1 px-4 sm:px-6">

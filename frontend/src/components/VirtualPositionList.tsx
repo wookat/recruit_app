@@ -3,6 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Position, PositionList, SearchParams } from '@/api'
 import { formatTotal } from '@/api'
 import { PositionSheet } from './PositionSheet'
+import { sheetNavProps } from '@/lib/sheetNav'
 import { EmptyState } from './EmptyState'
 import { Highlight } from './Highlight'
 import { FavoriteButton } from './FavoriteButton'
@@ -191,7 +192,13 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
           })}
         </div>
       </div>
-      {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <PositionSheet
+          item={selected}
+          onClose={() => setSelected(null)}
+          {...sheetNavProps(items, selected, setSelected)}
+        />
+      )}
     </div>
   )
 }

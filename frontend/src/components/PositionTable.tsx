@@ -9,6 +9,7 @@ import {
 import type { Position } from '@/api'
 import { formatTotal } from '@/api'
 import { PositionSheet } from './PositionSheet'
+import { sheetNavProps } from '@/lib/sheetNav'
 import { EmptyState } from './EmptyState'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
@@ -394,7 +395,13 @@ export function PositionTable({
         </div>
       </div>
 
-      {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <PositionSheet
+          item={selected}
+          onClose={() => setSelected(null)}
+          {...sheetNavProps(sortedData, selected, setSelected)}
+        />
+      )}
     </div>
   )
 }

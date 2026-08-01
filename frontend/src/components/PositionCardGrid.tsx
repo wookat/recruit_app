@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import type { Position } from '@/api'
 import { PositionCard } from './PositionCard'
 import { PositionSheet } from './PositionSheet'
+import { sheetNavProps } from '@/lib/sheetNav'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { EmptyState } from './EmptyState'
@@ -65,7 +66,13 @@ export function PositionCardGrid({ data, loading, emptyAction, highlight }: Prop
           </div>
         ))}
       </div>
-      {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <PositionSheet
+          item={selected}
+          onClose={() => setSelected(null)}
+          {...sheetNavProps(data, selected, setSelected)}
+        />
+      )}
     </div>
   )
 }

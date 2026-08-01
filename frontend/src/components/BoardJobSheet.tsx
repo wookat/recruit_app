@@ -1,4 +1,5 @@
-import { CalendarClock, ExternalLink, GraduationCap, Info, Link2 } from 'lucide-react'
+import { useEffect } from 'react'
+import { CalendarClock, ChevronLeft, ChevronRight, ExternalLink, GraduationCap, Info, Link2 } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -8,8 +9,10 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/ui/button'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { ShareTextButton } from '@/components/ShareTextButton'
+import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 
 export interface SheetField {
   label: string
@@ -34,6 +37,14 @@ interface Props {
   requirements?: SheetField[]
   schedule?: SheetField[]
   links?: SheetLink[]
+  /** 深链 key（如 campus:123）；传入时打开写入 URL、关闭清除。 */
+  jobKey?: string
+  onPrev?: () => void
+  onNext?: () => void
+  prevDisabled?: boolean
+  nextDisabled?: boolean
+  /** 收藏面板打开时标注数据为收藏时快照。 */
+  snapshotNote?: boolean
 }
 
 function safeUrl(u: string | null | undefined): string | null {
@@ -97,8 +108,30 @@ export function BoardJobSheet({
   requirements,
   schedule,
   links,
+  jobKey,
+  onPrev,
+  onNext,
+  prevDisabled,
+  nextDisabled,
+  snapshotNote,
 }: Props) {
   const validLinks = (links ?? []).filter((l) => safeUrl(l.url))
+
+  useEffect(() => {
+    if (!open || !jobKey) return
+    setJobParam(jobKey)
+    return () => clearJobParam(jobKey)
+  }, [open, jobKey])
+
+  useEffect(() => {
+    if (!open || (!onPrev && !onNext)) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && onPrev && !prevDisabled) onPrev()
+      else if (e.key === 'ArrowRight' && onNext && !nextDisabled) onNext()
+    }
+    document.addEventListener('keydown', handler, true)
+    return () => document.removeEventListener('keydown', handler, true)
+  }, [open, onPrev, onNext, prevDisabled, nextDisabled])
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-full max-w-2xl p-0 data-[side=right]:w-full sm:max-w-xl">
@@ -114,6 +147,35 @@ export function BoardJobSheet({
           <div className="flex flex-wrap items-center gap-1">
             <BoardFavoriteButton active={favActive} onToggle={onFavToggle} />
             <ShareTextButton text={shareText} />
+            {(onPrev || onNext) && (
+              <span className="ml-auto inline-flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-0.5 px-2 text-xs"
+                  disabled={prevDisabled}
+                  onClick={onPrev}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  上一条
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-0.5 px-2 text-xs"
+                  disabled={nextDisabled}
+                  onClick={onNext}
+                >
+                  下一条
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </span>
+            )}
+            {snapshotNote && (
+              <Badge variant="outline" className="text-[11px] font-normal text-muted-foreground">
+                收藏时快照
+              </Badge>
+            )}
           </div>
         </SheetHeader>
         <ScrollArea className="min-h-0 flex-1 px-4 sm:px-6">

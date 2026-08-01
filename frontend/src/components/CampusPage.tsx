@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchCampusCounts,
   fetchCampusFilters,
@@ -29,6 +29,8 @@ import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
+import { readJobParam } from '@/lib/jobDeepLink'
+import { sheetNavProps } from '@/lib/sheetNav'
 import { addRecentSearch } from '@/lib/storage'
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
@@ -237,6 +239,7 @@ export function CampusPage({
   )
   const [sort, setSort] = useState<SortState | null>(null)
   const [detail, setDetail] = useState<CampusJob | null>(null)
+  const deepLinkDone = useRef(false)
   const toggleSort = useCallback((key: string) => setSort((s) => nextSort(s, key)), [])
 
   useEffect(() => {
@@ -299,7 +302,16 @@ export function CampusPage({
     setLoading(true)
     fetchCampusJobs(params)
       .then((res) => {
-        if (!cancelled) setData({ total: res.total, items: res.items })
+        if (cancelled) return
+        setData({ total: res.total, items: res.items })
+        if (!deepLinkDone.current) {
+          deepLinkDone.current = true
+          const id = readJobParam('campus')
+          if (id) {
+            const hit = res.items.find((j) => j.id === id)
+            if (hit) setDetail(hit)
+          }
+        }
       })
       .catch(console.error)
       .finally(() => {
@@ -985,6 +997,8 @@ export function CampusPage({
           shareText={campusShareText(detail)}
           favActive={campusFavorites.some((f) => f.id === detail.id)}
           onFavToggle={() => toggleCampusFavorite(detail)}
+          jobKey={`campus:${detail.id}`}
+          {...sheetNavProps(sortedItems, detail, setDetail)}
           basics={[
             { label: '公司', value: detail.company },
             { label: '招聘岗位', value: detail.positions },

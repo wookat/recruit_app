@@ -39,6 +39,8 @@ import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { copyText, favoritesShareUrl } from '@/lib/clipboard'
 import { PositionSheet } from './PositionSheet'
+import { BoardJobSheet } from './BoardJobSheet'
+import { buildShareText } from './ShareTextButton'
 import { CompareButton } from './CompareButton'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import {
@@ -80,6 +82,8 @@ export function FavoritesSheet({ open, onClose }: Props) {
   const priorities = useAppPriorities()
   const statusHistory = useAppStatusHistory()
   const [selected, setSelected] = useState<Position | null>(null)
+  const [campusDetail, setCampusDetail] = useState<CampusJob | null>(null)
+  const [bianzhiDetail, setBianzhiDetail] = useState<BianzhiJob | null>(null)
   const [noteEditing, setNoteEditing] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [listCopied, setListCopied] = useState(false)
@@ -356,7 +360,10 @@ export function FavoritesSheet({ open, onClose }: Props) {
     return (
       <div key={j.id} className="px-4 py-3 hover:bg-muted/50 sm:px-6">
         <div className="flex items-start gap-2">
-          <div className="min-w-0 flex-1">
+          <div
+            className="min-w-0 flex-1 cursor-pointer"
+            onClick={() => setCampusDetail(j)}
+          >
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="line-clamp-1 text-sm font-medium">{j.company || '-'}</span>
               {j.company_type && (
@@ -375,6 +382,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   href={j.apply_url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                   className="inline-flex items-center gap-0.5 text-primary hover:underline"
                 >
                   投递链接 <ExternalLink className="h-3 w-3" />
@@ -402,7 +410,10 @@ export function FavoritesSheet({ open, onClose }: Props) {
     return (
       <div key={j.id} className="px-4 py-3 hover:bg-muted/50 sm:px-6">
         <div className="flex items-start gap-2">
-          <div className="min-w-0 flex-1">
+          <div
+            className="min-w-0 flex-1 cursor-pointer"
+            onClick={() => setBianzhiDetail(j)}
+          >
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="line-clamp-1 text-sm font-medium">{j.employer || j.category || '-'}</span>
               {j.category && (
@@ -424,6 +435,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   href={j.announce_url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                   className="inline-flex items-center gap-0.5 text-primary hover:underline"
                 >
                   公告链接 <ExternalLink className="h-3 w-3" />
@@ -1060,7 +1072,107 @@ export function FavoritesSheet({ open, onClose }: Props) {
           </ScrollArea>
         </SheetContent>
       </Sheet>
-      {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <PositionSheet item={selected} onClose={() => setSelected(null)} snapshotNote />
+      )}
+      {campusDetail && (
+        <BoardJobSheet
+          open={!!campusDetail}
+          onClose={() => setCampusDetail(null)}
+          title={campusDetail.company || '-'}
+          badges={[campusDetail.company_type, campusDetail.source_table].filter(
+            (b): b is string => !!b,
+          )}
+          shareText={buildShareText({
+            org: campusDetail.company,
+            title: campusDetail.positions,
+            location: campusDetail.locations,
+            deadline: campusDetail.deadline_text,
+            url: campusDetail.apply_url || campusDetail.announce_url,
+          })}
+          favActive={campusFavs.some((f) => f.id === campusDetail.id)}
+          onFavToggle={() => toggleCampusFavorite(campusDetail)}
+          snapshotNote
+          basics={[
+            { label: '公司', value: campusDetail.company },
+            { label: '招聘岗位', value: campusDetail.positions },
+            { label: '企业类型', value: campusDetail.company_type },
+            { label: '行业', value: campusDetail.industry },
+            { label: '批次', value: campusDetail.batch },
+            { label: '届别', value: campusDetail.grad_years },
+            { label: '免笔试', value: campusDetail.no_exam },
+            { label: '内推码', value: campusDetail.referral_code },
+            { label: '工作地点', value: campusDetail.locations },
+            { label: '来源', value: campusDetail.source_table },
+            { label: '备注', value: campusDetail.notes },
+          ]}
+          requirements={[
+            { label: '学历要求', value: campusDetail.edu_requirement },
+            { label: '专业要求', value: campusDetail.major_requirement },
+          ]}
+          schedule={[
+            { label: '开始时间', value: campusDetail.start_date },
+            { label: '截止时间', value: campusDetail.deadline_text },
+            { label: '更新时间', value: campusDetail.updated_at_src },
+          ]}
+          links={[
+            { label: '投递入口', url: campusDetail.apply_url },
+            { label: '公告链接', url: campusDetail.announce_url },
+          ]}
+        />
+      )}
+      {bianzhiDetail && (
+        <BoardJobSheet
+          open={!!bianzhiDetail}
+          onClose={() => setBianzhiDetail(null)}
+          title={
+            bianzhiDetail.employer ||
+            (bianzhiDetail.category === '大型联考'
+              ? `${bianzhiDetail.province ?? ''}${bianzhiDetail.job_type ?? ''}联考`
+              : '-')
+          }
+          badges={[bianzhiDetail.category, bianzhiDetail.province].filter(
+            (b): b is string => !!b,
+          )}
+          shareText={buildShareText({
+            org:
+              bianzhiDetail.employer ||
+              (bianzhiDetail.category === '大型联考'
+                ? `${bianzhiDetail.province ?? ''}${bianzhiDetail.job_type ?? ''}联考`
+                : null),
+            title: bianzhiDetail.job_type,
+            location: bianzhiDetail.work_location || bianzhiDetail.province,
+            deadline: bianzhiDetail.deadline_text || bianzhiDetail.deadline_date,
+            url: bianzhiDetail.announce_url || bianzhiDetail.apply_url,
+          })}
+          favActive={bianzhiFavs.some((f) => f.id === bianzhiDetail.id)}
+          onFavToggle={() => toggleBianzhiFavorite(bianzhiDetail)}
+          snapshotNote
+          basics={[
+            { label: '招聘单位', value: bianzhiDetail.employer },
+            { label: '分类', value: bianzhiDetail.category },
+            { label: '省份', value: bianzhiDetail.province },
+            { label: '岗位类型', value: bianzhiDetail.job_type },
+            { label: '招聘人数', value: bianzhiDetail.headcount },
+            { label: '工作地点', value: bianzhiDetail.work_location },
+            { label: '备注', value: bianzhiDetail.notes },
+          ]}
+          requirements={[
+            { label: '学历要求', value: bianzhiDetail.edu_requirement },
+            { label: '专业要求', value: bianzhiDetail.major_requirement },
+          ]}
+          schedule={[
+            { label: '报名开始', value: bianzhiDetail.signup_start },
+            { label: '报名截止', value: bianzhiDetail.deadline_text },
+            { label: '考试时间', value: bianzhiDetail.exam_time },
+            { label: '更新时间', value: bianzhiDetail.updated_at_src },
+          ]}
+          links={[
+            { label: '公告链接', url: bianzhiDetail.announce_url },
+            { label: '报名入口', url: bianzhiDetail.apply_url },
+          ]}
+        />
+      )}
     </>
   )
 }

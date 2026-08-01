@@ -89,6 +89,24 @@ def health():
     return {"ok": True}
 
 
+@app.get("/api/freshness")
+@cache.cached("freshness", ttl=600)
+def data_freshness(db: Session = Depends(get_db)):
+    """各数据板块最近一次采集成功时间（crawl_runs 聚合，10 分钟缓存）。"""
+    rows = db.execute(text("""
+        SELECT CASE WHEN ws.name = 'feishu_campus' THEN 'campus'
+                    WHEN ws.name = 'feishu_bianzhi' THEN 'bianzhi'
+                    ELSE 'positions' END AS grp,
+               max(cr.finished_at) AS last_success
+        FROM crawl_runs cr
+        LEFT JOIN watch_sources ws ON ws.id = cr.source_id
+        WHERE cr.status = 'success' AND cr.finished_at IS NOT NULL
+        GROUP BY 1
+    """)).all()
+    by_grp = {r.grp: r.last_success.isoformat() for r in rows}
+    return {k: {"last_success": by_grp.get(k)} for k in ("positions", "campus", "bianzhi")}
+
+
 @app.get("/api/positions", response_model=schemas.PositionList)
 @cache.cached("positions", ttl=120)
 def get_positions(

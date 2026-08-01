@@ -797,6 +797,18 @@ export function FavoritesSheet({ open, onClose }: Props) {
             )}
             {boardCount > 0 && view === 'track' && (
               <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  aria-pressed={statusFilter === null}
+                  className={`cursor-pointer rounded-full px-2 py-0.5 text-[11px] font-medium transition-shadow ${
+                    statusFilter === null
+                      ? 'bg-primary/10 text-primary ring-2 ring-primary/50'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                  onClick={() => setStatusFilter(null)}
+                >
+                  全部 {boardCount}
+                </button>
                 {APP_STATUSES.filter((s) => statusCounts[s]).map((s) => (
                   <button
                     key={s}

@@ -711,7 +711,7 @@ export function CampusPage({
                   <TableCell className="whitespace-nowrap text-muted-foreground">
                     {job.updated_at_src || '-'}
                   </TableCell>
-                  <TableCell>
+                  <TableCell title={job.referral_code ?? ''}>
                     {job.referral_code ? (
                       <Badge variant="secondary" className={cn('gap-1 whitespace-nowrap border-0', TONE_CLASSES.emerald)}>
                         <Ticket className="h-3 w-3" />

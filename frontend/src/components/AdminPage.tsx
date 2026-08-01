@@ -70,7 +70,13 @@ export function AdminPage() {
         setOverview(ov)
         setSources(srcs)
         setAnns(list)
-        fetchCrawlRuns(tk, runPage).then(setRuns).catch(() => setRuns(null))
+        fetchCrawlRuns(tk, runPage)
+          .then((r) => {
+            setRuns(r)
+            const maxPage = Math.max(1, Math.ceil(r.total / r.page_size))
+            if (runPage > maxPage) setRunPage(maxPage)
+          })
+          .catch(() => setRuns(null))
         fetchHealthSummary(tk)
           .then((h) => {
             setHealth(h)

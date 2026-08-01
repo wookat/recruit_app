@@ -30,14 +30,15 @@ export function FavCompareDialog({
         <DialogHeader className="border-b px-4 py-3">
           <DialogTitle>收藏对比（{columns.length} 条）</DialogTitle>
         </DialogHeader>
-        <div
-          className="overflow-auto p-4 [scrollbar-width:thin]"
-          style={{ maxHeight: 'calc(85vh - 3.5rem)' }}
-        >
+        <div className="relative">
+          <div
+            className="overflow-auto p-4 max-sm:px-0 [scrollbar-width:thin]"
+            style={{ maxHeight: 'calc(85vh - 3.5rem)' }}
+          >
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 w-24 bg-popover p-2 text-left text-xs font-medium text-muted-foreground">
+                <th className="sticky left-0 z-10 w-24 bg-popover p-2 text-left text-xs font-medium text-muted-foreground max-sm:pl-4">
                   字段
                 </th>
                 {columns.map((c) => (
@@ -81,7 +82,7 @@ export function FavCompareDialog({
                     key={label}
                     className={cn('border-t', differs && 'bg-amber-50/60 dark:bg-amber-950/20')}
                   >
-                    <td className="sticky left-0 z-10 bg-popover p-2 text-xs font-medium text-muted-foreground">
+                    <td className="sticky left-0 z-10 bg-popover p-2 text-xs font-medium text-muted-foreground max-sm:pl-4">
                       {label}
                       {differs && (
                         <span className="ml-1 text-amber-600 dark:text-amber-400">≠</span>
@@ -100,6 +101,11 @@ export function FavCompareDialog({
               })}
             </tbody>
           </table>
+          </div>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-popover to-transparent sm:hidden"
+          />
         </div>
       </DialogContent>
     </Dialog>

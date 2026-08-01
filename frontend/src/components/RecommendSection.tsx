@@ -95,6 +95,7 @@ export function RecommendSection() {
   }, [basis, page, collapsed, failed])
 
   if (!basis || failed) return null
+  if (items && items.length === 0 && page === 1) return null
 
   const toggle = () => {
     setCollapsed((c) => {

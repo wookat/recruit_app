@@ -23,7 +23,8 @@ import {
 } from '@/lib/boardFavorites'
 import { cn } from '@/lib/utils'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
+import { downloadIcs, type IcsEvent } from '@/lib/ics'
+import { CalendarDays, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
 
@@ -57,15 +58,31 @@ interface DayData {
 
 type CalView = 'month' | 'week'
 
+type CalBoard = 'all' | 'campus' | 'bianzhi' | 'fav'
+
+const CAL_BOARDS: { key: CalBoard; label: string }[] = [
+  { key: 'all', label: '全部' },
+  { key: 'campus', label: '校招' },
+  { key: 'bianzhi', label: '编制' },
+  { key: 'fav', label: '收藏' },
+]
+
 function initialView(): CalView {
   return new URLSearchParams(window.location.search).get('cview') === 'week' ? 'week' : 'month'
 }
 
-function syncViewParam(view: CalView) {
+function initialCalBoard(): CalBoard {
+  const v = new URLSearchParams(window.location.search).get('cboard')
+  return v === 'campus' || v === 'bianzhi' || v === 'fav' ? v : 'all'
+}
+
+function syncViewParam(view: CalView, calBoard: CalBoard) {
   const q = new URLSearchParams(window.location.search)
   if (q.get('board') !== 'calendar') return
   if (view === 'week') q.set('cview', 'week')
   else q.delete('cview')
+  if (calBoard !== 'all') q.set('cboard', calBoard)
+  else q.delete('cboard')
   window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
 }
 
@@ -73,6 +90,7 @@ export function CalendarPage() {
   const today = useMemo(() => new Date(), [])
   const [monthOffset, setMonthOffset] = useState(0)
   const [view, setView] = useState<CalView>(initialView)
+  const [calBoard, setCalBoard] = useState<CalBoard>(initialCalBoard)
   const [weekOffset, setWeekOffset] = useState(0)
   const [selectedIso, setSelectedIso] = useState<string | null>(null)
   const [campusJobs, setCampusJobs] = useState<CampusJob[] | null>(null)
@@ -122,16 +140,22 @@ export function CalendarPage() {
   const byDate = useMemo(() => {
     const map: Record<string, DayData> = {}
     const ensure = (iso: string) => (map[iso] ??= { campus: [], bianzhi: [] })
+    const showCampus = calBoard === 'all' || calBoard === 'campus' || calBoard === 'fav'
+    const showBianzhi = calBoard === 'all' || calBoard === 'bianzhi' || calBoard === 'fav'
     for (const j of campusJobs ?? []) {
+      if (!showCampus) continue
+      if (calBoard === 'fav' && !campusFavs.some((f) => f.id === j.id)) continue
       const iso = campusDateIso(j)
       if (iso) ensure(iso).campus.push(j)
     }
     for (const j of bianzhiJobs ?? []) {
+      if (!showBianzhi) continue
+      if (calBoard === 'fav' && !bianzhiFavs.some((f) => f.id === j.id)) continue
       const iso = bianzhiDateIso(j)
       if (iso) ensure(iso).bianzhi.push(j)
     }
     return map
-  }, [campusJobs, bianzhiJobs])
+  }, [campusJobs, bianzhiJobs, calBoard, campusFavs, bianzhiFavs])
 
   const favDates = useMemo(() => {
     const set = new Set<string>()
@@ -170,8 +194,8 @@ export function CalendarPage() {
   }, [monthStart])
 
   useEffect(() => {
-    syncViewParam(view)
-  }, [view])
+    syncViewParam(view, calBoard)
+  }, [view, calBoard])
 
   const weekDays = useMemo(() => {
     const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
@@ -186,6 +210,59 @@ export function CalendarPage() {
   const todayIso = isoOf(today)
   const loading = campusJobs === null || bianzhiJobs === null
   const selectedDay = selectedIso ? byDate[selectedIso] : null
+
+  const periodRange = useMemo(() => {
+    if (view === 'month') {
+      const start = isoOf(monthStart)
+      const end = isoOf(
+        new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0),
+      )
+      return { start, end }
+    }
+    return { start: isoOf(weekDays[0]), end: isoOf(weekDays[6]) }
+  }, [view, monthStart, weekDays])
+
+  const periodEntries = useMemo(() => {
+    const campus: CampusJob[] = []
+    const bianzhi: BianzhiJob[] = []
+    for (const [iso, day] of Object.entries(byDate)) {
+      if (iso < periodRange.start || iso > periodRange.end) continue
+      campus.push(...day.campus)
+      bianzhi.push(...day.bianzhi)
+    }
+    return { campus, bianzhi, total: campus.length + bianzhi.length }
+  }, [byDate, periodRange])
+
+  const exportPeriodIcs = () => {
+    const events: IcsEvent[] = []
+    for (const j of periodEntries.campus) {
+      const iso = campusDateIso(j)
+      if (!iso) continue
+      events.push({
+        uid: `campus-${j.id}@recruit`,
+        date: new Date(`${iso}T00:00:00`),
+        summary: `【截止】${j.company || '-'}${j.positions ? ` ${j.positions}` : ''}`,
+        description: j.apply_url || j.announce_url || undefined,
+      })
+    }
+    for (const j of periodEntries.bianzhi) {
+      const iso = bianzhiDateIso(j)
+      if (!iso) continue
+      events.push({
+        uid: `bianzhi-${j.id}@recruit`,
+        date: new Date(`${iso}T00:00:00`),
+        summary: `【截止】${bianzhiTitle(j)}${j.job_type ? ` ${j.job_type}` : ''}`,
+        description: j.announce_url || j.apply_url || undefined,
+      })
+    }
+    if (events.length === 0) return
+    downloadIcs(
+      events,
+      view === 'month'
+        ? `截止日历-${periodRange.start.slice(0, 7)}.ics`
+        : `截止日历-${periodRange.start}至${periodRange.end}.ics`,
+    )
+  }
 
   const campusShare = (j: CampusJob) =>
     buildShareText({
@@ -278,17 +355,56 @@ export function CalendarPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm bg-blue-500" /> 校招
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-sm bg-violet-500" /> 编制
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-amber-400" /> 我的收藏截止
-        </span>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex items-center gap-1.5" role="group" aria-label="按板块过滤">
+          {CAL_BOARDS.map((b) => (
+            <button
+              key={b.key}
+              type="button"
+              aria-pressed={calBoard === b.key}
+              onClick={() => setCalBoard(b.key)}
+              className={cn(
+                'min-h-9 cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors sm:min-h-7',
+                calBoard === b.key
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2.5 w-2.5 rounded-sm bg-blue-500" /> 校招
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2.5 w-2.5 rounded-sm bg-violet-500" /> 编制
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-amber-400" /> 我的收藏截止
+          </span>
+        </div>
       </div>
+
+      {!loading && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">
+            {view === 'month' ? '本月截止' : '本周截止'}{' '}
+            <span className="font-semibold text-foreground">{periodEntries.total}</span> 条
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1 text-xs max-sm:min-h-11"
+            disabled={periodEntries.total === 0}
+            onClick={exportPeriodIcs}
+          >
+            <Download className="h-3.5 w-3.5" />
+            {view === 'month' ? '导出本月 .ics' : '导出本周 .ics'}
+          </Button>
+        </div>
+      )}
 
       {loading ? (
         <Skeleton className="h-96 w-full rounded-xl" />

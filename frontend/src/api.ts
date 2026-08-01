@@ -557,6 +557,15 @@ export interface HealthSummary {
     rows: { total: number; clean: number; dup: number; invalid: number; added_last_7d: number } | null
     deadline_parse_rate: number | null
   } | null
+  trend?: HealthTrendDay[] | null
+}
+
+export interface HealthTrendDay {
+  date: string
+  crawl_success: number
+  crawl_fail: number
+  campus_added: number
+  bianzhi_added: number
 }
 
 function adminHeaders(token: string) {

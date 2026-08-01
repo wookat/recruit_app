@@ -16,6 +16,7 @@ import {
   type CrawlRun,
   type CrawlRunList,
   type HealthSummary,
+  type HealthTrendDay,
   type WatchSource,
 } from '@/api'
 import { Button } from '@/components/ui/button'
@@ -570,6 +571,8 @@ function HealthCard({ health, updatedAt }: { health: HealthSummary; updatedAt: D
           </div>
         )}
 
+        {health.trend && health.trend.length > 0 && <TrendSection trend={health.trend} />}
+
         {health.crawl_24h.latest_by_source.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-sm">
@@ -618,6 +621,88 @@ function HealthCard({ health, updatedAt }: { health: HealthSummary; updatedAt: D
         )}
       </CardContent>
     </Card>
+  )
+}
+
+function TrendSection({ trend }: { trend: HealthTrendDay[] }) {
+  const [selected, setSelected] = useState<number | null>(null)
+  const maxCrawl = Math.max(1, ...trend.map((d) => d.crawl_success + d.crawl_fail))
+  const maxAdded = Math.max(1, ...trend.map((d) => d.campus_added + d.bianzhi_added))
+  const day = selected != null ? trend[selected] : null
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-3 text-xs text-muted-foreground">
+        近 14 天趋势
+        <span className="inline-flex items-center gap-1">
+          <span className="h-2 w-2 rounded-sm bg-green-500" /> 采集成功
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="h-2 w-2 rounded-sm bg-red-500" /> 失败
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="h-2 w-2 rounded-sm bg-primary" /> 校招新增
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="h-2 w-2 rounded-sm bg-violet-500" /> 编制新增
+        </span>
+      </div>
+      <div className="overflow-x-auto pb-1">
+        <div className="flex min-w-[420px] items-end gap-1">
+          {trend.map((d, i) => {
+            const sh = Math.round(((d.crawl_success / maxCrawl) * 48))
+            const fh = Math.round(((d.crawl_fail / maxCrawl) * 48))
+            const ch = Math.round((d.campus_added / maxAdded) * 20)
+            const bh = Math.round((d.bianzhi_added / maxAdded) * 20)
+            return (
+              <button
+                key={d.date}
+                type="button"
+                title={`${d.date}：成功 ${d.crawl_success} / 失败 ${d.crawl_fail}，校招 +${d.campus_added}，编制 +${d.bianzhi_added}`}
+                onClick={() => setSelected((s) => (s === i ? null : i))}
+                className={`flex flex-1 flex-col items-center gap-1 rounded-md px-0.5 pb-1 pt-1 transition-colors hover:bg-muted ${
+                  selected === i ? 'bg-muted' : ''
+                }`}
+              >
+                <span className="flex h-12 w-full max-w-6 flex-col justify-end overflow-hidden rounded-sm">
+                  <span
+                    className="w-full bg-red-500 dark:bg-red-600"
+                    style={{ height: `${d.crawl_fail > 0 ? Math.max(fh, 2) : 0}px` }}
+                  />
+                  <span
+                    className="w-full bg-green-500 dark:bg-green-600"
+                    style={{ height: `${d.crawl_success > 0 ? Math.max(sh, 2) : 0}px` }}
+                  />
+                </span>
+                <span className="flex h-5 w-full max-w-6 items-end justify-center gap-px">
+                  <span
+                    className="w-1/2 rounded-sm bg-primary"
+                    style={{ height: `${d.campus_added > 0 ? Math.max(ch, 2) : 0}px` }}
+                  />
+                  <span
+                    className="w-1/2 rounded-sm bg-violet-500 dark:bg-violet-600"
+                    style={{ height: `${d.bianzhi_added > 0 ? Math.max(bh, 2) : 0}px` }}
+                  />
+                </span>
+                <span className="text-[10px] tabular-nums text-muted-foreground">
+                  {d.date.slice(5).replace('-', '/')}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      {day && (
+        <div className="mt-1 rounded-md bg-muted px-2.5 py-1.5 text-xs tabular-nums">
+          {day.date}：采集成功{' '}
+          <span className="font-medium text-green-600 dark:text-green-400">{day.crawl_success}</span> / 失败{' '}
+          <span className={day.crawl_fail > 0 ? 'font-medium text-red-600 dark:text-red-400' : 'font-medium'}>
+            {day.crawl_fail}
+          </span>
+          ，校招新增 <span className="font-medium text-primary">{day.campus_added}</span>，编制新增{' '}
+          <span className="font-medium text-violet-600 dark:text-violet-400">{day.bianzhi_added}</span>
+        </div>
+      )}
+    </div>
   )
 }
 

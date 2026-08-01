@@ -168,7 +168,7 @@ export function BianzhiPage({
       keyword: keyword || undefined,
       due_within_days: dueOnly ? 7 : undefined,
       page: fetchPage,
-      page_size: isLiankaoPreset ? 200 : PAGE_SIZE,
+      page_size: isLiankaoPreset ? 100 : PAGE_SIZE,
     }
   }, [preset, keyword, provinces, dueOnly, fetchPage, isLiankaoPreset])
 
@@ -178,7 +178,7 @@ export function BianzhiPage({
     const load = async () => {
       const first = await fetchBianzhiJobs(params)
       const items = [...first.items]
-      if (params.page_size === 200) {
+      if (params.page_size === 100) {
         let p = 2
         while (items.length < first.total && p <= 10) {
           const res = await fetchBianzhiJobs({ ...params, page: p })

@@ -17,6 +17,10 @@ STATEMENTS = [
     """CREATE INDEX IF NOT EXISTS idx_pos_clean_exam_year
        ON positions (exam_type, year)
        WHERE dup_of_id IS NULL AND invalid_reason IS NULL""",
+    # 省份+类型组合筛选（如 为你推荐 province+exam_type）
+    """CREATE INDEX IF NOT EXISTS idx_pos_clean_prov_exam_year
+       ON positions (province, exam_type, year DESC, id DESC)
+       WHERE dup_of_id IS NULL AND invalid_reason IS NULL""",
 ]
 
 

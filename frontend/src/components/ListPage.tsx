@@ -956,26 +956,42 @@ export function ListPage({
                   </Button>
                 }
               />
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="min-w-52">
                 <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('csv')}>
                   <Download className="h-4 w-4" />
-                  导出 CSV{data && data.total > SYNC_EXPORT_MAX ? '（异步）' : ''}
+                  <span className="flex flex-col whitespace-nowrap">
+                    导出 CSV
+                    {data && data.total > SYNC_EXPORT_MAX && (
+                      <span className="text-[11px] text-muted-foreground">数据量大，转异步任务</span>
+                    )}
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('xlsx')}>
                   <Download className="h-4 w-4" />
-                  导出 Excel{data && data.total > SYNC_EXPORT_MAX ? '（异步）' : ''}
+                  <span className="flex flex-col whitespace-nowrap">
+                    导出 Excel
+                    {data && data.total > SYNC_EXPORT_MAX && (
+                      <span className="text-[11px] text-muted-foreground">数据量大，转异步任务</span>
+                    )}
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('csv', true)}>
                   <Download className="h-4 w-4" />
-                  全部导出 CSV（最多 5 万行）
+                  <span className="flex flex-col whitespace-nowrap">
+                    全部导出 CSV
+                    <span className="text-[11px] text-muted-foreground">最多 5 万行</span>
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('xlsx', true)}>
                   <Download className="h-4 w-4" />
-                  全部导出 Excel（最多 5 万行）
+                  <span className="flex flex-col whitespace-nowrap">
+                    全部导出 Excel
+                    <span className="text-[11px] text-muted-foreground">最多 5 万行</span>
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={copyShareLink}>
                   <Link2 className="h-4 w-4" />
-                  复制筛选链接
+                  <span className="whitespace-nowrap">复制筛选链接</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

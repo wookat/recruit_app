@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { Highlight } from './Highlight'
 import { ShareTextButton, buildShareText } from './ShareTextButton'
 import { positionShareUrl } from '@/lib/clipboard'
+import { stripOrgPrefix } from '@/lib/orgPrefix'
 
 interface Props {
   item: Position
@@ -57,7 +58,10 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
           </div>
         </div>
         <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
-          <Highlight text={item.position_example || '-'} query={highlight} />
+          <Highlight
+            text={item.position_example ? stripOrgPrefix(item.position_example, item.employer) : '-'}
+            query={highlight}
+          />
         </h3>
       </CardHeader>
       <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
@@ -75,10 +79,12 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
           <MapPin className="h-4 w-4 shrink-0" />
           <span className="line-clamp-1">{item.work_location || '-'}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 shrink-0" />
-          <span className="line-clamp-1">{item.signup_time || '-'}</span>
-        </div>
+        {item.signup_time && (
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span className="line-clamp-1">{item.signup_time}</span>
+          </div>
+        )}
       </CardContent>
       <CardFooter className="pt-0">
         <Button

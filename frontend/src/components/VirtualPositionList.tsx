@@ -11,6 +11,7 @@ import { CompareButton } from './CompareButton'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Building2, MapPin, GraduationCap, Loader2 } from 'lucide-react'
+import { stripOrgPrefix } from '@/lib/orgPrefix'
 
 interface Props {
   fetcher: (params: SearchParams) => Promise<PositionList>
@@ -154,7 +155,11 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
                       </Badge>
                       <span className="line-clamp-1 text-sm font-medium">
                         <Highlight
-                          text={item.position_example || item.exam_type || '-'}
+                          text={
+                            item.position_example
+                              ? stripOrgPrefix(item.position_example, item.employer)
+                              : item.exam_type || '-'
+                          }
                           query={params.keyword}
                         />
                       </span>

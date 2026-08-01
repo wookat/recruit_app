@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { cn } from '@/lib/utils'
 import { ChevronDown, ChevronRight, MapPin, RefreshCw, Sparkles } from 'lucide-react'
 import {
   fetchBianzhiJobs,
@@ -137,7 +138,12 @@ export function BoardRecommendSection({ board, onOpenDetail }: Props) {
   const basisSource = profile.major.trim() || profile.location.length ? '基于画像' : '基于收藏'
 
   return (
-    <div className="rounded-xl border bg-card p-3 sm:p-4">
+    <div
+      className={cn(
+        'rounded-xl border bg-card p-3 sm:p-4',
+        items && items.length > 0 && items.length < 3 ? 'lg:w-fit lg:min-w-96 lg:max-w-full' : '',
+      )}
+    >
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"

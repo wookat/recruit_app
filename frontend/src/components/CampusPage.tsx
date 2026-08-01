@@ -742,7 +742,7 @@ export function CampusPage({
       ) : view === 'table' ? (
         <div
           className={cn(
-            'overflow-x-auto rounded-xl border bg-background',
+            'overflow-x-auto rounded-xl border bg-background [scrollbar-width:thin]',
             loading && 'pointer-events-none opacity-60',
           )}
         >
@@ -763,13 +763,13 @@ export function CampusPage({
                 <TableHead>届次</TableHead>
                 <TableHead>学历要求</TableHead>
                 <TableHead>笔试</TableHead>
-                <TableHead>行业</TableHead>
+                <TableHead className="hidden 2xl:table-cell">行业</TableHead>
                 <TableHead className="min-w-[120px]">工作地点</TableHead>
-                <SortableHead label="开始时间" sortKey="start" sort={sort} onToggle={toggleSort} />
+                <SortableHead label="开始时间" sortKey="start" sort={sort} onToggle={toggleSort} className="hidden 2xl:table-cell" />
                 <SortableHead label="截止时间" sortKey="deadline" sort={sort} onToggle={toggleSort} />
                 <SortableHead label="更新日期" sortKey="updated" sort={sort} onToggle={toggleSort} />
                 <TableHead>内推码</TableHead>
-                <TableHead className="sticky right-0 z-10 bg-background shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.15)]">
+                <TableHead className="sticky right-0 z-10 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
                   投递/公告
                 </TableHead>
               </TableRow>
@@ -880,7 +880,7 @@ export function CampusPage({
                       '-'
                     )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground" title={job.industry ?? ''}>
+                  <TableCell className="hidden text-muted-foreground 2xl:table-cell" title={job.industry ?? ''}>
                     {job.industry
                       ? job.industry.length > 10
                         ? job.industry.slice(0, 10) + '…'
@@ -894,7 +894,7 @@ export function CampusPage({
                         : job.locations
                       : '-'}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                  <TableCell className="hidden whitespace-nowrap text-muted-foreground 2xl:table-cell">
                     {job.start_date || '-'}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
@@ -918,7 +918,7 @@ export function CampusPage({
                       '-'
                     )}
                   </TableCell>
-                  <TableCell className="sticky right-0 z-10 bg-background shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.15)]">
+                  <TableCell className="sticky right-0 z-10 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
                     <div className="flex gap-1.5">
                       {job.apply_url && job.apply_url.startsWith('http') && (
                         <a

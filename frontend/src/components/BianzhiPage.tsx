@@ -776,7 +776,7 @@ export function BianzhiPage({
       ) : (
         <div
           className={cn(
-            'overflow-x-auto rounded-xl border bg-background',
+            'overflow-x-auto rounded-xl border bg-background [scrollbar-width:thin]',
             loading && 'pointer-events-none opacity-60',
           )}
         >
@@ -795,7 +795,7 @@ export function BianzhiPage({
                 <TableHead>省份</TableHead>
                 <TableHead className="min-w-[110px]">工作地</TableHead>
                 <TableHead>类型</TableHead>
-                <TableHead>人数</TableHead>
+                <TableHead className="hidden 2xl:table-cell">人数</TableHead>
                 <TableHead>学历要求</TableHead>
                 <TableHead className="min-w-[160px]">专业/学科</TableHead>
                 {isLiankao ? (
@@ -812,8 +812,8 @@ export function BianzhiPage({
                     className="min-w-[140px]"
                   />
                 )}
-                <SortableHead label="更新时间" sortKey="updated" sort={sort} onToggle={toggleSort} />
-                <TableHead className="sticky right-0 z-10 bg-background shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.15)]">
+                <SortableHead label="更新时间" sortKey="updated" sort={sort} onToggle={toggleSort} className="hidden 2xl:table-cell" />
+                <TableHead className="sticky right-0 z-10 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
                   链接
                 </TableHead>
               </TableRow>
@@ -886,7 +886,7 @@ export function BianzhiPage({
                         : job.job_type
                       : '-'}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-muted-foreground" title={job.headcount ?? ''}>
+                  <TableCell className="hidden whitespace-nowrap text-muted-foreground 2xl:table-cell" title={job.headcount ?? ''}>
                     {job.headcount
                       ? job.headcount.length > 8
                         ? job.headcount.slice(0, 8) + '…'
@@ -932,10 +932,10 @@ export function BianzhiPage({
                       </span>
                     </TableCell>
                   )}
-                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                  <TableCell className="hidden whitespace-nowrap text-muted-foreground 2xl:table-cell">
                     {job.updated_at_src || '-'}
                   </TableCell>
-                  <TableCell className="sticky right-0 z-10 bg-background shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.15)]">
+                  <TableCell className="sticky right-0 z-10 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
                     <div className="flex gap-1.5">
                       {job.announce_url && job.announce_url.startsWith('http') && (
                         <a

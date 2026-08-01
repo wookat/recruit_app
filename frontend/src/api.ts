@@ -211,6 +211,23 @@ export async function fetchBianzhiFilters(): Promise<BianzhiFilterOptions> {
   return res.data
 }
 
+// ---------- 数据新鲜度 ----------
+export interface Freshness {
+  positions: { last_success: string | null }
+  campus: { last_success: string | null }
+  bianzhi: { last_success: string | null }
+}
+
+let freshnessPromise: Promise<Freshness> | null = null
+
+/** 全站只请求一次（模块级缓存），失败后不重试。 */
+export function fetchFreshness(): Promise<Freshness> {
+  if (!freshnessPromise) {
+    freshnessPromise = axios.get(`${API_BASE}/api/freshness`).then((r) => r.data)
+  }
+  return freshnessPromise
+}
+
 export async function fetchPositions(params: SearchParams): Promise<PositionList> {
   const res = await axios.get(`${API_BASE}/api/positions?${toQuery(params)}`)
   return res.data

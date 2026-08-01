@@ -9,6 +9,7 @@ import {
   type Suggestion,
 } from '@/api'
 import { StatsDashboard } from './StatsDashboard'
+import { FreshnessNote } from './FreshnessNote'
 import { DeadlinesCard } from './DeadlinesCard'
 import { TodayGlance } from './TodayGlance'
 import { buildShareUrl, paramsFromQueryString } from '@/lib/urlFilters'
@@ -1053,6 +1054,7 @@ export function ListPage({
               共 {formatTotal(data.total, data.total_capped)} 条{data.total_capped ? '（已达统计上限）' : ''}
             </Badge>
           )}
+          <FreshnessNote board="positions" />
         </div>
       </div>
 

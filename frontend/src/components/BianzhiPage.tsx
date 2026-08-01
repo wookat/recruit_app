@@ -24,6 +24,7 @@ import {
 import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { DueBadge } from '@/components/DueBadge'
+import { FreshnessNote } from '@/components/FreshnessNote'
 import { SortableHead } from '@/components/SortableHead'
 import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
 import { toggleBianzhiFavorite, useBianzhiFavorites } from '@/lib/boardFavorites'
@@ -340,8 +341,11 @@ export function BianzhiPage({
 
       {/* 计数 */}
       {data && (
-        <div className="text-sm text-muted-foreground">
-          共 <span className="font-medium text-foreground">{data.total.toLocaleString()}</span> 条
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            共 <span className="font-medium text-foreground">{data.total.toLocaleString()}</span> 条
+          </span>
+          <FreshnessNote board="bianzhi" />
         </div>
       )}
 

@@ -7,6 +7,19 @@
   "theme_color": "#2563EB",
   "background_color": "#ffffff",
   "lang": "zh-CN",
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png"
+    }
+  ],
   "icons": [
     {
       "src": "/icon-192.png",

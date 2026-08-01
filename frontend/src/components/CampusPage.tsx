@@ -28,6 +28,7 @@ import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
+import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
@@ -239,6 +240,7 @@ export function CampusPage({
   )
   const [sort, setSort] = useState<SortState | null>(null)
   const [detail, setDetail] = useState<CampusJob | null>(null)
+  const [profileMatched, setProfileMatched] = useState(false)
   const deepLinkDone = useRef(false)
   const toggleSort = useCallback((key: string) => setSort((s) => nextSort(s, key)), [])
 
@@ -441,6 +443,26 @@ export function CampusPage({
           </span>
         </button>
       )}
+
+      <MatchByProfileButton
+        note="按专业+城市匹配（校招暂无学历筛选，已跳过该维度）"
+        active={profileMatched}
+        onApply={(p) => {
+          const kw = p.major.trim()
+          setSearchInput(kw)
+          setKeyword(kw)
+          setCity(p.location[0] ?? null)
+          setPage(1)
+          setProfileMatched(true)
+        }}
+        onClear={() => {
+          setSearchInput('')
+          setKeyword('')
+          setCity(null)
+          setPage(1)
+          setProfileMatched(false)
+        }}
+      />
 
       <SavedFilterBar
         board="campus"

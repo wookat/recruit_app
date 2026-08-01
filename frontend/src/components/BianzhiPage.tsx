@@ -28,6 +28,7 @@ import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Table2 } from 'lucid
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
+import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
@@ -143,6 +144,7 @@ export function BianzhiPage({
   )
   const [sort, setSort] = useState<SortState | null>(null)
   const [detail, setDetail] = useState<BianzhiJob | null>(null)
+  const [profileMatched, setProfileMatched] = useState(false)
   const deepLinkDone = useRef(false)
   const toggleSort = useCallback((key: string) => setSort((s) => nextSort(s, key)), [])
 
@@ -365,6 +367,30 @@ export function BianzhiPage({
           )}
         </div>
       </div>
+
+      <MatchByProfileButton
+        note="按省份+专业匹配（编制无学历字段，已跳过该维度）"
+        active={profileMatched}
+        onApply={(p) => {
+          const kw = p.major.trim()
+          setSearchInput(kw)
+          setKeyword(kw)
+          const opts = filters?.provinces ?? []
+          const provs = p.location
+            .map((loc) => opts.find((o) => o === loc || loc.startsWith(o) || o.startsWith(loc)))
+            .filter((v): v is string => !!v)
+          setProvinces([...new Set(provs)])
+          setPage(1)
+          setProfileMatched(true)
+        }}
+        onClear={() => {
+          setSearchInput('')
+          setKeyword('')
+          setProvinces([])
+          setPage(1)
+          setProfileMatched(false)
+        }}
+      />
 
       <SavedFilterBar
         board="bianzhi"

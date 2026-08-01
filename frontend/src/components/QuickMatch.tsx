@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MultiSelect } from './MultiSelect'
 import { Search, Sparkles, RotateCcw, Wand2, ChevronDown, ChevronUp } from 'lucide-react'
+import { getProfile, saveProfile } from '@/lib/profile'
 
 export interface QuickMatchValues {
   eduLevel: string[]
@@ -32,18 +33,20 @@ const HOT_CITIES = [
 
 export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMatchProps) {
   const [open, setOpen] = useState(false)
-  const [eduLevel, setEduLevel] = useState<string[]>([])
-  const [major, setMajor] = useState('')
-  const [location, setLocation] = useState<string[]>([])
+  const [eduLevel, setEduLevel] = useState<string[]>(() => getProfile().eduLevel)
+  const [major, setMajor] = useState(() => getProfile().major)
+  const [location, setLocation] = useState<string[]>(() => getProfile().location)
   const [category, setCategory] = useState<string[]>([])
   const [year, setYear] = useState<string[]>(['2027', '2026', '2025'])
 
   function handleSearch() {
+    saveProfile({ eduLevel, major: major.trim(), location })
     onSearch({ eduLevel, major: major.trim(), location, category, year })
   }
 
   function handleRecommend() {
     if (!major.trim() || !onRecommend) return
+    saveProfile({ eduLevel, major: major.trim(), location })
     onRecommend({ eduLevel, major: major.trim(), location, category, year })
   }
 

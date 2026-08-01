@@ -5,7 +5,7 @@ import { PositionSheet } from '@/components/PositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BookOpen, Briefcase, Moon, Settings, Star, Sun } from 'lucide-react'
+import { BookOpen, Briefcase, CalendarDays, Moon, Settings, Star, Sun } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
@@ -30,6 +30,9 @@ const CampusPage = lazy(() =>
 )
 const BianzhiPage = lazy(() =>
   import('@/components/BianzhiPage').then((m) => ({ default: m.BianzhiPage })),
+)
+const CalendarPage = lazy(() =>
+  import('@/components/CalendarPage').then((m) => ({ default: m.CalendarPage })),
 )
 
 const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
@@ -65,7 +68,7 @@ const BIANZHI_CROSS = [
 ]
 
 interface Section {
-  mode: 'positions' | 'campus' | 'bianzhi'
+  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar'
   preset?: string
   keyword?: string
 }
@@ -76,6 +79,7 @@ function initialSection(): Section {
   if (board === 'campus' || board === 'bianzhi') {
     return { mode: board, preset: q.get('bpreset') || undefined }
   }
+  if (board === 'calendar') return { mode: 'calendar' }
   return { mode: 'positions' }
 }
 
@@ -89,6 +93,9 @@ function syncSectionUrl(section: Section) {
     q.delete('ctype')
     q.delete('prov')
     q.delete('bkw')
+  } else if (section.mode === 'calendar') {
+    q.set('board', 'calendar')
+    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bkw']) q.delete(k)
   } else {
     q.set('board', section.mode)
     if (section.preset) q.set('bpreset', section.preset)
@@ -274,7 +281,7 @@ export default function App() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5">
           <Button
             variant="ghost"
             size="sm"
@@ -286,6 +293,20 @@ export default function App() {
             {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             {theme === 'system' && <span className="hidden text-[11px] text-muted-foreground lg:inline">自动</span>}
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`min-h-11 gap-1.5 px-2 sm:min-h-8 ${section.mode === 'calendar' ? 'text-primary' : ''}`}
+            aria-label="截止日历"
+            title="截止日历"
+            onClick={() => {
+              setSection(section.mode === 'calendar' ? { mode: 'positions' } : { mode: 'calendar' })
+              window.scrollTo({ top: 0 })
+            }}
+          >
+            <CalendarDays className="h-4 w-4" />
+            <span className="hidden sm:inline">日历</span>
+          </Button>
           <Button variant="ghost" size="sm" className="min-h-11 gap-1.5 sm:min-h-8" onClick={() => setGuideOpen(true)}>
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">求职攻略</span>
@@ -293,7 +314,8 @@ export default function App() {
           </Button>
           <Button variant="outline" size="sm" className="relative min-h-11 gap-1.5 sm:min-h-8" onClick={() => setFavOpen(true)}>
             <Star className="h-4 w-4 text-amber-400" />
-            我的收藏
+            <span className="hidden sm:inline">我的收藏</span>
+            <span className="sm:hidden">收藏</span>
             {dueSoon > 0 && (
               <span
                 className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
@@ -366,6 +388,7 @@ export default function App() {
                 }
               />
             )}
+            {tab !== 'admin' && section.mode === 'calendar' && <CalendarPage />}
             {tab === 'admin' && showAdmin && <AdminPage />}
           </Suspense>
         </div>

@@ -17,10 +17,16 @@ const BIANZHI_PRESET_LABELS: Record<string, string> = {
   med: '医疗招聘',
 }
 
-export function applySeo(mode: 'positions' | 'campus' | 'bianzhi', preset?: string) {
+export function applySeo(
+  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar',
+  preset?: string,
+) {
   let title = DEFAULT_TITLE
   let desc = DEFAULT_DESC
-  if (mode === 'campus') {
+  if (mode === 'calendar') {
+    title = `截止日历 - ${SITE}`
+    desc = '未来 60 天校招与编制公告报名截止汇总日历，按日期查看当日截止岗位，不错过每一个报名窗口。'
+  } else if (mode === 'campus') {
     const label = preset ? CAMPUS_PRESET_LABELS[preset] : undefined
     title = `校招信息${label ? `·${label}` : ''} - ${SITE}`
     desc = `央国企、银行、事业单位校园招聘信息每日增量更新${label ? `，当前视图：${label}` : ''}，含免笔试、内推码、实习与秋招专区。`

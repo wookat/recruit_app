@@ -59,11 +59,15 @@ def list_campus_jobs(
     location: Optional[str] = None,
     updated_after: Optional[str] = None,
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
+    hide_expired: bool = False,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
     q = db.query(CampusJob)
+    if hide_expired:
+        q = q.filter(or_(CampusJob.deadline_date == None,  # noqa: E711
+                         CampusJob.deadline_date >= date.today()))
     if source_table:
         q = q.filter(CampusJob.source_table.in_(source_table))
     if company_type:

@@ -109,6 +109,7 @@ export function BianzhiPage({
   const urlQuery = useMemo(() => new URLSearchParams(window.location.search), [])
   const [preset, setPreset] = useState(initialPreset ?? 'all')
   const [dueOnly, setDueOnly] = useState(urlQuery.get('due') === '7')
+  const [hideExpired, setHideExpired] = useState(urlQuery.get('hexp') === '1')
   const [provinceCounts, setProvinceCounts] = useState<Record<string, number> | null>(null)
 
   useEffect(() => {
@@ -171,13 +172,15 @@ export function BianzhiPage({
     q.set('bpreset', preset)
     if (dueOnly) q.set('due', '7')
     else q.delete('due')
+    if (hideExpired) q.set('hexp', '1')
+    else q.delete('hexp')
     if (provinces.length) q.set('prov', provinces.join(','))
     else q.delete('prov')
     if (keyword.trim()) q.set('bkw', keyword.trim())
     else q.delete('bkw')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('bianzhi', preset)
-  }, [preset, dueOnly, provinces, keyword])
+  }, [preset, dueOnly, hideExpired, provinces, keyword])
 
   const isLiankaoPreset = preset === 'lk'
   const fetchPage = isLiankaoPreset ? 1 : page
@@ -189,10 +192,11 @@ export function BianzhiPage({
       province: provinces.length ? provinces : undefined,
       keyword: keyword || undefined,
       due_within_days: dueOnly ? 7 : undefined,
+      hide_expired: !dueOnly && hideExpired ? true : undefined,
       page: fetchPage,
       page_size: isLiankaoPreset ? 100 : PAGE_SIZE,
     }
-  }, [preset, keyword, provinces, dueOnly, fetchPage, isLiankaoPreset])
+  }, [preset, keyword, provinces, dueOnly, hideExpired, fetchPage, isLiankaoPreset])
 
   useEffect(() => {
     let cancelled = false
@@ -362,6 +366,21 @@ export function BianzhiPage({
             )}
           >
             即将截止
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setHideExpired((v) => !v)
+              setPage(1)
+            }}
+            className={cn(
+              'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+              hideExpired
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-foreground hover:bg-muted',
+            )}
+          >
+            隐藏已截止
           </button>
           {crossPresets && crossPresets.length > 0 && onCrossPreset && (
             <>

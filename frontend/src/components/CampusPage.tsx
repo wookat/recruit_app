@@ -221,6 +221,9 @@ export function CampusPage({
   const [dueOnly, setDueOnly] = useState(
     () => new URLSearchParams(window.location.search).get('due') === '7',
   )
+  const [hideExpired, setHideExpired] = useState(
+    () => new URLSearchParams(window.location.search).get('hexp') === '1',
+  )
   const [page, setPage] = useState(1)
   const [typeCounts, setTypeCounts] = useState<Record<string, number> | null>(null)
 
@@ -266,6 +269,8 @@ export function CampusPage({
     q.set('bpreset', urlPreset)
     if (dueOnly) q.set('due', '7')
     else q.delete('due')
+    if (hideExpired) q.set('hexp', '1')
+    else q.delete('hexp')
     if (city) q.set('city', city)
     else q.delete('city')
     if (companyTypes.length) q.set('ctype', companyTypes.join(','))
@@ -274,7 +279,7 @@ export function CampusPage({
     else q.delete('bkw')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('campus', urlPreset)
-  }, [preset, recentOnly, dueOnly, city, companyTypes, keyword])
+  }, [preset, recentOnly, dueOnly, hideExpired, city, companyTypes, keyword])
 
   useEffect(() => {
     const kw = keyword.trim()
@@ -305,10 +310,11 @@ export function CampusPage({
       location: city || undefined,
       updated_after: recentOnly ? daysAgoStr(7) : undefined,
       due_within_days: dueOnly ? 7 : undefined,
+      hide_expired: !dueOnly && hideExpired ? true : undefined,
       page,
       page_size: PAGE_SIZE,
     }
-  }, [preset, keyword, companyTypes, city, recentOnly, dueOnly, page])
+  }, [preset, keyword, companyTypes, city, recentOnly, dueOnly, hideExpired, page])
 
   useEffect(() => {
     let cancelled = false
@@ -635,6 +641,21 @@ export function CampusPage({
             )}
           >
             即将截止
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setHideExpired((v) => !v)
+              setPage(1)
+            }}
+            className={cn(
+              'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors sm:min-h-0',
+              hideExpired
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-foreground hover:bg-muted',
+            )}
+          >
+            隐藏已截止
           </button>
         </div>
       </div>

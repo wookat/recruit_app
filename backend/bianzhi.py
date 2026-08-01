@@ -51,11 +51,15 @@ def list_bianzhi_jobs(
     job_type: Optional[str] = None,
     edu: Optional[str] = None,
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
+    hide_expired: bool = False,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
     q = db.query(BianzhiJob)
+    if hide_expired:
+        q = q.filter(or_(BianzhiJob.deadline_date == None,  # noqa: E711
+                         BianzhiJob.deadline_date >= date.today()))
     if category:
         q = q.filter(BianzhiJob.category.in_(category))
     if province:

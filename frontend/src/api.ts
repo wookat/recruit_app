@@ -135,6 +135,7 @@ export interface CampusParams {
   location?: string
   updated_after?: string
   due_within_days?: number
+  hide_expired?: boolean
   page?: number
   page_size?: number
 }
@@ -192,6 +193,7 @@ export interface BianzhiParams {
   job_type?: string
   edu?: string
   due_within_days?: number
+  hide_expired?: boolean
   page?: number
   page_size?: number
 }

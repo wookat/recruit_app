@@ -7,6 +7,7 @@ const STATUS_KEY = 'recruit.appStatus'
 const NOTE_KEY = 'recruit.appNote'
 const CHANNEL_KEY = 'recruit.appChannel'
 const PRIORITY_KEY = 'recruit.appPriority'
+const PINNED_KEY = 'recruit.appPinned'
 const STATUS_HISTORY_KEY = 'recruit.appStatusHistory'
 const FAV_MAX = 200
 export const COMPARE_MAX = 4
@@ -71,6 +72,7 @@ let statuses: Record<number, AppStatus> = readStatuses()
 let notes: Record<number, string> = readRecord<string>(NOTE_KEY)
 let channels: Record<number, AppChannel> = readRecord<AppChannel>(CHANNEL_KEY)
 let priorities: Record<number, boolean> = readRecord<boolean>(PRIORITY_KEY)
+let pinned: Record<number, boolean> = readRecord<boolean>(PINNED_KEY)
 let statusHistory: Record<number, StatusEvent[]> = readRecord<StatusEvent[]>(STATUS_HISTORY_KEY)
 let compare: Position[] = []
 const listeners = new Set<Listener>()
@@ -225,6 +227,22 @@ export function useAppPriorities(): Record<number, boolean> {
   return useSyncExternalStore(subscribe, () => priorities)
 }
 
+export function toggleAppPinned(id: number) {
+  if (pinned[id]) {
+    const rest = { ...pinned }
+    delete rest[id]
+    pinned = rest
+  } else {
+    pinned = { ...pinned, [id]: true }
+  }
+  persistRecord(PINNED_KEY, pinned)
+  emit()
+}
+
+export function useAppPinned(): Record<number, boolean> {
+  return useSyncExternalStore(subscribe, () => pinned)
+}
+
 export function useAppNotes(): Record<number, string> {
   return useSyncExternalStore(subscribe, () => notes)
 }
@@ -248,10 +266,11 @@ export interface PositionBackup {
   channels: Record<number, AppChannel>
   priorities: Record<number, boolean>
   statusHistory?: Record<number, StatusEvent[]>
+  pinned?: Record<number, boolean>
 }
 
 export function exportPositionData(): PositionBackup {
-  return { favorites, statuses, notes, channels, priorities, statusHistory }
+  return { favorites, statuses, notes, channels, priorities, statusHistory, pinned }
 }
 
 /** 合并导入备份：同 id 以备份数据覆盖本地。返回合并后收藏总数。 */
@@ -266,6 +285,10 @@ export function mergePositionData(data: PositionBackup): number {
   if (data.statusHistory) {
     statusHistory = { ...statusHistory, ...data.statusHistory }
     persistRecord(STATUS_HISTORY_KEY, statusHistory)
+  }
+  if (data.pinned) {
+    pinned = { ...pinned, ...data.pinned }
+    persistRecord(PINNED_KEY, pinned)
   }
   persistFavorites()
   persistStatuses()

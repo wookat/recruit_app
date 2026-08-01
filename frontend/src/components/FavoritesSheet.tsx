@@ -8,9 +8,11 @@ import {
   setAppChannel,
   setAppNote,
   setAppStatus,
+  toggleAppPinned,
   toggleAppPriority,
   toggleFavorite,
   useAppChannels,
+  useAppPinned,
   useAppPriorities,
   useAppNotes,
   useAppStatuses,
@@ -23,6 +25,7 @@ import {
   setBoardNote,
   setBoardStatus,
   toggleBianzhiFavorite,
+  toggleBoardPinned,
   toggleBoardPriority,
   toggleCampusFavorite,
   useBianzhiFavorites,
@@ -52,7 +55,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, MapPin, MoreHorizontal, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote } from 'lucide-react'
+import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,6 +89,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
   const notes = useAppNotes()
   const channels = useAppChannels()
   const priorities = useAppPriorities()
+  const pinnedMap = useAppPinned()
   const statusHistory = useAppStatusHistory()
   const [selected, setSelected] = useState<Position | null>(null)
   const [campusDetail, setCampusDetail] = useState<CampusJob | null>(null)
@@ -96,6 +100,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
   const [board, setBoard] = useState<Board>('positions')
   const [view, setView] = useState<'track' | 'calendar'>('track')
   const [statusFilter, setStatusFilter] = useState<AppStatus | null>(null)
+  const [stageFilter, setStageFilter] = useState<AppStatus[] | null>(null)
   const [query, setQuery] = useState('')
   const [restoreMsg, setRestoreMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -143,15 +148,56 @@ export function FavoritesSheet({ open, onClose }: Props) {
   }, [board, favorites, campusFavs, bianzhiFavs, statuses, campusMeta, bianzhiMeta])
 
   function sortByPriority<T extends { id: number }>(items: T[], meta: Record<number, BoardMeta>) {
-    return [...items].sort((a, b) => Number(!!meta[b.id]?.priority) - Number(!!meta[a.id]?.priority))
+    return [...items].sort(
+      (a, b) =>
+        Number(!!meta[b.id]?.pinned) - Number(!!meta[a.id]?.pinned) ||
+        Number(!!meta[b.id]?.priority) - Number(!!meta[a.id]?.priority),
+    )
   }
+
+  const STALE_STATUSES: AppStatus[] = ['已投递', '待笔试', '待面试']
+
+  /** 状态为投递中且时间线最后一次变更超过 7 天。 */
+  function isStale(status: AppStatus, history: StatusEvent[] | undefined): boolean {
+    if (!STALE_STATUSES.includes(status)) return false
+    const last = history?.[history.length - 1]?.at
+    if (!last) return false
+    const t = new Date(last).getTime()
+    return !isNaN(t) && Date.now() - t > 7 * 86400000
+  }
+
+  function renderStaleHint(status: AppStatus, history: StatusEvent[] | undefined) {
+    if (!isStale(status, history)) return null
+    return (
+      <span
+        title="该条目超过 7 天未更新状态，记得跟进下一步"
+        className="inline-flex shrink-0 items-center gap-1 rounded-full bg-yellow-100 px-1.5 py-0.5 text-[11px] font-medium text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" aria-hidden="true" />
+        7天未更新
+      </span>
+    )
+  }
+
+  const FUNNEL_STAGES: { label: string; statuses: AppStatus[] }[] = [
+    { label: '已投递', statuses: ['已投递'] },
+    { label: '笔试/面试', statuses: ['待笔试', '待面试'] },
+    { label: 'OC/录用', statuses: ['OC/录用'] },
+  ]
+  const stageCount = (sts: AppStatus[]) => sts.reduce((n, s) => n + (statusCounts[s] || 0), 0)
+  const stageActive = (sts: AppStatus[]) =>
+    !!stageFilter && stageFilter.length === sts.length && sts.every((s) => stageFilter.includes(s))
 
   const groups = APP_STATUSES.map((s) => {
     let items: (Position | CampusJob | BianzhiJob)[]
     if (board === 'positions') {
       items = favorites
         .filter((p) => statusOf('positions', p.id) === s && matchPosition(p))
-        .sort((a, b) => Number(!!priorities[b.id]) - Number(!!priorities[a.id]))
+        .sort(
+          (a, b) =>
+            Number(!!pinnedMap[b.id]) - Number(!!pinnedMap[a.id]) ||
+            Number(!!priorities[b.id]) - Number(!!priorities[a.id]),
+        )
     } else if (board === 'campus') {
       items = sortByPriority(
         campusFavs.filter((j) => statusOf('campus', j.id) === s && matchCampus(j)),
@@ -164,7 +210,12 @@ export function FavoritesSheet({ open, onClose }: Props) {
       )
     }
     return { status: s, items }
-  }).filter((g) => g.items.length > 0 && (!statusFilter || g.status === statusFilter))
+  }).filter(
+    (g) =>
+      g.items.length > 0 &&
+      (!statusFilter || g.status === statusFilter) &&
+      (!stageFilter || stageFilter.includes(g.status)),
+  )
 
   const { calendarDays, undated } = useMemo(() => {
     const byDay = new Map<string, { date: Date; entries: CalendarEntry[] }>()
@@ -396,7 +447,23 @@ export function FavoritesSheet({ open, onClose }: Props) {
               )}
             </div>
           </div>
+          {renderStaleHint(statusOf('campus', j.id), campusMeta[j.id]?.history)}
           {renderStatusSelect('campus', j.id)}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label={campusMeta[j.id]?.pinned ? '取消置顶' : '置顶'}
+            aria-pressed={!!campusMeta[j.id]?.pinned}
+            onClick={() => toggleBoardPinned('campus', j.id)}
+          >
+            <Pin
+              className={cn(
+                'h-4 w-4',
+                campusMeta[j.id]?.pinned ? 'fill-primary text-primary' : 'text-muted-foreground',
+              )}
+            />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -449,7 +516,23 @@ export function FavoritesSheet({ open, onClose }: Props) {
               )}
             </div>
           </div>
+          {renderStaleHint(statusOf('bianzhi', j.id), bianzhiMeta[j.id]?.history)}
           {renderStatusSelect('bianzhi', j.id)}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label={bianzhiMeta[j.id]?.pinned ? '取消置顶' : '置顶'}
+            aria-pressed={!!bianzhiMeta[j.id]?.pinned}
+            onClick={() => toggleBoardPinned('bianzhi', j.id)}
+          >
+            <Pin
+              className={cn(
+                'h-4 w-4',
+                bianzhiMeta[j.id]?.pinned ? 'fill-primary text-primary' : 'text-muted-foreground',
+              )}
+            />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -489,8 +572,24 @@ export function FavoritesSheet({ open, onClose }: Props) {
             </span>
           </div>
         </button>
+        {renderStaleHint(statusOf('positions', p.id), statusHistory[p.id])}
         {renderStatusSelect('positions', p.id)}
         <CompareButton item={p} />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          aria-label={pinnedMap[p.id] ? '取消置顶' : '置顶'}
+          aria-pressed={!!pinnedMap[p.id]}
+          onClick={() => toggleAppPinned(p.id)}
+        >
+          <Pin
+            className={cn(
+              'h-4 w-4',
+              pinnedMap[p.id] ? 'fill-primary text-primary' : 'text-muted-foreground',
+            )}
+          />
+        </Button>
         <Button
           variant="ghost"
           size="icon"
@@ -896,6 +995,47 @@ export function FavoritesSheet({ open, onClose }: Props) {
               </div>
             )}
             {boardCount > 0 && view === 'track' && (
+              <div className="scrollbar-none -mx-1 flex items-center gap-1 overflow-x-auto px-1 text-[11px]">
+                <button
+                  type="button"
+                  aria-pressed={!stageFilter && !statusFilter}
+                  className={cn(
+                    'flex min-h-9 shrink-0 cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 font-medium transition-colors sm:min-h-0',
+                    !stageFilter && !statusFilter
+                      ? 'border-primary/40 bg-primary/5 text-primary'
+                      : 'border-border bg-background text-muted-foreground hover:bg-muted',
+                  )}
+                  onClick={() => {
+                    setStageFilter(null)
+                    setStatusFilter(null)
+                  }}
+                >
+                  收藏 <span className="font-semibold">{boardCount}</span>
+                </button>
+                {FUNNEL_STAGES.map((st) => (
+                  <span key={st.label} className="flex shrink-0 items-center gap-1">
+                    <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground/60" aria-hidden="true" />
+                    <button
+                      type="button"
+                      aria-pressed={stageActive(st.statuses)}
+                      className={cn(
+                        'flex min-h-9 cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 font-medium transition-colors sm:min-h-0',
+                        stageActive(st.statuses)
+                          ? 'border-primary/40 bg-primary/5 text-primary'
+                          : 'border-border bg-background text-muted-foreground hover:bg-muted',
+                      )}
+                      onClick={() => {
+                        setStatusFilter(null)
+                        setStageFilter((cur) => (stageActive(st.statuses) && cur ? null : st.statuses))
+                      }}
+                    >
+                      {st.label} <span className="font-semibold">{stageCount(st.statuses)}</span>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {boardCount > 0 && view === 'track' && (
               <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
@@ -905,7 +1045,10 @@ export function FavoritesSheet({ open, onClose }: Props) {
                       ? 'bg-primary/10 text-primary ring-2 ring-primary/50'
                       : 'bg-muted text-muted-foreground'
                   }`}
-                  onClick={() => setStatusFilter(null)}
+                  onClick={() => {
+                    setStatusFilter(null)
+                    setStageFilter(null)
+                  }}
                 >
                   全部 {boardCount}
                 </button>
@@ -917,7 +1060,10 @@ export function FavoritesSheet({ open, onClose }: Props) {
                     className={`cursor-pointer rounded-full px-2 py-0.5 text-[11px] font-medium transition-shadow ${STATUS_COLORS[s]} ${
                       statusFilter === s ? 'ring-2 ring-primary/50' : statusFilter ? 'opacity-50' : ''
                     }`}
-                    onClick={() => setStatusFilter((cur) => (cur === s ? null : s))}
+                    onClick={() => {
+                      setStageFilter(null)
+                      setStatusFilter((cur) => (cur === s ? null : s))
+                    }}
                   >
                     {s} {statusCounts[s]}
                   </button>
@@ -926,7 +1072,10 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   <button
                     type="button"
                     className="cursor-pointer rounded-full px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
-                    onClick={() => setStatusFilter(null)}
+                    onClick={() => {
+                      setStatusFilter(null)
+                      setStageFilter(null)
+                    }}
                   >
                     清除筛选
                   </button>

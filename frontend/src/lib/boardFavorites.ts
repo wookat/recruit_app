@@ -8,6 +8,7 @@ export interface BoardMeta {
   status?: AppStatus
   note?: string
   priority?: boolean
+  pinned?: boolean
   history?: StatusEvent[]
 }
 
@@ -104,7 +105,7 @@ function setMeta(kind: BoardKind, next: Record<number, BoardMeta>) {
 function patchMeta(kind: BoardKind, id: number, patch: Partial<BoardMeta>) {
   const current = metaOf(kind)
   const merged: BoardMeta = { ...current[id], ...patch }
-  if (!merged.status && !merged.note && !merged.priority && !merged.history?.length) {
+  if (!merged.status && !merged.note && !merged.priority && !merged.pinned && !merged.history?.length) {
     const rest = { ...current }
     delete rest[id]
     setMeta(kind, rest)
@@ -129,6 +130,10 @@ export function setBoardNote(kind: BoardKind, id: number, note: string) {
 
 export function toggleBoardPriority(kind: BoardKind, id: number) {
   patchMeta(kind, id, { priority: metaOf(kind)[id]?.priority ? undefined : true })
+}
+
+export function toggleBoardPinned(kind: BoardKind, id: number) {
+  patchMeta(kind, id, { pinned: metaOf(kind)[id]?.pinned ? undefined : true })
 }
 
 export function useCampusFavorites(): CampusJob[] {

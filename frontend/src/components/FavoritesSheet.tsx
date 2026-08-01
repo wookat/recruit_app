@@ -50,7 +50,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Building2, Download, ExternalLink, Flag, MapPin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote } from 'lucide-react'
+import { AlarmClock, Building2, Download, ExternalLink, Flag, MapPin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote } from 'lucide-react'
 import { EmptyState } from './EmptyState'
 
 interface Props {
@@ -223,6 +223,27 @@ export function FavoritesSheet({ open, onClose }: Props) {
     }
     return evts
   }, [favorites, campusFavs, bianzhiFavs])
+
+  const dueAlert = useMemo(() => {
+    let red = 0
+    let yellow = 0
+    for (const d of calendarDays) {
+      const n = daysUntil(d.date)
+      if (n < 0) continue
+      if (n <= 3) red += d.entries.length
+      else if (n <= 7) yellow += d.entries.length
+    }
+    if (red > 0) return { level: 'red' as const, count: red }
+    if (yellow > 0) return { level: 'yellow' as const, count: yellow }
+    return null
+  }, [calendarDays])
+
+  const firstDueRef = useRef<HTMLDivElement>(null)
+
+  function goToFirstDue() {
+    setView('calendar')
+    setTimeout(() => firstDueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
+  }
 
   const filteredCalendarDays = calendarDays
     .map((d) => ({ ...d, entries: d.entries.filter(matchEntry) }))
@@ -740,6 +761,21 @@ export function FavoritesSheet({ open, onClose }: Props) {
             )}
           </SheetHeader>
           <div className="space-y-2 px-4 pb-1 sm:px-6">
+            {dueAlert && (
+              <button
+                type="button"
+                onClick={goToFirstDue}
+                className={cn(
+                  'flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-medium sm:min-h-0',
+                  dueAlert.level === 'red'
+                    ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300'
+                    : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300',
+                )}
+              >
+                <AlarmClock className="h-4 w-4 shrink-0" />
+                {dueAlert.count} 条收藏{dueAlert.level === 'red' ? '即将截止（3 天内）' : '将于 7 天内截止'}，点击查看
+              </button>
+            )}
             <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5">
               {BOARD_TABS.map((t) => (
                 <button
@@ -897,11 +933,16 @@ export function FavoritesSheet({ open, onClose }: Props) {
                     导出到日历 (.ics{icsEvents.length ? ` · ${icsEvents.length}` : ''})
                   </Button>
                 </div>
-                {filteredCalendarDays.map(({ date, entries }) => {
+                {filteredCalendarDays.map(({ date, entries }, idx) => {
                   const n = daysUntil(date)
                   const expired = n < 0
+                  const firstDueIdx = filteredCalendarDays.findIndex((d) => daysUntil(d.date) >= 0)
                   return (
-                    <div key={date.toDateString()} className={expired ? 'opacity-50' : undefined}>
+                    <div
+                      key={date.toDateString()}
+                      ref={idx === firstDueIdx ? firstDueRef : undefined}
+                      className={expired ? 'opacity-50' : undefined}
+                    >
                       <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-popover px-4 py-1.5 sm:px-6">
                         <span className="text-xs font-semibold">{formatDayLabel(date)}</span>
                         <span

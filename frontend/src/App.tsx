@@ -19,7 +19,7 @@ const JobGuideSheet = lazy(() =>
   import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet })),
 )
 
-const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'company', 'tips']
+const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'company', 'choose', 'tips']
 
 const AdminPage = lazy(() =>
   import('@/components/AdminPage').then((m) => ({ default: m.AdminPage })),

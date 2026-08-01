@@ -103,6 +103,31 @@ const HOT_SEARCH = [
   { label: '央企校招', type: 'keyword' as const, value: '央企校招' },
 ]
 
+const POSITION_INDUSTRY_WORDS = [
+  '银行',
+  '人民银行',
+  '税务',
+  '海关',
+  '铁路',
+  '电力',
+  '电网',
+  '烟草',
+  '邮政',
+  '公安',
+  '法院',
+  '检察院',
+  '学校',
+  '教师',
+  '医院',
+  '海事',
+  '气象',
+  '统计',
+  '消防',
+  '监狱',
+  '水利',
+  '农业农村',
+]
+
 const DEFAULT_PARAMS: SearchParams = {
   page: 1,
   page_size: 20,
@@ -484,18 +509,20 @@ export function ListPage({
   }
 
   const positionSuggestWords = useMemo(
-    () =>
-      filters
-        ? [
-            ...new Set([
+    () => [
+      ...new Set([
+        ...(filters
+          ? [
               ...filters.hot_locations,
               ...filters.provinces,
               ...filters.categories,
               ...filters.edu_levels,
-              ...HOT_SEARCH.map((h) => h.value),
-            ]),
-          ]
-        : HOT_SEARCH.map((h) => h.value),
+            ]
+          : []),
+        ...HOT_SEARCH.map((h) => h.value),
+        ...POSITION_INDUSTRY_WORDS,
+      ]),
+    ],
     [filters],
   )
 

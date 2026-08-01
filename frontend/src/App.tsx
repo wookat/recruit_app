@@ -351,7 +351,7 @@ export default function App() {
             {savedNews.sum > 0 && (
               <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label="常用筛选有上新" />
             )}
-            <kbd className="hidden rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline">
+            <kbd className="hidden rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-foreground/80 lg:inline">
               Ctrl K
             </kbd>
           </Button>

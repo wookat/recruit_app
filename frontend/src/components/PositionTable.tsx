@@ -336,6 +336,7 @@ export const PositionTable = memo(function PositionTable({
               className="h-8 w-8"
               onClick={() => onPageChange(1)}
               disabled={page <= 1}
+              aria-label="首页"
             >
               <ChevronsLeft className="h-4 w-4" />
             </Button>
@@ -345,6 +346,7 @@ export const PositionTable = memo(function PositionTable({
               className="h-8 w-8"
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
+              aria-label="上一页"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -374,6 +376,7 @@ export const PositionTable = memo(function PositionTable({
               className="h-8 w-8"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
+              aria-label="下一页"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -383,11 +386,12 @@ export const PositionTable = memo(function PositionTable({
               className="h-8 w-8"
               onClick={() => onPageChange(totalPages)}
               disabled={page >= totalPages}
+              aria-label="末页"
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
             <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
-              <SelectTrigger className="h-8 w-[100px]">
+              <SelectTrigger className="h-8 w-[100px]" aria-label="每页条数">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

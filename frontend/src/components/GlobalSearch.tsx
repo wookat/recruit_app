@@ -122,16 +122,18 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob }: Props) {
         />
         <CommandList className="sm:max-h-96 max-sm:max-h-[calc(100dvh-64px)]">
           {!kw && (
-            <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+            <div role="presentation" className="px-3 py-6 text-center text-sm text-muted-foreground">
               输入关键词，同时搜索 体制内 / 校招 / 编制 三个板块
               <span className="mt-1 block text-xs">Ctrl K 随时打开 · 上下键选择 · 回车直达详情</span>
             </div>
           )}
           {kw && loading && !hits && (
-            <div className="px-3 py-6 text-center text-sm text-muted-foreground">搜索中…</div>
+            <div role="presentation" className="px-3 py-6 text-center text-sm text-muted-foreground">
+              搜索中…
+            </div>
           )}
           {empty && (
-            <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+            <div role="presentation" className="px-3 py-6 text-center text-sm text-muted-foreground">
               三个板块均无「{kw}」的相关结果
               <span className="mt-1 block text-xs">
                 建议：换更短的关键词（如只搜单位名或岗位名）；若在板块列表页有筛选，可清除筛选后再试

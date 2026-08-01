@@ -347,7 +347,7 @@ export function CalendarPage() {
                             setCampusDetail(j)
                           }}
                         >
-                          <Badge className="border-0 bg-blue-500/15 text-blue-600 dark:text-blue-400">校招</Badge>
+                          <Badge className="border-0 bg-blue-500/15 text-blue-700 dark:text-blue-400">校招</Badge>
                           <span className="text-sm font-medium">{j.company || '-'}</span>
                           {j.positions && (
                             <span className="line-clamp-1 text-xs text-muted-foreground">{j.positions}</span>
@@ -435,7 +435,7 @@ export function CalendarPage() {
                     <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="收藏岗位截止" />
                   )}
                   {day && day.campus.length > 0 && (
-                    <span className="rounded bg-blue-500/15 px-1 text-[10px] font-medium leading-4 text-blue-600 dark:text-blue-400">
+                    <span className="rounded bg-blue-500/15 px-1 text-[10px] font-medium leading-4 text-blue-700 dark:text-blue-400">
                       {day.campus.length}
                     </span>
                   )}
@@ -467,7 +467,7 @@ export function CalendarPage() {
                     className="flex w-full min-h-11 flex-wrap items-center gap-2 py-2 text-left hover:bg-muted/50"
                     onClick={() => setCampusDetail(j)}
                   >
-                    <Badge className="border-0 bg-blue-500/15 text-blue-600 dark:text-blue-400">校招</Badge>
+                    <Badge className="border-0 bg-blue-500/15 text-blue-700 dark:text-blue-400">校招</Badge>
                     <span className="text-sm font-medium">{j.company || '-'}</span>
                     {j.positions && (
                       <span className="line-clamp-1 text-xs text-muted-foreground">{j.positions}</span>

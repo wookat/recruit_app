@@ -741,7 +741,7 @@ export function ListPage({
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-muted-foreground">排序</label>
             <Select value={params.sort || 'year_desc'} onValueChange={(v) => updateParam('sort', v || undefined)}>
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9" aria-label="排序方式">
                 <SelectValue placeholder="排序方式" />
               </SelectTrigger>
               <SelectContent>
@@ -886,6 +886,7 @@ export function ListPage({
                 variant="outline"
                 className="cursor-pointer hover:bg-muted"
                 onClick={() => handleHotSearch(item)}
+                render={<button type="button" />}
               >
                 {item.label}
               </Badge>
@@ -902,6 +903,7 @@ export function ListPage({
                   variant="outline"
                   className="cursor-pointer hover:bg-muted"
                   onClick={() => updateParam('keyword', kw)}
+                  render={<button type="button" />}
                 >
                   {kw}
                 </Badge>

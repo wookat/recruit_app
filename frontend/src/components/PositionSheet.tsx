@@ -209,6 +209,7 @@ export function PositionSheet({
             >
               <SelectTrigger
                 size="sm"
+                aria-label="投递状态"
                 className={`h-7 w-auto gap-1 border-none px-2 text-[11px] font-medium shadow-none ${STATUS_COLORS[(statuses[item.id] || '未投递') as AppStatus]}`}
               >
                 {statuses[item.id] || '未投递'}

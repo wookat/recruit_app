@@ -473,7 +473,7 @@ export function BianzhiPage({
             >
               {p}
               {provinceCounts?.[p] != null && (
-                <span className="ml-1 hidden opacity-70 sm:inline">
+                <span className="ml-1 hidden opacity-90 sm:inline">
                   {provinceCounts[p].toLocaleString()}
                 </span>
               )}
@@ -501,7 +501,7 @@ export function BianzhiPage({
             >
               {v.label}
               {filters && v.category && (
-                <span className="ml-1 text-xs opacity-70">
+                <span className="ml-1 text-xs opacity-90">
                   {(filters.categories[v.category] ?? 0).toLocaleString()}
                 </span>
               )}
@@ -943,7 +943,9 @@ export function BianzhiPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-10" aria-label="收藏" />
+                <TableHead className="w-10">
+                  <span className="sr-only">收藏</span>
+                </TableHead>
                 <SortableHead
                   label="招聘单位 / 公告"
                   sortKey="employer"

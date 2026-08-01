@@ -308,7 +308,7 @@ function GuideTimeline() {
                 <span className="text-xs text-muted-foreground">{st.label}</span>
                 {st.title}
                 {current && (
-                  <Badge className="border-0 bg-primary/15 text-[11px] text-primary">当前阶段</Badge>
+                  <Badge className="text-[11px]">当前阶段</Badge>
                 )}
               </div>
               <ul className="mt-1.5 space-y-1 text-sm leading-relaxed text-muted-foreground">

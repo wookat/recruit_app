@@ -13,7 +13,10 @@ interface Props {
 export function SortableHead({ label, sortKey, sort, onToggle, className }: Props) {
   const active = sort?.key === sortKey
   return (
-    <TableHead className={className}>
+    <TableHead
+      className={className}
+      aria-sort={active && sort ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
       <button
         type="button"
         onClick={() => onToggle(sortKey)}

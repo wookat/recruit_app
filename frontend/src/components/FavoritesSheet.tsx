@@ -551,6 +551,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
       >
         <SelectTrigger
           size="sm"
+          aria-label="投递状态"
           className={`h-7 w-auto gap-1 border-none px-2 text-[11px] font-medium shadow-none ${STATUS_COLORS[current]}`}
         >
           {current}
@@ -792,6 +793,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
         >
           <SelectTrigger
             size="sm"
+            aria-label="投递渠道"
             className={cn(
               'h-6 w-auto gap-1 border-none px-2 text-[11px] font-medium shadow-none',
               channels[p.id]
@@ -1149,7 +1151,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   }}
                 >
                   {t.label}
-                  {t.count > 0 && <span className="ml-1 opacity-70">{t.count}</span>}
+                  {t.count > 0 && <span className="ml-1 opacity-90">{t.count}</span>}
                 </button>
               ))}
             </div>

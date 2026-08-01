@@ -507,7 +507,7 @@ export function CampusPage({
         >
           {t}
           {typeCounts?.[t] != null && (
-            <span className="ml-1 hidden opacity-70 sm:inline">
+            <span className="ml-1 hidden opacity-90 sm:inline">
               {typeCounts[t].toLocaleString()}
             </span>
           )}
@@ -613,7 +613,7 @@ export function CampusPage({
             >
               {v.label}
               {filters && v.params.source_table && (
-                <span className="ml-1 text-xs opacity-70">
+                <span className="ml-1 text-xs opacity-90">
                   {filters.source_tables[v.params.source_table[0]] ?? ''}
                 </span>
               )}
@@ -831,7 +831,9 @@ export function CampusPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-10" aria-label="收藏" />
+                <TableHead className="w-10">
+                  <span className="sr-only">收藏</span>
+                </TableHead>
                 <SortableHead
                   label="公司"
                   sortKey="company"

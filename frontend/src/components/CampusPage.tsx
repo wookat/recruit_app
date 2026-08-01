@@ -222,9 +222,10 @@ export function CampusPage({
   const [dueOnly, setDueOnly] = useState(
     () => new URLSearchParams(window.location.search).get('due') === '7',
   )
-  const [hideExpired, setHideExpired] = useState(
-    () => new URLSearchParams(window.location.search).get('hexp') === '1',
-  )
+  const [hideExpired, setHideExpired] = useState(() => {
+    const q = new URLSearchParams(window.location.search)
+    return q.get('board') === 'campus' && q.get('hexp') === '1'
+  })
   const [page, setPage] = useState(1)
   const [typeCounts, setTypeCounts] = useState<Record<string, number> | null>(null)
 

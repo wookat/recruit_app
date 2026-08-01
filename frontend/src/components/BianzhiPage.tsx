@@ -125,7 +125,9 @@ export function BianzhiPage({
   )
   const [recentOnly, setRecentOnly] = useState(initialPreset === 'recent7')
   const [dueOnly, setDueOnly] = useState(urlQuery.get('due') === '7')
-  const [hideExpired, setHideExpired] = useState(urlQuery.get('hexp') === '1')
+  const [hideExpired, setHideExpired] = useState(
+    urlQuery.get('board') === 'bianzhi' && urlQuery.get('hexp') === '1',
+  )
   const [provinceCounts, setProvinceCounts] = useState<Record<string, number> | null>(null)
 
   useEffect(() => {

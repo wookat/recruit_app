@@ -17,6 +17,7 @@ import { useBianzhiFavorites, useCampusFavorites } from '@/lib/boardFavorites'
 import { GlobalSearch, type SearchBoard } from '@/components/GlobalSearch'
 import { applySeo } from '@/lib/seo'
 import { readJobParam, setJobParam } from '@/lib/jobDeepLink'
+import { POSITION_URL_KEYS } from '@/lib/urlFilters'
 import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
 import { useRemindDays } from '@/lib/reminderPref'
 
@@ -90,6 +91,7 @@ function initialSection(): Section {
 function syncSectionUrl(section: Section) {
   const q = new URLSearchParams(window.location.search)
   if (section.mode === 'positions') {
+    if (q.get('board')) q.delete('hexp')
     q.delete('board')
     q.delete('bpreset')
     q.delete('due')
@@ -100,10 +102,15 @@ function syncSectionUrl(section: Section) {
     q.delete('cview')
   } else if (section.mode === 'calendar') {
     q.set('board', 'calendar')
-    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bkw']) q.delete(k)
+    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bkw', 'hexp']) q.delete(k)
+    for (const k of POSITION_URL_KEYS) q.delete(k)
   } else {
+    if (q.get('board') !== section.mode) q.delete('hexp')
     q.set('board', section.mode)
     q.delete('cview')
+    for (const k of POSITION_URL_KEYS) {
+      if (k !== 'hexp') q.delete(k)
+    }
     if (section.preset) q.set('bpreset', section.preset)
     else q.delete('bpreset')
     if (section.mode === 'campus') q.delete('prov')

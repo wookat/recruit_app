@@ -12,7 +12,7 @@ import { StatsDashboard } from './StatsDashboard'
 import { FreshnessNote } from './FreshnessNote'
 import { DeadlinesCard } from './DeadlinesCard'
 import { TodayGlance } from './TodayGlance'
-import { buildShareUrl, paramsFromQueryString } from '@/lib/urlFilters'
+import { buildShareUrl, paramsFromQueryString, paramsToQueryString, POSITION_URL_KEYS } from '@/lib/urlFilters'
 import { MultiSelect } from './MultiSelect'
 import { PositionTable } from './PositionTable'
 import { PositionCardGrid } from './PositionCardGrid'
@@ -198,7 +198,8 @@ export function ListPage({
   const [deadlineView, setDeadlineView] = useState(false)
   const [quickMatchKey, setQuickMatchKey] = useState(0)
   const [params, setParams] = useState<SearchParams>(() => {
-    const base = syncUrl
+    const fromUrl = syncUrl && !new URLSearchParams(window.location.search).get('board')
+    const base = fromUrl
       ? { ...DEFAULT_PARAMS, ...paramsFromQueryString(window.location.search) }
       : { ...DEFAULT_PARAMS }
     const preset = initialPresetKey
@@ -258,21 +259,19 @@ export function ListPage({
 
   useEffect(() => {
     if (!syncUrl) return
-    const q = new URLSearchParams(window.location.search)
-    if (q.get('board')) return
-    if (q.get('hide_expired')) q.delete('hide_expired')
-    if (params.hide_expired) q.set('hexp', '1')
-    else q.delete('hexp')
-    const kw = (params.keyword || '').trim()
-    if (kw) q.set('keyword', kw)
-    else q.delete('keyword')
+    const cur = new URLSearchParams(window.location.search)
+    if (cur.get('board')) return
+    const q = new URLSearchParams(paramsToQueryString(params))
+    for (const [k, v] of cur) {
+      if (!POSITION_URL_KEYS.includes(k)) q.append(k, v)
+    }
     const qs = q.toString()
     window.history.replaceState(
       null,
       '',
       `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`,
     )
-  }, [syncUrl, params.hide_expired, params.keyword])
+  }, [syncUrl, params])
 
   useEffect(() => {
     const kw = (params.keyword || '').trim()

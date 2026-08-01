@@ -24,6 +24,8 @@ import {
 import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { DueBadge } from '@/components/DueBadge'
+import { SortableHead } from '@/components/SortableHead'
+import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
 import { toggleCampusFavorite, useCampusFavorites } from '@/lib/boardFavorites'
 import { applySeo } from '@/lib/seo'
 
@@ -170,6 +172,8 @@ export function CampusPage({
   const [view, setView] = useState<'table' | 'card'>(() =>
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'card' : 'table',
   )
+  const [sort, setSort] = useState<SortState | null>(null)
+  const toggleSort = useCallback((key: string) => setSort((s) => nextSort(s, key)), [])
 
   useEffect(() => {
     fetchCampusFilters().then(setFilters).catch(console.error)
@@ -188,7 +192,7 @@ export function CampusPage({
     else q.delete('ctype')
     if (keyword.trim()) q.set('bkw', keyword.trim())
     else q.delete('bkw')
-    window.history.replaceState(null, '', `?${q.toString()}`)
+    window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('campus', urlPreset)
   }, [preset, recentOnly, dueOnly, city, companyTypes, keyword])
 
@@ -253,6 +257,20 @@ export function CampusPage({
   }, [])
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
+
+  const sortedItems = useMemo(() => {
+    if (!data) return []
+    if (!sort) return data.items
+    const field = (j: CampusJob) =>
+      sort.key === 'company'
+        ? j.company
+        : sort.key === 'deadline'
+          ? j.deadline_date
+          : sort.key === 'start'
+            ? j.start_date
+            : j.updated_at_src
+    return [...data.items].sort((a, b) => cmpNullableStr(field(a), field(b), sort.dir))
+  }, [data, sort])
 
   return (
     <div className="space-y-4">
@@ -461,7 +479,13 @@ export function CampusPage({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10" aria-label="收藏" />
-                <TableHead className="min-w-[140px]">公司</TableHead>
+                <SortableHead
+                  label="公司"
+                  sortKey="company"
+                  sort={sort}
+                  onToggle={toggleSort}
+                  className="min-w-[140px]"
+                />
                 <TableHead>企业类型</TableHead>
                 <TableHead className="min-w-[220px]">招聘岗位</TableHead>
                 <TableHead>批次</TableHead>
@@ -470,8 +494,9 @@ export function CampusPage({
                 <TableHead>笔试</TableHead>
                 <TableHead>行业</TableHead>
                 <TableHead className="min-w-[120px]">工作地点</TableHead>
-                <TableHead>开始时间</TableHead>
-                <TableHead>截止时间</TableHead>
+                <SortableHead label="开始时间" sortKey="start" sort={sort} onToggle={toggleSort} />
+                <SortableHead label="截止时间" sortKey="deadline" sort={sort} onToggle={toggleSort} />
+                <SortableHead label="更新日期" sortKey="updated" sort={sort} onToggle={toggleSort} />
                 <TableHead>内推码</TableHead>
                 <TableHead className="sticky right-0 z-10 bg-background shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.15)]">
                   投递/公告
@@ -479,7 +504,7 @@ export function CampusPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.items.map((job) => (
+              {sortedItems.map((job) => (
                 <TableRow key={job.id}>
                   <TableCell className="p-1">
                     <BoardFavoriteButton
@@ -592,6 +617,9 @@ export function CampusPage({
                       {job.deadline_text || '-'}
                       <DueBadge date={job.deadline_date} />
                     </span>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                    {job.updated_at_src || '-'}
                   </TableCell>
                   <TableCell>
                     {job.referral_code ? (

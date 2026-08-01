@@ -19,6 +19,8 @@ const JobGuideSheet = lazy(() =>
   import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet })),
 )
 
+const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'company', 'tips']
+
 const AdminPage = lazy(() =>
   import('@/components/AdminPage').then((m) => ({ default: m.AdminPage })),
 )
@@ -97,7 +99,11 @@ function syncSectionUrl(section: Section) {
     }
   }
   const qs = q.toString()
-  window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname)
+  window.history.replaceState(
+    null,
+    '',
+    (qs ? `?${qs}` : window.location.pathname) + window.location.hash,
+  )
 }
 
 function getTheme(): 'light' | 'dark' | 'system' {
@@ -172,6 +178,11 @@ export default function App() {
     applySeo(section.mode, section.preset)
   }, [section])
 
+  useEffect(() => {
+    const h = window.location.hash.slice(1)
+    if (GUIDE_SECTION_KEYS.includes(h)) setGuideOpen(true)
+  }, [])
+
   const cycleTheme = useCallback(() => {
     setThemeState((prev) => {
       const next = prev === 'system' ? 'dark' : prev === 'dark' ? 'light' : 'system'
@@ -184,7 +195,11 @@ export default function App() {
     const q = new URLSearchParams(window.location.search)
     for (const k of ['city', 'ctype', 'prov', 'bkw']) q.delete(k)
     const qs = q.toString()
-    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname)
+    window.history.replaceState(
+      null,
+      '',
+      (qs ? `?${qs}` : window.location.pathname) + window.location.hash,
+    )
   }, [])
   const goCampus = useCallback(
     (preset?: string, keyword?: string) => {

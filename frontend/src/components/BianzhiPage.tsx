@@ -24,6 +24,8 @@ import {
 import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { DueBadge } from '@/components/DueBadge'
+import { SortableHead } from '@/components/SortableHead'
+import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
 import { toggleBianzhiFavorite, useBianzhiFavorites } from '@/lib/boardFavorites'
 import hrSites from '@/data/hrSites.json'
 import { applySeo } from '@/lib/seo'
@@ -97,6 +99,8 @@ export function BianzhiPage({
   const [view, setView] = useState<'table' | 'card'>(() =>
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'card' : 'table',
   )
+  const [sort, setSort] = useState<SortState | null>(null)
+  const toggleSort = useCallback((key: string) => setSort((s) => nextSort(s, key)), [])
 
   useEffect(() => {
     fetchBianzhiFilters().then(setFilters).catch(console.error)
@@ -112,7 +116,7 @@ export function BianzhiPage({
     else q.delete('prov')
     if (keyword.trim()) q.set('bkw', keyword.trim())
     else q.delete('bkw')
-    window.history.replaceState(null, '', `?${q.toString()}`)
+    window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('bianzhi', preset)
   }, [preset, dueOnly, provinces, keyword])
 
@@ -156,6 +160,18 @@ export function BianzhiPage({
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
   const isLiankao = preset === 'lk'
+
+  const sortedItems = useMemo(() => {
+    if (!data) return []
+    if (!sort) return data.items
+    const field = (j: BianzhiJob) =>
+      sort.key === 'employer'
+        ? j.employer
+        : sort.key === 'deadline'
+          ? j.deadline_date
+          : j.updated_at_src
+    return [...data.items].sort((a, b) => cmpNullableStr(field(a), field(b), sort.dir))
+  }, [data, sort])
 
   return (
     <div className="space-y-4">
@@ -447,7 +463,13 @@ export function BianzhiPage({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10" aria-label="收藏" />
-                <TableHead className="min-w-[260px]">招聘单位 / 公告</TableHead>
+                <SortableHead
+                  label="招聘单位 / 公告"
+                  sortKey="employer"
+                  sort={sort}
+                  onToggle={toggleSort}
+                  className="min-w-[260px]"
+                />
                 <TableHead>分类</TableHead>
                 <TableHead>省份</TableHead>
                 <TableHead className="min-w-[110px]">工作地</TableHead>
@@ -461,16 +483,22 @@ export function BianzhiPage({
                     <TableHead>考试时间</TableHead>
                   </>
                 ) : (
-                  <TableHead className="min-w-[140px]">截止时间</TableHead>
+                  <SortableHead
+                    label="截止时间"
+                    sortKey="deadline"
+                    sort={sort}
+                    onToggle={toggleSort}
+                    className="min-w-[140px]"
+                  />
                 )}
-                <TableHead>更新</TableHead>
+                <SortableHead label="更新" sortKey="updated" sort={sort} onToggle={toggleSort} />
                 <TableHead className="sticky right-0 z-10 bg-background shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.15)]">
                   链接
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.items.map((job) => (
+              {sortedItems.map((job) => (
                 <TableRow key={job.id}>
                   <TableCell className="p-1">
                     <BoardFavoriteButton

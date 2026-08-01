@@ -124,15 +124,28 @@ const SECTIONS: GuideSection[] = [
   },
 ]
 
+export const GUIDE_SECTION_KEYS = SECTIONS.map((s) => s.key)
+
+function setGuideHash(key: string | null) {
+  const base = window.location.pathname + window.location.search
+  window.history.replaceState(null, '', key ? `${base}#${key}` : base)
+}
+
 export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [active, setActive] = useState(SECTIONS[0].key)
+  const [active, setActive] = useState(() => {
+    const h = window.location.hash.slice(1)
+    return SECTIONS.some((s) => s.key === h) ? h : SECTIONS[0].key
+  })
   const section = SECTIONS.find((s) => s.key === active) ?? SECTIONS[0]
 
   return (
     <Sheet
       open={open}
       onOpenChange={(v) => {
-        if (!v) onClose()
+        if (!v) {
+          setGuideHash(null)
+          onClose()
+        }
       }}
     >
       <SheetContent side="right" className="flex w-full flex-col sm:max-w-xl">
@@ -145,7 +158,10 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
             <button
               key={s.key}
               type="button"
-              onClick={() => setActive(s.key)}
+              onClick={() => {
+                setActive(s.key)
+                setGuideHash(s.key)
+              }}
               className={cn(
                 'rounded-full border px-3 py-1 text-xs transition-colors',
                 active === s.key

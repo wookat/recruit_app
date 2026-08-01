@@ -377,7 +377,7 @@ function BianzhiExamCalendar() {
         {list.map((j) => (
           <li key={j.id}>
             <a
-              href={`?board=bianzhi&job=bianzhi:${j.id}`}
+              href={`?board=bianzhi&bpreset=lk&job=bianzhi:${j.id}`}
               className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border bg-background px-3 py-2 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
             >
               <CalendarDays className="h-3.5 w-3.5 shrink-0 text-primary" />

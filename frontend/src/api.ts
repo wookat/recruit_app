@@ -155,6 +155,11 @@ export async function fetchCampusJobs(params: CampusParams): Promise<CampusList>
   return res.data
 }
 
+export async function fetchCampusJob(id: number): Promise<CampusJob> {
+  const res = await axios.get(`${API_BASE}/api/campus/${id}`)
+  return res.data
+}
+
 export async function fetchCampusFilters(): Promise<CampusFilterOptions> {
   const res = await axios.get(`${API_BASE}/api/campus/filters`)
   return res.data
@@ -208,6 +213,11 @@ export interface BianzhiFilterOptions {
 
 export async function fetchBianzhiJobs(params: BianzhiParams): Promise<BianzhiList> {
   const res = await axios.get(`${API_BASE}/api/bianzhi?${toQuery(params)}`)
+  return res.data
+}
+
+export async function fetchBianzhiJob(id: number): Promise<BianzhiJob> {
+  const res = await axios.get(`${API_BASE}/api/bianzhi/${id}`)
   return res.data
 }
 

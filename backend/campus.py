@@ -2,7 +2,7 @@
 from datetime import date, timedelta
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import or_, func
 from sqlalchemy.orm import Session
@@ -161,3 +161,12 @@ def campus_filter_options(db: Session = Depends(get_db)):
         "batches": distinct(CampusJob.batch, 30),
         "grad_years": distinct(CampusJob.grad_years, 30),
     }
+
+
+@router.get("/{job_id}", response_model=CampusJobOut)
+def get_campus_job(job_id: int, db: Session = Depends(get_db)):
+    """按 id 取单条（深链直开详情兑底）。"""
+    job = db.query(CampusJob).filter(CampusJob.id == job_id).first()
+    if job is None:
+        raise HTTPException(status_code=404, detail="job not found")
+    return job

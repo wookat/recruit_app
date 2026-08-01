@@ -2,6 +2,7 @@ import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useS
 import {
   fetchBianzhiCounts,
   fetchBianzhiFilters,
+  fetchBianzhiJob,
   fetchBianzhiJobs,
   type BianzhiFilterOptions,
   type BianzhiJob,
@@ -261,6 +262,13 @@ export function BianzhiPage({
         if (id) {
           const hit = items.find((j) => j.id === id)
           if (hit) setDetail(hit)
+          else {
+            fetchBianzhiJob(id)
+              .then((job) => {
+                if (!cancelled) setDetail(job)
+              })
+              .catch(() => undefined)
+          }
         }
       }
     }

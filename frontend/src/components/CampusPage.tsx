@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import {
   fetchCampusCounts,
   fetchCampusFilters,
+  fetchCampusJob,
   fetchCampusJobs,
   type CampusFilterOptions,
   type CampusJob,
@@ -357,6 +358,13 @@ export function CampusPage({
           if (id) {
             const hit = res.items.find((j) => j.id === id)
             if (hit) setDetail(hit)
+            else {
+              fetchCampusJob(id)
+                .then((job) => {
+                  if (!cancelled) setDetail(job)
+                })
+                .catch(() => undefined)
+            }
           }
         }
       })

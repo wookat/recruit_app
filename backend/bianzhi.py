@@ -2,7 +2,7 @@
 from datetime import date, timedelta
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import or_, func
 from sqlalchemy.orm import Session
@@ -139,3 +139,12 @@ def bianzhi_filter_options(db: Session = Depends(get_db)):
         "categories": {c: n for c, n in cats},
         "provinces": [p[0] for p in provinces],
     }
+
+
+@router.get("/{job_id}", response_model=BianzhiJobOut)
+def get_bianzhi_job(job_id: int, db: Session = Depends(get_db)):
+    """按 id 取单条（深链直开详情兑底）。"""
+    job = db.query(BianzhiJob).filter(BianzhiJob.id == job_id).first()
+    if job is None:
+        raise HTTPException(status_code=404, detail="job not found")
+    return job

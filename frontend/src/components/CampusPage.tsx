@@ -347,8 +347,9 @@ export function CampusPage({
 
   useEffect(() => {
     let cancelled = false
+    const controller = new AbortController()
     setLoading(true)
-    fetchCampusJobs(params)
+    fetchCampusJobs(params, controller.signal)
       .then((res) => {
         if (cancelled) return
         setData({ total: res.total, items: res.items })
@@ -368,12 +369,15 @@ export function CampusPage({
           }
         }
       })
-      .catch(console.error)
+      .catch((e) => {
+        if (!cancelled) console.error(e)
+      })
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
     return () => {
       cancelled = true
+      controller.abort()
     }
   }, [params])
 

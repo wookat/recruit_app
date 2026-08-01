@@ -24,7 +24,9 @@ interface Props {
   inputClassName?: string
 }
 
-/** 搜索输入 + 纯前端下拉联想：最近搜索 + 板块词表，防抖 150ms，键盘可选，Esc/点击外部关闭。 */
+/** 搜索输入 + 纯前端下拉联想：最近搜索 + 板块词表，键盘可选，Esc/点击外部关闭。
+ *  输入值由组件内部持有，防抖 250ms 后才回调 onValueChange，
+ *  避免每敲一个字符重渲染父页面整表。 */
 export function SearchSuggestInput({
   value,
   onValueChange,
@@ -34,15 +36,36 @@ export function SearchSuggestInput({
   placeholder,
   inputClassName,
 }: Props) {
+  const [text, setText] = useState(value)
   const [debounced, setDebounced] = useState(value)
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1)
   const rootRef = useRef<HTMLDivElement>(null)
+  const commitRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastCommitted = useRef(value)
+
+  // 外部变更（清除筛选/一键匹配等）同步到内部
+  useEffect(() => {
+    if (value !== lastCommitted.current) {
+      lastCommitted.current = value
+      setText(value)
+    }
+  }, [value])
+
+  const handleChange = (v: string) => {
+    setText(v)
+    setOpen(true)
+    if (commitRef.current) clearTimeout(commitRef.current)
+    commitRef.current = setTimeout(() => {
+      lastCommitted.current = v
+      onValueChange(v)
+    }, 250)
+  }
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), 150)
+    const t = setTimeout(() => setDebounced(text), 150)
     return () => clearTimeout(t)
-  }, [value])
+  }, [text])
 
   useEffect(() => {
     const onDown = (e: MouseEvent | TouchEvent) => {
@@ -82,20 +105,20 @@ export function SearchSuggestInput({
 
   const showList = open && debounced.trim().length >= 1 && items.length > 0
 
-  const select = (text: string) => {
+  const select = (t: string) => {
+    if (commitRef.current) clearTimeout(commitRef.current)
+    lastCommitted.current = t
+    setText(t)
     setOpen(false)
-    onSelect(text)
+    onSelect(t)
   }
 
   return (
     <div ref={rootRef} className="relative flex-1">
       <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
-        value={value}
-        onChange={(e) => {
-          onValueChange(e.target.value)
-          setOpen(true)
-        }}
+        value={text}
+        onChange={(e) => handleChange(e.target.value)}
         onFocus={() => setOpen(true)}
         placeholder={placeholder}
         className={cn('pl-9', inputClassName)}
@@ -110,7 +133,7 @@ export function SearchSuggestInput({
           if (!showList) {
             if (e.key === 'Enter') {
               e.preventDefault()
-              select(value.trim())
+              select(text.trim())
             }
             return
           }
@@ -122,7 +145,7 @@ export function SearchSuggestInput({
             setActive((a) => (a <= 0 ? items.length - 1 : a - 1))
           } else if (e.key === 'Enter') {
             e.preventDefault()
-            select(active >= 0 ? items[active].text : value.trim())
+            select(active >= 0 ? items[active].text : text.trim())
           }
         }}
       />

@@ -241,14 +241,15 @@ export function BianzhiPage({
 
   useEffect(() => {
     let cancelled = false
+    const controller = new AbortController()
     setLoading(true)
     const load = async () => {
-      const first = await fetchBianzhiJobs(params)
+      const first = await fetchBianzhiJobs(params, controller.signal)
       const items = [...first.items]
       if (params.page_size === 100) {
         let p = 2
         while (items.length < first.total && p <= 10) {
-          const res = await fetchBianzhiJobs({ ...params, page: p })
+          const res = await fetchBianzhiJobs({ ...params, page: p }, controller.signal)
           if (!res.items.length) break
           items.push(...res.items)
           p += 1
@@ -273,12 +274,15 @@ export function BianzhiPage({
       }
     }
     load()
-      .catch(console.error)
+      .catch((e) => {
+        if (!cancelled) console.error(e)
+      })
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
     return () => {
       cancelled = true
+      controller.abort()
     }
   }, [params])
 

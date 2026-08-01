@@ -150,8 +150,8 @@ export interface CampusFilterOptions {
   grad_years: string[]
 }
 
-export async function fetchCampusJobs(params: CampusParams): Promise<CampusList> {
-  const res = await axios.get(`${API_BASE}/api/campus?${toQuery(params)}`)
+export async function fetchCampusJobs(params: CampusParams, signal?: AbortSignal): Promise<CampusList> {
+  const res = await axios.get(`${API_BASE}/api/campus?${toQuery(params)}`, { signal })
   return res.data
 }
 
@@ -211,8 +211,8 @@ export interface BianzhiFilterOptions {
   provinces: string[]
 }
 
-export async function fetchBianzhiJobs(params: BianzhiParams): Promise<BianzhiList> {
-  const res = await axios.get(`${API_BASE}/api/bianzhi?${toQuery(params)}`)
+export async function fetchBianzhiJobs(params: BianzhiParams, signal?: AbortSignal): Promise<BianzhiList> {
+  const res = await axios.get(`${API_BASE}/api/bianzhi?${toQuery(params)}`, { signal })
   return res.data
 }
 
@@ -279,13 +279,13 @@ export function fetchCampusCounts(): Promise<CampusCounts | null> {
   return campusCountsPromise
 }
 
-export async function fetchPositions(params: SearchParams): Promise<PositionList> {
-  const res = await axios.get(`${API_BASE}/api/positions?${toQuery(params)}`)
+export async function fetchPositions(params: SearchParams, signal?: AbortSignal): Promise<PositionList> {
+  const res = await axios.get(`${API_BASE}/api/positions?${toQuery(params)}`, { signal })
   return res.data
 }
 
-export async function fetchSources(params: SearchParams): Promise<PositionList> {
-  const res = await axios.get(`${API_BASE}/api/sources?${toQuery(params)}`)
+export async function fetchSources(params: SearchParams, signal?: AbortSignal): Promise<PositionList> {
+  const res = await axios.get(`${API_BASE}/api/sources?${toQuery(params)}`, { signal })
   return res.data
 }
 

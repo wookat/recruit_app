@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { memo, useState, type ReactNode } from 'react'
 import type { Position } from '@/api'
 import { PositionCard } from './PositionCard'
 import { PositionSheet } from './PositionSheet'
@@ -14,7 +14,7 @@ interface Props {
   highlight?: string
 }
 
-export function PositionCardGrid({ data, loading, emptyAction, highlight }: Props) {
+export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, emptyAction, highlight }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
 
   if (loading) {
@@ -76,4 +76,4 @@ export function PositionCardGrid({ data, loading, emptyAction, highlight }: Prop
       )}
     </div>
   )
-}
+})

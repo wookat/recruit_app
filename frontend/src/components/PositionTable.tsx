@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { memo, useMemo, useState, type ReactNode } from 'react'
 
 import {
   useReactTable,
@@ -103,7 +103,8 @@ interface Props {
   highlight?: string
 }
 
-export function PositionTable({
+/** memo：父页面无关状态变化时不重渲整表。 */
+export const PositionTable = memo(function PositionTable({
   data,
   total,
   totalCapped,
@@ -411,7 +412,7 @@ export function PositionTable({
       )}
     </div>
   )
-}
+})
 
 function HeaderFilter({ config }: { config: ColumnFilterConfig }) {
   const active = config.selected.length > 0

@@ -31,7 +31,7 @@ import {
   type SavedFilter,
 } from '@/lib/storage'
 import { pinyinMatch } from '@/lib/pinyin'
-import { markSavedFilterSeen, useSavedNews } from '@/lib/savedNews'
+import { markSavedFilterSeen, removeSavedFilterBaseline, useSavedNews } from '@/lib/savedNews'
 import {
   Search,
   Filter,
@@ -79,7 +79,7 @@ import { RecommendSection } from './RecommendSection'
 
 interface ListPageProps {
   title: string
-  fetcher: (params: SearchParams) => Promise<PositionList>
+  fetcher: (params: SearchParams, signal?: AbortSignal) => Promise<PositionList>
   showStats?: boolean
   syncUrl?: boolean
   initialPresetKey?: string
@@ -330,7 +330,7 @@ export function ListPage({
     setLoading(true)
     setLoadError(false)
     try {
-      const res = await fetcher(params)
+      const res = await fetcher(params, controller.signal)
       if (controller.signal.aborted) return
       setData(res)
       const kw = (params.keyword || '').trim()
@@ -378,13 +378,16 @@ export function ListPage({
     return cat.length === 0 && yr.length === 0 && !deadlineView
   }
 
-  function updateParam<K extends keyof SearchParams>(key: K, value: SearchParams[K]) {
-    setParams((p) => {
-      const next = { ...p, [key]: value }
-      if (key !== 'page' && key !== 'page_size') next.page = 1
-      return next as SearchParams
-    })
-  }
+  const updateParam = useCallback(
+    <K extends keyof SearchParams>(key: K, value: SearchParams[K]) => {
+      setParams((p) => {
+        const next = { ...p, [key]: value }
+        if (key !== 'page' && key !== 'page_size') next.page = 1
+        return next as SearchParams
+      })
+    },
+    [],
+  )
 
   function applyQuickMatch(values: QuickMatchValues) {
     const majorType: SearchParams['major_type'] =
@@ -411,43 +414,91 @@ export function ListPage({
     }))
   }
 
-  const activeFilters: RemovableFilter[] = []
-  if (params.keyword)
-    activeFilters.push({ label: `关键词：${params.keyword}`, onRemove: () => updateParam('keyword', '') })
+  const activeFilters: RemovableFilter[] = useMemo(() => {
+    const out: RemovableFilter[] = []
+    if (params.keyword)
+    out.push({ label: `关键词：${params.keyword}`, onRemove: () => updateParam('keyword', '') })
   if (params.major)
-    activeFilters.push({ label: `专业：${params.major}`, onRemove: () => updateParam('major', undefined) })
+    out.push({ label: `专业：${params.major}`, onRemove: () => updateParam('major', undefined) })
   for (const l of params.location ?? [])
-    activeFilters.push({
+    out.push({
       label: `地区：${l}`,
       onRemove: () => updateParam('location', (params.location ?? []).filter((x) => x !== l)),
     })
   for (const p of params.province ?? [])
-    activeFilters.push({
+    out.push({
       label: `省份：${p}`,
       onRemove: () => updateParam('province', (params.province ?? []).filter((x) => x !== p)),
     })
   for (const w of params.work_location ?? [])
-    activeFilters.push({
+    out.push({
       label: `地点：${w}`,
       onRemove: () => updateParam('work_location', (params.work_location ?? []).filter((x) => x !== w)),
     })
   for (const c of params.category ?? [])
-    activeFilters.push({
+    out.push({
       label: `类型：${c}`,
       onRemove: () => updateParam('category', (params.category ?? []).filter((x) => x !== c)),
     })
   for (const e of params.edu_level ?? [])
-    activeFilters.push({
+    out.push({
       label: `学历：${e}`,
       onRemove: () => updateParam('edu_level', (params.edu_level ?? []).filter((x) => x !== e)),
     })
   for (const y of params.year ?? [])
-    activeFilters.push({
+    out.push({
       label: `年份：${y}`,
       onRemove: () => updateParam('year', (params.year ?? []).filter((x) => x !== y)),
     })
-  if (params.hide_expired)
-    activeFilters.push({ label: '隐藏已截止', onRemove: () => updateParam('hide_expired', undefined) })
+    if (params.hide_expired)
+      out.push({ label: '隐藏已截止', onRemove: () => updateParam('hide_expired', undefined) })
+    return out
+  }, [params, updateParam])
+
+  const emptyAction = useMemo(() => <ActiveFilterChips filters={activeFilters} />, [activeFilters])
+  const onPageChange = useCallback((page: number) => updateParam('page', page), [updateParam])
+  const onPageSizeChange = useCallback(
+    (size: number) => updateParam('page_size', size),
+    [updateParam],
+  )
+  const columnFilters = useMemo(
+    () =>
+      filters
+        ? {
+            year: {
+              label: '年份',
+              options: filters.years.map(String),
+              selected: (params.year ?? []).map(String),
+              onChange: (v: string[]) =>
+                updateParam('year', v.map(Number).filter((n) => !isNaN(n))),
+            },
+            job_type: {
+              label: '类型',
+              options: filters.categories,
+              selected: params.category ?? [],
+              onChange: (v: string[]) => updateParam('category', v),
+            },
+            edu_level_norm: {
+              label: '学历',
+              options: filters.edu_levels,
+              selected: params.edu_level ?? [],
+              onChange: (v: string[]) => updateParam('edu_level', v),
+            },
+            work_location: {
+              label: '省份',
+              options: filters.provinces,
+              selected: (params.location ?? []).filter((l) => filters.provinces.includes(l)),
+              onChange: (v: string[]) => {
+                const nonProvince = (params.location ?? []).filter(
+                  (l) => !filters.provinces.includes(l),
+                )
+                updateParam('location', [...nonProvince, ...v])
+              },
+            },
+          }
+        : undefined,
+    [filters, params.year, params.category, params.edu_level, params.location, updateParam],
+  )
 
   function clearFilters() {
     setParams({ ...DEFAULT_PARAMS })
@@ -883,7 +934,10 @@ export function ListPage({
                   type="button"
                   aria-label={`删除筛选 ${f.name}`}
                   className="cursor-pointer text-muted-foreground hover:text-foreground"
-                  onClick={() => setSaved(deleteFilter(f.name))}
+                  onClick={() => {
+                    removeSavedFilterBaseline('positions', f.name)
+                    setSaved(deleteFilter(f.name))
+                  }}
                 >
                   <X className="pointer-events-none h-3 w-3" />
                 </button>
@@ -1202,7 +1256,7 @@ export function ListPage({
 
       {view === 'table' && (
         <PositionTable
-          emptyAction={<ActiveFilterChips filters={activeFilters} />}
+          emptyAction={emptyAction}
           highlight={params.keyword}
           data={data?.items || []}
           total={data?.total || 0}
@@ -1210,53 +1264,16 @@ export function ListPage({
           page={data?.page || 1}
           pageSize={data?.page_size || 20}
           loading={loading}
-          onPageChange={(page) => updateParam('page', page)}
-          onPageSizeChange={(size) => updateParam('page_size', size)}
-          columnFilters={
-            filters
-              ? {
-                  year: {
-                    label: '年份',
-                    options: filters.years.map(String),
-                    selected: (params.year ?? []).map(String),
-                    onChange: (v) =>
-                      updateParam('year', v.map(Number).filter((n) => !isNaN(n))),
-                  },
-                  job_type: {
-                    label: '类型',
-                    options: filters.categories,
-                    selected: params.category ?? [],
-                    onChange: (v) => updateParam('category', v),
-                  },
-                  edu_level_norm: {
-                    label: '学历',
-                    options: filters.edu_levels,
-                    selected: params.edu_level ?? [],
-                    onChange: (v) => updateParam('edu_level', v),
-                  },
-                  work_location: {
-                    label: '省份',
-                    options: filters.provinces,
-                    selected: (params.location ?? []).filter((l) =>
-                      filters.provinces.includes(l),
-                    ),
-                    onChange: (v) => {
-                      const nonProvince = (params.location ?? []).filter(
-                        (l) => !filters.provinces.includes(l),
-                      )
-                      updateParam('location', [...nonProvince, ...v])
-                    },
-                  },
-                }
-              : undefined
-          }
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+          columnFilters={columnFilters}
         />
       )}
       {view === 'card' && (
         <PositionCardGrid
           data={data?.items || []}
           loading={loading}
-          emptyAction={<ActiveFilterChips filters={activeFilters} />}
+          emptyAction={emptyAction}
           highlight={params.keyword}
         />
       )}

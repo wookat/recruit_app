@@ -89,6 +89,22 @@ export function markSavedFilterSeen(scope: string, name: string) {
   }
 }
 
+/** 删除某组已保存筛选时同步清理其基线，避免孤儿键。 */
+export function removeSavedFilterBaseline(scope: string, name: string) {
+  const key = bkey(scope, name)
+  const map = readBaselines()
+  if (key in map) {
+    delete map[key]
+    writeBaselines(map)
+  }
+  delete latestTotals[key]
+  if (state.counts[key]) {
+    const next = { ...state.counts }
+    delete next[key]
+    setCounts(next)
+  }
+}
+
 // ---------- 快照 -> 列表 API 参数（保持原快照语义，不额外附加参数） ----------
 
 function daysAgoStr(days: number): string {

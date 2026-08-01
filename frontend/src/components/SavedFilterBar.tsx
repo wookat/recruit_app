@@ -3,7 +3,7 @@ import { Bookmark, BookmarkPlus, Check, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { markSavedFilterSeen, useSavedNews } from '@/lib/savedNews'
+import { markSavedFilterSeen, removeSavedFilterBaseline, useSavedNews } from '@/lib/savedNews'
 import {
   deleteQuery,
   getSavedQueries,
@@ -69,7 +69,10 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
             type="button"
             aria-label={`删除筛选 ${f.name}`}
             className="cursor-pointer text-muted-foreground hover:text-foreground"
-            onClick={() => setSaved(deleteQuery(board, f.name))}
+            onClick={() => {
+              removeSavedFilterBaseline(board, f.name)
+              setSaved(deleteQuery(board, f.name))
+            }}
           >
             <X className="pointer-events-none h-3 w-3" />
           </button>

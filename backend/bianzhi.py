@@ -90,6 +90,28 @@ def list_bianzhi_jobs(
     return {"total": total, "page": page, "page_size": page_size, "items": items}
 
 
+@router.get("/counts")
+@cache.cached("bianzhi_counts", ttl=3600, stale=True)
+def bianzhi_counts(db: Session = Depends(get_db)):
+    """分类/省份计数（前端 chips 显示，1 小时缓存，失败回退旧缓存）。"""
+    cats = (
+        db.query(BianzhiJob.category, func.count())
+        .filter(BianzhiJob.category != None, BianzhiJob.category != "")  # noqa: E711
+        .group_by(BianzhiJob.category)
+        .all()
+    )
+    provs = (
+        db.query(BianzhiJob.province, func.count())
+        .filter(BianzhiJob.province != None, BianzhiJob.province != "")  # noqa: E711
+        .group_by(BianzhiJob.province)
+        .all()
+    )
+    return {
+        "categories": {c: n for c, n in cats},
+        "provinces": {p: n for p, n in provs},
+    }
+
+
 @router.get("/filters")
 @cache.cached("bianzhi_filters", ttl=86400)
 def bianzhi_filter_options(db: Session = Depends(get_db)):

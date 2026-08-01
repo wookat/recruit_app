@@ -109,6 +109,28 @@ def list_campus_jobs(
     return {"total": total, "page": page, "page_size": page_size, "items": items}
 
 
+@router.get("/counts")
+@cache.cached("campus_counts", ttl=3600, stale=True)
+def campus_counts(db: Session = Depends(get_db)):
+    """企业类型/批次计数（前端 chips 显示，1 小时缓存，失败回退旧缓存）。"""
+    ctypes = (
+        db.query(CampusJob.company_type, func.count())
+        .filter(CampusJob.company_type != None, CampusJob.company_type != "")  # noqa: E711
+        .group_by(CampusJob.company_type)
+        .all()
+    )
+    batches = (
+        db.query(CampusJob.batch, func.count())
+        .filter(CampusJob.batch != None, CampusJob.batch != "")  # noqa: E711
+        .group_by(CampusJob.batch)
+        .all()
+    )
+    return {
+        "company_types": {t: n for t, n in ctypes},
+        "batches": {b: n for b, n in batches},
+    }
+
+
 @router.get("/filters")
 @cache.cached("campus_filters", ttl=86400)
 def campus_filter_options(db: Session = Depends(get_db)):

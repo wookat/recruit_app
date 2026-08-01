@@ -29,6 +29,7 @@ import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
+import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
 import { getProfile, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
@@ -404,6 +405,120 @@ export function CampusPage({
     return [...data.items].sort((a, b) => cmpNullableStr(field(a), field(b), sort.dir))
   }, [data, sort])
 
+  const [cardMore, setCardMore] = useState<Set<number>>(new Set())
+  const toggleCardMore = useCallback((id: number) => {
+    setCardMore((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const typeChips = filters ? (
+    <div className="flex flex-wrap gap-1.5">
+      {filters.company_types.slice(0, 6).map((t) => (
+        <button
+          key={t}
+          onClick={() => toggleCompanyType(t)}
+          className={cn(
+            'min-h-11 rounded-full px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            companyTypes.includes(t)
+              ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
+              : 'opacity-80 hover:opacity-100',
+            toneClass(COMPANY_TYPE_TONES, t),
+          )}
+        >
+          {t}
+          {typeCounts?.[t] != null && (
+            <span className="ml-1 hidden opacity-70 sm:inline">
+              {typeCounts[t].toLocaleString()}
+            </span>
+          )}
+        </button>
+      ))}
+    </div>
+  ) : null
+
+  const cityFilterRow = (
+    <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
+      <div className="flex w-max items-center gap-1.5">
+        <span className="mr-0.5 shrink-0 text-xs text-muted-foreground">城市</span>
+        {CITY_CHIPS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => {
+              setCity((prev) => (prev === c ? null : c))
+              setPage(1)
+            }}
+            className={cn(
+              'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+              city === c
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-foreground hover:bg-muted',
+            )}
+          >
+            {c}
+          </button>
+        ))}
+        <span className="mx-1 h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+        <button
+          type="button"
+          onClick={() => {
+            setRecentOnly((v) => !v)
+            setPage(1)
+          }}
+          className={cn(
+            'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            recentOnly
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-background text-foreground hover:bg-muted',
+          )}
+        >
+          近7天更新
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setDueOnly((v) => !v)
+            setPage(1)
+          }}
+          className={cn(
+            'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            dueOnly
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-background text-foreground hover:bg-muted',
+          )}
+        >
+          即将截止
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setHideExpired((v) => !v)
+            setPage(1)
+          }}
+          className={cn(
+            'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            hideExpired
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-background text-foreground hover:bg-muted',
+          )}
+        >
+          隐藏已截止
+        </button>
+      </div>
+    </div>
+  )
+
+  const mobileFilterCount =
+    companyTypes.length +
+    (city ? 1 : 0) +
+    (recentOnly ? 1 : 0) +
+    (dueOnly ? 1 : 0) +
+    (hideExpired ? 1 : 0)
+
   return (
     <div className="space-y-4">
       {/* 预设视图 chips */}
@@ -563,102 +678,17 @@ export function CampusPage({
             <Table2 className="h-4 w-4" />
           </button>
         </div>
-        {filters && (
-          <div className="flex flex-wrap gap-1.5">
-            {filters.company_types.slice(0, 6).map((t) => (
-              <button
-                key={t}
-                onClick={() => toggleCompanyType(t)}
-                className={cn(
-                  'min-h-11 rounded-full px-2.5 py-1 text-xs transition-colors sm:min-h-0',
-                  companyTypes.includes(t)
-                    ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
-                    : 'opacity-80 hover:opacity-100',
-                  toneClass(COMPANY_TYPE_TONES, t),
-                )}
-              >
-                {t}
-                {typeCounts?.[t] != null && (
-                  <span className="ml-1 hidden opacity-70 sm:inline">
-                    {typeCounts[t].toLocaleString()}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+        {typeChips && <div className="hidden md:block">{typeChips}</div>}
       </div>
 
-      {/* 城市筛选 + 近7天更新 */}
-      <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-        <div className="flex w-max items-center gap-1.5">
-          <span className="mr-0.5 shrink-0 text-xs text-muted-foreground">城市</span>
-          {CITY_CHIPS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => {
-                setCity((prev) => (prev === c ? null : c))
-                setPage(1)
-              }}
-              className={cn(
-                'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors sm:min-h-0',
-                city === c
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border bg-background text-foreground hover:bg-muted',
-              )}
-            >
-              {c}
-            </button>
-          ))}
-          <span className="mx-1 h-4 w-px shrink-0 bg-border" aria-hidden="true" />
-          <button
-            type="button"
-            onClick={() => {
-              setRecentOnly((v) => !v)
-              setPage(1)
-            }}
-            className={cn(
-              'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors sm:min-h-0',
-              recentOnly
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border bg-background text-foreground hover:bg-muted',
-            )}
-          >
-            近7天更新
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setDueOnly((v) => !v)
-              setPage(1)
-            }}
-            className={cn(
-              'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors sm:min-h-0',
-              dueOnly
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border bg-background text-foreground hover:bg-muted',
-            )}
-          >
-            即将截止
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setHideExpired((v) => !v)
-              setPage(1)
-            }}
-            className={cn(
-              'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors sm:min-h-0',
-              hideExpired
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border bg-background text-foreground hover:bg-muted',
-            )}
-          >
-            隐藏已截止
-          </button>
-        </div>
-      </div>
+      {/* 城市筛选 + 近7天更新（桌面） */}
+      <div className="hidden md:block">{cityFilterRow}</div>
+
+      {/* 移动端筛选：超两行自动折叠 */}
+      <MobileFilterCollapse count={mobileFilterCount} title="校招筛选">
+        {typeChips}
+        {cityFilterRow}
+      </MobileFilterCollapse>
 
       {/* 计数 */}
       {data && (
@@ -964,7 +994,14 @@ export function CampusPage({
                   </Badge>
                 )}
                 {job.source_table && (
-                  <Badge variant="secondary" className={cn('border-0', TONE_CLASSES.slate)}>
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      'border-0',
+                      TONE_CLASSES.slate,
+                      cardMore.has(job.id) ? 'inline-flex' : 'hidden sm:inline-flex',
+                    )}
+                  >
                     {job.source_table}
                   </Badge>
                 )}
@@ -1003,10 +1040,16 @@ export function CampusPage({
                       : job.edu_requirement}
                   </Badge>
                 )}
-                {job.industry && <span className="text-muted-foreground">{job.industry}</span>}
+                {job.industry && (
+                  <span className={cn('text-muted-foreground', cardMore.has(job.id) ? 'inline' : 'hidden sm:inline')}>
+                    {job.industry}
+                  </span>
+                )}
                 {job.locations && <span className="text-muted-foreground">{job.locations}</span>}
                 {job.start_date && (
-                  <span className="text-muted-foreground">开始：{job.start_date}</span>
+                  <span className={cn('text-muted-foreground', cardMore.has(job.id) ? 'inline' : 'hidden sm:inline')}>
+                    开始：{job.start_date}
+                  </span>
                 )}
                 {job.deadline_text && (
                   <span className="text-muted-foreground">截止：{job.deadline_text}</span>
@@ -1014,12 +1057,30 @@ export function CampusPage({
                 <DueBadge date={job.deadline_date} />
               </div>
               {job.major_requirement && job.major_requirement.trim() !== '/' && (
-                <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
+                <p className={cn('mt-1.5 line-clamp-2 text-xs text-muted-foreground', cardMore.has(job.id) ? 'block' : 'hidden sm:block')}>
                   专业：{job.major_requirement}
                 </p>
               )}
               {job.notes && job.notes.trim() !== '/' && (
-                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">备注：{job.notes}</p>
+                <p className={cn('mt-1 line-clamp-2 text-xs text-muted-foreground', cardMore.has(job.id) ? 'block' : 'hidden sm:block')}>
+                  备注：{job.notes}
+                </p>
+              )}
+              {(job.source_table ||
+                job.industry ||
+                job.start_date ||
+                (job.major_requirement && job.major_requirement.trim() !== '/') ||
+                (job.notes && job.notes.trim() !== '/')) && (
+                <button
+                  type="button"
+                  className="mt-1 flex min-h-8 items-center text-xs text-muted-foreground underline-offset-2 hover:underline sm:hidden"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleCardMore(job.id)
+                  }}
+                >
+                  {cardMore.has(job.id) ? '收起' : '更多'}
+                </button>
               )}
               {(job.apply_url || job.announce_url) && (
                 <div className="mt-2.5 flex flex-wrap gap-2">

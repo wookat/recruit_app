@@ -29,6 +29,7 @@ import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
+import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
 import { getProfile, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
@@ -328,6 +329,43 @@ export function BianzhiPage({
     [isLiankao, sortedItems, page],
   )
 
+  const [cardMore, setCardMore] = useState<Set<number>>(new Set())
+  const toggleCardMore = useCallback((id: number) => {
+    setCardMore((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const provinceRow =
+    filters && filters.provinces.length > 0 ? (
+      <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
+        <div className="flex w-max gap-1.5">
+          {filters.provinces.slice(0, 32).map((p) => (
+            <button
+              key={p}
+              onClick={() => toggleProvince(p)}
+              className={cn(
+                'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+                provinces.includes(p)
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
+              )}
+            >
+              {p}
+              {provinceCounts?.[p] != null && (
+                <span className="ml-1 hidden opacity-70 sm:inline">
+                  {provinceCounts[p].toLocaleString()}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    ) : null
+
   return (
     <div className="space-y-4">
       {/* 分类 chips */}
@@ -535,31 +573,14 @@ export function BianzhiPage({
         {guideOpen && <MajorGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
       </Suspense>
 
-      {/* 省份 chips */}
-      {filters && filters.provinces.length > 0 && (
-        <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-          <div className="flex w-max gap-1.5">
-            {filters.provinces.slice(0, 32).map((p) => (
-              <button
-                key={p}
-                onClick={() => toggleProvince(p)}
-                className={cn(
-                  'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors sm:min-h-0',
-                  provinces.includes(p)
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
-                )}
-              >
-                {p}
-                {provinceCounts?.[p] != null && (
-                  <span className="ml-1 hidden opacity-70 sm:inline">
-                    {provinceCounts[p].toLocaleString()}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* 省份 chips（桌面） */}
+      {provinceRow && <div className="hidden md:block">{provinceRow}</div>}
+
+      {/* 移动端筛选：超两行自动折叠 */}
+      {provinceRow && (
+        <MobileFilterCollapse count={provinces.length} title="编制筛选">
+          {provinceRow}
+        </MobileFilterCollapse>
       )}
 
       {/* 计数 */}
@@ -702,12 +723,27 @@ export function BianzhiPage({
                 {!isLiankao && <DueBadge date={job.deadline_date} />}
               </div>
               {job.major_requirement && job.major_requirement.trim() !== '/' && (
-                <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
+                <p className={cn('mt-1.5 line-clamp-2 text-xs text-muted-foreground', cardMore.has(job.id) ? 'block' : 'hidden sm:block')}>
                   专业：{job.major_requirement}
                 </p>
               )}
               {job.notes && job.notes.trim() !== '/' && (
-                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">备注：{job.notes}</p>
+                <p className={cn('mt-1 line-clamp-2 text-xs text-muted-foreground', cardMore.has(job.id) ? 'block' : 'hidden sm:block')}>
+                  备注：{job.notes}
+                </p>
+              )}
+              {((job.major_requirement && job.major_requirement.trim() !== '/') ||
+                (job.notes && job.notes.trim() !== '/')) && (
+                <button
+                  type="button"
+                  className="mt-1 flex min-h-8 items-center text-xs text-muted-foreground underline-offset-2 hover:underline sm:hidden"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleCardMore(job.id)
+                  }}
+                >
+                  {cardMore.has(job.id) ? '收起' : '更多'}
+                </button>
               )}
               {(job.announce_url || job.apply_url) && (
                 <div className="mt-2.5 flex flex-wrap gap-2">

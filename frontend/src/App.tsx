@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
 import { CompareBar } from '@/components/CompareBar'
+import { MobileBottomNav } from '@/components/MobileBottomNav'
 import { OnboardingCard } from '@/components/OnboardingCard'
 import { useFavorites } from '@/lib/positionStore'
 import { useBianzhiFavorites, useCampusFavorites } from '@/lib/boardFavorites'
@@ -297,7 +298,7 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
-            className={`min-h-11 gap-1.5 px-2 sm:min-h-8 ${section.mode === 'calendar' ? 'text-primary' : ''}`}
+            className={`hidden min-h-11 gap-1.5 px-2 sm:min-h-8 md:inline-flex ${section.mode === 'calendar' ? 'text-primary' : ''}`}
             aria-label="截止日历"
             title="截止日历"
             onClick={() => {
@@ -308,15 +309,13 @@ export default function App() {
             <CalendarDays className="h-4 w-4" />
             <span className="hidden sm:inline">日历</span>
           </Button>
-          <Button variant="ghost" size="sm" className="min-h-11 gap-1.5 sm:min-h-8" onClick={() => setGuideOpen(true)}>
+          <Button variant="ghost" size="sm" className="hidden min-h-11 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setGuideOpen(true)}>
             <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">求职攻略</span>
-            <span className="sm:hidden">攻略</span>
+            求职攻略
           </Button>
-          <Button variant="outline" size="sm" className="relative min-h-11 gap-1.5 sm:min-h-8" onClick={() => setFavOpen(true)}>
+          <Button variant="outline" size="sm" className="relative hidden min-h-11 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setFavOpen(true)}>
             <Star className="h-4 w-4 text-amber-400" />
-            <span className="hidden sm:inline">我的收藏</span>
-            <span className="sm:hidden">收藏</span>
+            我的收藏
             {dueSoon > 0 && (
               <span
                 className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
@@ -407,7 +406,7 @@ export default function App() {
         </div>
       </main>
 
-      <footer className="border-t bg-background py-6 pb-16 text-center text-xs text-muted-foreground">
+      <footer className="border-t bg-background py-6 pb-24 text-center text-xs text-muted-foreground md:pb-16">
         <div className="mb-2 flex items-center justify-center gap-4">
           <button
             type="button"
@@ -432,6 +431,21 @@ export default function App() {
         数据来源：国家公务员局、军队人才网、国聘网及各省官方/汇总页面 · 仅供参考
       </footer>
 
+      <MobileBottomNav
+        active={tab === 'admin' ? null : section.mode === 'calendar' ? 'calendar' : 'jobs'}
+        favCount={favorites.length + campusFavorites.length + bianzhiFavorites.length}
+        dueSoon={dueSoon}
+        onJobs={() => {
+          if (section.mode === 'calendar') setSection({ mode: 'positions' })
+          window.scrollTo({ top: 0 })
+        }}
+        onCalendar={() => {
+          if (section.mode !== 'calendar') setSection({ mode: 'calendar' })
+          window.scrollTo({ top: 0 })
+        }}
+        onFavorites={() => setFavOpen(true)}
+        onGuide={() => setGuideOpen(true)}
+      />
       <FavoritesSheet open={favOpen} onClose={() => setFavOpen(false)} />
       <Suspense fallback={null}>
         {guideOpen && <JobGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}

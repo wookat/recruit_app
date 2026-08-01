@@ -1151,7 +1151,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   }}
                 >
                   {t.label}
-                  {t.count > 0 && <span className="ml-1 opacity-90">{t.count}</span>}
+                  {t.count > 0 && <span className="ml-1">{t.count}</span>}
                 </button>
               ))}
             </div>
@@ -1271,7 +1271,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                       setStatusFilter((cur) => (cur === s ? null : s))
                     }}
                   >
-                    {s} {statusCounts[s]}
+                    {s} <span data-count>{statusCounts[s]}</span>
                   </button>
                 ))}
                 {statusFilter && (

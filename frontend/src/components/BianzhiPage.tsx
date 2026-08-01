@@ -473,7 +473,7 @@ export function BianzhiPage({
             >
               {p}
               {provinceCounts?.[p] != null && (
-                <span className="ml-1 hidden opacity-90 sm:inline">
+                <span className="ml-1 hidden sm:inline">
                   {provinceCounts[p].toLocaleString()}
                 </span>
               )}
@@ -501,7 +501,7 @@ export function BianzhiPage({
             >
               {v.label}
               {filters && v.category && (
-                <span className="ml-1 text-xs opacity-90">
+                <span className="ml-1 text-xs">
                   {(filters.categories[v.category] ?? 0).toLocaleString()}
                 </span>
               )}

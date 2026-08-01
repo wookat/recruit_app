@@ -120,26 +120,24 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob }: Props) {
           value={q}
           onValueChange={setQ}
         />
+        {!kw && (
+          <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+            输入关键词，同时搜索 体制内 / 校招 / 编制 三个板块
+            <span className="mt-1 block text-xs">Ctrl K 随时打开 · 上下键选择 · 回车直达详情</span>
+          </div>
+        )}
+        {kw && loading && !hits && (
+          <div className="px-3 py-6 text-center text-sm text-muted-foreground">搜索中…</div>
+        )}
+        {empty && (
+          <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+            三个板块均无「{kw}」的相关结果
+            <span className="mt-1 block text-xs">
+              建议：换更短的关键词（如只搜单位名或岗位名）；若在板块列表页有筛选，可清除筛选后再试
+            </span>
+          </div>
+        )}
         <CommandList className="sm:max-h-96 max-sm:max-h-[calc(100dvh-64px)]">
-          {!kw && (
-            <div role="presentation" className="px-3 py-6 text-center text-sm text-muted-foreground">
-              输入关键词，同时搜索 体制内 / 校招 / 编制 三个板块
-              <span className="mt-1 block text-xs">Ctrl K 随时打开 · 上下键选择 · 回车直达详情</span>
-            </div>
-          )}
-          {kw && loading && !hits && (
-            <div role="presentation" className="px-3 py-6 text-center text-sm text-muted-foreground">
-              搜索中…
-            </div>
-          )}
-          {empty && (
-            <div role="presentation" className="px-3 py-6 text-center text-sm text-muted-foreground">
-              三个板块均无「{kw}」的相关结果
-              <span className="mt-1 block text-xs">
-                建议：换更短的关键词（如只搜单位名或岗位名）；若在板块列表页有筛选，可清除筛选后再试
-              </span>
-            </div>
-          )}
           {kw && hits && hits.positions.total > 0 && (
             <CommandGroup heading={`体制内岗位（${hits.positions.total.toLocaleString()}）`}>
               {hits.positions.items.map((p) => (
@@ -155,7 +153,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob }: Props) {
                         ? stripOrgPrefix(p.position_example, p.employer)
                         : p.exam_type || '-'}
                     </span>
-                    <span className="block truncate text-xs text-muted-foreground">
+                    <span className="block truncate text-xs text-muted-foreground group-data-selected/command-item:text-foreground/75">
                       {[p.employer, p.work_location].filter(Boolean).join(' · ')}
                     </span>
                   </span>
@@ -164,7 +162,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob }: Props) {
               {hits.positions.total > hits.positions.items.length && (
                 <CommandItem value="positions-all" className="max-sm:min-h-11" onSelect={() => pickAll('positions')}>
                   <ArrowRight className="text-muted-foreground" />
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground group-data-selected/command-item:text-foreground/75">
                     查看全部 {hits.positions.total.toLocaleString()} 条体制内结果
                   </span>
                 </CommandItem>
@@ -184,7 +182,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob }: Props) {
                     <GraduationCap className="text-muted-foreground" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate">{j.company || '-'}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
+                      <span className="block truncate text-xs text-muted-foreground group-data-selected/command-item:text-foreground/75">
                         {[j.positions, j.locations].filter(Boolean).join(' · ')}
                       </span>
                     </span>
@@ -193,7 +191,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob }: Props) {
                 {hits.campus.total > hits.campus.items.length && (
                   <CommandItem value="campus-all" className="max-sm:min-h-11" onSelect={() => pickAll('campus')}>
                     <ArrowRight className="text-muted-foreground" />
-                    <span className="text-muted-foreground">
+                    <span className="text-muted-foreground group-data-selected/command-item:text-foreground/75">
                       查看全部 {hits.campus.total.toLocaleString()} 条校招结果
                     </span>
                   </CommandItem>
@@ -214,7 +212,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob }: Props) {
                     <Briefcase className="text-muted-foreground" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate">{j.employer || '-'}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
+                      <span className="block truncate text-xs text-muted-foreground group-data-selected/command-item:text-foreground/75">
                         {[j.category, j.province, j.job_type].filter(Boolean).join(' · ')}
                       </span>
                     </span>
@@ -223,7 +221,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob }: Props) {
                 {hits.bianzhi.total > hits.bianzhi.items.length && (
                   <CommandItem value="bianzhi-all" className="max-sm:min-h-11" onSelect={() => pickAll('bianzhi')}>
                     <ArrowRight className="text-muted-foreground" />
-                    <span className="text-muted-foreground">
+                    <span className="text-muted-foreground group-data-selected/command-item:text-foreground/75">
                       查看全部 {hits.bianzhi.total.toLocaleString()} 条编制结果
                     </span>
                   </CommandItem>

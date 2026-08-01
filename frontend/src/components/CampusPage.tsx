@@ -507,7 +507,7 @@ export function CampusPage({
         >
           {t}
           {typeCounts?.[t] != null && (
-            <span className="ml-1 hidden opacity-90 sm:inline">
+            <span data-count className="ml-1 hidden sm:inline">
               {typeCounts[t].toLocaleString()}
             </span>
           )}
@@ -613,7 +613,7 @@ export function CampusPage({
             >
               {v.label}
               {filters && v.params.source_table && (
-                <span className="ml-1 text-xs opacity-90">
+                <span className="ml-1 text-xs">
                   {filters.source_tables[v.params.source_table[0]] ?? ''}
                 </span>
               )}

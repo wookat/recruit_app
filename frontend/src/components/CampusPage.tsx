@@ -651,11 +651,37 @@ export function CampusPage({
 
       {/* 列表 */}
       {loading && !data ? (
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
-          ))}
-        </div>
+        view === 'table' ? (
+          <div className="space-y-3 rounded-xl border bg-background p-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-4 w-6" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="space-y-2.5 rounded-xl border bg-background p-4">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-16 rounded-4xl" />
+                  <Skeleton className="h-5 w-12 rounded-4xl" />
+                  <Skeleton className="ml-auto h-4 w-20" />
+                </div>
+                <Skeleton className="h-5 w-3/5" />
+                <div className="flex gap-4">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )
       ) : data && data.items.length === 0 ? (
         <EmptyState
           title="没有匹配的校招信息"

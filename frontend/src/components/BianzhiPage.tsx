@@ -570,6 +570,19 @@ export function BianzhiPage({
 
       {/* 列表 */}
       {loading && !data ? (
+        view === 'table' ? (
+          <div className="space-y-3 rounded-xl border bg-background p-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-4 w-6" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="space-y-2.5 rounded-xl border bg-background p-4">
@@ -587,6 +600,7 @@ export function BianzhiPage({
             </div>
           ))}
         </div>
+        )
       ) : data && data.items.length === 0 ? (
         <EmptyState
           title="没有匹配的编制公告"

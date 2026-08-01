@@ -47,6 +47,15 @@ export function daysUntil(d: Date): number {
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 
+/** 截止日分组小节头文案，如「8月2日 · 周日」。 */
+export function formatDueDayLabel(iso: string | null | undefined): string {
+  if (!iso) return '日期待定'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return iso
+  const wd = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()]
+  return `${d.getMonth() + 1}月${d.getDate()}日 · ${wd}`
+}
+
 export function formatDayLabel(d: Date): string {
   return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} 周${WEEKDAYS[d.getDay()]}`
 }

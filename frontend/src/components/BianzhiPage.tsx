@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   fetchBianzhiFilters,
   fetchBianzhiJobs,
@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
+import { formatDueDayLabel } from '@/lib/deadline'
 import {
   Table,
   TableBody,
@@ -372,9 +373,14 @@ export function BianzhiPage({
         <EmptyState title="没有匹配的编制公告" description="试试更换分类或调整搜索关键词" />
       ) : view === 'card' ? (
         <div className={cn('space-y-2', loading && 'pointer-events-none opacity-60')}>
-          {data?.items.map((job) => (
+          {(data?.items ?? []).map((job, i, arr) => (
+            <Fragment key={job.id}>
+              {dueOnly && (i === 0 || arr[i - 1].deadline_date !== job.deadline_date) && (
+                <div className="pt-1 text-xs font-medium text-muted-foreground">
+                  {formatDueDayLabel(job.deadline_date)}
+                </div>
+              )}
             <div
-              key={job.id}
               className="rounded-xl border bg-background p-4 transition-colors hover:border-primary/20 hover:shadow-md"
             >
               <div className="flex flex-wrap items-center gap-2">
@@ -466,6 +472,7 @@ export function BianzhiPage({
                 </div>
               )}
             </div>
+            </Fragment>
           ))}
         </div>
       ) : (
@@ -514,8 +521,19 @@ export function BianzhiPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedItems.map((job) => (
-                <TableRow key={job.id}>
+              {sortedItems.map((job, i, arr) => (
+                <Fragment key={job.id}>
+                  {dueOnly && !sort && (i === 0 || arr[i - 1].deadline_date !== job.deadline_date) && (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell
+                        colSpan={99}
+                        className="bg-muted/40 py-1.5 text-xs font-medium text-muted-foreground"
+                      >
+                        {formatDueDayLabel(job.deadline_date)}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                <TableRow>
                   <TableCell className="p-1">
                     <BoardFavoriteButton
                       active={bianzhiFavorites.some((f) => f.id === job.id)}
@@ -633,6 +651,7 @@ export function BianzhiPage({
                     </div>
                   </TableCell>
                 </TableRow>
+                </Fragment>
               ))}
             </TableBody>
           </Table>

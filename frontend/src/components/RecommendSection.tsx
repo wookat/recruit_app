@@ -92,18 +92,28 @@ export function RecommendSection() {
   const basisLabel = [basis.province, basis.examType].filter(Boolean).join(' · ')
 
   return (
-    <div className="rounded-xl border bg-card p-3 sm:p-4">
+    <div
+      className={`rounded-xl border bg-card p-3 sm:p-4 ${
+        items && items.length > 0 && items.length < 3 ? 'lg:w-fit lg:min-w-96 lg:max-w-full' : ''
+      }`}
+    >
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
-          className="flex min-h-11 cursor-pointer items-center gap-1.5 text-sm font-medium sm:min-h-0"
+          className="flex min-h-11 min-w-0 cursor-pointer items-center gap-1.5 text-sm font-medium sm:min-h-0"
           onClick={toggle}
           aria-expanded={!collapsed}
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          <Sparkles className="h-4 w-4 text-primary" />
-          为你推荐
-          <span className="text-xs font-normal text-muted-foreground">基于收藏（{basisLabel}）</span>
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4 shrink-0" />
+          ) : (
+            <ChevronDown className="h-4 w-4 shrink-0" />
+          )}
+          <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+          <span className="shrink-0 whitespace-nowrap">为你推荐</span>
+          <span className="min-w-0 max-w-60 truncate text-xs font-normal text-muted-foreground">
+            基于收藏（{basisLabel}）
+          </span>
         </button>
         {!collapsed && (
           <Button
@@ -130,7 +140,12 @@ export function RecommendSection() {
                 <FavoriteButton item={p} className="h-8 w-8 shrink-0 sm:h-7 sm:w-7" />
               </div>
               {p.position_example && (
-                <span className="line-clamp-1 text-xs text-muted-foreground">{p.position_example}</span>
+                <span className="line-clamp-1 text-xs text-muted-foreground">
+                  {p.employer && p.position_example.startsWith(p.employer)
+                    ? p.position_example.slice(p.employer.length).replace(/^[\s\-—·：:]+/, '') ||
+                      p.position_example
+                    : p.position_example}
+                </span>
               )}
               <div className="mt-auto flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                 {p.exam_type && (

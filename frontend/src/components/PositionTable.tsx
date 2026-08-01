@@ -161,7 +161,7 @@ export function PositionTable({
   return (
     <div className="space-y-3">
       <div className="rounded-xl border bg-card shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto [scrollbar-width:thin]">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (
@@ -174,12 +174,18 @@ export function PositionTable({
                         sortKey={SORTABLE_COLUMNS[h.column.id]}
                         sort={sort}
                         onToggle={(k) => setSort((prev) => nextSort(prev, k))}
-                        className="whitespace-nowrap"
+                        className={cn(
+                          'whitespace-nowrap',
+                          h.column.id === 'created_at' && 'hidden 2xl:table-cell',
+                        )}
                       />
                     ) : (
                     <TableHead
                       key={h.id}
-                      className="whitespace-nowrap"
+                      className={cn(
+                        'whitespace-nowrap',
+                        h.column.id === 'exam_time' && 'hidden 2xl:table-cell',
+                      )}
                       style={{ width: h.column.getSize() }}
                     >
                       {columnFilters?.[h.column.id] ? (
@@ -193,7 +199,7 @@ export function PositionTable({
                     </TableHead>
                     ),
                   )}
-                  <TableHead className="sticky right-0 w-32 bg-card shadow-[-6px_0_8px_-6px_rgba(0,0,0,0.12)]">
+                  <TableHead className="sticky right-0 w-32 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
                     操作
                   </TableHead>
                 </TableRow>
@@ -231,7 +237,11 @@ export function PositionTable({
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
-                        className="max-w-xs truncate text-sm"
+                        className={cn(
+                          'max-w-xs truncate text-sm',
+                          (cell.column.id === 'exam_time' || cell.column.id === 'created_at') &&
+                            'hidden 2xl:table-cell',
+                        )}
                         title={String(cell.getValue() || '')}
                       >
                         {cell.column.id === 'year' ? (
@@ -269,7 +279,7 @@ export function PositionTable({
                         )}
                       </TableCell>
                     ))}
-                    <TableCell className="sticky right-0 bg-card shadow-[-6px_0_8px_-6px_rgba(0,0,0,0.12)] group-hover:bg-muted">
+                    <TableCell className="sticky right-0 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)] group-hover:bg-muted">
                       <div className="flex items-center gap-0.5">
                         <FavoriteButton item={row.original} />
                         <CompareButton item={row.original} />

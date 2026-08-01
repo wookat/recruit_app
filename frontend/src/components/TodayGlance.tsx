@@ -79,7 +79,7 @@ export function TodayGlance({ onCampus, onBianzhi, onDeadline }: Props) {
         <span className="font-semibold text-primary">
           {deadlineCount >= 100 ? '100+' : deadlineCount.toLocaleString()}
         </span>{' '}
-        个
+        条
         <ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ),

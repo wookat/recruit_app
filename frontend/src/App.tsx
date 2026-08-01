@@ -260,7 +260,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/30 font-sans">
-      <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
             <BrandMark className="h-9 w-9 shrink-0" />
@@ -293,7 +293,7 @@ export default function App() {
             我的收藏
             {dueSoon > 0 && (
               <span
-                className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
+                className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
                 title={`${dueSoon} 个收藏岗位 3 天内截止`}
               >
                 {dueSoon}

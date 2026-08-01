@@ -699,7 +699,14 @@ export function ListPage({
               onSelect={(text) => applySuggestion(text)}
               words={positionSuggestWords}
               extraItems={[
-                ...suggestions.map((s) => ({ text: s.text, count: s.count })),
+                ...suggestions
+                  .filter(
+                    (s) =>
+                      s.text.length <= 12 &&
+                      !/[，。、；！？]/.test(s.text) &&
+                      !/从事|等工作|负责|相关工作/.test(s.text),
+                  )
+                  .map((s) => ({ text: s.text, count: s.count })),
                 ...pinyinSuggestions.map((s) => ({ text: s })),
               ]}
               placeholder="搜索岗位、单位、专业、地点…"
@@ -989,7 +996,7 @@ export function ListPage({
         <RecommendPanel query={recommendQuery} onClose={() => setRecommendQuery(null)} />
       )}
 
-      {showStats && <DeadlinesCard />}
+      {showStats && !deadlineView && <DeadlinesCard />}
 
       <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5">
         {PRESET_VIEWS.map((preset) => {

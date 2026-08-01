@@ -30,9 +30,9 @@ export function FavCompareDialog({
         <DialogHeader className="border-b px-4 py-3">
           <DialogTitle>收藏对比（{columns.length} 条）</DialogTitle>
         </DialogHeader>
-        <div className="relative">
+        <div className="relative min-w-0 max-w-full">
           <div
-            className="overflow-auto p-4 max-sm:px-0 [scrollbar-width:thin]"
+            className="min-w-0 max-w-full overflow-auto p-4 max-sm:px-0 [scrollbar-width:thin]"
             style={{ maxHeight: 'calc(85vh - 3.5rem)' }}
           >
           <table className="w-full min-w-[560px] border-collapse text-sm">

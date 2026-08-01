@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table'
 import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { BoardCompareButton } from '@/components/BoardCompareButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
@@ -820,6 +821,7 @@ export function BianzhiPage({
                   active={bianzhiFavorites.some((f) => f.id === job.id)}
                   onToggle={() => toggleBianzhiFavorite(job)}
                 />
+                <BoardCompareButton className="-ml-1 -my-1" item={{ board: 'bianzhi', job }} />
                 <ShareTextButton className="-ml-1 -my-1" text={bianzhiShareText(job)} />
                 <span className="text-base font-semibold">
                   <Highlight
@@ -1000,6 +1002,7 @@ export function BianzhiPage({
                         active={bianzhiFavorites.some((f) => f.id === job.id)}
                         onToggle={() => toggleBianzhiFavorite(job)}
                       />
+                      <BoardCompareButton item={{ board: 'bianzhi', job }} />
                       <ShareTextButton text={bianzhiShareText(job)} />
                     </div>
                   </TableCell>

@@ -1,5 +1,6 @@
 import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  fetchBianzhiCounts,
   fetchBianzhiFilters,
   fetchBianzhiJobs,
   type BianzhiFilterOptions,
@@ -85,6 +86,25 @@ export function BianzhiPage({
   const urlQuery = useMemo(() => new URLSearchParams(window.location.search), [])
   const [preset, setPreset] = useState(initialPreset ?? 'all')
   const [dueOnly, setDueOnly] = useState(urlQuery.get('due') === '7')
+  const [provinceCounts, setProvinceCounts] = useState<Record<string, number> | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    fetchBianzhiCounts().then((c) => {
+      if (!alive || !c) return
+      const acc: Record<string, number> = {}
+      for (const [key, n] of Object.entries(c.provinces)) {
+        for (const part of key.split(/[|,，]/)) {
+          const prov = part.trim()
+          if (prov) acc[prov] = (acc[prov] ?? 0) + n
+        }
+      }
+      setProvinceCounts(acc)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
   const [keyword, setKeyword] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
   const [searchInput, setSearchInput] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
   const [provinces, setProvinces] = useState<string[]>(() => {
@@ -334,6 +354,11 @@ export function BianzhiPage({
                 )}
               >
                 {p}
+                {provinceCounts?.[p] != null && (
+                  <span className="ml-1 hidden opacity-70 sm:inline">
+                    {provinceCounts[p].toLocaleString()}
+                  </span>
+                )}
               </button>
             ))}
           </div>

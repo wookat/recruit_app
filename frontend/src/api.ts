@@ -228,6 +228,42 @@ export function fetchFreshness(): Promise<Freshness> {
   return freshnessPromise
 }
 
+// ---------- chips 计数 ----------
+export interface BianzhiCounts {
+  categories: Record<string, number>
+  provinces: Record<string, number>
+}
+
+export interface CampusCounts {
+  company_types: Record<string, number>
+  batches: Record<string, number>
+}
+
+let bianzhiCountsPromise: Promise<BianzhiCounts | null> | null = null
+let campusCountsPromise: Promise<CampusCounts | null> | null = null
+
+/** 模块级缓存单次请求，失败静默返回 null。 */
+export function fetchBianzhiCounts(): Promise<BianzhiCounts | null> {
+  if (!bianzhiCountsPromise) {
+    bianzhiCountsPromise = axios
+      .get(`${API_BASE}/api/bianzhi/counts`)
+      .then((r) => r.data)
+      .catch(() => null)
+  }
+  return bianzhiCountsPromise
+}
+
+/** 模块级缓存单次请求，失败静默返回 null。 */
+export function fetchCampusCounts(): Promise<CampusCounts | null> {
+  if (!campusCountsPromise) {
+    campusCountsPromise = axios
+      .get(`${API_BASE}/api/campus/counts`)
+      .then((r) => r.data)
+      .catch(() => null)
+  }
+  return campusCountsPromise
+}
+
 export async function fetchPositions(params: SearchParams): Promise<PositionList> {
   const res = await axios.get(`${API_BASE}/api/positions?${toQuery(params)}`)
   return res.data

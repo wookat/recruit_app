@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  fetchCampusCounts,
   fetchCampusFilters,
   fetchCampusJobs,
   type CampusFilterOptions,
@@ -167,6 +168,17 @@ export function CampusPage({
     () => new URLSearchParams(window.location.search).get('due') === '7',
   )
   const [page, setPage] = useState(1)
+  const [typeCounts, setTypeCounts] = useState<Record<string, number> | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    fetchCampusCounts().then((c) => {
+      if (alive && c) setTypeCounts(c.company_types)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
   const [data, setData] = useState<{ total: number; items: CampusJob[] } | null>(null)
   const [filters, setFilters] = useState<CampusFilterOptions | null>(null)
   const [loading, setLoading] = useState(true)
@@ -392,6 +404,11 @@ export function CampusPage({
                 )}
               >
                 {t}
+                {typeCounts?.[t] != null && (
+                  <span className="ml-1 hidden opacity-70 sm:inline">
+                    {typeCounts[t].toLocaleString()}
+                  </span>
+                )}
               </button>
             ))}
           </div>

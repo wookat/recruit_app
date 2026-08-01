@@ -141,7 +141,7 @@ export function BoardRecommendSection({ board, onOpenDetail }: Props) {
     <div
       className={cn(
         'rounded-xl border bg-card p-3 sm:p-4',
-        items && items.length > 0 && items.length < 3 ? 'lg:w-fit lg:min-w-96 lg:max-w-full' : '',
+        !collapsed && 'lg:w-fit lg:min-w-96 lg:max-w-full',
       )}
     >
       <div className="flex items-center justify-between gap-2">

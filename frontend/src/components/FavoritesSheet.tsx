@@ -50,7 +50,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, Building2, Download, ExternalLink, Flag, MapPin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote } from 'lucide-react'
+import { AlarmClock, Building2, ClipboardList, Download, ExternalLink, Flag, MapPin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote } from 'lucide-react'
 import { EmptyState } from './EmptyState'
 
 interface Props {
@@ -82,6 +82,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
   const [noteEditing, setNoteEditing] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [listCopied, setListCopied] = useState(false)
   const [board, setBoard] = useState<Board>('positions')
   const [view, setView] = useState<'track' | 'calendar'>('track')
   const [statusFilter, setStatusFilter] = useState<AppStatus | null>(null)
@@ -572,6 +573,32 @@ export function FavoritesSheet({ open, onClose }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  async function copyFavoritesList() {
+    const lines: string[] = []
+    const join = (parts: (string | null | undefined)[]) =>
+      parts.map((s) => (s || '').trim()).filter(Boolean).join(' - ')
+    if (board === 'positions') {
+      for (const p of favorites) {
+        lines.push(join([p.employer, p.position_example, p.signup_time, p.source_url]))
+      }
+    } else if (board === 'campus') {
+      for (const j of campusFavs) {
+        lines.push(
+          join([j.company, j.positions, j.deadline_text, j.apply_url || j.announce_url]),
+        )
+      }
+    } else {
+      for (const j of bianzhiFavs) {
+        lines.push(
+          join([j.employer, j.job_type, j.deadline_text, j.announce_url || j.apply_url]),
+        )
+      }
+    }
+    await copyText(lines.filter(Boolean).join('\n'))
+    setListCopied(true)
+    setTimeout(() => setListCopied(false), 2000)
+  }
+
   const exportPositions = favorites.filter(matchPosition)
   const exportCampus = campusFavs.filter(matchCampus)
   const exportBianzhi = bianzhiFavs.filter(matchBianzhi)
@@ -681,6 +708,25 @@ export function FavoritesSheet({ open, onClose }: Props) {
                 >
                   <Download className="mr-1 h-3.5 w-3.5" />
                   {q ? `导出 CSV (${exportCount})` : '导出 CSV'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
+                  onClick={copyFavoritesList}
+                  disabled={boardCount === 0}
+                >
+                  {listCopied ? (
+                    <>
+                      <Check className="mr-1 h-3.5 w-3.5 text-green-600" />
+                      已复制
+                    </>
+                  ) : (
+                    <>
+                      <ClipboardList className="mr-1 h-3.5 w-3.5" />
+                      复制收藏清单
+                    </>
+                  )}
                 </Button>
                 {board === 'positions' && (
                   <>

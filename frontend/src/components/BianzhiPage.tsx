@@ -660,7 +660,7 @@ export function BianzhiPage({
                     className="min-w-[140px]"
                   />
                 )}
-                <SortableHead label="更新" sortKey="updated" sort={sort} onToggle={toggleSort} />
+                <SortableHead label="更新时间" sortKey="updated" sort={sort} onToggle={toggleSort} />
                 <TableHead className="sticky right-0 z-10 bg-background shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.15)]">
                   链接
                 </TableHead>

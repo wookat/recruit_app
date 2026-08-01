@@ -1,13 +1,26 @@
-import { pinyin } from 'pinyin-pro'
+// pinyin-pro 体积大（~300KB），懒加载：首次遇到拉丁查询才加载，
+// 加载完成前退化为普通子串匹配，不阻塞首屏 JS。
+type PinyinFn = typeof import('pinyin-pro').pinyin
+
+let pinyinFn: PinyinFn | null = null
+let loading = false
+
+function ensurePinyin() {
+  if (pinyinFn || loading) return
+  loading = true
+  void import('pinyin-pro').then((m) => {
+    pinyinFn = m.pinyin
+  })
+}
 
 const cache = new Map<string, { full: string; initials: string }>()
 
-function keysOf(text: string) {
+function keysOf(text: string, py: PinyinFn) {
   let entry = cache.get(text)
   if (!entry) {
     entry = {
-      full: pinyin(text, { toneType: 'none', type: 'array' }).join('').toLowerCase(),
-      initials: pinyin(text, { pattern: 'first', toneType: 'none', type: 'array' })
+      full: py(text, { toneType: 'none', type: 'array' }).join('').toLowerCase(),
+      initials: py(text, { pattern: 'first', toneType: 'none', type: 'array' })
         .join('')
         .toLowerCase(),
     }
@@ -26,7 +39,11 @@ export function pinyinMatch(text: string, query: string): boolean {
   if (!q) return true
   if (text.toLowerCase().includes(q)) return true
   if (!/^[a-z]+$/.test(q)) return false
-  const { full, initials } = keysOf(text)
+  if (!pinyinFn) {
+    ensurePinyin()
+    return false
+  }
+  const { full, initials } = keysOf(text, pinyinFn)
   return full.includes(q) || initials.includes(q)
 }
 

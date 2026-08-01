@@ -68,7 +68,7 @@ export function StatsDashboard({ onSelectYear, onSelectExamType, onSelectProvinc
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 gap-1 text-xs text-muted-foreground"
+            className="h-auto min-h-11 min-w-11 gap-1 px-3 text-xs text-muted-foreground sm:h-7 sm:min-h-0 sm:min-w-0 sm:px-2"
             onClick={() => setExpanded((v) => !v)}
           >
             {expanded ? (

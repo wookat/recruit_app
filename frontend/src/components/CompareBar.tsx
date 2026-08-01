@@ -13,7 +13,7 @@ export function CompareBar() {
 
   return (
     <>
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] backdrop-blur">
+      <div className="fixed inset-x-0 bottom-14 z-40 border-t md:bottom-0 bg-background/95 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-2.5">
           <Scale className="h-4 w-4 shrink-0 text-primary" />
           <span className="shrink-0 text-sm font-medium">

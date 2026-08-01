@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from database import engine, Base, get_db
@@ -20,6 +21,7 @@ import schemas
 import cache
 from admin import require_admin, router as admin_router
 from campus import router as campus_router
+from bianzhi import router as bianzhi_router
 from tasks import EXPORTS_DIR, export_positions_task, scrape_year
 
 
@@ -46,6 +48,7 @@ app.add_middleware(
 )
 app.include_router(admin_router)
 app.include_router(campus_router)
+app.include_router(bianzhi_router)
 
 SYNC_EXPORT_MAX_ROWS = 2000  # 同步导出快路径上限，更大请走 POST /api/export 异步任务
 
@@ -64,6 +67,7 @@ def _build_filter(
     major: Optional[str] = None,
     major_type: Optional[str] = "any",
     category: Optional[List[str]] = None,
+    hide_expired: bool = False,
 ) -> crud.PositionFilter:
     return crud.PositionFilter(
         year=year,
@@ -79,12 +83,31 @@ def _build_filter(
         major=major,
         major_type=major_type,
         category=category,
+        hide_expired=hide_expired,
     )
 
 
 @app.get("/api/health")
 def health():
     return {"ok": True}
+
+
+@app.get("/api/freshness")
+@cache.cached("freshness", ttl=600)
+def data_freshness(db: Session = Depends(get_db)):
+    """各数据板块最近一次采集成功时间（crawl_runs 聚合，10 分钟缓存）。"""
+    rows = db.execute(text("""
+        SELECT CASE WHEN ws.name = 'feishu_campus' THEN 'campus'
+                    WHEN ws.name = 'feishu_bianzhi' THEN 'bianzhi'
+                    ELSE 'positions' END AS grp,
+               max(cr.finished_at) AS last_success
+        FROM crawl_runs cr
+        LEFT JOIN watch_sources ws ON ws.id = cr.source_id
+        WHERE cr.status = 'success' AND cr.finished_at IS NOT NULL
+        GROUP BY 1
+    """)).all()
+    by_grp = {r.grp: r.last_success.isoformat() for r in rows}
+    return {k: {"last_success": by_grp.get(k)} for k in ("positions", "campus", "bianzhi")}
 
 
 @app.get("/api/positions", response_model=schemas.PositionList)
@@ -103,6 +126,7 @@ def get_positions(
     major: Optional[str] = Query(None),
     major_type: Optional[str] = Query("any"),
     category: Optional[List[str]] = Query(None),
+    hide_expired: bool = Query(False),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=200),
     sort: str = Query("year_desc"),
@@ -124,17 +148,33 @@ def get_positions(
         major=major,
         major_type=major_type,
         category=category,
+        hide_expired=hide_expired,
     )
-    if after_id is not None:
-        items = crud.search_positions_cursor(db, filters, after_id, after_year, page_size, sort)
+    try:
+        if after_id is not None:
+            items = crud.search_positions_cursor(db, filters, after_id, after_year, page_size, sort)
+            return {
+                "total": -1,
+                "page": page,
+                "page_size": page_size,
+                "next_cursor": items[-1].id if items else None,
+                "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
+            }
+        total, items = crud.search_positions(db, filters, page, page_size, sort)
+    except OperationalError as e:
+        # statement_timeout 取消（如低选择性关键词全表扫）：降级为空结果而非 500
+        if "QueryCanceled" not in type(getattr(e, "orig", None) or e).__name__ and "canceling statement" not in str(e):
+            raise
+        db.rollback()
         return {
-            "total": -1,
+            "total": 0,
+            "total_capped": False,
             "page": page,
             "page_size": page_size,
-            "next_cursor": items[-1].id if items else None,
-            "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
+            "next_cursor": None,
+            "items": [],
+            "timed_out": True,
         }
-    total, items = crud.search_positions(db, filters, page, page_size, sort)
     return {
         "total": total,
         "total_capped": total >= crud.COUNT_CAP,
@@ -195,7 +235,7 @@ def get_sources(
 
 
 @app.get("/api/filters", response_model=schemas.FilterOptions)
-@cache.cached("filters", ttl=600)
+@cache.cached("filters", ttl=86400, stale=True)
 def get_filters(db: Session = Depends(get_db)):
     return crud.get_filter_options(db)
 
@@ -211,7 +251,7 @@ def suggest(
 
 
 @app.get("/api/stats", response_model=schemas.StatsOut)
-@cache.cached("stats", ttl=3600)
+@cache.cached("stats", ttl=86400, stale=True)
 def stats(db: Session = Depends(get_db)):
     return crud.get_stats(db)
 

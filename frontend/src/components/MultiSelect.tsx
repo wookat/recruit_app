@@ -92,7 +92,8 @@ export function MultiSelect({
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="h-9 w-full justify-between px-3 text-left font-normal"
+              aria-label={label || triggerLabel || '筛选'}
+              className="h-11 w-full justify-between px-3 text-left font-normal sm:h-9"
             >
               <span className="truncate">
                 {selected.length === 0

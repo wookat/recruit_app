@@ -1,7 +1,8 @@
 """校招/社招信息 API：/api/campus 列表与筛选项。"""
+from datetime import date, timedelta
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import or_, func
 from sqlalchemy.orm import Session
@@ -28,6 +29,7 @@ class CampusJobOut(BaseModel):
     locations: Optional[str] = None
     start_date: Optional[str] = None
     deadline_text: Optional[str] = None
+    deadline_date: Optional[date] = None
     announce_url: Optional[str] = None
     apply_url: Optional[str] = None
     referral_code: Optional[str] = None
@@ -55,11 +57,17 @@ def list_campus_jobs(
     no_exam_only: bool = False,
     referral_only: bool = False,
     location: Optional[str] = None,
+    updated_after: Optional[str] = None,
+    due_within_days: Optional[int] = Query(None, ge=0, le=365),
+    hide_expired: bool = False,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
     q = db.query(CampusJob)
+    if hide_expired:
+        q = q.filter(or_(CampusJob.deadline_date == None,  # noqa: E711
+                         CampusJob.deadline_date >= date.today()))
     if source_table:
         q = q.filter(CampusJob.source_table.in_(source_table))
     if company_type:
@@ -76,6 +84,8 @@ def list_campus_jobs(
         q = q.filter(CampusJob.referral_code != None, CampusJob.referral_code != "")  # noqa: E711
     if location:
         q = q.filter(CampusJob.locations.ilike(f"%{location}%"))
+    if updated_after:
+        q = q.filter(CampusJob.updated_at_src >= updated_after)
     if keyword:
         k = f"%{keyword}%"
         q = q.filter(or_(
@@ -84,14 +94,45 @@ def list_campus_jobs(
             CampusJob.industry.ilike(k),
             CampusJob.major_requirement.ilike(k),
         ))
+    if due_within_days is not None:
+        today = date.today()
+        q = q.filter(CampusJob.deadline_date >= today,
+                     CampusJob.deadline_date <= today + timedelta(days=due_within_days))
     total = q.count()
+    order_by = (
+        (CampusJob.deadline_date.asc(), CampusJob.id.desc())
+        if due_within_days is not None
+        else (CampusJob.updated_at_src.desc().nullslast(), CampusJob.id.desc())
+    )
     items = (
-        q.order_by(CampusJob.updated_at_src.desc().nullslast(), CampusJob.id.desc())
+        q.order_by(*order_by)
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
     )
     return {"total": total, "page": page, "page_size": page_size, "items": items}
+
+
+@router.get("/counts")
+@cache.cached("campus_counts", ttl=3600, stale=True)
+def campus_counts(db: Session = Depends(get_db)):
+    """企业类型/批次计数（前端 chips 显示，1 小时缓存，失败回退旧缓存）。"""
+    ctypes = (
+        db.query(CampusJob.company_type, func.count())
+        .filter(CampusJob.company_type != None, CampusJob.company_type != "")  # noqa: E711
+        .group_by(CampusJob.company_type)
+        .all()
+    )
+    batches = (
+        db.query(CampusJob.batch, func.count())
+        .filter(CampusJob.batch != None, CampusJob.batch != "")  # noqa: E711
+        .group_by(CampusJob.batch)
+        .all()
+    )
+    return {
+        "company_types": {t: n for t, n in ctypes},
+        "batches": {b: n for b, n in batches},
+    }
 
 
 @router.get("/filters")
@@ -120,3 +161,12 @@ def campus_filter_options(db: Session = Depends(get_db)):
         "batches": distinct(CampusJob.batch, 30),
         "grad_years": distinct(CampusJob.grad_years, 30),
     }
+
+
+@router.get("/{job_id}", response_model=CampusJobOut)
+def get_campus_job(job_id: int, db: Session = Depends(get_db)):
+    """按 id 取单条（深链直开详情兑底）。"""
+    job = db.query(CampusJob).filter(CampusJob.id == job_id).first()
+    if job is None:
+        raise HTTPException(status_code=404, detail="job not found")
+    return job

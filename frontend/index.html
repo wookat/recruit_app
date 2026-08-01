@@ -5,6 +5,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>上岸罗盘 - 全国体制内岗位检索</title>
     <meta
@@ -19,16 +22,33 @@
     />
     <meta property="og:url" content="https://jobs.zalize.com/" />
     <meta property="og:image" content="https://jobs.zalize.com/apple-touch-icon.png" />
+    <meta property="og:site_name" content="上岸罗盘" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="上岸罗盘 - 全国体制内岗位检索" />
+    <meta
+      name="twitter:description"
+      content="覆盖公务员、事业编、军队文职、国企招聘的一站式岗位检索平台，支持专业、学历、地区快速匹配。"
+    />
+    <meta name="twitter:image" content="https://jobs.zalize.com/apple-touch-icon.png" />
     <script>
       ;(function () {
         var mq = window.matchMedia('(prefers-color-scheme: dark)')
-        function apply(dark) {
+        function stored() {
+          try {
+            return localStorage.getItem('recruit.theme')
+          } catch (e) {
+            return null
+          }
+        }
+        function apply() {
+          var pref = stored()
+          var dark = pref === 'dark' || (pref !== 'light' && mq.matches)
           document.documentElement.classList.toggle('dark', dark)
         }
-        apply(mq.matches)
-        mq.addEventListener('change', function (e) {
-          apply(e.matches)
-        })
+        apply()
+        mq.addEventListener('change', apply)
+        window.addEventListener('recruit-theme-change', apply)
       })()
     </script>
   </head>

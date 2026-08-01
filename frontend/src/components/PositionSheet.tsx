@@ -1,7 +1,9 @@
-import { useState } from 'react'
-import type { Position } from '@/api'
+import { useEffect, useState } from 'react'
+import { fetchPositions, type Position } from '@/api'
 import { copyText, positionShareUrl } from '@/lib/clipboard'
-import { ExternalLink, GraduationCap, CalendarClock, Info, AlertTriangle, MapPin, Link2, Check } from 'lucide-react'
+import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
+import { stripOrgPrefix } from '@/lib/orgPrefix'
+import { Building2, ExternalLink, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -14,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
+import { ShareTextButton, buildShareText } from './ShareTextButton'
 import {
   APP_STATUSES,
   STATUS_COLORS,
@@ -31,6 +34,14 @@ import {
 interface Props {
   item: Position | null
   onClose: () => void
+  onPrev?: () => void
+  onNext?: () => void
+  prevDisabled?: boolean
+  nextDisabled?: boolean
+  /** 收藏面板打开时标注数据为收藏时快照。 */
+  snapshotNote?: boolean
+  /** 传入时展示「同单位其他岗位」区块，点击切换详情。 */
+  onOpenItem?: (p: Position) => void
 }
 
 function parseMajors(raw: string): string[] {
@@ -102,9 +113,62 @@ function safeUrl(u: string | null | undefined): string | null {
   }
 }
 
-export function PositionSheet({ item, onClose }: Props) {
+export function PositionSheet({
+  item,
+  onClose,
+  onPrev,
+  onNext,
+  prevDisabled,
+  nextDisabled,
+  snapshotNote,
+  onOpenItem,
+}: Props) {
   const [copied, setCopied] = useState(false)
   const statuses = useAppStatuses()
+  const [related, setRelated] = useState<Position[]>([])
+  const itemId = item?.id
+  const employer = item?.employer?.trim()
+
+  useEffect(() => {
+    if (!employer || !onOpenItem) {
+      setRelated([])
+      return
+    }
+    let cancelled = false
+    fetchPositions({ keyword: employer, page: 1, page_size: 20 })
+      .then((res) => {
+        if (cancelled) return
+        setRelated(
+          res.items
+            .filter((p) => p.id !== itemId && (p.employer ?? '').trim() === employer)
+            .slice(0, 5),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setRelated([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [employer, itemId, onOpenItem])
+
+  useEffect(() => {
+    if (!itemId) return
+    const key = `positions:${itemId}`
+    setJobParam(key)
+    return () => clearJobParam(key)
+  }, [itemId])
+
+  useEffect(() => {
+    if (!itemId || (!onPrev && !onNext)) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && onPrev && !prevDisabled) onPrev()
+      else if (e.key === 'ArrowRight' && onNext && !nextDisabled) onNext()
+    }
+    document.addEventListener('keydown', handler, true)
+    return () => document.removeEventListener('keydown', handler, true)
+  }, [itemId, onPrev, onNext, prevDisabled, nextDisabled])
+
   if (!item) return null
 
   async function copyLink() {
@@ -120,7 +184,7 @@ export function PositionSheet({ item, onClose }: Props) {
 
   return (
     <Sheet open={!!item} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full max-w-2xl p-0 sm:max-w-xl">
+      <SheetContent side="right" className="w-full max-w-2xl p-0 data-[side=right]:w-full sm:max-w-xl">
         <SheetHeader className="space-y-2 px-4 pt-6 sm:px-6">
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             岗位详情
@@ -145,6 +209,7 @@ export function PositionSheet({ item, onClose }: Props) {
             >
               <SelectTrigger
                 size="sm"
+                aria-label="投递状态"
                 className={`h-7 w-auto gap-1 border-none px-2 text-[11px] font-medium shadow-none ${STATUS_COLORS[(statuses[item.id] || '未投递') as AppStatus]}`}
               >
                 {statuses[item.id] || '未投递'}
@@ -157,15 +222,61 @@ export function PositionSheet({ item, onClose }: Props) {
                 ))}
               </SelectContent>
             </Select>
+            <ShareTextButton
+              className="h-8 w-8"
+              text={buildShareText({
+                org: item.employer,
+                title: item.position_example,
+                location: item.work_location,
+                deadline: item.signup_time,
+                url: item.source_url || positionShareUrl(item.id),
+              })}
+            />
             <FavoriteButton item={item} />
             <CompareButton item={item} />
+            {(onPrev || onNext) && (
+              <span className="ml-auto inline-flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-0.5 px-2 text-xs"
+                  disabled={prevDisabled}
+                  onClick={onPrev}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  上一条
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-0.5 px-2 text-xs"
+                  disabled={nextDisabled}
+                  onClick={onNext}
+                >
+                  下一条
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </span>
+            )}
+            {snapshotNote && (
+              <Badge variant="outline" className="text-[11px] font-normal text-muted-foreground">
+                收藏时快照
+              </Badge>
+            )}
           </div>
         </SheetHeader>
         <ScrollArea className="min-h-0 flex-1 px-4 sm:px-6">
           <div className="space-y-5 pb-8 pt-2">
             <Section icon={Info} title="基本信息">
               <Field label="用人单位/系统" value={item.employer} />
-              <Field label="岗位示例" value={item.position_example} />
+              <Field
+                label="岗位示例"
+                value={
+                  item.position_example
+                    ? stripOrgPrefix(item.position_example, item.employer)
+                    : item.position_example
+                }
+              />
               <Field label="考试/招聘类型" value={item.exam_type} />
               <div className="flex items-start gap-1.5">
                 <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -234,6 +345,36 @@ export function PositionSheet({ item, onClose }: Props) {
                       </a>
                     </div>
                   )}
+                </Section>
+              </>
+            )}
+
+            {onOpenItem && related.length > 0 && (
+              <>
+                <Separator />
+                <Section icon={Building2} title="同单位其他岗位">
+                  <ul className="space-y-1">
+                    {related.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          className="flex min-h-11 w-full cursor-pointer flex-wrap items-center gap-x-2 rounded-lg border bg-background px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                          onClick={() => onOpenItem(p)}
+                        >
+                          <span className="font-medium">
+                            {p.position_example
+                              ? stripOrgPrefix(p.position_example, p.employer)
+                              : p.job_type || p.exam_type || '-'}
+                          </span>
+                          <span className="line-clamp-1 text-xs text-muted-foreground">
+                            {[p.work_location, p.year ? `${p.year} 年` : null]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </Section>
               </>
             )}

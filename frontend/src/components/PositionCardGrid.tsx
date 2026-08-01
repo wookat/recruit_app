@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { memo, useState, type ReactNode } from 'react'
 import type { Position } from '@/api'
 import { PositionCard } from './PositionCard'
 import { PositionSheet } from './PositionSheet'
+import { sheetNavProps } from '@/lib/sheetNav'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { EmptyState } from './EmptyState'
@@ -9,9 +10,11 @@ import { EmptyState } from './EmptyState'
 interface Props {
   data: Position[]
   loading: boolean
+  emptyAction?: ReactNode
+  highlight?: string
 }
 
-export function PositionCardGrid({ data, loading }: Props) {
+export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, emptyAction, highlight }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
 
   if (loading) {
@@ -44,7 +47,8 @@ export function PositionCardGrid({ data, loading }: Props) {
     return (
       <EmptyState
         title="没有找到匹配的岗位"
-        description="试试减少筛选条件、更换关键词，或使用一键匹配推荐岗位"
+        description="建议优先移除关键词，其次地区、类型筛选"
+        action={emptyAction}
       />
     )
   }
@@ -58,11 +62,18 @@ export function PositionCardGrid({ data, loading }: Props) {
             className="h-full animate-fade-in-up"
             style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
           >
-            <PositionCard item={item} onDetail={setSelected} />
+            <PositionCard item={item} onDetail={setSelected} highlight={highlight} />
           </div>
         ))}
       </div>
-      {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <PositionSheet
+          item={selected}
+          onClose={() => setSelected(null)}
+          {...sheetNavProps(data, selected, setSelected)}
+          onOpenItem={setSelected}
+        />
+      )}
     </div>
   )
-}
+})

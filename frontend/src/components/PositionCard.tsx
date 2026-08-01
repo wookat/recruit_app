@@ -8,17 +8,26 @@ import { CompareButton } from './CompareButton'
 import { STATUS_COLORS, useAppStatuses } from '@/lib/positionStore'
 import { eduClass, jobTypeClass, yearClass, PILL_BASE } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
+import { Highlight } from './Highlight'
+import { ShareTextButton, buildShareText } from './ShareTextButton'
+import { positionShareUrl } from '@/lib/clipboard'
+import { stripOrgPrefix } from '@/lib/orgPrefix'
+import { DueBadge } from './DueBadge'
 
 interface Props {
   item: Position
   onDetail: (item: Position) => void
+  highlight?: string
 }
 
-export const PositionCard = memo(function PositionCard({ item, onDetail }: Props) {
+export const PositionCard = memo(function PositionCard({ item, onDetail, highlight }: Props) {
   const statuses = useAppStatuses()
   const status = statuses[item.id]
   return (
-    <Card className="flex h-full flex-col transition-all hover:border-primary/20 hover:shadow-md">
+    <Card
+      className="flex h-full cursor-pointer flex-col transition-all hover:border-primary/20 hover:shadow-md"
+      onClick={() => onDetail(item)}
+    >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -38,16 +47,30 @@ export const PositionCard = memo(function PositionCard({ item, onDetail }: Props
           <div className="flex shrink-0 items-center">
             <FavoriteButton item={item} />
             <CompareButton item={item} />
+            <ShareTextButton
+              text={buildShareText({
+                org: item.employer,
+                title: item.position_example,
+                location: item.work_location,
+                deadline: item.signup_time,
+                url: item.source_url || positionShareUrl(item.id),
+              })}
+            />
           </div>
         </div>
         <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
-          {item.position_example || '-'}
+          <Highlight
+            text={item.position_example ? stripOrgPrefix(item.position_example, item.employer) : '-'}
+            query={highlight}
+          />
         </h3>
       </CardHeader>
       <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
         <div className="flex items-start gap-2">
           <Building2 className="mt-0.5 h-4 w-4 shrink-0" />
-          <span className="line-clamp-2">{item.employer || '-'}</span>
+          <span className="line-clamp-2">
+            <Highlight text={item.employer || '-'} query={highlight} />
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <GraduationCap className="h-4 w-4 shrink-0" />
@@ -57,10 +80,13 @@ export const PositionCard = memo(function PositionCard({ item, onDetail }: Props
           <MapPin className="h-4 w-4 shrink-0" />
           <span className="line-clamp-1">{item.work_location || '-'}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 shrink-0" />
-          <span className="line-clamp-1">{item.signup_time || '-'}</span>
-        </div>
+        {item.signup_time && (
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span className="line-clamp-1">{item.signup_time}</span>
+            <DueBadge date={item.signup_deadline?.slice(0, 10)} />
+          </div>
+        )}
       </CardContent>
       <CardFooter className="pt-0">
         <Button

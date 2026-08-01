@@ -22,12 +22,14 @@ export interface Position {
   source_url: string
   notes: string
   raw_major: string
+  signup_deadline?: string | null
   created_at: string
 }
 
 export interface PositionList {
   total: number
   total_capped?: boolean
+  timed_out?: boolean
   page: number
   page_size: number
   items: Position[]
@@ -72,6 +74,7 @@ export interface SearchParams {
   major?: string
   major_type?: 'undergrad' | 'grad' | 'any'
   category?: string[]
+  hide_expired?: boolean
   page?: number
   page_size?: number
   sort?: string
@@ -113,6 +116,7 @@ export interface CampusJob {
   referral_code: string | null
   notes: string | null
   updated_at_src: string | null
+  deadline_date: string | null
 }
 
 export interface CampusList {
@@ -132,6 +136,9 @@ export interface CampusParams {
   no_exam_only?: boolean
   referral_only?: boolean
   location?: string
+  updated_after?: string
+  due_within_days?: number
+  hide_expired?: boolean
   page?: number
   page_size?: number
 }
@@ -144,8 +151,13 @@ export interface CampusFilterOptions {
   grad_years: string[]
 }
 
-export async function fetchCampusJobs(params: CampusParams): Promise<CampusList> {
-  const res = await axios.get(`${API_BASE}/api/campus?${toQuery(params)}`)
+export async function fetchCampusJobs(params: CampusParams, signal?: AbortSignal): Promise<CampusList> {
+  const res = await axios.get(`${API_BASE}/api/campus?${toQuery(params)}`, { signal })
+  return res.data
+}
+
+export async function fetchCampusJob(id: number): Promise<CampusJob> {
+  const res = await axios.get(`${API_BASE}/api/campus/${id}`)
   return res.data
 }
 
@@ -154,13 +166,127 @@ export async function fetchCampusFilters(): Promise<CampusFilterOptions> {
   return res.data
 }
 
-export async function fetchPositions(params: SearchParams): Promise<PositionList> {
-  const res = await axios.get(`${API_BASE}/api/positions?${toQuery(params)}`)
+// ---------- 编制公告（公务员事业单位/教育/医疗/高校/科研院所/央国企社招/大型联考） ----------
+export interface BianzhiJob {
+  id: number
+  category: string | null
+  province: string | null
+  employer: string | null
+  headcount: string | null
+  job_type: string | null
+  work_location: string | null
+  edu_requirement: string | null
+  major_requirement: string | null
+  deadline_text: string | null
+  signup_start: string | null
+  exam_time: string | null
+  notes: string | null
+  announce_url: string | null
+  apply_url: string | null
+  updated_at_src: string | null
+  deadline_date: string | null
+}
+
+export interface BianzhiList {
+  total: number
+  page: number
+  page_size: number
+  items: BianzhiJob[]
+}
+
+export interface BianzhiParams {
+  keyword?: string
+  category?: string[]
+  province?: string[]
+  job_type?: string
+  edu?: string
+  updated_after?: string
+  due_within_days?: number
+  hide_expired?: boolean
+  page?: number
+  page_size?: number
+}
+
+export interface BianzhiFilterOptions {
+  categories: Record<string, number>
+  provinces: string[]
+}
+
+export async function fetchBianzhiJobs(params: BianzhiParams, signal?: AbortSignal): Promise<BianzhiList> {
+  const res = await axios.get(`${API_BASE}/api/bianzhi?${toQuery(params)}`, { signal })
   return res.data
 }
 
-export async function fetchSources(params: SearchParams): Promise<PositionList> {
-  const res = await axios.get(`${API_BASE}/api/sources?${toQuery(params)}`)
+export async function fetchBianzhiJob(id: number): Promise<BianzhiJob> {
+  const res = await axios.get(`${API_BASE}/api/bianzhi/${id}`)
+  return res.data
+}
+
+export async function fetchBianzhiFilters(): Promise<BianzhiFilterOptions> {
+  const res = await axios.get(`${API_BASE}/api/bianzhi/filters`)
+  return res.data
+}
+
+// ---------- 数据新鲜度 ----------
+export interface Freshness {
+  positions: { last_success: string | null }
+  campus: { last_success: string | null }
+  bianzhi: { last_success: string | null }
+}
+
+let freshnessPromise: Promise<Freshness> | null = null
+
+/** 全站只请求一次（模块级缓存），失败后不重试。 */
+export function fetchFreshness(): Promise<Freshness> {
+  if (!freshnessPromise) {
+    freshnessPromise = axios.get(`${API_BASE}/api/freshness`).then((r) => r.data)
+  }
+  return freshnessPromise
+}
+
+// ---------- chips 计数 ----------
+export interface BianzhiCounts {
+  categories: Record<string, number>
+  provinces: Record<string, number>
+}
+
+export interface CampusCounts {
+  company_types: Record<string, number>
+  batches: Record<string, number>
+}
+
+let bianzhiCountsPromise: Promise<BianzhiCounts | null> | null = null
+let campusCountsPromise: Promise<CampusCounts | null> | null = null
+
+/** 模块级缓存单次请求，失败静默返回 null。 */
+export function fetchBianzhiCounts(): Promise<BianzhiCounts | null> {
+  if (!bianzhiCountsPromise) {
+    bianzhiCountsPromise = axios
+      .get(`${API_BASE}/api/bianzhi/counts`)
+      .then((r) => r.data)
+      .catch(() => null)
+  }
+  return bianzhiCountsPromise
+}
+
+/** 模块级缓存单次请求，失败静默返回 null。 */
+export function fetchCampusCounts(): Promise<CampusCounts | null> {
+  if (!campusCountsPromise) {
+    campusCountsPromise = axios
+      .get(`${API_BASE}/api/campus/counts`)
+      .then((r) => r.data)
+      .catch(() => null)
+  }
+  return campusCountsPromise
+}
+
+export async function fetchPositions(params: SearchParams, signal?: AbortSignal): Promise<PositionList> {
+  const res = await axios.get(`${API_BASE}/api/positions?${toQuery(params)}`, { signal })
+  return res.data
+}
+
+export async function fetchSources(params: SearchParams, signal?: AbortSignal): Promise<PositionList> {
+  const res = await axios.get(`${API_BASE}/api/sources?${toQuery(params)}`, { signal })
   return res.data
 }
 
@@ -416,8 +542,55 @@ export interface CrawlRunList {
   items: CrawlRun[]
 }
 
+export interface HealthSourceRun {
+  source_id: number
+  source_name?: string
+  status: string
+  started_at: string | null
+  duration_seconds: number | null
+  rows_ingested: number
+}
+
+export interface HealthSummary {
+  crawl_24h: {
+    success: number
+    failed: number
+    total: number
+    latest_by_source: HealthSourceRun[]
+  }
+  failed_sources_yesterday: {
+    at: string | null
+    sources: string[]
+  }
+  cache_ttl_seconds: {
+    stats: number
+    filters: number
+    dq_report: number
+  }
+  table_estimates: Record<string, number>
+  data_quality: {
+    generated_at: string | null
+    rows: { total: number; clean: number; dup: number; invalid: number; added_last_7d: number } | null
+    deadline_parse_rate: number | null
+  } | null
+  trend?: HealthTrendDay[] | null
+}
+
+export interface HealthTrendDay {
+  date: string
+  crawl_success: number
+  crawl_fail: number
+  campus_added: number
+  bianzhi_added: number
+}
+
 function adminHeaders(token: string) {
   return { headers: { 'X-Admin-Token': token } }
+}
+
+export async function fetchHealthSummary(token: string): Promise<HealthSummary> {
+  const res = await axios.get(`${API_BASE}/api/admin/health-summary`, adminHeaders(token))
+  return res.data
 }
 
 export async function adminOverview(token: string): Promise<AdminOverview> {

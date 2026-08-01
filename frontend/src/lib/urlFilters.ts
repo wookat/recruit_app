@@ -15,6 +15,14 @@ const ARRAY_KEYS = [
 
 const STRING_KEYS = ['keyword', 'major', 'major_type', 'sort'] as const
 
+/** 体制内板块占用的全部 URL 筛选参数名（含旧 hide_expired 兼容）。 */
+export const POSITION_URL_KEYS: readonly string[] = [
+  ...ARRAY_KEYS,
+  ...STRING_KEYS,
+  'hexp',
+  'hide_expired',
+]
+
 export function paramsToQueryString(params: SearchParams): string {
   const q = new URLSearchParams()
   for (const key of ARRAY_KEYS) {
@@ -26,6 +34,7 @@ export function paramsToQueryString(params: SearchParams): string {
       q.set(key, String(v))
     }
   }
+  if (params.hide_expired) q.set('hexp', '1')
   return q.toString()
 }
 
@@ -52,6 +61,7 @@ export function paramsFromQueryString(search: string): Partial<SearchParams> {
   }
   const sort = q.get('sort')
   if (sort) out.sort = sort
+  if (q.get('hexp') === '1' || q.get('hide_expired') === '1') out.hide_expired = true
   return out
 }
 

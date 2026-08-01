@@ -1,22 +1,44 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchCampusJobs, fetchPosition, fetchPositions, type Position } from '@/api'
 import { importFavorites } from '@/lib/positionStore'
 import { PositionSheet } from '@/components/PositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Briefcase, Settings, Star } from 'lucide-react'
+import { BookOpen, Briefcase, CalendarDays, Moon, Search, Settings, Star, Sun } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
 import { CompareBar } from '@/components/CompareBar'
+import { MobileBottomNav } from '@/components/MobileBottomNav'
+import { OnboardingCard } from '@/components/OnboardingCard'
 import { useFavorites } from '@/lib/positionStore'
+import { useBianzhiFavorites, useCampusFavorites } from '@/lib/boardFavorites'
+import { GlobalSearch, type SearchBoard } from '@/components/GlobalSearch'
+import { applySeo } from '@/lib/seo'
+import { readJobParam, setJobParam } from '@/lib/jobDeepLink'
+import { POSITION_URL_KEYS } from '@/lib/urlFilters'
+import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
+import { useRemindDays } from '@/lib/reminderPref'
+import { refreshSavedNews, useSavedNews } from '@/lib/savedNews'
+
+const JobGuideSheet = lazy(() =>
+  import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet })),
+)
+
+const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'company', 'choose', 'tips']
 
 const AdminPage = lazy(() =>
   import('@/components/AdminPage').then((m) => ({ default: m.AdminPage })),
 )
 const CampusPage = lazy(() =>
   import('@/components/CampusPage').then((m) => ({ default: m.CampusPage })),
+)
+const BianzhiPage = lazy(() =>
+  import('@/components/BianzhiPage').then((m) => ({ default: m.BianzhiPage })),
+)
+const CalendarPage = lazy(() =>
+  import('@/components/CalendarPage').then((m) => ({ default: m.CalendarPage })),
 )
 
 const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
@@ -27,6 +49,9 @@ const CAMPUS_CROSS = [
   { key: 'referral', label: '内推码' },
   { key: 'intern', label: '实习' },
   { key: 'autumn', label: '秋招' },
+  { key: 'bz:all', label: '编制公告' },
+  { key: 'bz:edu', label: '教师招聘' },
+  { key: 'bz:med', label: '医疗招聘' },
 ]
 
 const POSITION_CROSS = [
@@ -36,12 +61,91 @@ const POSITION_CROSS = [
   { key: 'jdwz', label: '军队文职' },
   { key: 'gqyq', label: '国企央企' },
   { key: 'xds', label: '选调生' },
+  { key: 'bz:all', label: '编制公告' },
+  { key: 'bz:edu', label: '教师招聘' },
+  { key: 'bz:med', label: '医疗招聘' },
+]
+
+const BIANZHI_CROSS = [
+  { key: 'pos:all', label: '体制内岗位' },
+  { key: 'pos:gwy', label: '公务员' },
+  { key: 'campus:all', label: '校招信息' },
+  { key: 'campus:noexam', label: '免笔试' },
 ]
 
 interface Section {
-  mode: 'positions' | 'campus'
+  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar'
   preset?: string
   keyword?: string
+}
+
+function initialSection(): Section {
+  const q = new URLSearchParams(window.location.search)
+  const board = q.get('board')
+  if (board === 'campus' || board === 'bianzhi') {
+    return { mode: board, preset: q.get('bpreset') || undefined }
+  }
+  if (board === 'calendar') return { mode: 'calendar' }
+  return { mode: 'positions' }
+}
+
+function syncSectionUrl(section: Section) {
+  const q = new URLSearchParams(window.location.search)
+  if (section.mode === 'positions') {
+    if (q.get('board')) q.delete('hexp')
+    q.delete('board')
+    q.delete('bpreset')
+    q.delete('due')
+    q.delete('city')
+    q.delete('ctype')
+    q.delete('prov')
+    q.delete('bkw')
+    q.delete('cview')
+  } else if (section.mode === 'calendar') {
+    q.set('board', 'calendar')
+    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bkw', 'hexp']) q.delete(k)
+    for (const k of POSITION_URL_KEYS) q.delete(k)
+  } else {
+    if (q.get('board') !== section.mode) q.delete('hexp')
+    q.set('board', section.mode)
+    q.delete('cview')
+    for (const k of POSITION_URL_KEYS) {
+      if (k !== 'hexp') q.delete(k)
+    }
+    if (section.preset) q.set('bpreset', section.preset)
+    else q.delete('bpreset')
+    if (section.mode === 'campus') q.delete('prov')
+    else {
+      q.delete('city')
+      q.delete('ctype')
+    }
+  }
+  const qs = q.toString()
+  window.history.replaceState(
+    null,
+    '',
+    (qs ? `?${qs}` : window.location.pathname) + window.location.hash,
+  )
+}
+
+function getTheme(): 'light' | 'dark' | 'system' {
+  try {
+    const v = localStorage.getItem('recruit.theme')
+    if (v === 'light' || v === 'dark') return v
+  } catch {
+    // ignore
+  }
+  return 'system'
+}
+
+function setTheme(v: 'light' | 'dark' | 'system') {
+  try {
+    if (v === 'system') localStorage.removeItem('recruit.theme')
+    else localStorage.setItem('recruit.theme', v)
+  } catch {
+    // ignore
+  }
+  window.dispatchEvent(new Event('recruit-theme-change'))
 }
 
 function BrandMark({ className }: { className?: string }) {
@@ -70,19 +174,86 @@ function BrandMark({ className }: { className?: string }) {
 
 export default function App() {
   const [tab, setTab] = useState(showAdmin ? 'admin' : 'search')
-  const [section, setSection] = useState<Section>({ mode: 'positions' })
+  const [section, setSection] = useState<Section>(initialSection)
+  const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>(getTheme)
   const [favOpen, setFavOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [deepLinked, setDeepLinked] = useState<Position | null>(null)
   const favorites = useFavorites()
+  const campusFavorites = useCampusFavorites()
+  const bianzhiFavorites = useBianzhiFavorites()
+  const remindDays = useRemindDays()
+  const dueSoon = useMemo(() => {
+    const within = (d: Date | null) => {
+      if (!d) return false
+      const n = daysUntil(d)
+      return n >= 0 && n <= remindDays
+    }
+    return (
+      favorites.filter((p) => within(parseSignupDeadline(p))).length +
+      campusFavorites.filter((j) => within(parseDeadlineText(j.deadline_text))).length +
+      bianzhiFavorites.filter((j) => within(parseDeadlineText(j.deadline_text))).length
+    )
+  }, [favorites, campusFavorites, bianzhiFavorites, remindDays])
 
-  const goCampus = useCallback((preset?: string, keyword?: string) => {
-    setSection({ mode: 'campus', preset, keyword })
-    window.scrollTo({ top: 0 })
+  useEffect(() => {
+    syncSectionUrl(section)
+    applySeo(section.mode, section.preset)
+  }, [section])
+
+  useEffect(() => {
+    const h = window.location.hash.slice(1)
+    if (GUIDE_SECTION_KEYS.includes(h)) setGuideOpen(true)
   }, [])
-  const goPositions = useCallback((preset?: string, keyword?: string) => {
-    setSection({ mode: 'positions', preset, keyword })
-    window.scrollTo({ top: 0 })
+
+  const savedNews = useSavedNews()
+  useEffect(() => {
+    refreshSavedNews()
   }, [])
+
+  const cycleTheme = useCallback(() => {
+    setThemeState((prev) => {
+      const next = prev === 'system' ? 'dark' : prev === 'dark' ? 'light' : 'system'
+      setTheme(next)
+      return next
+    })
+  }, [])
+
+  const clearBoardParams = useCallback(() => {
+    const q = new URLSearchParams(window.location.search)
+    for (const k of ['city', 'ctype', 'prov', 'bkw']) q.delete(k)
+    const qs = q.toString()
+    window.history.replaceState(
+      null,
+      '',
+      (qs ? `?${qs}` : window.location.pathname) + window.location.hash,
+    )
+  }, [])
+  const goCampus = useCallback(
+    (preset?: string, keyword?: string) => {
+      clearBoardParams()
+      setSection({ mode: 'campus', preset, keyword })
+      window.scrollTo({ top: 0 })
+    },
+    [clearBoardParams],
+  )
+  const goPositions = useCallback(
+    (preset?: string, keyword?: string) => {
+      clearBoardParams()
+      setSection({ mode: 'positions', preset, keyword })
+      window.scrollTo({ top: 0 })
+    },
+    [clearBoardParams],
+  )
+  const goBianzhi = useCallback(
+    (preset?: string, keyword?: string) => {
+      clearBoardParams()
+      setSection({ mode: 'bianzhi', preset, keyword })
+      window.scrollTo({ top: 0 })
+    },
+    [clearBoardParams],
+  )
   const campusTotal = useCallback(
     (kw: string) => fetchCampusJobs({ keyword: kw, page: 1, page_size: 1 }).then((r) => r.total),
     [],
@@ -93,10 +264,48 @@ export default function App() {
   )
 
   useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        setSearchOpen((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  const openSearchBoard = useCallback(
+    (board: SearchBoard, kw: string) => {
+      if (board === 'positions') goPositions('all', kw || undefined)
+      else if (board === 'campus') goCampus('all', kw || undefined)
+      else goBianzhi('all', kw || undefined)
+    },
+    [goPositions, goCampus, goBianzhi],
+  )
+  const openSearchJob = useCallback(
+    (board: SearchBoard, id: number, kw: string) => {
+      if (board === 'positions') {
+        goPositions('all', kw || undefined)
+        fetchPosition(id)
+          .then(setDeepLinked)
+          .catch(() => undefined)
+        return
+      }
+      if (board === 'campus') goCampus('all', kw || undefined)
+      else goBianzhi('all', kw || undefined)
+      setJobParam(`${board}:${id}`)
+    },
+    [goPositions, goCampus, goBianzhi],
+  )
+
+
+  useEffect(() => {
     const q = new URLSearchParams(window.location.search)
-    const positionId = Number(q.get('position_id'))
+    const positionId = Number(q.get('position_id')) || readJobParam('positions') || 0
     if (positionId > 0) {
-      fetchPosition(positionId).then(setDeepLinked).catch(console.error)
+      fetchPosition(positionId)
+        .then(setDeepLinked)
+        .catch(() => undefined)
     }
     const favIds = (q.get('favorites') || '')
       .split(',')
@@ -117,27 +326,82 @@ export default function App() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-muted/30 font-sans">
-      <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
+    <div className="flex min-h-screen flex-col bg-muted/30 font-sans">
+      <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
             <BrandMark className="h-9 w-9 shrink-0" />
             <div className="flex flex-col leading-none">
-              <h1 className="text-lg font-bold tracking-tight">上岸罗盘</h1>
+              <h1 className="whitespace-nowrap text-lg font-bold tracking-tight">上岸罗盘</h1>
               <span className="mt-0.5 hidden text-[11px] tracking-widest text-muted-foreground sm:block">
                 体制内岗位 · 校招信息 一站检索
               </span>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setFavOpen(true)}>
+          <div className="flex items-center gap-1 sm:gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="relative min-h-11 gap-1.5 px-2 sm:min-h-8"
+            aria-label="全站搜索"
+            title="全站搜索（Ctrl K）"
+            onClick={() => setSearchOpen(true)}
+          >
+            <Search className="h-4 w-4" />
+            {savedNews.sum > 0 && (
+              <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label="常用筛选有上新" />
+            )}
+            <kbd className="hidden rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-foreground/80 lg:inline">
+              Ctrl K
+            </kbd>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 px-2"
+            onClick={cycleTheme}
+            title={theme === 'system' ? '主题：跟随系统' : theme === 'dark' ? '主题：暗色' : '主题：亮色'}
+            aria-label="切换主题"
+          >
+            {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+            {theme === 'system' && <span className="hidden text-[11px] text-muted-foreground lg:inline">自动</span>}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`hidden min-h-11 gap-1.5 px-2 sm:min-h-8 md:inline-flex ${section.mode === 'calendar' ? 'text-primary' : ''}`}
+            aria-label="截止日历"
+            title="截止日历"
+            onClick={() => {
+              setSection(section.mode === 'calendar' ? { mode: 'positions' } : { mode: 'calendar' })
+              window.scrollTo({ top: 0 })
+            }}
+          >
+            <CalendarDays className="h-4 w-4" />
+            <span className="hidden sm:inline">日历</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="hidden min-h-11 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setGuideOpen(true)}>
+            <BookOpen className="h-4 w-4" />
+            求职攻略
+          </Button>
+          <Button variant="outline" size="sm" className="relative hidden min-h-11 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setFavOpen(true)}>
             <Star className="h-4 w-4 text-amber-400" />
             我的收藏
-            {favorites.length > 0 && (
+            {dueSoon > 0 && (
+              <span
+                className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
+                title={`${dueSoon} 个收藏岗位 ${remindDays} 天内截止`}
+              >
+                {dueSoon}
+              </span>
+            )}
+            {favorites.length + campusFavorites.length + bianzhiFavorites.length > 0 && (
               <Badge variant="secondary" className="px-1.5 text-[11px]">
-                {favorites.length}
+                {favorites.length + campusFavorites.length + bianzhiFavorites.length}
               </Badge>
             )}
           </Button>
+          </div>
         </div>
         {showAdmin && (
           <div className="mx-auto max-w-7xl px-4 pb-3">
@@ -157,7 +421,19 @@ export default function App() {
         )}
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
+        {tab !== 'admin' && section.mode !== 'calendar' && (
+          <OnboardingCard
+            onOpenTips={() => {
+              window.history.replaceState(
+                null,
+                '',
+                window.location.pathname + window.location.search + '#tips',
+              )
+              setGuideOpen(true)
+            }}
+          />
+        )}
         <div key={tab === 'admin' ? 'admin' : section.mode} className="animate-fade-in-up">
           {tab !== 'admin' && section.mode === 'positions' && (
             <SearchPage
@@ -165,7 +441,7 @@ export default function App() {
               initialPresetKey={section.preset}
               initialKeyword={section.keyword}
               crossPresets={CAMPUS_CROSS}
-              onCrossPreset={(k) => goCampus(k)}
+              onCrossPreset={(k) => (k.startsWith('bz:') ? goBianzhi(k.slice(3)) : goCampus(k))}
               crossLabel="校招信息"
               crossFetchTotal={campusTotal}
               onCrossOpen={(kw) => goCampus('all', kw)}
@@ -178,24 +454,84 @@ export default function App() {
                 initialPreset={section.preset}
                 initialKeyword={section.keyword}
                 crossPresets={POSITION_CROSS}
-                onCrossPreset={(k) => goPositions(k)}
+                onCrossPreset={(k) => (k.startsWith('bz:') ? goBianzhi(k.slice(3)) : goPositions(k))}
                 crossLabel="体制内岗位"
                 crossFetchTotal={positionsTotal}
                 onCrossOpen={(kw) => goPositions('all', kw)}
               />
             )}
+            {tab !== 'admin' && section.mode === 'bianzhi' && (
+              <BianzhiPage
+                key={`${section.preset ?? ''}|${section.keyword ?? ''}`}
+                initialPreset={section.preset}
+                initialKeyword={section.keyword}
+                crossPresets={BIANZHI_CROSS}
+                onCrossPreset={(k) =>
+                  k.startsWith('pos:') ? goPositions(k.slice(4)) : goCampus(k.slice(7))
+                }
+                crossLabel="校招信息"
+                crossFetchTotal={campusTotal}
+                onCrossOpen={(kw) => goCampus('all', kw)}
+              />
+            )}
+            {tab !== 'admin' && section.mode === 'calendar' && <CalendarPage />}
             {tab === 'admin' && showAdmin && <AdminPage />}
           </Suspense>
         </div>
       </main>
 
-      <footer className="border-t bg-background py-6 pb-16 text-center text-xs text-muted-foreground">
+      <footer className="border-t bg-background py-6 pb-24 text-center text-xs text-muted-foreground md:pb-16">
+        <div className="mb-2 flex items-center justify-center gap-4">
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:min-h-0"
+            onClick={() => {
+              setSection({ mode: 'calendar' })
+              window.scrollTo({ top: 0 })
+            }}
+          >
+            <CalendarDays className="h-3.5 w-3.5" />
+            日历
+          </button>
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:min-h-0"
+            onClick={() => setGuideOpen(true)}
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            求职攻略
+          </button>
+        </div>
         数据来源：国家公务员局、军队人才网、国聘网及各省官方/汇总页面 · 仅供参考
       </footer>
 
+      <MobileBottomNav
+        active={tab === 'admin' ? null : section.mode === 'calendar' ? 'calendar' : 'jobs'}
+        favCount={favorites.length + campusFavorites.length + bianzhiFavorites.length}
+        dueSoon={dueSoon}
+        onJobs={() => {
+          if (section.mode === 'calendar') setSection({ mode: 'positions' })
+          window.scrollTo({ top: 0 })
+        }}
+        onCalendar={() => {
+          if (section.mode !== 'calendar') setSection({ mode: 'calendar' })
+          window.scrollTo({ top: 0 })
+        }}
+        onFavorites={() => setFavOpen(true)}
+        onGuide={() => setGuideOpen(true)}
+      />
+      <GlobalSearch
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onOpenBoard={openSearchBoard}
+        onOpenJob={openSearchJob}
+      />
       <FavoritesSheet open={favOpen} onClose={() => setFavOpen(false)} />
+      <Suspense fallback={null}>
+        {guideOpen && <JobGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
+      </Suspense>
       <CompareBar />
-      {deepLinked && <PositionSheet item={deepLinked} onClose={() => setDeepLinked(null)} />}
+      {deepLinked && <PositionSheet item={deepLinked} onClose={() => setDeepLinked(null)} onOpenItem={setDeepLinked} />}
     </div>
   )
 }

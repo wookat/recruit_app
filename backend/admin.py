@@ -4,11 +4,12 @@
 """
 import json
 import os
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from cache import get_redis
@@ -16,6 +17,7 @@ from database import get_db
 from models import Position, WatchSource, Announcement, CrawlRun
 from tasks import DQ_REPORT_KEY, data_quality_audit
 import collector
+import precompute
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -228,6 +230,121 @@ def _run_out(r: CrawlRun) -> dict:
         "rows_parsed": r.rows_parsed,
         "rows_ingested": r.rows_ingested,
         "error": r.error,
+    }
+
+
+@router.get("/health-summary", dependencies=[Depends(require_admin)])
+def health_summary(db: Session = Depends(get_db)):
+    """系统健康概览：24h 采集统计、热缓存 TTL、表行数估算、质量审计摘要（均为轻量查询）。"""
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    runs = (
+        db.query(CrawlRun)
+        .filter(CrawlRun.started_at >= since, CrawlRun.source_id.isnot(None))
+        .order_by(CrawlRun.id.desc())
+        .limit(500)
+        .all()
+    )
+    success = sum(1 for r in runs if r.status == "success")
+    failed = sum(1 for r in runs if r.status in ("error", "partial"))
+    latest_by_source: dict = {}
+    for r in runs:
+        if r.source_id not in latest_by_source:
+            duration = None
+            if r.started_at and r.finished_at:
+                duration = round((r.finished_at - r.started_at).total_seconds(), 1)
+            latest_by_source[r.source_id] = {
+                "source_id": r.source_id,
+                "status": r.status,
+                "started_at": r.started_at.isoformat() if r.started_at else None,
+                "duration_seconds": duration,
+                "rows_ingested": r.rows_ingested,
+            }
+    if latest_by_source:
+        names = dict(
+            db.query(WatchSource.id, WatchSource.name)
+            .filter(WatchSource.id.in_(latest_by_source.keys()))
+            .all()
+        )
+        for sid, item in latest_by_source.items():
+            item["source_name"] = names.get(sid) or f"#{sid}"
+
+    alert = (
+        db.query(CrawlRun)
+        .filter(CrawlRun.source_id.is_(None), CrawlRun.status == "alert")
+        .order_by(CrawlRun.id.desc())
+        .first()
+    )
+    failed_sources = []
+    if alert and alert.error:
+        try:
+            failed_sources = json.loads(alert.error)
+        except ValueError:
+            failed_sources = [alert.error]
+
+    r = get_redis()
+    cache_keys = {
+        "stats": precompute.STATS_KEY,
+        "filters": precompute.FILTERS_KEY,
+        "dq_report": DQ_REPORT_KEY,
+    }
+    caches = {name: max(r.ttl(key), 0) for name, key in cache_keys.items()}
+
+    table_counts = {
+        rel: int(tup)
+        for rel, tup in db.execute(text(
+            "SELECT relname, greatest(reltuples, 0)::bigint FROM pg_class "
+            "WHERE relname IN ('positions', 'campus_jobs', 'bianzhi_jobs') AND relkind = 'r'"
+        )).all()
+    }
+
+    dq_summary = None
+    raw = r.get(DQ_REPORT_KEY)
+    if raw:
+        report = json.loads(raw)
+        dq_summary = {
+            "generated_at": report.get("generated_at"),
+            "rows": report.get("rows"),
+            "deadline_parse_rate": (report.get("signup_deadline") or {}).get("parse_rate"),
+        }
+
+    # 最近 14 天趋势：每日成功/失败次数与飞书两源新增条数（started_at 索引范围扫描）
+    trend = [
+        {
+            "date": str(row.d),
+            "crawl_success": row.crawl_success,
+            "crawl_fail": row.crawl_fail,
+            "campus_added": int(row.campus_added),
+            "bianzhi_added": int(row.bianzhi_added),
+        }
+        for row in db.execute(text("""
+            SELECT date(cr.started_at) AS d,
+                   count(*) FILTER (WHERE cr.status = 'success') AS crawl_success,
+                   count(*) FILTER (WHERE cr.status IN ('error', 'partial')) AS crawl_fail,
+                   coalesce(sum(cr.rows_ingested) FILTER (WHERE ws.name = 'feishu_campus'), 0) AS campus_added,
+                   coalesce(sum(cr.rows_ingested) FILTER (WHERE ws.name = 'feishu_bianzhi'), 0) AS bianzhi_added
+            FROM crawl_runs cr
+            LEFT JOIN watch_sources ws ON ws.id = cr.source_id
+            WHERE cr.started_at >= now() - interval '14 days'
+              AND cr.source_id IS NOT NULL
+            GROUP BY 1 ORDER BY 1
+        """)).all()
+    ]
+
+    return {
+        "trend": trend,
+        "crawl_24h": {
+            "success": success,
+            "failed": failed,
+            "total": len(runs),
+            "latest_by_source": list(latest_by_source.values()),
+        },
+        "failed_sources_yesterday": {
+            "at": alert.finished_at.isoformat() if alert and alert.finished_at else None,
+            "sources": failed_sources,
+        },
+        "cache_ttl_seconds": caches,
+        "table_estimates": table_counts,
+        "data_quality": dq_summary,
     }
 
 

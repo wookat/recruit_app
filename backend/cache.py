@@ -46,22 +46,42 @@ def get_or_set(key: str, ttl: int, fn: Callable[[], Any]) -> Any:
     return result
 
 
-def cached(prefix: str, ttl: int = 60):
+STALE_TTL = 7 * 86400
+
+
+def cached(prefix: str, ttl: int = 60, stale: bool = False):
+    """Redis 缓存装饰器。stale=True 时额外保留一份 7 天的副本，
+    当重算失败（如共享服务器负载导致语句超时）时返回旧数据而非 500。"""
+
     def decorator(func: Callable[..., Any]):
         @wraps(func)
         def wrapper(*args, **kwargs):
             r = get_redis()
             cache_kwargs = {k: v for k, v in kwargs.items() if k != "db"}
             key = _make_key(prefix, args, cache_kwargs)
+            stale_key = f"stale:{key}"
             try:
                 cached = r.get(key)
                 if cached:
                     return json.loads(cached)
             except Exception:
                 pass
-            result = func(*args, **kwargs)
             try:
-                r.setex(key, ttl, json.dumps(result, default=str))
+                result = func(*args, **kwargs)
+            except Exception:
+                if stale:
+                    try:
+                        old = r.get(stale_key)
+                        if old:
+                            return json.loads(old)
+                    except Exception:
+                        pass
+                raise
+            try:
+                payload = json.dumps(result, default=str)
+                r.setex(key, ttl, payload)
+                if stale:
+                    r.setex(stale_key, STALE_TTL, payload)
             except Exception:
                 pass
             return result

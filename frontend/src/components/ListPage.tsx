@@ -9,8 +9,10 @@ import {
   type Suggestion,
 } from '@/api'
 import { StatsDashboard } from './StatsDashboard'
+import { FreshnessNote } from './FreshnessNote'
 import { DeadlinesCard } from './DeadlinesCard'
-import { buildShareUrl, paramsFromQueryString } from '@/lib/urlFilters'
+import { TodayGlance } from './TodayGlance'
+import { buildShareUrl, paramsFromQueryString, paramsToQueryString, POSITION_URL_KEYS } from '@/lib/urlFilters'
 import { MultiSelect } from './MultiSelect'
 import { PositionTable } from './PositionTable'
 import { PositionCardGrid } from './PositionCardGrid'
@@ -29,6 +31,7 @@ import {
   type SavedFilter,
 } from '@/lib/storage'
 import { pinyinMatch } from '@/lib/pinyin'
+import { markSavedFilterSeen, removeSavedFilterBaseline, useSavedNews } from '@/lib/savedNews'
 import {
   Search,
   Filter,
@@ -70,10 +73,13 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from './ActiveFilterChips'
+import { SearchSuggestInput } from './SearchSuggestInput'
+import { RecommendSection } from './RecommendSection'
 
 interface ListPageProps {
   title: string
-  fetcher: (params: SearchParams) => Promise<PositionList>
+  fetcher: (params: SearchParams, signal?: AbortSignal) => Promise<PositionList>
   showStats?: boolean
   syncUrl?: boolean
   initialPresetKey?: string
@@ -96,6 +102,31 @@ const HOT_SEARCH = [
   { label: '会计', type: 'major' as const, value: '会计' },
   { label: '国考', type: 'keyword' as const, value: '国考' },
   { label: '央企校招', type: 'keyword' as const, value: '央企校招' },
+]
+
+const POSITION_INDUSTRY_WORDS = [
+  '银行',
+  '人民银行',
+  '税务',
+  '海关',
+  '铁路',
+  '电力',
+  '电网',
+  '烟草',
+  '邮政',
+  '公安',
+  '法院',
+  '检察院',
+  '学校',
+  '教师',
+  '医院',
+  '海事',
+  '气象',
+  '统计',
+  '消防',
+  '监狱',
+  '水利',
+  '农业农村',
 ]
 
 const DEFAULT_PARAMS: SearchParams = {
@@ -166,8 +197,10 @@ export function ListPage({
   const [filterOpen, setFilterOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [deadlineView, setDeadlineView] = useState(false)
+  const [quickMatchKey, setQuickMatchKey] = useState(0)
   const [params, setParams] = useState<SearchParams>(() => {
-    const base = syncUrl
+    const fromUrl = syncUrl && !new URLSearchParams(window.location.search).get('board')
+    const base = fromUrl
       ? { ...DEFAULT_PARAMS, ...paramsFromQueryString(window.location.search) }
       : { ...DEFAULT_PARAMS }
     const preset = initialPresetKey
@@ -201,13 +234,20 @@ export function ListPage({
   }, [params.keyword, crossFetchTotal])
   const [recent, setRecent] = useState<string[]>(() => getRecentSearches())
   const [saved, setSaved] = useState<SavedFilter[]>(() => getSavedFilters())
+  const savedNews = useSavedNews()
+  const positionsNewSum = saved.reduce(
+    (a, f) => a + (savedNews.counts[`positions|${f.name}`] ?? 0),
+    0,
+  )
   const [saveOpen, setSaveOpen] = useState(false)
+  const [saveHint, setSaveHint] = useState<string | null>(null)
   const [saveName, setSaveName] = useState('')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [copied, setCopied] = useState(false)
   const [recommendQuery, setRecommendQuery] = useState<RecommendQuery | null>(null)
   const [exportTask, setExportTask] = useState<string | null>(null)
   const [exportError, setExportError] = useState('')
+  const [loadError, setLoadError] = useState(false)
   const suggestDisabledRef = useRef(false)
   const skipSuggestRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -222,6 +262,22 @@ export function ListPage({
   useEffect(() => {
     fetchFilters().then(setFilters).catch(console.error)
   }, [])
+
+  useEffect(() => {
+    if (!syncUrl) return
+    const cur = new URLSearchParams(window.location.search)
+    if (cur.get('board')) return
+    const q = new URLSearchParams(paramsToQueryString(params))
+    for (const [k, v] of cur) {
+      if (!POSITION_URL_KEYS.includes(k)) q.append(k, v)
+    }
+    const qs = q.toString()
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`,
+    )
+  }, [syncUrl, params])
 
   useEffect(() => {
     const kw = (params.keyword || '').trim()
@@ -272,14 +328,18 @@ export function ListPage({
     const controller = new AbortController()
     abortRef.current = controller
     setLoading(true)
+    setLoadError(false)
     try {
-      const res = await fetcher(params)
+      const res = await fetcher(params, controller.signal)
       if (controller.signal.aborted) return
       setData(res)
       const kw = (params.keyword || '').trim()
       if (kw.length >= 2) setRecent(addRecentSearch(kw))
     } catch (e) {
-      if (!controller.signal.aborted) console.error(e)
+      if (!controller.signal.aborted) {
+        console.error(e)
+        setLoadError(true)
+      }
     } finally {
       if (!controller.signal.aborted) setLoading(false)
     }
@@ -318,13 +378,16 @@ export function ListPage({
     return cat.length === 0 && yr.length === 0 && !deadlineView
   }
 
-  function updateParam<K extends keyof SearchParams>(key: K, value: SearchParams[K]) {
-    setParams((p) => {
-      const next = { ...p, [key]: value }
-      if (key !== 'page' && key !== 'page_size') next.page = 1
-      return next as SearchParams
-    })
-  }
+  const updateParam = useCallback(
+    <K extends keyof SearchParams>(key: K, value: SearchParams[K]) => {
+      setParams((p) => {
+        const next = { ...p, [key]: value }
+        if (key !== 'page' && key !== 'page_size') next.page = 1
+        return next as SearchParams
+      })
+    },
+    [],
+  )
 
   function applyQuickMatch(values: QuickMatchValues) {
     const majorType: SearchParams['major_type'] =
@@ -346,12 +409,101 @@ export function ListPage({
       category: values.category,
       year: values.year.map(Number).filter((n) => !isNaN(n)),
       keyword: '',
+      province: undefined,
+      work_location: undefined,
     }))
   }
+
+  const activeFilters: RemovableFilter[] = useMemo(() => {
+    const out: RemovableFilter[] = []
+    if (params.keyword)
+    out.push({ label: `关键词：${params.keyword}`, onRemove: () => updateParam('keyword', '') })
+  if (params.major)
+    out.push({ label: `专业：${params.major}`, onRemove: () => updateParam('major', undefined) })
+  for (const l of params.location ?? [])
+    out.push({
+      label: `地区：${l}`,
+      onRemove: () => updateParam('location', (params.location ?? []).filter((x) => x !== l)),
+    })
+  for (const p of params.province ?? [])
+    out.push({
+      label: `省份：${p}`,
+      onRemove: () => updateParam('province', (params.province ?? []).filter((x) => x !== p)),
+    })
+  for (const w of params.work_location ?? [])
+    out.push({
+      label: `地点：${w}`,
+      onRemove: () => updateParam('work_location', (params.work_location ?? []).filter((x) => x !== w)),
+    })
+  for (const c of params.category ?? [])
+    out.push({
+      label: `类型：${c}`,
+      onRemove: () => updateParam('category', (params.category ?? []).filter((x) => x !== c)),
+    })
+  for (const e of params.edu_level ?? [])
+    out.push({
+      label: `学历：${e}`,
+      onRemove: () => updateParam('edu_level', (params.edu_level ?? []).filter((x) => x !== e)),
+    })
+  for (const y of params.year ?? [])
+    out.push({
+      label: `年份：${y}`,
+      onRemove: () => updateParam('year', (params.year ?? []).filter((x) => x !== y)),
+    })
+    if (params.hide_expired)
+      out.push({ label: '隐藏已截止', onRemove: () => updateParam('hide_expired', undefined) })
+    return out
+  }, [params, updateParam])
+
+  const emptyAction = useMemo(() => <ActiveFilterChips filters={activeFilters} />, [activeFilters])
+  const onPageChange = useCallback((page: number) => updateParam('page', page), [updateParam])
+  const onPageSizeChange = useCallback(
+    (size: number) => updateParam('page_size', size),
+    [updateParam],
+  )
+  const columnFilters = useMemo(
+    () =>
+      filters
+        ? {
+            year: {
+              label: '年份',
+              options: filters.years.map(String),
+              selected: (params.year ?? []).map(String),
+              onChange: (v: string[]) =>
+                updateParam('year', v.map(Number).filter((n) => !isNaN(n))),
+            },
+            job_type: {
+              label: '类型',
+              options: filters.categories,
+              selected: params.category ?? [],
+              onChange: (v: string[]) => updateParam('category', v),
+            },
+            edu_level_norm: {
+              label: '学历',
+              options: filters.edu_levels,
+              selected: params.edu_level ?? [],
+              onChange: (v: string[]) => updateParam('edu_level', v),
+            },
+            work_location: {
+              label: '省份',
+              options: filters.provinces,
+              selected: (params.location ?? []).filter((l) => filters.provinces.includes(l)),
+              onChange: (v: string[]) => {
+                const nonProvince = (params.location ?? []).filter(
+                  (l) => !filters.provinces.includes(l),
+                )
+                updateParam('location', [...nonProvince, ...v])
+              },
+            },
+          }
+        : undefined,
+    [filters, params.year, params.category, params.edu_level, params.location, updateParam],
+  )
 
   function clearFilters() {
     setParams({ ...DEFAULT_PARAMS })
     setRecommendQuery(null)
+    setQuickMatchKey((k) => k + 1)
   }
 
   function applyRecommend(values: QuickMatchValues) {
@@ -421,17 +573,51 @@ export function ListPage({
     setTimeout(() => setExportError(''), 6000)
   }
 
+  const defaultFilterName =
+    [
+      params.location?.[0] ?? params.province?.[0] ?? params.work_location?.[0],
+      params.category?.[0],
+      params.edu_level?.[0],
+      params.year?.[0],
+      deadlineView ? '即将截止' : null,
+      (params.keyword || '').trim() || null,
+    ]
+      .filter(Boolean)
+      .join('·') || '岗位筛选'
+
   function handleSaveFilter() {
-    const name = saveName.trim()
+    const name = saveName.trim() || defaultFilterName
     if (!name) return
-    setSaved(saveFilter(name, params))
+    const { list, dropped } = saveFilter(name, params)
+    setSaved(list)
     setSaveName('')
     setSaveOpen(false)
+    setSaveHint(dropped ? `已达 10 组上限，删除了最旧的「${dropped}」` : null)
+    if (dropped) setTimeout(() => setSaveHint(null), 4000)
   }
 
   function applySavedFilter(f: SavedFilter) {
+    markSavedFilterSeen('positions', f.name)
     setParams({ ...DEFAULT_PARAMS, ...f.params, page: 1 })
   }
+
+  const positionSuggestWords = useMemo(
+    () => [
+      ...new Set([
+        ...(filters
+          ? [
+              ...filters.hot_locations,
+              ...filters.provinces,
+              ...filters.categories,
+              ...filters.edu_levels,
+            ]
+          : []),
+        ...HOT_SEARCH.map((h) => h.value),
+        ...POSITION_INDUSTRY_WORDS,
+      ]),
+    ],
+    [filters],
+  )
 
   const pinyinSuggestions = useMemo(() => {
     const kw = (params.keyword || '').trim()
@@ -555,7 +741,7 @@ export function ListPage({
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-muted-foreground">排序</label>
             <Select value={params.sort || 'year_desc'} onValueChange={(v) => updateParam('sort', v || undefined)}>
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9" aria-label="排序方式">
                 <SelectValue placeholder="排序方式" />
               </SelectTrigger>
               <SelectContent>
@@ -600,63 +786,34 @@ export function ListPage({
       <Card>
         <CardContent className="space-y-4 p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="搜索岗位、单位、专业、地点、特殊要求…"
-                value={params.keyword || ''}
-                onChange={(e) => updateParam('keyword', e.target.value)}
-                className="pl-9"
-                onKeyDown={(e) => e.key === 'Enter' && load()}
-              />
-              {(suggestions.length > 0 || pinyinSuggestions.length > 0) && (
-                <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg bg-popover shadow-md ring-1 ring-foreground/10">
-                  {suggestions.length > 0 && (
-                    <>
-                      <div className="px-3 py-1.5 text-[11px] text-muted-foreground">关键词联想（点击替换关键词）</div>
-                      {suggestions.map((s) => (
-                        <button
-                          key={s.text}
-                          type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
-                          onClick={() => applySuggestion(s.text)}
-                        >
-                          <Search className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="flex-1">{s.text}</span>
-                          {s.count !== undefined && (
-                            <span className="text-xs text-muted-foreground">{s.count.toLocaleString()} 条</span>
-                          )}
-                        </button>
-                      ))}
-                    </>
-                  )}
-                  {suggestions.length === 0 && pinyinSuggestions.length > 0 && (
-                    <>
-                      <div className="px-3 py-1.5 text-[11px] text-muted-foreground">拼音联想（点击替换关键词）</div>
-                      {pinyinSuggestions.map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
-                          onClick={() => updateParam('keyword', s)}
-                        >
-                          <Search className="h-3.5 w-3.5 text-muted-foreground" />
-                          {s}
-                        </button>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+            <SearchSuggestInput
+              value={params.keyword || ''}
+              onValueChange={(v) => updateParam('keyword', v)}
+              onSelect={(text) => applySuggestion(text)}
+              words={positionSuggestWords}
+              extraItems={[
+                ...suggestions
+                  .filter(
+                    (s) =>
+                      s.text.length <= 12 &&
+                      !/[，。、；！？]/.test(s.text) &&
+                      !/从事|等工作|负责|相关工作/.test(s.text),
+                  )
+                  .map((s) => ({ text: s.text, count: s.count })),
+                ...pinyinSuggestions.map((s) => ({ text: s })),
+              ]}
+              placeholder="搜索岗位、单位、专业、地点…"
+            />
             <div className="flex items-center gap-2">
               <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
                 <SheetTrigger
                   render={
-                    <Button variant="outline" size="sm" className="h-11 shrink-0 gap-1.5 sm:h-9 lg:hidden" aria-label="筛选">
+                    <Button variant="outline" size="sm" className="relative h-11 shrink-0 gap-1.5 sm:h-9 lg:hidden" aria-label="筛选">
                       <Filter className="h-4 w-4" />
                       筛选
+                      {positionsNewSum > 0 && (
+                        <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label="常用筛选有上新" />
+                      )}
                     </Button>
                   }
                 />
@@ -675,11 +832,14 @@ export function ListPage({
               <Button
                 variant={advancedOpen ? 'secondary' : 'outline'}
                 size="sm"
-                className="hidden h-9 shrink-0 gap-1.5 lg:inline-flex"
+                className="relative hidden h-9 shrink-0 gap-1.5 lg:inline-flex"
                 onClick={() => setAdvancedOpen((v) => !v)}
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 高级筛选
+                {positionsNewSum > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label="常用筛选有上新" />
+                )}
                 {advancedOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               </Button>
               <Button
@@ -726,6 +886,7 @@ export function ListPage({
                 variant="outline"
                 className="cursor-pointer hover:bg-muted"
                 onClick={() => handleHotSearch(item)}
+                render={<button type="button" />}
               >
                 {item.label}
               </Badge>
@@ -742,6 +903,7 @@ export function ListPage({
                   variant="outline"
                   className="cursor-pointer hover:bg-muted"
                   onClick={() => updateParam('keyword', kw)}
+                  render={<button type="button" />}
                 >
                   {kw}
                 </Badge>
@@ -749,7 +911,7 @@ export function ListPage({
               <Button
                 variant="link"
                 size="sm"
-                className="h-auto p-0 text-xs text-muted-foreground"
+                className="h-auto min-h-11 min-w-11 px-2 py-1 text-xs text-muted-foreground sm:min-h-0 sm:min-w-0 sm:p-0"
                 onClick={() => setRecent(clearRecentSearches())}
               >
                 清除
@@ -765,11 +927,19 @@ export function ListPage({
                 <span className="cursor-pointer" onClick={() => applySavedFilter(f)}>
                   {f.name}
                 </span>
+                {(savedNews.counts[`positions|${f.name}`] ?? 0) > 0 && (
+                  <span className="shrink-0 rounded-full bg-red-500/15 px-1.5 text-[10px] font-medium text-red-600 dark:text-red-400">
+                    +{savedNews.counts[`positions|${f.name}`]} 新
+                  </span>
+                )}
                 <button
                   type="button"
                   aria-label={`删除筛选 ${f.name}`}
                   className="cursor-pointer text-muted-foreground hover:text-foreground"
-                  onClick={() => setSaved(deleteFilter(f.name))}
+                  onClick={() => {
+                    removeSavedFilterBaseline('positions', f.name)
+                    setSaved(deleteFilter(f.name))
+                  }}
                 >
                   <X className="pointer-events-none h-3 w-3" />
                 </button>
@@ -782,7 +952,7 @@ export function ListPage({
                   value={saveName}
                   onChange={(e) => setSaveName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveFilter()}
-                  placeholder="筛选名称"
+                  placeholder={defaultFilterName}
                   className="h-7 w-32 text-xs"
                 />
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSaveFilter} aria-label="确认保存">
@@ -805,13 +975,18 @@ export function ListPage({
               <Button
                 variant="link"
                 size="sm"
-                className="h-auto p-0 text-xs"
-                onClick={() => setSaveOpen(true)}
+                className="h-auto min-h-11 p-0 text-xs sm:min-h-0"
+                disabled={activeFilters.length === 0 && !deadlineView}
+                onClick={() => {
+                  setSaveName(defaultFilterName)
+                  setSaveOpen(true)
+                }}
               >
                 <BookmarkPlus className="mr-0.5 h-3.5 w-3.5" />
                 保存当前筛选
               </Button>
             )}
+            {saveHint && <span className="text-muted-foreground">{saveHint}</span>}
             {exportTask ? (
               <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -874,26 +1049,42 @@ export function ListPage({
                   </Button>
                 }
               />
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="min-w-52">
                 <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('csv')}>
                   <Download className="h-4 w-4" />
-                  导出 CSV{data && data.total > SYNC_EXPORT_MAX ? '（异步）' : ''}
+                  <span className="flex flex-col whitespace-nowrap">
+                    导出 CSV
+                    {data && data.total > SYNC_EXPORT_MAX && (
+                      <span className="text-[11px] text-muted-foreground">数据量大，转异步任务</span>
+                    )}
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('xlsx')}>
                   <Download className="h-4 w-4" />
-                  导出 Excel{data && data.total > SYNC_EXPORT_MAX ? '（异步）' : ''}
+                  <span className="flex flex-col whitespace-nowrap">
+                    导出 Excel
+                    {data && data.total > SYNC_EXPORT_MAX && (
+                      <span className="text-[11px] text-muted-foreground">数据量大，转异步任务</span>
+                    )}
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('csv', true)}>
                   <Download className="h-4 w-4" />
-                  全部导出 CSV（最多 5 万行）
+                  <span className="flex flex-col whitespace-nowrap">
+                    全部导出 CSV
+                    <span className="text-[11px] text-muted-foreground">最多 5 万行</span>
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('xlsx', true)}>
                   <Download className="h-4 w-4" />
-                  全部导出 Excel（最多 5 万行）
+                  <span className="flex flex-col whitespace-nowrap">
+                    全部导出 Excel
+                    <span className="text-[11px] text-muted-foreground">最多 5 万行</span>
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={copyShareLink}>
                   <Link2 className="h-4 w-4" />
-                  复制筛选链接
+                  <span className="whitespace-nowrap">复制筛选链接</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -901,7 +1092,7 @@ export function ListPage({
 
           {activeChips.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground">已选条件：</span>
+              <span className="text-xs text-muted-foreground">已选筛选：</span>
               {activeChips.map((chip, idx) => (
                 <Badge key={idx} variant="secondary" className="gap-1 text-xs font-normal">
                   {chip.label}
@@ -915,8 +1106,8 @@ export function ListPage({
                   </button>
                 </Badge>
               ))}
-              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={clearFilters}>
-                清空全部
+              <Button variant="link" size="sm" className="h-auto min-h-11 p-0 text-xs sm:min-h-0" onClick={clearFilters}>
+                清除全部
               </Button>
             </div>
           )}
@@ -924,6 +1115,7 @@ export function ListPage({
       </Card>
 
       <QuickMatch
+        key={quickMatchKey}
         filters={filters}
         onSearch={applyQuickMatch}
         onReset={clearFilters}
@@ -934,7 +1126,7 @@ export function ListPage({
         <RecommendPanel query={recommendQuery} onClose={() => setRecommendQuery(null)} />
       )}
 
-      {showStats && <DeadlinesCard />}
+      {showStats && !deadlineView && <DeadlinesCard />}
 
       <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5">
         {PRESET_VIEWS.map((preset) => {
@@ -945,7 +1137,7 @@ export function ListPage({
               type="button"
               onClick={() => applyPreset(preset)}
               className={cn(
-                'shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                'min-h-11 shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
                 active
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
@@ -955,6 +1147,18 @@ export function ListPage({
             </button>
           )
         })}
+        <button
+          type="button"
+          onClick={() => updateParam('hide_expired', params.hide_expired ? undefined : true)}
+          className={cn(
+            'min-h-11 shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
+            params.hide_expired
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+          )}
+        >
+          隐藏已截止
+        </button>
         {crossPresets && crossPresets.length > 0 && onCrossPreset && (
           <>
             <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
@@ -963,7 +1167,7 @@ export function ListPage({
                 key={p.key}
                 type="button"
                 onClick={() => onCrossPreset(p.key)}
-                className="shrink-0 cursor-pointer rounded-full border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                className="min-h-11 shrink-0 cursor-pointer rounded-full border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground sm:min-h-0"
               >
                 {p.label}
               </button>
@@ -972,85 +1176,118 @@ export function ListPage({
         )}
       </div>
 
+      {showStats && onCrossPreset && (
+        <TodayGlance
+          onCampus={() => onCrossPreset('recent7')}
+          onCampusAll={() => onCrossPreset('all')}
+          onBianzhi={() => onCrossPreset('bz:all')}
+          onDeadline={() => setDeadlineView(true)}
+        />
+      )}
+
+      {showStats && <RecommendSection />}
+
       {crossTotal > 0 && onCrossOpen && (
         <button
           type="button"
           onClick={() => onCrossOpen((params.keyword || '').trim())}
-          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-dashed bg-card px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-left text-sm text-sky-800 transition-colors hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-200 dark:hover:bg-sky-900"
         >
           <Search className="h-4 w-4 shrink-0" />
           <span>
-            {crossLabel || '另一板块'}中另有{' '}
-            <span className="font-semibold text-foreground">{crossTotal.toLocaleString()}</span> 条与「
-            {(params.keyword || '').trim()}」相关，点击查看 →
+            换个板块看看：{crossLabel || '另一板块'}中另有{' '}
+            <span className="font-semibold">{crossTotal.toLocaleString()}</span> 条与「
+            {(params.keyword || '').trim()}」相关 →
           </span>
         </button>
       )}
 
       {deadlineView && <DeadlinesCard days={14} limit={100} defaultExpanded />}
 
+      {!deadlineView && (
+      <>
+      {loadError && !loading && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+          <span>加载失败，服务器可能正忙，请重试</span>
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => load()}>
+            重试
+          </Button>
+        </div>
+      )}
+      {!loading &&
+        !loadError &&
+        data &&
+        data.total === 0 &&
+        ((params.location?.length ?? 0) > 0 || (params.province?.length ?? 0) > 0) && (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+            <span>
+              没有结果，可能是地域筛选（
+              {[...(params.province ?? []), ...(params.location ?? [])].join('、')}
+              ）与其他条件冲突
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                setParams((p) => ({ ...p, location: [], province: undefined, page: 1 }))
+              }}
+            >
+              清除地域筛选
+            </Button>
+          </div>
+        )}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold tracking-tight">{title}</h1>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h1 className="shrink-0 whitespace-nowrap text-xl font-bold tracking-tight">{title}</h1>
           {data && (
-            <Badge variant="secondary" className="text-sm font-medium">
+            <Badge
+              variant="secondary"
+              className="text-sm font-medium"
+              title={data.total_capped ? '结果超过 10,000 条，计数已达统计上限' : undefined}
+            >
               共 {formatTotal(data.total, data.total_capped)} 条
+              {data.total_capped && <span className="hidden sm:inline">（已达统计上限）</span>}
             </Badge>
           )}
+          <FreshnessNote board="positions" />
         </div>
       </div>
 
+      <FilterSummaryBar filters={activeFilters} onClearAll={clearFilters} />
+
+      {data?.timed_out && (
+        <div
+          role="status"
+          className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
+        >
+          搜索超时，请换关键词（更具体的词或加筛选条件）
+        </div>
+      )}
+
       {view === 'table' && (
         <PositionTable
+          emptyAction={emptyAction}
+          highlight={params.keyword}
           data={data?.items || []}
           total={data?.total || 0}
           totalCapped={data?.total_capped}
           page={data?.page || 1}
           pageSize={data?.page_size || 20}
           loading={loading}
-          onPageChange={(page) => updateParam('page', page)}
-          onPageSizeChange={(size) => updateParam('page_size', size)}
-          columnFilters={
-            filters
-              ? {
-                  year: {
-                    label: '年份',
-                    options: filters.years.map(String),
-                    selected: (params.year ?? []).map(String),
-                    onChange: (v) =>
-                      updateParam('year', v.map(Number).filter((n) => !isNaN(n))),
-                  },
-                  job_type: {
-                    label: '类型',
-                    options: filters.categories,
-                    selected: params.category ?? [],
-                    onChange: (v) => updateParam('category', v),
-                  },
-                  edu_level_norm: {
-                    label: '学历',
-                    options: filters.edu_levels,
-                    selected: params.edu_level ?? [],
-                    onChange: (v) => updateParam('edu_level', v),
-                  },
-                  work_location: {
-                    label: '省份',
-                    options: filters.provinces,
-                    selected: (params.location ?? []).filter((l) =>
-                      filters.provinces.includes(l),
-                    ),
-                    onChange: (v) => {
-                      const nonProvince = (params.location ?? []).filter(
-                        (l) => !filters.provinces.includes(l),
-                      )
-                      updateParam('location', [...nonProvince, ...v])
-                    },
-                  },
-                }
-              : undefined
-          }
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+          columnFilters={columnFilters}
         />
       )}
-      {view === 'card' && <PositionCardGrid data={data?.items || []} loading={loading} />}
+      {view === 'card' && (
+        <PositionCardGrid
+          data={data?.items || []}
+          loading={loading}
+          emptyAction={emptyAction}
+          highlight={params.keyword}
+        />
+      )}
       {view === 'list' && <VirtualPositionList fetcher={fetcher} params={params} />}
 
       {view === 'card' && data && data.total > 0 && (
@@ -1083,6 +1320,8 @@ export function ListPage({
             </Button>
           </div>
         </div>
+      )}
+      </>
       )}
 
       {showStats && (

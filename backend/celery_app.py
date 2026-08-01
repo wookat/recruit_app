@@ -27,6 +27,10 @@ celery_app.conf.update(
             "task": "tasks.check_watch_sources",
             "schedule": crontab(hour=6, minute=0),  # 每天 6:00 检查全部来源
         },
+        "refresh-feishu-data": {
+            "task": "tasks.refresh_feishu_data",
+            "schedule": crontab(hour=6, minute=20),  # 每天刷新飞书校招/编制表格增量
+        },
         "refresh-hot-cache": {
             "task": "tasks.refresh_hot_cache",
             "schedule": crontab(hour=6, minute=30),  # 采集入库后刷新 stats/filters 热缓存

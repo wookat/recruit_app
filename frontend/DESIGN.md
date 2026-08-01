@@ -1,7 +1,7 @@
 # 前端设计规范（Design System）
 
 > 适用范围：`frontend/` 全部界面。技术体系：Tailwind CSS v4 + shadcn/ui（Base UI），token 定义于 `src/index.css`。
-> 原则：中性优先（Vercel/Linear 式灰阶）、语义色只用于状态表达、4px 栅格、亮暗双模式一致可读。
+> 原则：中性灰阶打底 + 品牌蓝主色（呼应「上岸罗盘」Logo 蓝青渐变）、语义色只用于状态表达、4px 栅格、亮暗双模式一致可读。
 
 ---
 
@@ -15,14 +15,14 @@
 | 前景 | `--foreground` | `oklch(0.145 0 0)` | `oklch(0.985 0 0)` | 正文文字 |
 | 卡片 | `--card` / `--card-foreground` | 白 / 近黑 | `oklch(0.205 0 0)` / 近白 | Card 容器 |
 | 浮层 | `--popover` / `--popover-foreground` | 白 / 近黑 | `oklch(0.205 0 0)` / 近白 | Dropdown/Sheet/Dialog |
-| 主色 | `--primary` / `--primary-foreground` | 近黑 / 近白 | 近白 / 近黑 | 主按钮、选中态 |
+| 主色 | `--primary` / `--primary-foreground` | `oklch(0.546 0.215 258)`（品牌蓝）/ 近白 | `oklch(0.707 0.155 254)`（提亮蓝）/ 近黑 | 主按钮、选中态、链接 |
 | 次级 | `--secondary` / `--secondary-foreground` | `oklch(0.97 0 0)` | `oklch(0.269 0 0)` | 次级按钮、secondary 徽章 |
 | 弱化 | `--muted` / `--muted-foreground` | `oklch(0.97 0 0)` / `oklch(0.556 0 0)` | `oklch(0.269 0 0)` / `oklch(0.708 0 0)` | 弱化底、辅助文字 |
 | 危险 | `--destructive` | `oklch(0.577 0.245 27)` | `oklch(0.704 0.191 22)` | 删除、失败 |
 | 边框 | `--border` / `--input` | `oklch(0.922 0 0)` | `oklch(1 0 0 / 10%–15%)` | 分隔线、输入框描边 |
-| 焦点环 | `--ring` | `oklch(0.708 0 0)` | `oklch(0.556 0 0)` | focus-visible 环 |
+| 焦点环 | `--ring` | `oklch(0.623 0.188 258)` | `oklch(0.623 0.188 258)` | focus-visible 环 |
 
-主色为中性近黑/近白，**不引入品牌彩色主色**；彩色仅用于下表语义状态。
+主色为**品牌蓝**（色相 ~254–258°，与 Logo 蓝青渐变 `#2563EB → #0891B2` 协调）：亮色模式取深蓝，对白色文字对比度 ≥4.5:1；暗色模式提亮并配近黑前景，避免刺眼。`--ring` 与 `--sidebar-primary` / `--sidebar-ring` 同步为品牌蓝。除 primary/ring 外的语义色（红/黄/绿/sky 提示条等）保持不变，彩色状态仅用于下表语义。
 
 ### 1.2 状态色（Tailwind 调色板，亮暗成对使用）
 

@@ -48,19 +48,72 @@ export function getSavedFilters(): SavedFilter[] {
   return readJson<SavedFilter[]>(SAVED_KEY, [])
 }
 
-export function saveFilter(name: string, params: SearchParams): SavedFilter[] {
+export function saveFilter(
+  name: string,
+  params: SearchParams,
+): { list: SavedFilter[]; dropped: string | null } {
   const entry: SavedFilter = {
     name: name.trim(),
     params: { ...params, page: 1 },
     createdAt: Date.now(),
   }
-  const next = [entry, ...getSavedFilters().filter((f) => f.name !== entry.name)].slice(0, 20)
-  writeJson(SAVED_KEY, next)
-  return next
+  const rest = getSavedFilters().filter((f) => f.name !== entry.name)
+  let dropped: string | null = null
+  if (rest.length >= SAVED_MAX) {
+    const oldest = [...rest].sort((a, b) => a.createdAt - b.createdAt)[0]
+    dropped = oldest.name
+    rest.splice(rest.indexOf(oldest), 1)
+  }
+  const list = [entry, ...rest]
+  writeJson(SAVED_KEY, list)
+  return { list, dropped }
 }
 
 export function deleteFilter(name: string): SavedFilter[] {
   const next = getSavedFilters().filter((f) => f.name !== name)
   writeJson(SAVED_KEY, next)
   return next
+}
+
+const SAVED_QUERY_KEY = 'recruit.savedQueries'
+export const SAVED_MAX = 10
+
+/** 板块级保存的筛选组合：内容为 URL 查询参数快照。 */
+export interface SavedQuery {
+  name: string
+  query: string
+  createdAt: number
+}
+
+type SavedQueryMap = Record<string, SavedQuery[]>
+
+export function getSavedQueries(board: string): SavedQuery[] {
+  return readJson<SavedQueryMap>(SAVED_QUERY_KEY, {})[board] ?? []
+}
+
+export function saveQuery(
+  board: string,
+  name: string,
+  query: string,
+): { list: SavedQuery[]; dropped: string | null } {
+  const entry: SavedQuery = { name: name.trim(), query, createdAt: Date.now() }
+  const rest = getSavedQueries(board).filter((f) => f.name !== entry.name)
+  let dropped: string | null = null
+  if (rest.length >= SAVED_MAX) {
+    const oldest = [...rest].sort((a, b) => a.createdAt - b.createdAt)[0]
+    dropped = oldest.name
+    rest.splice(rest.indexOf(oldest), 1)
+  }
+  const list = [entry, ...rest]
+  const map = readJson<SavedQueryMap>(SAVED_QUERY_KEY, {})
+  map[board] = list
+  writeJson(SAVED_QUERY_KEY, map)
+  return { list, dropped }
+}
+
+export function deleteQuery(board: string, name: string): SavedQuery[] {
+  const map = readJson<SavedQueryMap>(SAVED_QUERY_KEY, {})
+  map[board] = (map[board] ?? []).filter((f) => f.name !== name)
+  writeJson(SAVED_QUERY_KEY, map)
+  return map[board]
 }

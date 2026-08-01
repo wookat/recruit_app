@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useMemo, useState, type ReactNode } from 'react'
 
 import {
   useReactTable,
@@ -9,6 +9,8 @@ import {
 import type { Position } from '@/api'
 import { formatTotal } from '@/api'
 import { PositionSheet } from './PositionSheet'
+import { sheetNavProps } from '@/lib/sheetNav'
+import { DueBadge } from './DueBadge'
 import { EmptyState } from './EmptyState'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
@@ -40,6 +42,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { eduClass, jobTypeClass, provinceClass, yearClass, PILL_BASE } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
+import { Highlight } from '@/components/Highlight'
+import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
+import { positionShareUrl } from '@/lib/clipboard'
+import { SortableHead } from '@/components/SortableHead'
+import { parseSignupDeadline } from '@/lib/deadline'
+import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
 
 const columns: ColumnDef<Position>[] = [
   { accessorKey: 'year', header: '年份', size: 70 },
@@ -56,7 +64,23 @@ const columns: ColumnDef<Position>[] = [
   { accessorKey: 'work_location', header: '工作地点', size: 120 },
   { accessorKey: 'signup_time', header: '报名时间', size: 160 },
   { accessorKey: 'exam_time', header: '考试时间', size: 160 },
+  { accessorKey: 'created_at', header: '更新', size: 100 },
 ]
+
+const SORTABLE_COLUMNS: Record<string, string> = {
+  employer: 'employer',
+  signup_time: 'deadline',
+  created_at: 'created',
+}
+
+function sortField(p: Position, key: string): string | null {
+  if (key === 'employer') return p.employer
+  if (key === 'deadline') {
+    const d = parseSignupDeadline(p)
+    return d ? d.toISOString() : null
+  }
+  return p.created_at
+}
 
 export interface ColumnFilterConfig {
   label: string
@@ -75,9 +99,12 @@ interface Props {
   onPageSizeChange: (size: number) => void
   loading: boolean
   columnFilters?: Partial<Record<string, ColumnFilterConfig>>
+  emptyAction?: ReactNode
+  highlight?: string
 }
 
-export function PositionTable({
+/** memo：父页面无关状态变化时不重渲整表。 */
+export const PositionTable = memo(function PositionTable({
   data,
   total,
   totalCapped,
@@ -87,12 +114,20 @@ export function PositionTable({
   onPageSizeChange,
   loading,
   columnFilters,
+  emptyAction,
+  highlight,
 }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
+  const [sort, setSort] = useState<SortState | null>(null)
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
+  const sortedData = useMemo(() => {
+    if (!sort) return data
+    return [...data].sort((a, b) => cmpNullableStr(sortField(a, sort.key), sortField(b, sort.key), sort.dir))
+  }, [data, sort])
+
   const table = useReactTable({
-    data,
+    data: sortedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
   })
@@ -129,15 +164,31 @@ export function PositionTable({
   return (
     <div className="space-y-3">
       <div className="rounded-xl border bg-card shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto [scrollbar-width:thin]">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id} className="hover:bg-transparent">
-                  {hg.headers.map((h) => (
+                  {hg.headers.map((h) =>
+                    SORTABLE_COLUMNS[h.column.id] ? (
+                      <SortableHead
+                        key={h.id}
+                        label={String(h.column.columnDef.header)}
+                        sortKey={SORTABLE_COLUMNS[h.column.id]}
+                        sort={sort}
+                        onToggle={(k) => setSort((prev) => nextSort(prev, k))}
+                        className={cn(
+                          'whitespace-nowrap',
+                          h.column.id === 'created_at' && 'hidden 2xl:table-cell',
+                        )}
+                      />
+                    ) : (
                     <TableHead
                       key={h.id}
-                      className="whitespace-nowrap"
+                      className={cn(
+                        'whitespace-nowrap',
+                        h.column.id === 'exam_time' && 'hidden 2xl:table-cell',
+                      )}
                       style={{ width: h.column.getSize() }}
                     >
                       {columnFilters?.[h.column.id] ? (
@@ -149,8 +200,11 @@ export function PositionTable({
                         flexRender(h.column.columnDef.header, h.getContext())
                       )}
                     </TableHead>
-                  ))}
-                  <TableHead className="w-32">操作</TableHead>
+                    ),
+                  )}
+                  <TableHead className="sticky right-0 w-32 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
+                    操作
+                  </TableHead>
                 </TableRow>
               ))}
             </TableHeader>
@@ -171,7 +225,8 @@ export function PositionTable({
                     <EmptyState
                       className="rounded-none border-0 bg-transparent"
                       title="没有找到匹配的岗位"
-                      description="试试减少筛选条件、更换关键词，或使用一键匹配推荐岗位"
+                      description="建议优先移除关键词，其次地区、类型筛选"
+                      action={emptyAction}
                     />
                   </TableCell>
                 </TableRow>
@@ -185,7 +240,11 @@ export function PositionTable({
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
-                        className="max-w-xs truncate text-sm"
+                        className={cn(
+                          'max-w-xs truncate text-sm',
+                          (cell.column.id === 'exam_time' || cell.column.id === 'created_at') &&
+                            'hidden 2xl:table-cell',
+                        )}
                         title={String(cell.getValue() || '')}
                       >
                         {cell.column.id === 'year' ? (
@@ -210,15 +269,38 @@ export function PositionTable({
                           >
                             {truncate(String(cell.getValue()), 12)}
                           </span>
+                        ) : cell.column.id === 'signup_time' ? (
+                          <span className="inline-flex max-w-full items-center gap-1.5">
+                            <span className="truncate">{truncate(String(cell.getValue() || '-'))}</span>
+                            <DueBadge date={row.original.signup_deadline?.slice(0, 10)} />
+                          </span>
+                        ) : cell.column.id === 'created_at' ? (
+                          String(cell.getValue() || '-').slice(0, 10)
+                        ) : cell.column.id === 'employer' ||
+                          cell.column.id === 'position_example' ? (
+                          <Highlight
+                            text={truncate(String(cell.getValue() || '-'))}
+                            query={highlight}
+                          />
                         ) : (
                           truncate(String(cell.getValue() || '-'))
                         )}
                       </TableCell>
                     ))}
-                    <TableCell>
+                    <TableCell className="sticky right-0 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)] group-hover:bg-muted">
                       <div className="flex items-center gap-0.5">
                         <FavoriteButton item={row.original} />
                         <CompareButton item={row.original} />
+                        <ShareTextButton
+                          className="h-8 w-8"
+                          text={buildShareText({
+                            org: row.original.employer,
+                            title: row.original.position_example,
+                            location: row.original.work_location,
+                            deadline: row.original.signup_time,
+                            url: row.original.source_url || positionShareUrl(row.original.id),
+                          })}
+                        />
                         <Button
                           variant="ghost"
                           size="sm"
@@ -254,6 +336,7 @@ export function PositionTable({
               className="h-8 w-8"
               onClick={() => onPageChange(1)}
               disabled={page <= 1}
+              aria-label="首页"
             >
               <ChevronsLeft className="h-4 w-4" />
             </Button>
@@ -263,6 +346,7 @@ export function PositionTable({
               className="h-8 w-8"
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
+              aria-label="上一页"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -292,6 +376,7 @@ export function PositionTable({
               className="h-8 w-8"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
+              aria-label="下一页"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -301,11 +386,12 @@ export function PositionTable({
               className="h-8 w-8"
               onClick={() => onPageChange(totalPages)}
               disabled={page >= totalPages}
+              aria-label="末页"
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
             <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
-              <SelectTrigger className="h-8 w-[100px]">
+              <SelectTrigger className="h-8 w-[100px]" aria-label="每页条数">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -320,10 +406,17 @@ export function PositionTable({
         </div>
       </div>
 
-      {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <PositionSheet
+          item={selected}
+          onClose={() => setSelected(null)}
+          {...sheetNavProps(sortedData, selected, setSelected)}
+          onOpenItem={setSelected}
+        />
+      )}
     </div>
   )
-}
+})
 
 function HeaderFilter({ config }: { config: ColumnFilterConfig }) {
   const active = config.selected.length > 0

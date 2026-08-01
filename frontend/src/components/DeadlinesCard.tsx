@@ -72,7 +72,7 @@ export function DeadlinesCard({ days = 7, limit = 20, defaultExpanded = false }:
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 gap-1 text-xs text-muted-foreground"
+              className="h-auto min-h-11 gap-1 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
               onClick={() => setExpanded((v) => !v)}
             >
               {expanded ? (
@@ -91,7 +91,7 @@ export function DeadlinesCard({ days = 7, limit = 20, defaultExpanded = false }:
           {visible.map((e, i) => {
             const n = daysLeft(e)
             const row = (
-              <div className="flex items-center gap-2 py-2 text-sm">
+              <div className="flex min-h-11 items-center gap-2 py-2 text-sm sm:min-h-0">
                 <Badge variant="outline" className={`shrink-0 text-[11px] ${urgencyClass(n)}`}>
                   {daysLeftLabel(n, e.deadline)}
                 </Badge>
@@ -119,7 +119,7 @@ export function DeadlinesCard({ days = 7, limit = 20, defaultExpanded = false }:
           })}
         </div>
       </CardContent>
-      {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} />}
+      {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} onOpenItem={setSelected} />}
     </Card>
   )
 }

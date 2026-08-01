@@ -3,12 +3,16 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Position, PositionList, SearchParams } from '@/api'
 import { formatTotal } from '@/api'
 import { PositionSheet } from './PositionSheet'
+import { sheetNavProps } from '@/lib/sheetNav'
 import { EmptyState } from './EmptyState'
+import { Highlight } from './Highlight'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Building2, MapPin, GraduationCap, Loader2 } from 'lucide-react'
+import { stripOrgPrefix } from '@/lib/orgPrefix'
+import { DueBadge } from './DueBadge'
 
 interface Props {
   fetcher: (params: SearchParams) => Promise<PositionList>
@@ -150,14 +154,24 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
                       <Badge variant="outline" className="text-[11px]">
                         {item.job_type || '-'}
                       </Badge>
+                      <DueBadge date={item.signup_deadline?.slice(0, 10)} />
                       <span className="line-clamp-1 text-sm font-medium">
-                        {item.position_example || item.exam_type || '-'}
+                        <Highlight
+                          text={
+                            item.position_example
+                              ? stripOrgPrefix(item.position_example, item.employer)
+                              : item.exam_type || '-'
+                          }
+                          query={params.keyword}
+                        />
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                       <span className="inline-flex max-w-[60%] items-center gap-1">
                         <Building2 className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{item.employer || '-'}</span>
+                        <span className="truncate">
+                          <Highlight text={item.employer || '-'} query={params.keyword} />
+                        </span>
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <GraduationCap className="h-3.5 w-3.5 shrink-0" />
@@ -185,7 +199,14 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
           })}
         </div>
       </div>
-      {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <PositionSheet
+          item={selected}
+          onClose={() => setSelected(null)}
+          {...sheetNavProps(items, selected, setSelected)}
+          onOpenItem={setSelected}
+        />
+      )}
     </div>
   )
 }

@@ -6,6 +6,9 @@ const FAV_KEY = 'recruit.favorites'
 const STATUS_KEY = 'recruit.appStatus'
 const NOTE_KEY = 'recruit.appNote'
 const CHANNEL_KEY = 'recruit.appChannel'
+const PRIORITY_KEY = 'recruit.appPriority'
+const PINNED_KEY = 'recruit.appPinned'
+const STATUS_HISTORY_KEY = 'recruit.appStatusHistory'
 const FAV_MAX = 200
 export const COMPARE_MAX = 4
 
@@ -20,14 +23,19 @@ export const APP_STATUSES = [
 ] as const
 export type AppStatus = (typeof APP_STATUSES)[number]
 
+export interface StatusEvent {
+  status: AppStatus
+  at: string
+}
+
 export const STATUS_COLORS: Record<AppStatus, string> = {
-  未投递: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
-  已投递: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  待笔试: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300',
-  待面试: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300',
-  'OC/录用': 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-  已放弃: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  已挂: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+  未投递: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 [&_[data-count]]:text-slate-900 dark:[&_[data-count]]:text-slate-300',
+  已投递: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 [&_[data-count]]:text-blue-900 dark:[&_[data-count]]:text-blue-300',
+  待笔试: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 [&_[data-count]]:text-cyan-900 dark:[&_[data-count]]:text-cyan-300',
+  待面试: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300 [&_[data-count]]:text-violet-900 dark:[&_[data-count]]:text-violet-300',
+  'OC/录用': 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300 [&_[data-count]]:text-green-900 dark:[&_[data-count]]:text-green-300',
+  已放弃: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 [&_[data-count]]:text-amber-900 dark:[&_[data-count]]:text-amber-300',
+  已挂: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 [&_[data-count]]:text-red-900 dark:[&_[data-count]]:text-red-300',
 }
 
 type Listener = () => void
@@ -63,6 +71,9 @@ let favorites: Position[] = readFavorites()
 let statuses: Record<number, AppStatus> = readStatuses()
 let notes: Record<number, string> = readRecord<string>(NOTE_KEY)
 let channels: Record<number, AppChannel> = readRecord<AppChannel>(CHANNEL_KEY)
+let priorities: Record<number, boolean> = readRecord<boolean>(PRIORITY_KEY)
+let pinned: Record<number, boolean> = readRecord<boolean>(PINNED_KEY)
+let statusHistory: Record<number, StatusEvent[]> = readRecord<StatusEvent[]>(STATUS_HISTORY_KEY)
 let compare: Position[] = []
 const listeners = new Set<Listener>()
 
@@ -142,6 +153,7 @@ function persistStatuses() {
 }
 
 export function setAppStatus(id: number, status: AppStatus) {
+  if ((statuses[id] ?? '未投递') === status) return
   if (status === '未投递') {
     const rest = { ...statuses }
     delete rest[id]
@@ -149,8 +161,17 @@ export function setAppStatus(id: number, status: AppStatus) {
   } else {
     statuses = { ...statuses, [id]: status }
   }
+  statusHistory = {
+    ...statusHistory,
+    [id]: [...(statusHistory[id] ?? []), { status, at: new Date().toISOString() }],
+  }
   persistStatuses()
+  persistRecord(STATUS_HISTORY_KEY, statusHistory)
   emit()
+}
+
+export function useAppStatusHistory(): Record<number, StatusEvent[]> {
+  return useSyncExternalStore(subscribe, () => statusHistory)
 }
 
 export function useAppStatuses(): Record<number, AppStatus> {
@@ -190,6 +211,38 @@ export function setAppChannel(id: number, channel: AppChannel | null) {
   emit()
 }
 
+export function toggleAppPriority(id: number) {
+  if (priorities[id]) {
+    const rest = { ...priorities }
+    delete rest[id]
+    priorities = rest
+  } else {
+    priorities = { ...priorities, [id]: true }
+  }
+  persistRecord(PRIORITY_KEY, priorities)
+  emit()
+}
+
+export function useAppPriorities(): Record<number, boolean> {
+  return useSyncExternalStore(subscribe, () => priorities)
+}
+
+export function toggleAppPinned(id: number) {
+  if (pinned[id]) {
+    const rest = { ...pinned }
+    delete rest[id]
+    pinned = rest
+  } else {
+    pinned = { ...pinned, [id]: true }
+  }
+  persistRecord(PINNED_KEY, pinned)
+  emit()
+}
+
+export function useAppPinned(): Record<number, boolean> {
+  return useSyncExternalStore(subscribe, () => pinned)
+}
+
 export function useAppNotes(): Record<number, string> {
   return useSyncExternalStore(subscribe, () => notes)
 }
@@ -204,4 +257,44 @@ export function useFavorites(): Position[] {
 
 export function useCompare(): Position[] {
   return useSyncExternalStore(subscribe, () => compare)
+}
+
+export interface PositionBackup {
+  favorites: Position[]
+  statuses: Record<number, AppStatus>
+  notes: Record<number, string>
+  channels: Record<number, AppChannel>
+  priorities: Record<number, boolean>
+  statusHistory?: Record<number, StatusEvent[]>
+  pinned?: Record<number, boolean>
+}
+
+export function exportPositionData(): PositionBackup {
+  return { favorites, statuses, notes, channels, priorities, statusHistory, pinned }
+}
+
+/** 合并导入备份：同 id 以备份数据覆盖本地。返回合并后收藏总数。 */
+export function mergePositionData(data: PositionBackup): number {
+  const byId = new Map(favorites.map((p) => [p.id, p]))
+  for (const p of data.favorites) byId.set(p.id, p)
+  favorites = [...byId.values()].slice(0, FAV_MAX)
+  statuses = { ...statuses, ...data.statuses }
+  notes = { ...notes, ...data.notes }
+  channels = { ...channels, ...data.channels }
+  priorities = { ...priorities, ...data.priorities }
+  if (data.statusHistory) {
+    statusHistory = { ...statusHistory, ...data.statusHistory }
+    persistRecord(STATUS_HISTORY_KEY, statusHistory)
+  }
+  if (data.pinned) {
+    pinned = { ...pinned, ...data.pinned }
+    persistRecord(PINNED_KEY, pinned)
+  }
+  persistFavorites()
+  persistStatuses()
+  persistRecord(NOTE_KEY, notes)
+  persistRecord(CHANNEL_KEY, channels)
+  persistRecord(PRIORITY_KEY, priorities)
+  emit()
+  return favorites.length
 }

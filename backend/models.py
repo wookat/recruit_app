@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Index, func
+from sqlalchemy import Column, Date, Integer, String, Text, DateTime, Index, func
 from sqlalchemy.dialects.postgresql import ARRAY
 from database import Base
 
@@ -65,11 +65,38 @@ class CampusJob(Base):
     locations = Column(String(500), index=True)
     start_date = Column(String(30))
     deadline_text = Column(String(200))
+    deadline_date = Column(Date, index=True)
     announce_url = Column(Text)
     apply_url = Column(Text)
     referral_code = Column(String(200))
     notes = Column(Text)
     updated_at_src = Column(String(30))
+    content_hash = Column(String(32), unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class BianzhiJob(Base):
+    """编制类招聘公告（公务员事业单位/教育/医疗/高校/科研院所/央国企社招/大型联考，来源：外部汇总表导入）。"""
+
+    __tablename__ = "bianzhi_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category = Column(String(50), index=True)  # 公务员事业单位/教育系统/医疗系统/高校高职大专/科研院所/央国企社招/大型联考
+    province = Column(String(50), index=True)
+    employer = Column(Text)
+    headcount = Column(String(200))
+    job_type = Column(String(200), index=True)  # 类型/招考类型/企业类型
+    work_location = Column(String(500))
+    edu_requirement = Column(String(200), index=True)
+    major_requirement = Column(Text)
+    deadline_text = Column(String(300))
+    deadline_date = Column(Date, index=True)
+    signup_start = Column(String(50))
+    exam_time = Column(String(50))
+    notes = Column(Text)
+    announce_url = Column(Text)
+    apply_url = Column(Text)
+    updated_at_src = Column(String(30), index=True)
     content_hash = Column(String(32), unique=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

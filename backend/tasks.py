@@ -3,7 +3,7 @@ import json
 import os
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 import pandas as pd
@@ -12,10 +12,13 @@ from sqlalchemy.orm import Session
 from celery_app import celery_app
 from database import SessionLocal
 from ingest import ingest_positions_df
+from models import CrawlRun
 import collector
 import crud
 import pipeline
 import precompute
+import backfill_deadlines
+import refresh_feishu
 import import_guopin_2027
 from cache import get_redis
 from etl.normalize_v2 import parse_signup_deadline_v2
@@ -424,10 +427,34 @@ def data_quality_audit():
 
 
 @celery_app.task
+def refresh_feishu_data():
+    """每日从飞书公开表格增量刷新 campus_jobs / bianzhi_jobs（结果计入 crawl_runs）。"""
+    try:
+        results = refresh_feishu.refresh_all()
+    except Exception as exc:  # noqa: BLE001  不影响其他 beat 任务
+        return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    try:
+        results["deadline_backfill"] = backfill_deadlines.backfill_all()
+    except Exception as exc:  # noqa: BLE001
+        results["deadline_backfill"] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    return results
+
+
+@celery_app.task
 def check_watch_sources():
     """定时任务：对所有到期启用的来源执行采集闭环（公告→附件→解析→入库）。"""
     db = SessionLocal()
     try:
-        return {"results": pipeline.run_due_pipelines(db)}
+        results = pipeline.run_due_pipelines(db)
+        failed = [r["source"] for r in results if r.get("status") in ("error", "partial")]
+        if failed:
+            db.add(CrawlRun(
+                source_id=None,
+                status="alert",
+                finished_at=datetime.now(timezone.utc),
+                error=json.dumps(failed, ensure_ascii=False)[:4000],
+            ))
+            db.commit()
+        return {"results": results, "failed_sources": failed}
     finally:
         db.close()

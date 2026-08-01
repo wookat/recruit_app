@@ -29,6 +29,8 @@ import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
+import { BoardRecommendSection } from '@/components/BoardRecommendSection'
+import { getProfile, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
@@ -144,7 +146,18 @@ export function BianzhiPage({
   )
   const [sort, setSort] = useState<SortState | null>(null)
   const [detail, setDetail] = useState<BianzhiJob | null>(null)
-  const [profileMatched, setProfileMatched] = useState(false)
+  const [profileMatched, setProfileMatched] = useState(() => {
+    const p = getProfile()
+    if (!profileUsable(p)) return false
+    const q = new URLSearchParams(window.location.search)
+    const kw = q.get('bkw') ?? ''
+    const prov = (q.get('prov') ?? '').split(',').filter(Boolean)
+    if (!kw && !prov.length) return false
+    if (kw !== p.major.trim()) return false
+    return prov.every((v) =>
+      p.location.some((loc) => loc === v || loc.startsWith(v) || v.startsWith(loc)),
+    )
+  })
   const deepLinkDone = useRef(false)
   const toggleSort = useCallback((key: string) => setSort((s) => nextSort(s, key)), [])
 
@@ -391,6 +404,8 @@ export function BianzhiPage({
           setProfileMatched(false)
         }}
       />
+
+      <BoardRecommendSection board="bianzhi" />
 
       <SavedFilterBar
         board="bianzhi"

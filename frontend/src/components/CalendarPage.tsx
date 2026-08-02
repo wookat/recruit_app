@@ -13,7 +13,7 @@ import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { buildShareText } from '@/components/ShareTextButton'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
-import { parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
+import { getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import { useFavorites } from '@/lib/positionStore'
 import {
   toggleBianzhiFavorite,
@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { downloadIcs, type IcsEvent } from '@/lib/ics'
 import { CalendarDays, ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { jobShareUrl } from '@/lib/clipboard'
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
 
@@ -34,13 +35,13 @@ function isoOf(d: Date): string {
 
 function campusDateIso(j: CampusJob): string | null {
   if (j.deadline_date) return j.deadline_date.slice(0, 10)
-  const d = parseDeadlineText(j.deadline_text)
+  const d = getEffectiveDeadline(j)
   return d ? isoOf(d) : null
 }
 
 function bianzhiDateIso(j: BianzhiJob): string | null {
   if (j.deadline_date) return j.deadline_date.slice(0, 10)
-  const d = parseDeadlineText(j.deadline_text)
+  const d = getEffectiveDeadline(j)
   return d ? isoOf(d) : null
 }
 
@@ -164,11 +165,11 @@ export function CalendarPage() {
       if (d) set.add(isoOf(d))
     }
     for (const j of campusFavs) {
-      const d = parseDeadlineText(j.deadline_text)
+      const d = getEffectiveDeadline(j)
       if (d) set.add(isoOf(d))
     }
     for (const j of bianzhiFavs) {
-      const d = parseDeadlineText(j.deadline_text)
+      const d = getEffectiveDeadline(j)
       if (d) set.add(isoOf(d))
     }
     return set
@@ -270,7 +271,8 @@ export function CalendarPage() {
       title: j.positions,
       location: j.locations,
       deadline: j.deadline_text,
-      url: j.apply_url || j.announce_url,
+      deepLink: jobShareUrl('campus', j.id),
+      url: j.announce_url || j.apply_url,
     })
 
   const bianzhiShare = (j: BianzhiJob) =>
@@ -279,6 +281,7 @@ export function CalendarPage() {
       title: j.job_type,
       location: j.work_location || j.province,
       deadline: j.deadline_text || j.deadline_date,
+      deepLink: jobShareUrl('bianzhi', j.id),
       url: j.announce_url || j.apply_url,
     })
 

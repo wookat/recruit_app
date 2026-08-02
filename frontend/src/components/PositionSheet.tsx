@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
-import { fetchPositions, type Position } from '@/api'
-import { copyText, positionShareUrl } from '@/lib/clipboard'
+import { fetchPositions, fetchSimilarPositions, type Position } from '@/api'
+import { copyText, jobShareUrl, positionShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
-import { Building2, ExternalLink, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check } from 'lucide-react'
+import { addViewHistory } from '@/lib/viewHistory'
+import { derivePositionTags } from '@/lib/jobTags'
+import { parseSignupDeadline } from '@/lib/deadline'
+import { PrepResources } from './PrepResources'
+import { SheetDragHandle } from './SheetDragHandle'
+import { Building2, ExternalLink, Filter, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -16,7 +21,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
-import { ShareTextButton, buildShareText } from './ShareTextButton'
+import { ShareMenuButton, buildShareText } from './ShareTextButton'
 import {
   APP_STATUSES,
   STATUS_COLORS,
@@ -40,8 +45,10 @@ interface Props {
   nextDisabled?: boolean
   /** 收藏面板打开时标注数据为收藏时快照。 */
   snapshotNote?: boolean
-  /** 传入时展示「同单位其他岗位」区块，点击切换详情。 */
+  /** 传入时展示「同单位其他岗位」「相似岗位」区块，点击切换详情。 */
   onOpenItem?: (p: Position) => void
+  /** 传入时可点标签写入对应筛选（如「本科可报」→学历筛选）。 */
+  onTagClick?: (tagKey: string) => void
 }
 
 function parseMajors(raw: string): string[] {
@@ -122,12 +129,25 @@ export function PositionSheet({
   nextDisabled,
   snapshotNote,
   onOpenItem,
+  onTagClick,
 }: Props) {
   const [copied, setCopied] = useState(false)
   const statuses = useAppStatuses()
   const [related, setRelated] = useState<Position[]>([])
+  const [similar, setSimilar] = useState<Position[]>([])
   const itemId = item?.id
   const employer = item?.employer?.trim()
+
+  useEffect(() => {
+    if (!item) return
+    const t =
+      item.employer?.trim() ||
+      stripOrgPrefix(item.position_example ?? '', item.employer) ||
+      item.exam_type ||
+      item.job_type ||
+      '体制内岗位'
+    addViewHistory('positions', item.id, t)
+  }, [item])
 
   useEffect(() => {
     if (!employer || !onOpenItem) {
@@ -151,6 +171,24 @@ export function PositionSheet({
       cancelled = true
     }
   }, [employer, itemId, onOpenItem])
+
+  useEffect(() => {
+    if (!itemId || !onOpenItem) {
+      setSimilar([])
+      return
+    }
+    let cancelled = false
+    fetchSimilarPositions(itemId)
+      .then((res) => {
+        if (!cancelled) setSimilar(res)
+      })
+      .catch(() => {
+        if (!cancelled) setSimilar([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [itemId, onOpenItem])
 
   useEffect(() => {
     if (!itemId) return
@@ -185,13 +223,41 @@ export function PositionSheet({
   return (
     <Sheet open={!!item} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full max-w-2xl p-0 data-[side=right]:w-full sm:max-w-xl">
-        <SheetHeader className="space-y-2 px-4 pt-6 sm:px-6">
+        <SheetDragHandle onDismiss={onClose} />
+        <SheetHeader className="space-y-2 px-4 pt-1 sm:px-6 sm:pt-6">
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             岗位详情
             <Badge variant="secondary">{item.year}</Badge>
             {item.job_type && <Badge variant="outline">{item.job_type}</Badge>}
-            {item.edu_level_norm && <Badge variant="outline">{item.edu_level_norm}</Badge>}
+            {item.edu_level_norm &&
+              (onTagClick && item.edu_level_norm === '本科' ? (
+                <button
+                  type="button"
+                  className="cursor-pointer"
+                  title="点击按此学历筛选"
+                  aria-label={`按学历「${item.edu_level_norm}」筛选`}
+                  onClick={() => onTagClick('edu_bk')}
+                >
+                  <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary transition-colors hover:bg-primary/20">
+                    <Filter className="h-3 w-3" aria-hidden="true" />
+                    {item.edu_level_norm}
+                  </Badge>
+                </button>
+              ) : (
+                <Badge variant="outline">{item.edu_level_norm}</Badge>
+              ))}
           </SheetTitle>
+          {derivePositionTags(item).filter((t) => t.key !== 'edu_bk').length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {derivePositionTags(item)
+                .filter((t) => t.key !== 'edu_bk')
+                .map((t) => (
+                  <Badge key={t.key} variant="secondary" className="font-normal">
+                    {t.label}
+                  </Badge>
+                ))}
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-1">
             <Button
               variant="ghost"
@@ -222,14 +288,17 @@ export function PositionSheet({
                 ))}
               </SelectContent>
             </Select>
-            <ShareTextButton
-              className="h-8 w-8"
+            <ShareMenuButton
+              className="h-11 w-11 sm:h-8 sm:w-8"
+              url={jobShareUrl('positions', item.id)}
+              title={`${item.position_example || item.exam_type || ''} - ${item.employer || ''}`}
               text={buildShareText({
                 org: item.employer,
                 title: item.position_example,
                 location: item.work_location,
                 deadline: item.signup_time,
-                url: item.source_url || positionShareUrl(item.id),
+                deepLink: jobShareUrl('positions', item.id),
+                url: item.source_url,
               })}
             />
             <FavoriteButton item={item} />
@@ -268,7 +337,7 @@ export function PositionSheet({
         <ScrollArea className="min-h-0 flex-1 px-4 sm:px-6">
           <div className="space-y-5 pb-8 pt-2">
             <Section icon={Info} title="基本信息">
-              <Field label="用人单位/系统" value={item.employer} />
+              <Field label="用人单位/系统" value={item.employer?.trim() || '—'} />
               <Field
                 label="岗位示例"
                 value={
@@ -378,6 +447,55 @@ export function PositionSheet({
                 </Section>
               </>
             )}
+
+            {onOpenItem && similar.length > 0 && (
+              <>
+                <Separator />
+                <Section icon={Sparkles} title="相似岗位">
+                  <p className="text-xs text-muted-foreground">
+                    同省份 · 同考试类型 · 学历相近
+                  </p>
+                  <ul className="space-y-1">
+                    {similar.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          className="flex min-h-11 w-full cursor-pointer flex-wrap items-center gap-x-2 rounded-lg border bg-background px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                          onClick={() => onOpenItem(p)}
+                        >
+                          <span className="font-medium">
+                            {p.employer?.trim() ||
+                              (p.position_example
+                                ? stripOrgPrefix(p.position_example, p.employer)
+                                : p.job_type || '-')}
+                          </span>
+                          <span className="line-clamp-1 text-xs text-muted-foreground">
+                            {[
+                              p.employer?.trim() && p.position_example
+                                ? stripOrgPrefix(p.position_example, p.employer)
+                                : null,
+                              p.work_location,
+                              p.edu_level_norm,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              </>
+            )}
+
+            <Separator />
+            <PrepResources
+              examType={item.exam_type || item.job_type}
+              province={(item.work_location || '').split(/[-—·，,]/)[0] || null}
+              deadline={parseSignupDeadline(item)}
+              icsUid={`pos-${item.id}`}
+              icsSummary={`报名截止：${item.employer?.trim() || stripOrgPrefix(item.position_example ?? '', item.employer) || item.job_type || '岗位'}`}
+            />
           </div>
         </ScrollArea>
       </SheetContent>

@@ -106,6 +106,34 @@ class TaskOut(BaseModel):
     status: str
 
 
+class CampusExportFilters(BaseModel):
+    """校招列表导出筛选（与 /api/campus 列表参数同名）。"""
+    keyword: Optional[str] = None
+    source_table: Optional[List[str]] = None
+    company_type: Optional[List[str]] = None
+    industry: Optional[List[str]] = None
+    batch: Optional[str] = None
+    grad_year: Optional[str] = None
+    no_exam_only: bool = False
+    referral_only: bool = False
+    location: Optional[str] = None
+    updated_after: Optional[str] = None
+    due_within_days: Optional[int] = None
+    hide_expired: bool = False
+
+
+class BianzhiExportFilters(BaseModel):
+    """编制列表导出筛选（与 /api/bianzhi 列表参数同名）。"""
+    keyword: Optional[str] = None
+    category: Optional[List[str]] = None
+    province: Optional[List[str]] = None
+    job_type: Optional[str] = None
+    edu: Optional[str] = None
+    updated_after: Optional[str] = None
+    due_within_days: Optional[int] = None
+    hide_expired: bool = False
+
+
 class ExportRequest(BaseModel):
     """异步导出请求体：筛选条件 + 导出参数。"""
     year: Optional[List[int]] = None
@@ -124,3 +152,9 @@ class ExportRequest(BaseModel):
     format: str = "csv"  # csv | xlsx
     sort: str = "year_desc"
     max_rows: int = 50000
+    #: 导出板块：positions（默认）/ campus / bianzhi；后两者用对应嵌套筛选
+    board: str = "positions"
+    campus: Optional[CampusExportFilters] = None
+    bianzhi: Optional[BianzhiExportFilters] = None
+    #: 可选文件名（板块+筛选摘要+日期），服务端会清洗
+    fname: Optional[str] = None

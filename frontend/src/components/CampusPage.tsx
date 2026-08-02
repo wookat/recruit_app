@@ -1,5 +1,8 @@
+import { TableSwipeHint } from './TableSwipeHint'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  buildCampusExportUrl,
+  createBoardExport,
   fetchCampusCounts,
   fetchCampusFilters,
   fetchCampusJob,
@@ -11,6 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PullToRefresh } from './PullToRefresh'
 import { EmptyState } from '@/components/EmptyState'
 import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from '@/components/ActiveFilterChips'
 import { Highlight } from '@/components/Highlight'
@@ -26,8 +30,12 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
+import { BoardExportButton } from '@/components/BoardExportButton'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { SeenBadge } from '@/components/SeenBadge'
+import { useSeenSet } from '@/lib/viewHistory'
 import { BoardCompareButton } from '@/components/BoardCompareButton'
+import { CrossBoardZeroHint } from '@/components/CrossBoardZeroHint'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
@@ -35,6 +43,7 @@ import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
 import { getProfile, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
+import { deriveCampusTags } from '@/lib/jobTags'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
 import { addRecentSearch } from '@/lib/storage'
@@ -45,6 +54,7 @@ import { SortableHead } from '@/components/SortableHead'
 import { cmpNullableStr, nextSort, normalizeDateStr, type SortState } from '@/lib/tableSort'
 import { toggleCampusFavorite, useCampusFavorites } from '@/lib/boardFavorites'
 import { applySeo } from '@/lib/seo'
+import { jobShareUrl } from '@/lib/clipboard'
 
 const COMPANY_TYPE_TONES: Record<string, Tone> = {
   民企: 'blue',
@@ -180,7 +190,8 @@ function campusShareText(job: CampusJob): string {
     title: job.positions,
     location: job.locations,
     deadline: job.deadline_text || job.deadline_date,
-    url: job.apply_url || job.announce_url,
+    deepLink: jobShareUrl('campus', job.id),
+    url: job.announce_url || job.apply_url,
   })
 }
 
@@ -197,6 +208,7 @@ interface CampusPageProps {
   crossLabel?: string
   crossFetchTotal?: (keyword: string) => Promise<number>
   onCrossOpen?: (keyword: string) => void
+  onOpenBoardKw?: (board: 'positions' | 'campus' | 'bianzhi', keyword: string) => void
 }
 
 export function CampusPage({
@@ -207,6 +219,7 @@ export function CampusPage({
   crossLabel,
   crossFetchTotal,
   onCrossOpen,
+  onOpenBoardKw,
 }: CampusPageProps) {
   const urlQuery = useMemo(() => new URLSearchParams(window.location.search), [])
   const [preset, setPreset] = useState(
@@ -228,7 +241,13 @@ export function CampusPage({
     const q = new URLSearchParams(window.location.search)
     return q.get('board') === 'campus' && q.get('hexp') === '1'
   })
+  const [hideSeen, setHideSeen] = useState(() => {
+    const q = new URLSearchParams(window.location.search)
+    return q.get('board') === 'campus' && q.get('hseen') === '1'
+  })
+  const seenSet = useSeenSet()
   const [page, setPage] = useState(1)
+  const [refreshNonce, setRefreshNonce] = useState(0)
   const [typeCounts, setTypeCounts] = useState<Record<string, number> | null>(null)
 
   useEffect(() => {
@@ -301,6 +320,8 @@ export function CampusPage({
     else q.delete('due')
     if (hideExpired) q.set('hexp', '1')
     else q.delete('hexp')
+    if (hideSeen) q.set('hseen', '1')
+    else q.delete('hseen')
     if (city) q.set('city', city)
     else q.delete('city')
     if (companyTypes.length) q.set('ctype', companyTypes.join(','))
@@ -309,7 +330,7 @@ export function CampusPage({
     else q.delete('bkw')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('campus', urlPreset)
-  }, [preset, recentOnly, dueOnly, hideExpired, city, companyTypes, keyword])
+  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, city, companyTypes, keyword])
 
   useEffect(() => {
     const kw = keyword.trim()
@@ -380,7 +401,7 @@ export function CampusPage({
       cancelled = true
       controller.abort()
     }
-  }, [params])
+  }, [params, refreshNonce])
 
   const selectPreset = useCallback((key: string) => {
     setPreset(key)
@@ -393,6 +414,23 @@ export function CampusPage({
   }, [])
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
+
+  /** 导出文件名：板块+筛选摘要+日期 */
+  const exportFname = useMemo(() => {
+    const presetLabel = PRESETS.find((v) => v.key === preset)?.label
+    const parts = [
+      '校招',
+      preset !== 'all' ? presetLabel : undefined,
+      ...companyTypes,
+      city || undefined,
+      keyword || undefined,
+      recentOnly ? '近7天' : undefined,
+      dueOnly ? '7天内截止' : undefined,
+      !dueOnly && hideExpired ? '未过期' : undefined,
+      new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+    ]
+    return parts.filter(Boolean).join('-')
+  }, [preset, companyTypes, city, keyword, recentOnly, dueOnly, hideExpired])
 
   const activeFilters: RemovableFilter[] = []
   if (keyword)
@@ -443,6 +481,11 @@ export function CampusPage({
         setPage(1)
       },
     })
+  if (hideSeen)
+    activeFilters.push({
+      label: '隐藏已看过',
+      onRemove: () => setHideSeen(false),
+    })
   if (profileMatched)
     activeFilters.push({
       label: '按我的条件匹配',
@@ -460,6 +503,7 @@ export function CampusPage({
     setRecentOnly(false)
     setDueOnly(false)
     setHideExpired(false)
+    setHideSeen(false)
     setCity(null)
     setCompanyTypes([])
     setSearchInput('')
@@ -481,6 +525,12 @@ export function CampusPage({
             : normalizeDateStr(j.updated_at_src)
     return [...data.items].sort((a, b) => cmpNullableStr(field(a), field(b), sort.dir))
   }, [data, sort])
+
+  const visibleItems = useMemo(
+    () => (hideSeen ? sortedItems.filter((j) => !seenSet.has(`campus:${j.id}`)) : sortedItems),
+    [sortedItems, hideSeen, seenSet],
+  )
+  const hiddenSeenCount = sortedItems.length - visibleItems.length
 
   const [cardMore, setCardMore] = useState<Set<number>>(new Set())
   const toggleCardMore = useCallback((id: number) => {
@@ -586,6 +636,18 @@ export function CampusPage({
         >
           隐藏已截止
         </button>
+        <button
+          type="button"
+          onClick={() => setHideSeen((v) => !v)}
+          className={cn(
+            'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            hideSeen
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-background text-foreground hover:bg-muted',
+          )}
+        >
+          隐藏已看过
+        </button>
       </div>
     </div>
   )
@@ -595,7 +657,8 @@ export function CampusPage({
     (city ? 1 : 0) +
     (recentOnly ? 1 : 0) +
     (dueOnly ? 1 : 0) +
-    (hideExpired ? 1 : 0)
+    (hideExpired ? 1 : 0) +
+    (hideSeen ? 1 : 0)
 
   return (
     <div className="space-y-4">
@@ -772,19 +835,30 @@ export function CampusPage({
         {cityFilterRow}
       </MobileFilterCollapse>
 
-      {/* 计数 */}
+      {/* 计数 + 导出 */}
       {data && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span>
             共 <span className="font-medium text-foreground">{data.total.toLocaleString()}</span> 条
           </span>
           <FreshnessNote board="campus" />
+          <BoardExportButton
+            className="ml-auto"
+            total={data.total}
+            buildSyncUrl={() => buildCampusExportUrl(params, exportFname)}
+            startAsync={(maxRows) => createBoardExport('campus', params, exportFname, maxRows)}
+          />
         </div>
       )}
 
       <FilterSummaryBar filters={activeFilters} onClearAll={clearAllFilters} />
 
+      {hideSeen && hiddenSeenCount > 0 && (
+        <div className="text-xs text-muted-foreground">本页已隐藏 {hiddenSeenCount} 条已看过的岗位</div>
+      )}
+
       {/* 列表 */}
+      <PullToRefresh onRefresh={() => setRefreshNonce((n) => n + 1)} refreshing={loading}>
       {loading && !data ? (
         view === 'table' ? (
           <div className="space-y-3 rounded-xl border bg-background p-4">
@@ -818,11 +892,16 @@ export function CampusPage({
           </div>
         )
       ) : data && data.items.length === 0 ? (
-        <EmptyState
-          title="没有匹配的校招信息"
-          description="建议优先移除关键词，其次城市、企业类型筛选"
-          action={<ActiveFilterChips filters={activeFilters} />}
-        />
+        <div className="space-y-3">
+          <EmptyState
+            title="没有匹配的校招信息"
+            description="建议优先移除关键词，其次城市、企业类型筛选"
+            action={<ActiveFilterChips filters={activeFilters} />}
+          />
+          {keyword.trim() && onOpenBoardKw && (
+            <CrossBoardZeroHint from="campus" keyword={keyword} onOpen={onOpenBoardKw} />
+          )}
+        </div>
       ) : view === 'table' ? (
         <div
           className={cn(
@@ -830,6 +909,7 @@ export function CampusPage({
             loading && 'pointer-events-none opacity-60',
           )}
         >
+          <TableSwipeHint />
           <Table>
             <TableHeader>
               <TableRow>
@@ -861,7 +941,7 @@ export function CampusPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedItems.map((job, i, arr) => (
+              {visibleItems.map((job, i, arr) => (
                 <Fragment key={job.id}>
                   {dueOnly && !sort && (i === 0 || arr[i - 1].deadline_date !== job.deadline_date) && (
                     <TableRow className="hover:bg-transparent">
@@ -886,6 +966,7 @@ export function CampusPage({
                   </TableCell>
                   <TableCell className="font-medium" title={job.company ?? ''}>
                     <Highlight text={job.company} query={keyword} />
+                    <SeenBadge board="campus" id={job.id} className="ml-1.5" />
                     {job.source_table && (
                       <span className="mt-0.5 block text-[11px] text-muted-foreground">
                         {job.source_table}
@@ -1037,7 +1118,7 @@ export function CampusPage({
         </div>
       ) : (
         <div className={cn('space-y-2', loading && 'pointer-events-none opacity-60')}>
-          {(data?.items ?? []).map((job, i, arr) => (
+          {visibleItems.map((job, i, arr) => (
             <Fragment key={job.id}>
               {dueOnly && (i === 0 || arr[i - 1].deadline_date !== job.deadline_date) && (
                 <div className="pt-1 text-xs font-medium text-muted-foreground">
@@ -1059,6 +1140,7 @@ export function CampusPage({
                 <span className="text-base font-semibold">
                   <Highlight text={job.company} query={keyword} />
                 </span>
+                <SeenBadge board="campus" id={job.id} />
                 {job.company_type && (
                   <Badge variant="secondary" className={cn('border-0', toneClass(COMPANY_TYPE_TONES, job.company_type))}>
                     {job.company_type}
@@ -1081,6 +1163,13 @@ export function CampusPage({
                     内推码 {job.referral_code.length > 16 ? job.referral_code.slice(0, 16) + '…' : job.referral_code}
                   </Badge>
                 )}
+                {deriveCampusTags(job)
+                  .filter((t) => t.key === 'anymajor')
+                  .map((t) => (
+                    <Badge key={t.key} variant="secondary" className="border-0 bg-muted font-normal text-foreground/80 dark:text-muted-foreground">
+                      {t.label}
+                    </Badge>
+                  ))}
                 {job.source_table && (
                   <Badge
                     variant="secondary"
@@ -1199,6 +1288,7 @@ export function CampusPage({
           ))}
         </div>
       )}
+      </PullToRefresh>
 
       {/* 分页 */}
       {data && data.total > PAGE_SIZE && (
@@ -1228,11 +1318,21 @@ export function CampusPage({
           onClose={() => setDetail(null)}
           title={detail.company || '-'}
           badges={[detail.company_type, detail.source_table].filter((b): b is string => !!b)}
+          tags={deriveCampusTags(detail).map((t) => ({
+            ...t,
+            onClick:
+              t.key === 'noexam' || t.key === 'referral'
+                ? () => {
+                    selectPreset(t.key)
+                    setDetail(null)
+                  }
+                : undefined,
+          }))}
           shareText={campusShareText(detail)}
           favActive={campusFavorites.some((f) => f.id === detail.id)}
           onFavToggle={() => toggleCampusFavorite(detail)}
           jobKey={`campus:${detail.id}`}
-          {...sheetNavProps(sortedItems, detail, setDetail)}
+          {...sheetNavProps(visibleItems, detail, setDetail)}
           basics={[
             { label: '公司', value: detail.company },
             { label: '招聘岗位', value: detail.positions },

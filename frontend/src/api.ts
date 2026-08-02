@@ -166,6 +166,12 @@ export async function fetchCampusFilters(): Promise<CampusFilterOptions> {
   return res.data
 }
 
+/** 校招列表同步导出 CSV URL（≤2000 行）。 */
+export function buildCampusExportUrl(params: CampusParams, fname: string): string {
+  const { page: _p, page_size: _ps, ...rest } = params
+  return `${API_BASE}/api/campus/export?${toQuery({ ...rest, fname })}`
+}
+
 // ---------- 编制公告（公务员事业单位/教育/医疗/高校/科研院所/央国企社招/大型联考） ----------
 export interface BianzhiJob {
   id: number
@@ -227,6 +233,30 @@ export async function fetchBianzhiFilters(): Promise<BianzhiFilterOptions> {
   return res.data
 }
 
+/** 编制列表同步导出 CSV URL（≤2000 行）。 */
+export function buildBianzhiExportUrl(params: BianzhiParams, fname: string): string {
+  const { page: _p, page_size: _ps, ...rest } = params
+  return `${API_BASE}/api/bianzhi/export?${toQuery({ ...rest, fname })}`
+}
+
+/** 校招/编制列表异步导出（>2000 行）：走现有 POST /api/export 任务链路。 */
+export async function createBoardExport(
+  board: 'campus' | 'bianzhi',
+  filters: CampusParams | BianzhiParams,
+  fname: string,
+  maxRows: number,
+): Promise<{ task_id: string }> {
+  const { page: _p, page_size: _ps, ...rest } = filters
+  const res = await axios.post(`${API_BASE}/api/export`, {
+    board,
+    [board]: rest,
+    format: 'csv',
+    fname,
+    max_rows: maxRows,
+  })
+  return res.data
+}
+
 // ---------- 数据新鲜度 ----------
 export interface Freshness {
   positions: { last_success: string | null }
@@ -242,6 +272,31 @@ export function fetchFreshness(): Promise<Freshness> {
     freshnessPromise = axios.get(`${API_BASE}/api/freshness`).then((r) => r.data)
   }
   return freshnessPromise
+}
+
+// ---------- 近 7 天更新 ----------
+export interface RecentUpdateItem {
+  id: number
+  title: string
+  sub: string
+  extra: string
+}
+
+export interface RecentUpdateBoard {
+  count: number
+  /** 单日入库量过大（全量同步导入），不逐条展示 */
+  bulk: boolean
+  items: RecentUpdateItem[]
+}
+
+export interface RecentUpdateDay {
+  date: string
+  boards: Partial<Record<'positions' | 'campus' | 'bianzhi', RecentUpdateBoard>>
+}
+
+export async function fetchRecentUpdates(days = 7): Promise<{ days: RecentUpdateDay[] }> {
+  const res = await axios.get(`${API_BASE}/api/recent-updates?days=${days}`)
+  return res.data
 }
 
 // ---------- chips 计数 ----------
@@ -348,6 +403,11 @@ export async function fetchSuggestions(q: string, limit = 8): Promise<Suggestion
     .slice(0, limit)
 }
 
+export async function fetchSimilarPositions(id: number): Promise<Position[]> {
+  const res = await axios.get(`${API_BASE}/api/positions/${id}/similar`)
+  return res.data
+}
+
 export async function fetchPosition(id: number): Promise<Position> {
   const res = await axios.get(`${API_BASE}/api/positions/${id}`)
   return res.data
@@ -419,9 +479,9 @@ export async function fetchRecommend(params: {
   return res.data
 }
 
-export function buildExportUrl(params: SearchParams, format: 'csv' | 'xlsx'): string {
+export function buildExportUrl(params: SearchParams, format: 'csv' | 'xlsx', fname?: string): string {
   const { page: _p, page_size: _ps, after_id: _a, after_year: _ay, ...rest } = params
-  const qs = toQuery(rest)
+  const qs = toQuery(fname ? { ...rest, fname } : rest)
   return `${API_BASE}/api/export?format=${format}${qs ? `&${qs}` : ''}`
 }
 
@@ -437,8 +497,10 @@ export async function createExport(
   params: SearchParams,
   format: 'csv' | 'xlsx',
   maxRows: number,
+  fname?: string,
 ): Promise<{ task_id: string }> {
   const body = {
+    fname: fname || undefined,
     year: params.year,
     job_type: params.job_type,
     exam_type: params.exam_type,
@@ -593,8 +655,61 @@ export async function fetchHealthSummary(token: string): Promise<HealthSummary> 
   return res.data
 }
 
+export interface SyncTodayItem {
+  source_id: number
+  source_name: string
+  status: string
+  started_at: string | null
+  finished_at: string | null
+  rows_ingested: number
+  error: string | null
+}
+
+export async function fetchSyncToday(token: string): Promise<{ date: string; items: SyncTodayItem[] }> {
+  const res = await axios.get(`${API_BASE}/api/admin/sync-today`, adminHeaders(token))
+  return res.data
+}
+
+export async function triggerSyncNow(token: string): Promise<{ task_id: string }> {
+  const res = await axios.post(`${API_BASE}/api/admin/sync-now`, null, adminHeaders(token))
+  return res.data
+}
+
+export async function fetchSyncStatus(
+  token: string,
+  taskId: string,
+): Promise<{ state: string; result?: unknown; error?: string }> {
+  const res = await axios.get(`${API_BASE}/api/admin/sync-status/${taskId}`, adminHeaders(token))
+  return res.data
+}
+
 export async function adminOverview(token: string): Promise<AdminOverview> {
   const res = await axios.get(`${API_BASE}/api/admin/overview`, adminHeaders(token))
+  return res.data
+}
+
+export interface QualityIssueSample {
+  id: number
+  value: string
+}
+
+export interface QualityIssue {
+  board: 'positions' | 'campus' | 'bianzhi'
+  key: string
+  label: string
+  count: number
+  samples: QualityIssueSample[]
+  note?: string
+}
+
+export interface QualityIssues {
+  generated_at: string
+  total: number
+  issues: QualityIssue[]
+}
+
+export async function fetchQualityIssues(token: string): Promise<QualityIssues> {
+  const res = await axios.get(`${API_BASE}/api/admin/quality-issues`, adminHeaders(token))
   return res.data
 }
 

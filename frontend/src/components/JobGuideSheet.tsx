@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Highlight } from '@/components/Highlight'
 import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/EmptyState'
+import { FreshnessNote } from '@/components/FreshnessNote'
 import {
   Sheet,
   SheetContent,
@@ -250,6 +251,39 @@ const SECTIONS: GuideSection[] = [
           '倾向编制：追求稳定与家庭生活平衡、擅长应试、目标城市有合适编制岗位的同学。',
           '倾向校招：追求薪资上限与快速成长、有拿得出手的实习/项目、能接受一定不确定性的同学。',
           '拿不准就两手准备：用本站三个板块同步跟进，收藏+投递追踪管理两条线的截止时间。',
+        ],
+      },
+    ],
+  },
+  {
+    key: 'about',
+    title: '数据说明',
+    blocks: [
+      {
+        heading: '数据来源',
+        items: [
+          '体制内岗位：采自国家公务员局、军队人才网、国聘网及各省官方招考公告页面。',
+          '校招与编制公告：汇总自飞书多维表格（校招汇总表/编制公告表），条目均附官方公告/投递链接，可在详情中直达原始出处核对。',
+        ],
+      },
+      {
+        heading: '更新频率',
+        items: [
+          '每天 6:00 自动检查官方公告来源，6:20 自动同步飞书校招/编制表格增量，同步后自动刷新统计与缓存；当前各板块最近更新时间见下方。',
+          '新增岗位可在顶栏「今日更新」页按日查看近 7 天三板块新增。',
+        ],
+      },
+      {
+        heading: '免责声明',
+        items: [
+          '本站为公开招考信息的聚合检索工具，信息仅供参考，不构成报考建议；岗位条件、截止时间等一切以官方公告为准，报名前请务必通过详情中的来源链接核对原文。',
+          '链接失效或岗位下线属正常情况（招考方会关闭批次），不代表数据错误。',
+        ],
+      },
+      {
+        heading: '反馈渠道',
+        items: [
+          '发现数据错误或有功能建议？请先对照详情中的官方来源链接确认；确认为本站问题后，可通过运营方渠道反馈（站内反馈入口筹建中），我们会在每日同步中修正。',
         ],
       },
     ],
@@ -533,6 +567,16 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
             )
           ) : (
           <div className="space-y-4 pb-6">
+            {active === 'about' && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border bg-muted/40 px-3 py-2">
+                {(['positions', 'campus', 'bianzhi'] as const).map((b) => (
+                  <span key={b} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    {{ positions: '体制内', campus: '校招', bianzhi: '编制' }[b]}：
+                    <FreshnessNote board={b} />
+                  </span>
+                ))}
+              </div>
+            )}
             {active === 'timeline' ? (
               <GuideTimeline />
             ) : active === 'biancal' ? (

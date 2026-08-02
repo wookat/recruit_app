@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import {
   fetchFilters,
   fetchSuggestions,
@@ -13,12 +13,10 @@ import { FreshnessNote } from './FreshnessNote'
 import { DeadlinesCard } from './DeadlinesCard'
 import { TodayGlance } from './TodayGlance'
 import { buildShareUrl, paramsFromQueryString, paramsToQueryString, POSITION_URL_KEYS } from '@/lib/urlFilters'
+import { useSeenSet } from '@/lib/viewHistory'
 import { MultiSelect } from './MultiSelect'
-import { PositionTable } from './PositionTable'
-import { PositionCardGrid } from './PositionCardGrid'
-import { VirtualPositionList } from './VirtualPositionList'
 import { QuickMatch, type QuickMatchValues } from './QuickMatch'
-import { RecommendPanel, type RecommendQuery } from './RecommendPanel'
+import type { RecommendQuery } from './RecommendPanel'
 import { buildExportUrl, createExport, exportDownloadUrl, fetchExportStatus } from '@/api'
 import { LocationFilter } from './LocationFilter'
 import {
@@ -72,10 +70,26 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PullToRefresh } from './PullToRefresh'
 import { cn } from '@/lib/utils'
 import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from './ActiveFilterChips'
 import { SearchSuggestInput } from './SearchSuggestInput'
 import { RecommendSection } from './RecommendSection'
+import { CrossBoardZeroHint } from './CrossBoardZeroHint'
+import { lazyRetry } from '@/lib/lazyRetry'
+
+const RecommendPanel = lazy(() =>
+  lazyRetry(() => import('./RecommendPanel').then((m) => ({ default: m.RecommendPanel }))),
+)
+const PositionTable = lazy(() =>
+  lazyRetry(() => import('./PositionTable').then((m) => ({ default: m.PositionTable }))),
+)
+const PositionCardGrid = lazy(() =>
+  lazyRetry(() => import('./PositionCardGrid').then((m) => ({ default: m.PositionCardGrid }))),
+)
+const VirtualPositionList = lazy(() =>
+  lazyRetry(() => import('./VirtualPositionList').then((m) => ({ default: m.VirtualPositionList }))),
+)
 
 interface ListPageProps {
   title: string
@@ -84,11 +98,17 @@ interface ListPageProps {
   syncUrl?: boolean
   initialPresetKey?: string
   initialKeyword?: string
+  initialEduLevel?: string[]
+  /** 全站搜索快捷筛选：初始省份/城市（location 标签） */
+  initialProvince?: string[]
+  initialLocation?: string[]
   crossPresets?: { key: string; label: string }[]
   onCrossPreset?: (key: string) => void
   crossLabel?: string
   crossFetchTotal?: (keyword: string) => Promise<number>
   onCrossOpen?: (keyword: string) => void
+  onOpenBoardKw?: (board: 'positions' | 'campus' | 'bianzhi', keyword: string) => void
+  onOpenUpdates?: () => void
 }
 
 const HOT_SEARCH = [
@@ -184,11 +204,16 @@ export function ListPage({
   syncUrl,
   initialPresetKey,
   initialKeyword,
+  initialEduLevel,
+  initialProvince,
+  initialLocation,
   crossPresets,
   onCrossPreset,
   crossLabel,
   crossFetchTotal,
   onCrossOpen,
+  onOpenBoardKw,
+  onOpenUpdates,
 }: ListPageProps) {
   const [filters, setFilters] = useState<FilterOptions | null>(null)
   const [data, setData] = useState<PositionList | null>(null)
@@ -209,9 +234,30 @@ export function ListPage({
     if (preset?.category) base.category = preset.category
     if (preset?.year) base.year = preset.year
     if (initialKeyword) base.keyword = initialKeyword
+    if (initialEduLevel?.length) base.edu_level = initialEduLevel
+    if (initialProvince?.length) base.province = initialProvince
+    if (initialLocation?.length) base.location = initialLocation
     return base
   })
   const [crossTotal, setCrossTotal] = useState(0)
+  const [hideSeen, setHideSeen] = useState(
+    () => new URLSearchParams(window.location.search).get('hseen') === '1',
+  )
+  const seenSet = useSeenSet()
+
+  useEffect(() => {
+    if (!syncUrl) return
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('board')) return
+    if (hideSeen) q.set('hseen', '1')
+    else q.delete('hseen')
+    const qs = q.toString()
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`,
+    )
+  }, [syncUrl, hideSeen])
 
   useEffect(() => {
     const kw = (params.keyword || '').trim()
@@ -251,6 +297,7 @@ export function ListPage({
   const suggestDisabledRef = useRef(false)
   const skipSuggestRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const loadSeqRef = useRef(0)
   const exportTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -327,21 +374,23 @@ export function ListPage({
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
+    const seq = ++loadSeqRef.current
+    const isCurrent = () => seq === loadSeqRef.current && !controller.signal.aborted
     setLoading(true)
     setLoadError(false)
     try {
       const res = await fetcher(params, controller.signal)
-      if (controller.signal.aborted) return
+      if (!isCurrent()) return
       setData(res)
       const kw = (params.keyword || '').trim()
       if (kw.length >= 2) setRecent(addRecentSearch(kw))
     } catch (e) {
-      if (!controller.signal.aborted) {
+      if (isCurrent()) {
         console.error(e)
         setLoadError(true)
       }
     } finally {
-      if (!controller.signal.aborted) setLoading(false)
+      if (isCurrent()) setLoading(false)
     }
   }, [fetcher, params])
 
@@ -452,11 +501,27 @@ export function ListPage({
     })
     if (params.hide_expired)
       out.push({ label: '隐藏已截止', onRemove: () => updateParam('hide_expired', undefined) })
+    if (hideSeen) out.push({ label: '隐藏已看过', onRemove: () => setHideSeen(false) })
     return out
-  }, [params, updateParam])
+  }, [params, updateParam, hideSeen])
+
+  const visibleItems = useMemo(
+    () =>
+      hideSeen
+        ? (data?.items ?? []).filter((p) => !seenSet.has(`positions:${p.id}`))
+        : data?.items ?? [],
+    [data, hideSeen, seenSet],
+  )
+  const hiddenSeenCount = (data?.items.length ?? 0) - visibleItems.length
 
   const emptyAction = useMemo(() => <ActiveFilterChips filters={activeFilters} />, [activeFilters])
   const onPageChange = useCallback((page: number) => updateParam('page', page), [updateParam])
+  const onTagClick = useCallback(
+    (tagKey: string) => {
+      if (tagKey === 'edu_bk') updateParam('edu_level', ['本科'])
+    },
+    [updateParam],
+  )
   const onPageSizeChange = useCallback(
     (size: number) => updateParam('page_size', size),
     [updateParam],
@@ -502,6 +567,7 @@ export function ListPage({
 
   function clearFilters() {
     setParams({ ...DEFAULT_PARAMS })
+    setHideSeen(false)
     setRecommendQuery(null)
     setQuickMatchKey((k) => k + 1)
   }
@@ -516,11 +582,27 @@ export function ListPage({
     })
   }
 
+  /** 导出文件名：板块+筛选摘要+日期 */
+  function exportFname(): string {
+    const parts = [
+      '体制内',
+      ...(params.province ?? []),
+      ...(params.location ?? []),
+      ...(params.exam_type_norm ?? []),
+      ...(params.category ?? []),
+      ...(params.edu_level ?? []),
+      params.keyword || undefined,
+      params.major || undefined,
+      new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+    ]
+    return parts.filter(Boolean).join('-')
+  }
+
   function handleExport(format: 'csv' | 'xlsx', all = false) {
     if (exportTask) return
     const total = data?.total ?? 0
     if (!all && total <= SYNC_EXPORT_MAX) {
-      window.open(buildExportUrl(params, format), '_blank')
+      window.open(buildExportUrl(params, format, exportFname()), '_blank')
       return
     }
     void startAsyncExport(format, all ? ASYNC_EXPORT_MAX : Math.min(total || ASYNC_EXPORT_MAX, ASYNC_EXPORT_MAX))
@@ -530,7 +612,7 @@ export function ListPage({
     setExportError('')
     setExportTask('starting')
     try {
-      const { task_id } = await createExport(params, format, maxRows)
+      const { task_id } = await createExport(params, format, maxRows, exportFname())
       setExportTask(task_id)
       pollExport(task_id)
     } catch {
@@ -1123,7 +1205,9 @@ export function ListPage({
       />
 
       {recommendQuery && (
-        <RecommendPanel query={recommendQuery} onClose={() => setRecommendQuery(null)} />
+        <Suspense fallback={null}>
+          <RecommendPanel query={recommendQuery} onClose={() => setRecommendQuery(null)} />
+        </Suspense>
       )}
 
       {showStats && !deadlineView && <DeadlinesCard />}
@@ -1159,6 +1243,18 @@ export function ListPage({
         >
           隐藏已截止
         </button>
+        <button
+          type="button"
+          onClick={() => setHideSeen((v) => !v)}
+          className={cn(
+            'min-h-11 shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
+            hideSeen
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+          )}
+        >
+          隐藏已看过
+        </button>
         {crossPresets && crossPresets.length > 0 && onCrossPreset && (
           <>
             <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
@@ -1178,6 +1274,7 @@ export function ListPage({
 
       {showStats && onCrossPreset && (
         <TodayGlance
+          onUpdates={onOpenUpdates}
           onCampus={() => onCrossPreset('recent7')}
           onCampusAll={() => onCrossPreset('all')}
           onBianzhi={() => onCrossPreset('bz:all')}
@@ -1256,6 +1353,14 @@ export function ListPage({
 
       <FilterSummaryBar filters={activeFilters} onClearAll={clearFilters} />
 
+      {hideSeen && hiddenSeenCount > 0 && view !== 'list' && (
+        <div className="text-xs text-muted-foreground">本页已隐藏 {hiddenSeenCount} 条已看过的岗位</div>
+      )}
+
+      {data && !loading && data.total === 0 && (params.keyword || '').trim() && onOpenBoardKw && (
+        <CrossBoardZeroHint from="positions" keyword={params.keyword || ''} onOpen={onOpenBoardKw} />
+      )}
+
       {data?.timed_out && (
         <div
           role="status"
@@ -1265,11 +1370,21 @@ export function ListPage({
         </div>
       )}
 
+      <PullToRefresh onRefresh={load} refreshing={loading} disabled={view === 'list'}>
+      <Suspense
+        fallback={
+          <div className="space-y-3 rounded-xl border bg-card p-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
+          </div>
+        }
+      >
       {view === 'table' && (
         <PositionTable
           emptyAction={emptyAction}
           highlight={params.keyword}
-          data={data?.items || []}
+          data={visibleItems}
           total={data?.total || 0}
           totalCapped={data?.total_capped}
           page={data?.page || 1}
@@ -1278,17 +1393,21 @@ export function ListPage({
           onPageChange={onPageChange}
           onPageSizeChange={onPageSizeChange}
           columnFilters={columnFilters}
+          onTagClick={onTagClick}
         />
       )}
       {view === 'card' && (
         <PositionCardGrid
-          data={data?.items || []}
+          data={visibleItems}
           loading={loading}
           emptyAction={emptyAction}
           highlight={params.keyword}
+          onTagClick={onTagClick}
         />
       )}
       {view === 'list' && <VirtualPositionList fetcher={fetcher} params={params} />}
+      </Suspense>
+      </PullToRefresh>
 
       {view === 'card' && data && data.total > 0 && (
         <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-3">

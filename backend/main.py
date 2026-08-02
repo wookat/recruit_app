@@ -1,14 +1,14 @@
-import csv
 import io
 import os
+from urllib.parse import quote
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 import pandas as pd
 from fastapi import FastAPI, Depends, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
@@ -17,12 +17,15 @@ from sqlalchemy.orm import Session
 from database import engine, Base, get_db
 from celery_app import celery_app
 import crud
+import models
 import schemas
 import cache
+import csv_export
+import share_meta
 from admin import require_admin, router as admin_router
 from campus import router as campus_router
 from bianzhi import router as bianzhi_router
-from tasks import EXPORTS_DIR, export_positions_task, scrape_year
+from tasks import EXPORTS_DIR, export_board_task, export_positions_task, scrape_year
 
 
 @asynccontextmanager
@@ -51,6 +54,14 @@ app.include_router(campus_router)
 app.include_router(bianzhi_router)
 
 SYNC_EXPORT_MAX_ROWS = 2000  # 同步导出快路径上限，更大请走 POST /api/export 异步任务
+
+
+def _is_query_canceled(e: OperationalError) -> bool:
+    """statement_timeout 取消（如冷缓存低选择性关键词全表扫）。"""
+    return (
+        "QueryCanceled" in type(getattr(e, "orig", None) or e).__name__
+        or "canceling statement" in str(e)
+    )
 
 
 def _build_filter(
@@ -110,6 +121,73 @@ def data_freshness(db: Session = Depends(get_db)):
     return {k: {"last_success": by_grp.get(k)} for k in ("positions", "campus", "bianzhi")}
 
 
+RECENT_BULK_THRESHOLD = 2000  # 单日入库超过该值视为全量同步导入，不逐条展示
+RECENT_ITEM_MAX = 6
+
+
+@app.get("/api/recent-updates")
+@cache.cached("recent_updates", ttl=600)
+def recent_updates(days: int = Query(7, ge=1, le=30), db: Session = Depends(get_db)):
+    """近 N 天三板块新增岗位：按日分组的计数 + 每板块每日样例（入库时间 created_at）。"""
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    by_date: dict = {}
+
+    def add(day: str, board: str, count: int):
+        entry = {"count": count, "bulk": count > RECENT_BULK_THRESHOLD, "items": []}
+        by_date.setdefault(day, {})[board] = entry
+        return entry
+
+    pos_days = db.execute(text("""
+        SELECT created_at::date::text d, count(*) c FROM positions
+        WHERE dup_of_id IS NULL AND invalid_reason IS NULL AND created_at >= :cutoff
+        GROUP BY 1"""), {"cutoff": cutoff}).all()
+    for d, c in pos_days:
+        entry = add(d, "positions", c)
+        if not entry["bulk"]:
+            rows = db.execute(text("""
+                SELECT id, coalesce(nullif(employer, ''), exam_type) AS title,
+                       coalesce(position_example, '') AS sub, coalesce(province, '') AS extra
+                FROM positions
+                WHERE dup_of_id IS NULL AND invalid_reason IS NULL AND created_at::date = :d
+                ORDER BY id DESC LIMIT :n"""), {"d": d, "n": RECENT_ITEM_MAX}).all()
+            entry["items"] = [{"id": r.id, "title": r.title, "sub": r.sub, "extra": r.extra} for r in rows]
+
+    campus_days = db.execute(text("""
+        SELECT created_at::date::text d, count(*) c FROM campus_jobs
+        WHERE created_at >= :cutoff GROUP BY 1"""), {"cutoff": cutoff}).all()
+    for d, c in campus_days:
+        entry = add(d, "campus", c)
+        if not entry["bulk"]:
+            rows = db.execute(text("""
+                SELECT id, coalesce(company, '') AS title, coalesce(positions, '') AS sub, coalesce(batch, '') AS extra
+                FROM campus_jobs WHERE created_at::date = :d
+                ORDER BY id DESC LIMIT :n"""), {"d": d, "n": RECENT_ITEM_MAX}).all()
+            entry["items"] = [{"id": r.id, "title": r.title, "sub": r.sub, "extra": r.extra} for r in rows]
+
+    # 编制说明行（非岗位）排除：单位名含引导提示词（同 refresh_feishu.NOTE_PHRASE_RE）或裸 URL，
+    # 计数与样例同口径
+    bz_not_note = "NOT (coalesce(employer, '') ~ '请到|特此提示|【提示】|更多.*查看' OR coalesce(employer, '') ILIKE '%http%')"
+    bz_days = db.execute(text(f"""
+        SELECT created_at::date::text d, count(*) c FROM bianzhi_jobs
+        WHERE created_at >= :cutoff AND {bz_not_note} GROUP BY 1"""), {"cutoff": cutoff}).all()
+    for d, c in bz_days:
+        entry = add(d, "bianzhi", c)
+        if not entry["bulk"]:
+            rows = db.execute(text(f"""
+                SELECT id, coalesce(nullif(employer, ''), concat(province, category)) AS title,
+                       coalesce(job_type, '') AS sub, coalesce(province, '') AS extra
+                FROM bianzhi_jobs WHERE created_at::date = :d AND {bz_not_note}
+                ORDER BY id DESC LIMIT :n"""), {"d": d, "n": RECENT_ITEM_MAX}).all()
+            entry["items"] = [{"id": r.id, "title": r.title, "sub": r.sub, "extra": r.extra} for r in rows]
+
+    return {
+        "days": [
+            {"date": d, "boards": by_date[d]}
+            for d in sorted(by_date.keys(), reverse=True)
+        ],
+    }
+
+
 @app.get("/api/positions", response_model=schemas.PositionList)
 @cache.cached("positions", ttl=120)
 def get_positions(
@@ -162,19 +240,26 @@ def get_positions(
             }
         total, items = crud.search_positions(db, filters, page, page_size, sort)
     except OperationalError as e:
-        # statement_timeout 取消（如低选择性关键词全表扫）：降级为空结果而非 500
-        if "QueryCanceled" not in type(getattr(e, "orig", None) or e).__name__ and "canceling statement" not in str(e):
+        if not _is_query_canceled(e):
             raise
         db.rollback()
-        return {
-            "total": 0,
-            "total_capped": False,
-            "page": page,
-            "page_size": page_size,
-            "next_cursor": None,
-            "items": [],
-            "timed_out": True,
-        }
+        try:
+            # 重试一次：首次执行已预热缓冲区，重试通常可在限时内完成
+            total, items = crud.search_positions(db, filters, page, page_size, sort)
+        except OperationalError as e2:
+            if not _is_query_canceled(e2):
+                raise
+            # 两次均被取消：降级为空结果而非 500（timed_out 响应不入缓存）
+            db.rollback()
+            return {
+                "total": 0,
+                "total_capped": False,
+                "page": page,
+                "page_size": page_size,
+                "next_cursor": None,
+                "items": [],
+                "timed_out": True,
+            }
     return {
         "total": total,
         "total_capped": total >= crud.COUNT_CAP,
@@ -191,6 +276,33 @@ def get_position(position_id: int, db: Session = Depends(get_db)):
     if item is None:
         raise HTTPException(status_code=404, detail="Position not found")
     return schemas.PositionOut.model_validate(item)
+
+
+_EDU_ORDER = ["大专/中专", "本科", "硕士研究生", "博士研究生"]
+
+
+@app.get("/api/positions/{position_id}/similar", response_model=List[schemas.PositionOut])
+@cache.cached("pos_similar", ttl=600)
+def get_similar_positions(position_id: int, db: Session = Depends(get_db)):
+    """相似岗位：同省份 + 同考试类型 + 学历相近（同级或 ±1 级），最多 5 条。"""
+    item = crud.get_position(db, position_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Position not found")
+    q = db.query(models.Position).filter(
+        models.Position.id != position_id,
+        models.Position.dup_of_id.is_(None),
+        models.Position.invalid_reason.is_(None),
+    )
+    if item.province:
+        q = q.filter(models.Position.province == item.province)
+    if item.exam_type_norm:
+        q = q.filter(models.Position.exam_type_norm == item.exam_type_norm)
+    if item.edu_level_norm in _EDU_ORDER:
+        i = _EDU_ORDER.index(item.edu_level_norm)
+        near = _EDU_ORDER[max(0, i - 1) : i + 2] + ["其他/不限"]
+        q = q.filter(models.Position.edu_level_norm.in_(near))
+    items = q.order_by(models.Position.year.desc(), models.Position.id.desc()).limit(5).all()
+    return [schemas.PositionOut.model_validate(p).model_dump() for p in items]
 
 
 @app.get("/api/sources", response_model=schemas.PositionList)
@@ -332,6 +444,7 @@ def export_positions(
     category: Optional[List[str]] = Query(None),
     sort: str = Query("year_desc"),
     max_rows: int = Query(2000, ge=1, le=50000),
+    fname: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
     _rate_limit(request, "export", limit=3, window=60)
@@ -351,27 +464,26 @@ def export_positions(
         major_type=major_type,
         category=category,
     )
-    rows = crud.export_positions(db, filters, sort=sort, max_rows=max_rows)
+    # 先物化再流式输出：避免查询在响应体中途被 statement_timeout 取消，
+    # 客户端拿到只有表头的“成功”文件；被取消时重试一次，仍失败则返回明确错误
+    try:
+        rows = list(crud.export_positions(db, filters, sort=sort, max_rows=max_rows))
+    except OperationalError as e:
+        if not _is_query_canceled(e):
+            raise
+        db.rollback()
+        try:
+            rows = list(crud.export_positions(db, filters, sort=sort, max_rows=max_rows))
+        except OperationalError as e2:
+            if not _is_query_canceled(e2):
+                raise
+            db.rollback()
+            raise HTTPException(status_code=503, detail="导出查询超时，请稍后重试或收窄筛选范围")
     cols = crud.EXPORT_COLUMNS
-    filename = f"positions_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    filename = csv_export.safe_fname(fname, f"positions_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
 
     if format == "csv":
-        def iter_csv():
-            buf = io.StringIO()
-            writer = csv.writer(buf)
-            writer.writerow([label for _, label in cols])
-            yield "\ufeff" + buf.getvalue()  # BOM for Excel compatibility
-            for pos in rows:
-                buf.seek(0)
-                buf.truncate(0)
-                writer.writerow([getattr(pos, attr, "") or "" for attr, _ in cols])
-                yield buf.getvalue()
-
-        return StreamingResponse(
-            iter_csv(),
-            media_type="text/csv; charset=utf-8",
-            headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
-        )
+        return csv_export.stream_csv(rows, cols, filename)
 
     # xlsx
     data = [[getattr(pos, attr, "") or "" for attr, _ in cols] for pos in rows]
@@ -383,7 +495,7 @@ def export_positions(
     return StreamingResponse(
         out,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}.xlsx"'},
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}.xlsx"},
     )
 
 
@@ -396,10 +508,24 @@ def create_export(
     _rate_limit(request, "export", limit=3, window=60)
     if body.format not in ("csv", "xlsx"):
         raise HTTPException(status_code=422, detail="format 仅支持 csv/xlsx")
-    filters = body.model_dump(exclude={"format", "sort", "max_rows"}, exclude_none=True)
+    max_rows = max(1, min(body.max_rows, 50000))
+    if body.board in ("campus", "bianzhi"):
+        board_filters = body.campus if body.board == "campus" else body.bianzhi
+        task = export_board_task.delay(
+            body.board,
+            board_filters.model_dump(exclude_none=True) if board_filters else {},
+            fname=body.fname,
+            max_rows=max_rows,
+        )
+        return {"task_id": task.id, "status": "started"}
+    if body.board != "positions":
+        raise HTTPException(status_code=422, detail="board 仅支持 positions/campus/bianzhi")
+    filters = body.model_dump(
+        exclude={"format", "sort", "max_rows", "board", "campus", "bianzhi", "fname"},
+        exclude_none=True,
+    )
     task = export_positions_task.delay(
-        filters, format=body.format, sort=body.sort,
-        max_rows=max(1, min(body.max_rows, 50000)),
+        filters, format=body.format, sort=body.sort, max_rows=max_rows, fname=body.fname,
     )
     return {"task_id": task.id, "status": "started"}
 
@@ -451,6 +577,23 @@ def task_status(task_id: str):
 
 dist_dir = os.path.join(os.path.dirname(__file__), "../frontend/dist")
 if os.path.isdir(dist_dir):
+    index_path = os.path.join(dist_dir, "index.html")
+
+    @app.get("/", include_in_schema=False)
+    def index_html_route(request: Request, db: Session = Depends(get_db)):
+        """带 ?job=board:id 时注入岗位 meta（分享卡片），否则原样返回 index.html。"""
+        job_key = request.query_params.get("job")
+        if job_key:
+            try:
+                meta = share_meta.get_share_meta(db, job_key)
+            except Exception:
+                meta = None
+            if meta:
+                with open(index_path, encoding="utf-8") as f:
+                    raw = f.read()
+                return HTMLResponse(share_meta.inject_meta(raw, meta["title"], meta["desc"]))
+        return FileResponse(index_path, media_type="text/html")
+
     app.mount("/", StaticFiles(directory=dist_dir, html=True), name="static")
 else:
     @app.get("/")

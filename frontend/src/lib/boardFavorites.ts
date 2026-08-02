@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from 'react'
 import type { BianzhiJob, CampusJob } from '@/api'
-import type { AppStatus, StatusEvent } from '@/lib/positionStore'
+import type { AppStatus, MergeStats, StatusEvent } from '@/lib/positionStore'
+import { lastEventTime } from '@/lib/positionStore'
+import { recordFavAdded, removeFavAdded } from '@/lib/favTimes'
 
 export type BoardKind = 'campus' | 'bianzhi'
 
@@ -70,8 +72,10 @@ export function isCampusFavorite(id: number): boolean {
 export function toggleCampusFavorite(item: CampusJob) {
   if (isCampusFavorite(item.id)) {
     campusFavorites = campusFavorites.filter((j) => j.id !== item.id)
+    removeFavAdded('campus', item.id)
   } else {
     campusFavorites = [item, ...campusFavorites].slice(0, FAV_MAX)
+    recordFavAdded('campus', item.id)
   }
   writeJson(FAV_KEYS.campus, campusFavorites)
   emit()
@@ -84,8 +88,10 @@ export function isBianzhiFavorite(id: number): boolean {
 export function toggleBianzhiFavorite(item: BianzhiJob) {
   if (isBianzhiFavorite(item.id)) {
     bianzhiFavorites = bianzhiFavorites.filter((j) => j.id !== item.id)
+    removeFavAdded('bianzhi', item.id)
   } else {
     bianzhiFavorites = [item, ...bianzhiFavorites].slice(0, FAV_MAX)
+    recordFavAdded('bianzhi', item.id)
   }
   writeJson(FAV_KEYS.bianzhi, bianzhiFavorites)
   emit()
@@ -123,6 +129,14 @@ export function setBoardStatus(kind: BoardKind, id: number, status: AppStatus) {
   })
 }
 
+/** 投递提醒「已跟进」：只写时间线，不改当前状态。 */
+export function appendBoardFollowUp(kind: BoardKind, id: number) {
+  const current = metaOf(kind)[id]
+  patchMeta(kind, id, {
+    history: [...(current?.history ?? []), { status: '已跟进', at: new Date().toISOString() }],
+  })
+}
+
 export function setBoardNote(kind: BoardKind, id: number, note: string) {
   const trimmed = note.trim()
   patchMeta(kind, id, { note: trimmed || undefined })
@@ -153,30 +167,41 @@ export function exportBoardData(kind: BoardKind): {
     : { favorites: bianzhiFavorites, meta: bianzhiMeta }
 }
 
-/** 合并导入备份：同 id 以备份数据覆盖本地。返回合并后收藏总数。 */
+/** 合并导入备份：同 id 按条目最后更新时间（时间线最后一条）取较新者，meta 随条目整体走。 */
 export function mergeBoardData(
   kind: BoardKind,
   favs: (CampusJob | BianzhiJob)[],
   meta: Record<number, BoardMeta>,
-): number {
-  if (kind === 'campus') {
-    const byId = new Map(campusFavorites.map((j) => [j.id, j]))
-    for (const j of favs) byId.set(j.id, j as CampusJob)
-    campusFavorites = [...byId.values()].slice(0, FAV_MAX)
-    campusMeta = { ...campusMeta, ...meta }
-    writeJson(FAV_KEYS.campus, campusFavorites)
-    writeJson(META_KEYS.campus, campusMeta)
-    emit()
-    return campusFavorites.length
+): MergeStats {
+  const localFavs: (CampusJob | BianzhiJob)[] = kind === 'campus' ? campusFavorites : bianzhiFavorites
+  const localMeta = kind === 'campus' ? campusMeta : bianzhiMeta
+  const byId = new Map(localFavs.map((j) => [j.id, j]))
+  const mergedMeta = { ...localMeta }
+  let added = 0
+  let updated = 0
+  for (const j of favs) {
+    if (!byId.has(j.id)) {
+      byId.set(j.id, j)
+      if (meta[j.id] !== undefined) mergedMeta[j.id] = meta[j.id]
+      added += 1
+    } else if (lastEventTime(meta[j.id]?.history) > lastEventTime(localMeta[j.id]?.history)) {
+      byId.set(j.id, j)
+      if (meta[j.id] !== undefined) mergedMeta[j.id] = meta[j.id]
+      updated += 1
+    }
   }
-  const byId = new Map(bianzhiFavorites.map((j) => [j.id, j]))
-  for (const j of favs) byId.set(j.id, j as BianzhiJob)
-  bianzhiFavorites = [...byId.values()].slice(0, FAV_MAX)
-  bianzhiMeta = { ...bianzhiMeta, ...meta }
-  writeJson(FAV_KEYS.bianzhi, bianzhiFavorites)
-  writeJson(META_KEYS.bianzhi, bianzhiMeta)
+  const merged = [...byId.values()].slice(0, FAV_MAX)
+  if (kind === 'campus') {
+    campusFavorites = merged as CampusJob[]
+    campusMeta = mergedMeta
+  } else {
+    bianzhiFavorites = merged as BianzhiJob[]
+    bianzhiMeta = mergedMeta
+  }
+  writeJson(FAV_KEYS[kind], merged)
+  writeJson(META_KEYS[kind], mergedMeta)
   emit()
-  return bianzhiFavorites.length
+  return { total: merged.length, added, updated }
 }
 
 export function useCampusMeta(): Record<number, BoardMeta> {

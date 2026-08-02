@@ -1,45 +1,59 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchCampusJobs, fetchPosition, fetchPositions, type Position } from '@/api'
 import { importFavorites } from '@/lib/positionStore'
-import { PositionSheet } from '@/components/PositionSheet'
+import { LazyPositionSheet } from '@/components/LazyPositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BookOpen, Briefcase, CalendarDays, Moon, Search, Settings, Star, Sun } from 'lucide-react'
+import { BookOpen, Briefcase, CalendarDays, History, Moon, Search, Settings, Sparkles, Star, Sun } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { FavoritesSheet } from '@/components/FavoritesSheet'
+
 import { CompareBar } from '@/components/CompareBar'
 import { BoardCompareBar } from '@/components/BoardCompareBar'
 import { MobileBottomNav } from '@/components/MobileBottomNav'
 import { OnboardingCard } from '@/components/OnboardingCard'
 import { useFavorites } from '@/lib/positionStore'
 import { useBianzhiFavorites, useCampusFavorites } from '@/lib/boardFavorites'
-import { GlobalSearch, type SearchBoard } from '@/components/GlobalSearch'
+import type { QuickFilter, SearchBoard } from '@/components/GlobalSearch'
 import { applySeo } from '@/lib/seo'
 import { readJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { POSITION_URL_KEYS } from '@/lib/urlFilters'
-import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
+import { daysUntil, getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import { useRemindDays } from '@/lib/reminderPref'
+import { maybeNotifyDue } from '@/lib/dueNotification'
 import { refreshSavedNews, useSavedNews } from '@/lib/savedNews'
+import { lazyRetry } from '@/lib/lazyRetry'
 
 const JobGuideSheet = lazy(() =>
-  import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet })),
+  lazyRetry(() => import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet }))),
 )
 
-const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'company', 'choose', 'tips']
+const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'biancal', 'company', 'choose', 'tips', 'about']
 
+const GlobalSearch = lazy(() =>
+  lazyRetry(() => import('@/components/GlobalSearch').then((m) => ({ default: m.GlobalSearch }))),
+)
+const FavoritesSheet = lazy(() =>
+  lazyRetry(() => import('@/components/FavoritesSheet').then((m) => ({ default: m.FavoritesSheet }))),
+)
+const ViewHistorySheet = lazy(() =>
+  lazyRetry(() => import('@/components/ViewHistorySheet').then((m) => ({ default: m.ViewHistorySheet }))),
+)
 const AdminPage = lazy(() =>
-  import('@/components/AdminPage').then((m) => ({ default: m.AdminPage })),
+  lazyRetry(() => import('@/components/AdminPage').then((m) => ({ default: m.AdminPage }))),
 )
 const CampusPage = lazy(() =>
-  import('@/components/CampusPage').then((m) => ({ default: m.CampusPage })),
+  lazyRetry(() => import('@/components/CampusPage').then((m) => ({ default: m.CampusPage }))),
 )
 const BianzhiPage = lazy(() =>
-  import('@/components/BianzhiPage').then((m) => ({ default: m.BianzhiPage })),
+  lazyRetry(() => import('@/components/BianzhiPage').then((m) => ({ default: m.BianzhiPage }))),
 )
 const CalendarPage = lazy(() =>
-  import('@/components/CalendarPage').then((m) => ({ default: m.CalendarPage })),
+  lazyRetry(() => import('@/components/CalendarPage').then((m) => ({ default: m.CalendarPage }))),
+)
+const RecentUpdatesPage = lazy(() =>
+  lazyRetry(() => import('@/components/RecentUpdatesPage').then((m) => ({ default: m.RecentUpdatesPage }))),
 )
 
 const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
@@ -75,7 +89,7 @@ const BIANZHI_CROSS = [
 ]
 
 interface Section {
-  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar'
+  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar' | 'updates'
   preset?: string
   keyword?: string
 }
@@ -87,6 +101,7 @@ function initialSection(): Section {
     return { mode: board, preset: q.get('bpreset') || undefined }
   }
   if (board === 'calendar') return { mode: 'calendar' }
+  if (board === 'updates') return { mode: 'updates' }
   return { mode: 'positions' }
 }
 
@@ -102,9 +117,13 @@ function syncSectionUrl(section: Section) {
     q.delete('prov')
     q.delete('bkw')
     q.delete('cview')
-  } else if (section.mode === 'calendar') {
-    q.set('board', 'calendar')
+  } else if (section.mode === 'calendar' || section.mode === 'updates') {
+    q.set('board', section.mode)
     for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bkw', 'hexp']) q.delete(k)
+    if (section.mode === 'updates') {
+      q.delete('cview')
+      q.delete('cboard')
+    }
     for (const k of POSITION_URL_KEYS) q.delete(k)
   } else {
     if (q.get('board') !== section.mode) q.delete('hexp')
@@ -178,9 +197,13 @@ export default function App() {
   const [section, setSection] = useState<Section>(initialSection)
   const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>(getTheme)
   const [favOpen, setFavOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [deepLinked, setDeepLinked] = useState<Position | null>(null)
+  const [posEduLevel, setPosEduLevel] = useState<string[] | undefined>(undefined)
+  const [posQuick, setPosQuick] = useState<QuickFilter | undefined>(undefined)
+  const [boardQuickNonce, setBoardQuickNonce] = useState(0)
   const favorites = useFavorites()
   const campusFavorites = useCampusFavorites()
   const bianzhiFavorites = useBianzhiFavorites()
@@ -193,8 +216,8 @@ export default function App() {
     }
     return (
       favorites.filter((p) => within(parseSignupDeadline(p))).length +
-      campusFavorites.filter((j) => within(parseDeadlineText(j.deadline_text))).length +
-      bianzhiFavorites.filter((j) => within(parseDeadlineText(j.deadline_text))).length
+      campusFavorites.filter((j) => within(getEffectiveDeadline(j))).length +
+      bianzhiFavorites.filter((j) => within(getEffectiveDeadline(j))).length
     )
   }, [favorites, campusFavorites, bianzhiFavorites, remindDays])
 
@@ -207,6 +230,10 @@ export default function App() {
     const h = window.location.hash.slice(1)
     if (GUIDE_SECTION_KEYS.includes(h)) setGuideOpen(true)
   }, [])
+
+  useEffect(() => {
+    maybeNotifyDue(dueSoon, remindDays, () => setFavOpen(true))
+  }, [dueSoon, remindDays])
 
   const savedNews = useSavedNews()
   useEffect(() => {
@@ -240,8 +267,10 @@ export default function App() {
     [clearBoardParams],
   )
   const goPositions = useCallback(
-    (preset?: string, keyword?: string) => {
+    (preset?: string, keyword?: string, eduLevel?: string[]) => {
       clearBoardParams()
+      setPosEduLevel(eduLevel)
+      setPosQuick(undefined)
       setSection({ mode: 'positions', preset, keyword })
       window.scrollTo({ top: 0 })
     },
@@ -283,6 +312,37 @@ export default function App() {
     },
     [goPositions, goCampus, goBianzhi],
   )
+  const openBoardKw = useCallback(
+    (board: 'positions' | 'campus' | 'bianzhi', kw: string) => {
+      if (board === 'positions') goPositions('all', kw || undefined)
+      else if (board === 'campus') goCampus('all', kw || undefined)
+      else goBianzhi('all', kw || undefined)
+    },
+    [goPositions, goCampus, goBianzhi],
+  )
+
+  /** 全站搜索快捷筛选：带省份/城市筛选直达对应板块 */
+  const quickFilter = useCallback(
+    (board: SearchBoard, filter: QuickFilter, kw: string) => {
+      clearBoardParams()
+      if (board === 'positions') {
+        setPosEduLevel(undefined)
+        setPosQuick(filter)
+        setSection({ mode: 'positions', preset: 'all', keyword: kw || undefined })
+        window.scrollTo({ top: 0 })
+        return
+      }
+      const q = new URLSearchParams(window.location.search)
+      if (board === 'bianzhi' && filter.province) q.set('prov', filter.province)
+      if (board === 'campus' && filter.city) q.set('city', filter.city)
+      window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
+      setBoardQuickNonce((n) => n + 1)
+      setSection({ mode: board, preset: 'all', keyword: kw || undefined })
+      window.scrollTo({ top: 0 })
+    },
+    [clearBoardParams],
+  )
+
   const openSearchJob = useCallback(
     (board: SearchBoard, id: number, kw: string) => {
       if (board === 'positions') {
@@ -295,10 +355,25 @@ export default function App() {
       if (board === 'campus') goCampus('all', kw || undefined)
       else goBianzhi('all', kw || undefined)
       setJobParam(`${board}:${id}`)
+      setBoardQuickNonce((n) => n + 1)
     },
     [goPositions, goCampus, goBianzhi],
   )
 
+
+  useEffect(() => {
+    const prefetch = () => {
+      void import('@/components/GlobalSearch')
+      void import('@/components/FavoritesSheet')
+      void import('@/components/PositionSheet')
+    }
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(prefetch, { timeout: 5000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const t = setTimeout(prefetch, 3000)
+    return () => clearTimeout(t)
+  }, [])
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
@@ -359,13 +434,27 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1.5 px-2"
+            className="min-h-11 min-w-11 gap-1.5 px-2 sm:min-h-8 sm:min-w-0"
             onClick={cycleTheme}
             title={theme === 'system' ? '主题：跟随系统' : theme === 'dark' ? '主题：暗色' : '主题：亮色'}
             aria-label="切换主题"
           >
             {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             {theme === 'system' && <span className="hidden text-[11px] text-muted-foreground lg:inline">自动</span>}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`hidden min-h-11 gap-1.5 px-2 sm:min-h-8 md:inline-flex ${section.mode === 'updates' ? 'text-primary' : ''}`}
+            aria-label="今日更新"
+            title="近 7 天新增岗位"
+            onClick={() => {
+              setSection(section.mode === 'updates' ? { mode: 'positions' } : { mode: 'updates' })
+              window.scrollTo({ top: 0 })
+            }}
+          >
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline">今日更新</span>
           </Button>
           <Button
             variant="ghost"
@@ -384,6 +473,17 @@ export default function App() {
           <Button variant="ghost" size="sm" className="hidden min-h-11 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setGuideOpen(true)}>
             <BookOpen className="h-4 w-4" />
             求职攻略
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-11 gap-1.5 px-2 sm:min-h-8"
+            aria-label="最近浏览"
+            title="最近浏览"
+            onClick={() => setHistoryOpen(true)}
+          >
+            <History className="h-4 w-4" />
+            <span className="hidden lg:inline">最近浏览</span>
           </Button>
           <Button variant="outline" size="sm" className="relative hidden min-h-11 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setFavOpen(true)}>
             <Star className="h-4 w-4 text-amber-400" />
@@ -438,20 +538,28 @@ export default function App() {
         <div key={tab === 'admin' ? 'admin' : section.mode} className="animate-fade-in-up">
           {tab !== 'admin' && section.mode === 'positions' && (
             <SearchPage
-              key={`${section.preset ?? ''}|${section.keyword ?? ''}`}
+              key={`${section.preset ?? ''}|${section.keyword ?? ''}|${(posEduLevel ?? []).join(',')}|${posQuick?.province ?? ''}|${posQuick?.city ?? ''}`}
               initialPresetKey={section.preset}
               initialKeyword={section.keyword}
+              initialEduLevel={posEduLevel}
+              initialProvince={posQuick?.province ? [posQuick.province] : undefined}
+              initialLocation={posQuick?.city ? [posQuick.city] : undefined}
               crossPresets={CAMPUS_CROSS}
               onCrossPreset={(k) => (k.startsWith('bz:') ? goBianzhi(k.slice(3)) : goCampus(k))}
               crossLabel="校招信息"
               crossFetchTotal={campusTotal}
               onCrossOpen={(kw) => goCampus('all', kw)}
+              onOpenBoardKw={openBoardKw}
+              onOpenUpdates={() => {
+                setSection({ mode: 'updates' })
+                window.scrollTo({ top: 0 })
+              }}
             />
           )}
           <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
             {tab !== 'admin' && section.mode === 'campus' && (
               <CampusPage
-                key={`${section.preset ?? ''}|${section.keyword ?? ''}`}
+                key={`${section.preset ?? ''}|${section.keyword ?? ''}|${boardQuickNonce}`}
                 initialPreset={section.preset}
                 initialKeyword={section.keyword}
                 crossPresets={POSITION_CROSS}
@@ -459,11 +567,12 @@ export default function App() {
                 crossLabel="体制内岗位"
                 crossFetchTotal={positionsTotal}
                 onCrossOpen={(kw) => goPositions('all', kw)}
+                onOpenBoardKw={openBoardKw}
               />
             )}
             {tab !== 'admin' && section.mode === 'bianzhi' && (
               <BianzhiPage
-                key={`${section.preset ?? ''}|${section.keyword ?? ''}`}
+                key={`${section.preset ?? ''}|${section.keyword ?? ''}|${boardQuickNonce}`}
                 initialPreset={section.preset}
                 initialKeyword={section.keyword}
                 crossPresets={BIANZHI_CROSS}
@@ -473,9 +582,20 @@ export default function App() {
                 crossLabel="校招信息"
                 crossFetchTotal={campusTotal}
                 onCrossOpen={(kw) => goCampus('all', kw)}
+                onOpenBoardKw={openBoardKw}
               />
             )}
             {tab !== 'admin' && section.mode === 'calendar' && <CalendarPage />}
+            {tab !== 'admin' && section.mode === 'updates' && (
+              <RecentUpdatesPage
+                onOpenJob={(board, id) => openSearchJob(board, id, '')}
+                onOpenBoard={(board) => {
+                  if (board === 'positions') goPositions('all')
+                  else if (board === 'campus') goCampus('all')
+                  else goBianzhi('all')
+                }}
+              />
+            )}
             {tab === 'admin' && showAdmin && <AdminPage />}
           </Suspense>
         </div>
@@ -483,6 +603,17 @@ export default function App() {
 
       <footer className="border-t bg-background py-6 pb-24 text-center text-xs text-muted-foreground md:pb-16">
         <div className="mb-2 flex items-center justify-center gap-4">
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:min-h-0"
+            onClick={() => {
+              setSection({ mode: 'updates' })
+              window.scrollTo({ top: 0 })
+            }}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            今日更新
+          </button>
           <button
             type="button"
             className="inline-flex min-h-11 items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:min-h-0"
@@ -503,7 +634,21 @@ export default function App() {
             求职攻略
           </button>
         </div>
-        数据来源：国家公务员局、军队人才网、国聘网及各省官方/汇总页面 · 仅供参考
+        数据来源：国家公务员局、军队人才网、国聘网及各省官方/汇总页面 · 仅供参考 ·{' '}
+        <button
+          type="button"
+          className="underline underline-offset-4 hover:text-foreground"
+          onClick={() => {
+            window.history.replaceState(
+              null,
+              '',
+              window.location.pathname + window.location.search + '#about',
+            )
+            setGuideOpen(true)
+          }}
+        >
+          数据说明
+        </button>
       </footer>
 
       <MobileBottomNav
@@ -521,19 +666,51 @@ export default function App() {
         onFavorites={() => setFavOpen(true)}
         onGuide={() => setGuideOpen(true)}
       />
-      <GlobalSearch
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onOpenBoard={openSearchBoard}
-        onOpenJob={openSearchJob}
-      />
-      <FavoritesSheet open={favOpen} onClose={() => setFavOpen(false)} />
+      <Suspense fallback={null}>
+        {searchOpen && (
+          <GlobalSearch
+            onQuickFilter={quickFilter}
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            onOpenBoard={openSearchBoard}
+            onOpenJob={openSearchJob}
+          />
+        )}
+        {favOpen && (
+          <FavoritesSheet
+            open={favOpen}
+            onClose={() => setFavOpen(false)}
+            onOpenHistory={() => {
+              setFavOpen(false)
+              setHistoryOpen(true)
+            }}
+          />
+        )}
+        {historyOpen && (
+          <ViewHistorySheet
+            open={historyOpen}
+            onClose={() => setHistoryOpen(false)}
+            onOpenJob={(board, id) => openSearchJob(board, id, '')}
+          />
+        )}
+      </Suspense>
       <Suspense fallback={null}>
         {guideOpen && <JobGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
       </Suspense>
       <CompareBar />
       <BoardCompareBar onOpenJob={(board, id) => openSearchJob(board, id, '')} />
-      {deepLinked && <PositionSheet item={deepLinked} onClose={() => setDeepLinked(null)} onOpenItem={setDeepLinked} />}
+      {deepLinked && (
+        <LazyPositionSheet
+          item={deepLinked}
+          onClose={() => setDeepLinked(null)}
+          onOpenItem={setDeepLinked}
+          onTagClick={(k) => {
+            if (k !== 'edu_bk') return
+            setDeepLinked(null)
+            goPositions('all', undefined, ['本科'])
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -1,5 +1,8 @@
+import { TableSwipeHint } from './TableSwipeHint'
 import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  buildBianzhiExportUrl,
+  createBoardExport,
   fetchBianzhiCounts,
   fetchBianzhiFilters,
   fetchBianzhiJob,
@@ -11,12 +14,14 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PullToRefresh } from './PullToRefresh'
 import { EmptyState } from '@/components/EmptyState'
 import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from '@/components/ActiveFilterChips'
 import { Highlight } from '@/components/Highlight'
+import { BoardExportButton } from '@/components/BoardExportButton'
 import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
-import { formatDueDayLabel, parseDeadlineText } from '@/lib/deadline'
+import { formatDueDayLabel, getEffectiveDeadline, parseDeadlineText } from '@/lib/deadline'
 import {
   Table,
   TableBody,
@@ -27,7 +32,10 @@ import {
 } from '@/components/ui/table'
 import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { SeenBadge } from '@/components/SeenBadge'
+import { useSeenSet } from '@/lib/viewHistory'
 import { BoardCompareButton } from '@/components/BoardCompareButton'
+import { CrossBoardZeroHint } from '@/components/CrossBoardZeroHint'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
@@ -35,6 +43,7 @@ import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
 import { getProfile, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
+import { deriveBianzhiTags } from '@/lib/jobTags'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
 import { addRecentSearch } from '@/lib/storage'
@@ -46,9 +55,11 @@ import { cmpNullableStr, nextSort, normalizeDateStr, type SortState } from '@/li
 import { toggleBianzhiFavorite, useBianzhiFavorites } from '@/lib/boardFavorites'
 import hrSites from '@/data/hrSites.json'
 import { applySeo } from '@/lib/seo'
+import { lazyRetry } from '@/lib/lazyRetry'
+import { jobShareUrl } from '@/lib/clipboard'
 
 const MajorGuideSheet = lazy(() =>
-  import('@/components/MajorGuideSheet').then((m) => ({ default: m.MajorGuideSheet })),
+  lazyRetry(() => import('@/components/MajorGuideSheet').then((m) => ({ default: m.MajorGuideSheet }))),
 )
 
 const CATEGORY_TONES: Record<string, Tone> = {
@@ -73,6 +84,7 @@ function bianzhiShareText(job: BianzhiJob): string {
     title: job.job_type,
     location: job.work_location || job.province,
     deadline: job.deadline_text || job.deadline_date,
+    deepLink: jobShareUrl('bianzhi', job.id),
     url: job.announce_url || job.apply_url,
   })
 }
@@ -110,6 +122,7 @@ interface BianzhiPageProps {
   crossLabel?: string
   crossFetchTotal?: (keyword: string) => Promise<number>
   onCrossOpen?: (keyword: string) => void
+  onOpenBoardKw?: (board: 'positions' | 'campus' | 'bianzhi', keyword: string) => void
 }
 
 export function BianzhiPage({
@@ -120,6 +133,7 @@ export function BianzhiPage({
   crossLabel,
   crossFetchTotal,
   onCrossOpen,
+  onOpenBoardKw,
 }: BianzhiPageProps) {
   const urlQuery = useMemo(() => new URLSearchParams(window.location.search), [])
   const [preset, setPreset] = useState(
@@ -129,6 +143,13 @@ export function BianzhiPage({
   const [dueOnly, setDueOnly] = useState(urlQuery.get('due') === '7')
   const [hideExpired, setHideExpired] = useState(
     urlQuery.get('board') === 'bianzhi' && urlQuery.get('hexp') === '1',
+  )
+  const [hideSeen, setHideSeen] = useState(
+    urlQuery.get('board') === 'bianzhi' && urlQuery.get('hseen') === '1',
+  )
+  const seenSet = useSeenSet()
+  const [eduFilter, setEduFilter] = useState(
+    urlQuery.get('board') === 'bianzhi' ? urlQuery.get('bedu') ?? '' : '',
   )
   const [provinceCounts, setProvinceCounts] = useState<Record<string, number> | null>(null)
 
@@ -176,6 +197,7 @@ export function BianzhiPage({
     return v ? v.split(',').filter(Boolean) : []
   })
   const [page, setPage] = useState(1)
+  const [refreshNonce, setRefreshNonce] = useState(0)
   const [crossTotal, setCrossTotal] = useState(0)
   const [data, setData] = useState<{ total: number; items: BianzhiJob[] } | null>(null)
   const [filters, setFilters] = useState<BianzhiFilterOptions | null>(null)
@@ -215,13 +237,17 @@ export function BianzhiPage({
     else q.delete('due')
     if (hideExpired) q.set('hexp', '1')
     else q.delete('hexp')
+    if (hideSeen) q.set('hseen', '1')
+    else q.delete('hseen')
     if (provinces.length) q.set('prov', provinces.join(','))
     else q.delete('prov')
     if (keyword.trim()) q.set('bkw', keyword.trim())
     else q.delete('bkw')
+    if (eduFilter) q.set('bedu', eduFilter)
+    else q.delete('bedu')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('bianzhi', preset)
-  }, [preset, recentOnly, dueOnly, hideExpired, provinces, keyword])
+  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, provinces, keyword, eduFilter])
 
   const isLiankaoPreset = preset === 'lk'
   const fetchPage = isLiankaoPreset ? 1 : page
@@ -232,13 +258,14 @@ export function BianzhiPage({
       category: cat ? [cat] : undefined,
       province: provinces.length ? provinces : undefined,
       keyword: keyword || undefined,
+      edu: eduFilter || undefined,
       updated_after: recentOnly ? daysAgoStr(7) : undefined,
       due_within_days: dueOnly ? 7 : undefined,
       hide_expired: !dueOnly && hideExpired ? true : undefined,
       page: fetchPage,
       page_size: isLiankaoPreset ? 100 : PAGE_SIZE,
     }
-  }, [preset, recentOnly, keyword, provinces, dueOnly, hideExpired, fetchPage, isLiankaoPreset])
+  }, [preset, recentOnly, keyword, provinces, dueOnly, hideExpired, fetchPage, isLiankaoPreset, eduFilter])
 
   useEffect(() => {
     let cancelled = false
@@ -285,7 +312,7 @@ export function BianzhiPage({
       cancelled = true
       controller.abort()
     }
-  }, [params])
+  }, [params, refreshNonce])
 
   const selectPreset = useCallback((key: string) => {
     setPreset(key)
@@ -298,6 +325,23 @@ export function BianzhiPage({
   }, [])
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
+
+  /** 导出文件名：板块+筛选摘要+日期 */
+  const exportFname = useMemo(() => {
+    const presetLabel = PRESETS.find((v) => v.key === preset)?.label
+    const parts = [
+      '编制',
+      preset !== 'all' ? presetLabel : undefined,
+      ...provinces,
+      keyword || undefined,
+      eduFilter || undefined,
+      recentOnly ? '近7天' : undefined,
+      dueOnly ? '7天内截止' : undefined,
+      !dueOnly && hideExpired ? '未过期' : undefined,
+      new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+    ]
+    return parts.filter(Boolean).join('-')
+  }, [preset, provinces, keyword, eduFilter, recentOnly, dueOnly, hideExpired])
   const isLiankao = isLiankaoPreset
 
   const activeFilters: RemovableFilter[] = []
@@ -317,6 +361,14 @@ export function BianzhiPage({
     if (presetLabel)
       activeFilters.push({ label: `分类：${presetLabel}`, onRemove: () => selectPreset('all') })
   }
+  if (eduFilter)
+    activeFilters.push({
+      label: `学历：${eduFilter}`,
+      onRemove: () => {
+        setEduFilter('')
+        setPage(1)
+      },
+    })
   if (dueOnly)
     activeFilters.push({
       label: '即将截止',
@@ -341,6 +393,11 @@ export function BianzhiPage({
         setPage(1)
       },
     })
+  if (hideSeen)
+    activeFilters.push({
+      label: '隐藏已看过',
+      onRemove: () => setHideSeen(false),
+    })
   if (profileMatched)
     activeFilters.push({
       label: '按我的条件匹配',
@@ -355,9 +412,11 @@ export function BianzhiPage({
 
   function clearAllFilters() {
     selectPreset('all')
+    setEduFilter('')
     setRecentOnly(false)
     setDueOnly(false)
     setHideExpired(false)
+    setHideSeen(false)
     setProvinces([])
     setSearchInput('')
     setKeyword('')
@@ -414,11 +473,15 @@ export function BianzhiPage({
     return [...data.items].sort((a, b) => cmpNullableStr(field(a), field(b), sort.dir))
   }, [data, sort, liankaoInfo])
 
-  const pageItems = useMemo(
-    () =>
-      isLiankao ? sortedItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) : sortedItems,
-    [isLiankao, sortedItems, page],
-  )
+  const pageItems = useMemo(() => {
+    const items = isLiankao
+      ? sortedItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+      : sortedItems
+    return hideSeen ? items.filter((j) => !seenSet.has(`bianzhi:${j.id}`)) : items
+  }, [isLiankao, sortedItems, page, hideSeen, seenSet])
+  const hiddenSeenCount =
+    (isLiankao ? Math.min(PAGE_SIZE, Math.max(0, sortedItems.length - (page - 1) * PAGE_SIZE)) : sortedItems.length) -
+    pageItems.length
 
   const [relatedJobs, setRelatedJobs] = useState<BianzhiJob[]>([])
 
@@ -552,6 +615,18 @@ export function BianzhiPage({
             )}
           >
             隐藏已截止
+          </button>
+          <button
+            type="button"
+            onClick={() => setHideSeen((v) => !v)}
+            className={cn(
+              'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+              hideSeen
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-foreground hover:bg-muted',
+            )}
+          >
+            隐藏已看过
           </button>
           {crossPresets && crossPresets.length > 0 && onCrossPreset && (
             <>
@@ -736,13 +811,19 @@ export function BianzhiPage({
         </MobileFilterCollapse>
       )}
 
-      {/* 计数 */}
+      {/* 计数 + 导出 */}
       {data && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span>
             共 <span className="font-medium text-foreground">{data.total.toLocaleString()}</span> 条
           </span>
           <FreshnessNote board="bianzhi" />
+          <BoardExportButton
+            className="ml-auto"
+            total={data.total}
+            buildSyncUrl={() => buildBianzhiExportUrl(params, exportFname)}
+            startAsync={(maxRows) => createBoardExport('bianzhi', params, exportFname, maxRows)}
+          />
         </div>
       )}
 
@@ -763,7 +844,12 @@ export function BianzhiPage({
 
       <FilterSummaryBar filters={activeFilters} onClearAll={clearAllFilters} />
 
+      {hideSeen && hiddenSeenCount > 0 && (
+        <div className="text-xs text-muted-foreground">本页已隐藏 {hiddenSeenCount} 条已看过的岗位</div>
+      )}
+
       {/* 列表 */}
+      <PullToRefresh onRefresh={() => setRefreshNonce((n) => n + 1)} refreshing={loading}>
       {loading && !data ? (
         view === 'table' ? (
           <div className="space-y-3 rounded-xl border bg-background p-4">
@@ -797,11 +883,16 @@ export function BianzhiPage({
         </div>
         )
       ) : data && data.items.length === 0 ? (
-        <EmptyState
-          title="没有匹配的编制公告"
-          description="建议优先移除关键词，其次省份、分类筛选"
-          action={<ActiveFilterChips filters={activeFilters} />}
-        />
+        <div className="space-y-3">
+          <EmptyState
+            title="没有匹配的编制公告"
+            description="建议优先移除关键词，其次省份、分类筛选"
+            action={<ActiveFilterChips filters={activeFilters} />}
+          />
+          {keyword.trim() && onOpenBoardKw && (
+            <CrossBoardZeroHint from="bianzhi" keyword={keyword} onOpen={onOpenBoardKw} />
+          )}
+        </div>
       ) : view === 'card' ? (
         <div className={cn('space-y-2', loading && 'pointer-events-none opacity-60')}>
           {pageItems.map((job, i, arr) => (
@@ -834,6 +925,7 @@ export function BianzhiPage({
                     query={keyword}
                   />
                 </span>
+                <SeenBadge board="bianzhi" id={job.id} />
                 {job.category && (
                   <Badge variant="secondary" className={cn('border-0', toneClass(CATEGORY_TONES, job.category))}>
                     {job.category}
@@ -877,6 +969,11 @@ export function BianzhiPage({
                   )
                 )}
                 {!isLiankao && <DueBadge date={job.deadline_date} />}
+                {deriveBianzhiTags(job).map((t) => (
+                  <Badge key={t.key} variant="secondary" className="border-0 bg-muted font-normal text-foreground/80 dark:text-muted-foreground">
+                    {t.label}
+                  </Badge>
+                ))}
               </div>
               {job.major_requirement && job.major_requirement.trim() !== '/' && (
                 <p
@@ -942,6 +1039,7 @@ export function BianzhiPage({
             loading && 'pointer-events-none opacity-60',
           )}
         >
+          <TableSwipeHint />
           <Table>
             <TableHeader>
               <TableRow>
@@ -1017,6 +1115,7 @@ export function BianzhiPage({
                         }
                         query={keyword}
                       />
+                      <SeenBadge board="bianzhi" id={job.id} className="ml-1.5" />
                     </span>
                     {job.notes && job.notes.trim() !== '/' && (
                       <span className="mt-0.5 block max-w-[380px] truncate text-[11px] text-muted-foreground" title={job.notes}>
@@ -1131,6 +1230,7 @@ export function BianzhiPage({
           </Table>
         </div>
       )}
+      </PullToRefresh>
 
       {/* 分页 */}
       {data && data.total > PAGE_SIZE && (
@@ -1165,10 +1265,29 @@ export function BianzhiPage({
               : '-')
           }
           badges={[detail.category, detail.province].filter((b): b is string => !!b)}
+          tags={deriveBianzhiTags(detail).map((t) => ({
+            ...t,
+            onClick:
+              t.key === 'edu_bk'
+                ? () => {
+                    setEduFilter('本科')
+                    setPage(1)
+                    setDetail(null)
+                  }
+                : undefined,
+          }))}
           shareText={bianzhiShareText(detail)}
           favActive={bianzhiFavorites.some((f) => f.id === detail.id)}
           onFavToggle={() => toggleBianzhiFavorite(detail)}
           jobKey={`bianzhi:${detail.id}`}
+          prep={{
+            examType: detail.category || detail.job_type,
+            province: detail.province,
+            deadline:
+              getEffectiveDeadline(detail),
+            icsUid: `bz-${detail.id}`,
+            icsSummary: `报名截止：${detail.employer?.trim() || detail.job_type || '编制岗位'}`,
+          }}
           {...sheetNavProps(pageItems, detail, setDetail)}
           basics={[
             { label: '招聘单位', value: detail.employer },

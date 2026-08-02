@@ -1,3 +1,4 @@
+import { TableSwipeHint } from './TableSwipeHint'
 import { memo, useMemo, useState, type ReactNode } from 'react'
 
 import {
@@ -8,9 +9,10 @@ import {
 } from '@tanstack/react-table'
 import type { Position } from '@/api'
 import { formatTotal } from '@/api'
-import { PositionSheet } from './PositionSheet'
+import { LazyPositionSheet } from './LazyPositionSheet'
 import { sheetNavProps } from '@/lib/sheetNav'
 import { DueBadge } from './DueBadge'
+import { SeenBadge } from './SeenBadge'
 import { EmptyState } from './EmptyState'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
@@ -44,7 +46,7 @@ import { eduClass, jobTypeClass, provinceClass, yearClass, PILL_BASE } from '@/l
 import { cn } from '@/lib/utils'
 import { Highlight } from '@/components/Highlight'
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
-import { positionShareUrl } from '@/lib/clipboard'
+import { jobShareUrl } from '@/lib/clipboard'
 import { SortableHead } from '@/components/SortableHead'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
@@ -101,6 +103,7 @@ interface Props {
   columnFilters?: Partial<Record<string, ColumnFilterConfig>>
   emptyAction?: ReactNode
   highlight?: string
+  onTagClick?: (tagKey: string) => void
 }
 
 /** memo：父页面无关状态变化时不重渲整表。 */
@@ -116,6 +119,7 @@ export const PositionTable = memo(function PositionTable({
   columnFilters,
   emptyAction,
   highlight,
+  onTagClick,
 }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
   const [sort, setSort] = useState<SortState | null>(null)
@@ -165,6 +169,7 @@ export const PositionTable = memo(function PositionTable({
     <div className="space-y-3">
       <div className="rounded-xl border bg-card shadow-sm">
         <div className="overflow-x-auto [scrollbar-width:thin]">
+          <TableSwipeHint />
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (
@@ -278,10 +283,20 @@ export const PositionTable = memo(function PositionTable({
                           String(cell.getValue() || '-').slice(0, 10)
                         ) : cell.column.id === 'employer' ||
                           cell.column.id === 'position_example' ? (
-                          <Highlight
-                            text={truncate(String(cell.getValue() || '-'))}
-                            query={highlight}
-                          />
+                          <>
+                            <Highlight
+                              text={truncate(
+                                String(
+                                  cell.getValue() ||
+                                    (cell.column.id === 'employer' ? '—' : '-'),
+                                ),
+                              )}
+                              query={highlight}
+                            />
+                            {cell.column.id === 'employer' && (
+                              <SeenBadge board="positions" id={row.original.id} className="ml-1.5" />
+                            )}
+                          </>
                         ) : (
                           truncate(String(cell.getValue() || '-'))
                         )}
@@ -298,7 +313,8 @@ export const PositionTable = memo(function PositionTable({
                             title: row.original.position_example,
                             location: row.original.work_location,
                             deadline: row.original.signup_time,
-                            url: row.original.source_url || positionShareUrl(row.original.id),
+                            deepLink: jobShareUrl('positions', row.original.id),
+                            url: row.original.source_url,
                           })}
                         />
                         <Button
@@ -407,11 +423,12 @@ export const PositionTable = memo(function PositionTable({
       </div>
 
       {selected && (
-        <PositionSheet
+        <LazyPositionSheet
           item={selected}
           onClose={() => setSelected(null)}
           {...sheetNavProps(sortedData, selected, setSelected)}
           onOpenItem={setSelected}
+          onTagClick={onTagClick}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Building2, CalendarClock, ChevronLeft, ChevronRight, ExternalLink, GraduationCap, Info, Link2 } from 'lucide-react'
+import { Building2, CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Filter, GraduationCap, Info, Link2 } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -11,8 +11,12 @@ import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
-import { ShareTextButton } from '@/components/ShareTextButton'
+import { ShareMenuButton, ShareTextButton } from '@/components/ShareTextButton'
+import { jobShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
+import { addViewHistory } from '@/lib/viewHistory'
+import { PrepResources } from '@/components/PrepResources'
+import { SheetDragHandle } from '@/components/SheetDragHandle'
 
 export interface SheetField {
   label: string
@@ -25,11 +29,20 @@ export interface SheetLink {
   primary?: boolean
 }
 
+export interface SheetTag {
+  key: string
+  label: string
+  /** 传入时标签可点，写入对应筛选并关闭面板。 */
+  onClick?: () => void
+}
+
 interface Props {
   open: boolean
   onClose: () => void
   title: string
   badges?: string[]
+  /** 从字段派生的岗位标签；带 onClick 的可点写入筛选。 */
+  tags?: SheetTag[]
   shareText: string
   favActive: boolean
   onFavToggle: () => void
@@ -50,6 +63,14 @@ interface Props {
     title: string
     items: { key: string; label: string; sub?: string | null }[]
     onSelect: (key: string) => void
+  }
+  /** 传入时展示「备考资源」区块（攻略锚点 + 省人社官网 + 日历提醒）。 */
+  prep?: {
+    examType: string | null | undefined
+    province: string | null | undefined
+    deadline: Date | null
+    icsUid: string
+    icsSummary: string
   }
 }
 
@@ -107,6 +128,7 @@ export function BoardJobSheet({
   onClose,
   title,
   badges,
+  tags,
   shareText,
   favActive,
   onFavToggle,
@@ -121,6 +143,7 @@ export function BoardJobSheet({
   nextDisabled,
   snapshotNote,
   related,
+  prep,
 }: Props) {
   const validLinks = (links ?? []).filter((l) => safeUrl(l.url))
 
@@ -129,6 +152,15 @@ export function BoardJobSheet({
     setJobParam(jobKey)
     return () => clearJobParam(jobKey)
   }, [open, jobKey])
+
+  useEffect(() => {
+    if (!open || !jobKey) return
+    const [board, idStr] = jobKey.split(':')
+    const id = Number(idStr)
+    if ((board === 'campus' || board === 'bianzhi') && id > 0) {
+      addViewHistory(board, id, title)
+    }
+  }, [open, jobKey, title])
 
   useEffect(() => {
     if (!open || (!onPrev && !onNext)) return
@@ -142,7 +174,8 @@ export function BoardJobSheet({
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-full max-w-2xl p-0 data-[side=right]:w-full sm:max-w-xl">
-        <SheetHeader className="space-y-2 px-4 pt-6 sm:px-6">
+        <SheetDragHandle onDismiss={onClose} />
+        <SheetHeader className="space-y-2 px-4 pt-1 sm:px-6 sm:pt-6">
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             <span className="break-all">{title}</span>
             {(badges ?? []).filter(Boolean).map((b) => (
@@ -151,9 +184,42 @@ export function BoardJobSheet({
               </Badge>
             ))}
           </SheetTitle>
+          {(tags ?? []).length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {(tags ?? []).map((t) =>
+                t.onClick ? (
+                  <button
+                    key={t.key}
+                    type="button"
+                    className="cursor-pointer"
+                    title="点击按此标签筛选"
+                    aria-label={`按「${t.label}」筛选`}
+                    onClick={t.onClick}
+                  >
+                    <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary transition-colors hover:bg-primary/20">
+                      <Filter className="h-3 w-3" aria-hidden="true" />
+                      {t.label}
+                    </Badge>
+                  </button>
+                ) : (
+                  <Badge key={t.key} variant="secondary" className="font-normal">
+                    {t.label}
+                  </Badge>
+                ),
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-1">
             <BoardFavoriteButton active={favActive} onToggle={onFavToggle} />
-            <ShareTextButton text={shareText} />
+            {(() => {
+              const [b, idStr] = (jobKey || '').split(':')
+              const id = Number(idStr)
+              return (b === 'campus' || b === 'bianzhi') && id > 0 ? (
+                <ShareMenuButton text={shareText} url={jobShareUrl(b, id)} title={title} />
+              ) : (
+                <ShareTextButton text={shareText} />
+              )
+            })()}
             {(onPrev || onNext) && (
               <span className="ml-auto inline-flex items-center gap-1">
                 <Button
@@ -257,6 +323,13 @@ export function BoardJobSheet({
                     ))}
                   </ul>
                 </section>
+              </>
+            )}
+
+            {prep && (
+              <>
+                <Separator />
+                <PrepResources {...prep} />
               </>
             )}
           </div>

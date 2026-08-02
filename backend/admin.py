@@ -12,12 +12,14 @@ from pydantic import BaseModel
 from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
-from cache import get_redis
+from cache import get_or_set, get_redis
 from database import get_db
 from models import Position, WatchSource, Announcement, CrawlRun
-from tasks import DQ_REPORT_KEY, data_quality_audit
+from celery_app import celery_app
+from tasks import DQ_REPORT_KEY, data_quality_audit, refresh_feishu_data
 import collector
 import precompute
+import quality
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -174,6 +176,15 @@ def get_data_quality():
     if not raw:
         raise HTTPException(status_code=404, detail="报告未生成，可先 POST /api/admin/data-quality/refresh")
     return json.loads(raw)
+
+
+@router.get("/quality-issues", dependencies=[Depends(require_admin)])
+def quality_issues(db: Session = Depends(get_db)):
+    """三表常见脏数据扫描：各类计数 + 样例 20 条（只读，1h 缓存）。"""
+    return get_or_set(
+        quality.QUALITY_ISSUES_KEY, quality.QUALITY_ISSUES_TTL,
+        lambda: quality.compute_quality_issues(db),
+    )
 
 
 @router.post("/data-quality/refresh", dependencies=[Depends(require_admin)])
@@ -370,3 +381,59 @@ def list_crawl_runs(
         .all()
     )
     return {"total": total, "page": page, "page_size": page_size, "items": [_run_out(r) for r in rows]}
+
+
+@router.get("/sync-today", dependencies=[Depends(require_admin)])
+def sync_today(db: Session = Depends(get_db)):
+    """今日各源同步结果明细：每源最近一次运行的新增行数与失败原因。"""
+    start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    runs = (
+        db.query(CrawlRun)
+        .filter(CrawlRun.started_at >= start, CrawlRun.source_id.isnot(None))
+        .order_by(CrawlRun.id.desc())
+        .limit(300)
+        .all()
+    )
+    latest: dict = {}
+    for r in runs:
+        latest.setdefault(r.source_id, r)
+    names = {}
+    if latest:
+        names = dict(
+            db.query(WatchSource.id, WatchSource.name)
+            .filter(WatchSource.id.in_(latest.keys()))
+            .all()
+        )
+    items = [
+        {
+            "source_id": sid,
+            "source_name": names.get(sid) or f"#{sid}",
+            "status": r.status,
+            "started_at": r.started_at.isoformat() if r.started_at else None,
+            "finished_at": r.finished_at.isoformat() if r.finished_at else None,
+            "rows_ingested": r.rows_ingested,
+            "error": r.error,
+        }
+        for sid, r in latest.items()
+    ]
+    items.sort(key=lambda it: it["started_at"] or "", reverse=True)
+    return {"date": start.date().isoformat(), "items": items}
+
+
+@router.post("/sync-now", dependencies=[Depends(require_admin)])
+def sync_now():
+    """立即触发飞书数据同步（复用每日 refresh_feishu_data Celery 任务），返回 task_id 供轮询。"""
+    task = refresh_feishu_data.delay()
+    return {"task_id": task.id}
+
+
+@router.get("/sync-status/{task_id}", dependencies=[Depends(require_admin)])
+def sync_status(task_id: str):
+    """查询触发的同步任务状态：PENDING/STARTED/SUCCESS/FAILURE。"""
+    res = celery_app.AsyncResult(task_id)
+    out: dict = {"state": res.state}
+    if res.state == "SUCCESS":
+        out["result"] = res.result
+    elif res.state == "FAILURE":
+        out["error"] = str(res.result)
+    return out

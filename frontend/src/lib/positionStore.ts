@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { Position } from '@/api'
 import type { AppChannel } from '@/lib/badgeColors'
+import { recordFavAdded, removeFavAdded } from '@/lib/favTimes'
 
 const FAV_KEY = 'recruit.favorites'
 const STATUS_KEY = 'recruit.appStatus'
@@ -24,7 +25,7 @@ export const APP_STATUSES = [
 export type AppStatus = (typeof APP_STATUSES)[number]
 
 export interface StatusEvent {
-  status: AppStatus
+  status: AppStatus | '已跟进'
   at: string
 }
 
@@ -101,8 +102,10 @@ export function isFavorite(id: number): boolean {
 export function toggleFavorite(item: Position) {
   if (isFavorite(item.id)) {
     favorites = favorites.filter((p) => p.id !== item.id)
+    removeFavAdded('positions', item.id)
   } else {
     favorites = [item, ...favorites].slice(0, FAV_MAX)
+    recordFavAdded('positions', item.id)
   }
   persistFavorites()
   emit()
@@ -166,6 +169,16 @@ export function setAppStatus(id: number, status: AppStatus) {
     [id]: [...(statusHistory[id] ?? []), { status, at: new Date().toISOString() }],
   }
   persistStatuses()
+  persistRecord(STATUS_HISTORY_KEY, statusHistory)
+  emit()
+}
+
+/** 投递提醒「已跟进」：只写时间线，不改当前状态。 */
+export function appendFollowUp(id: number) {
+  statusHistory = {
+    ...statusHistory,
+    [id]: [...(statusHistory[id] ?? []), { status: '已跟进', at: new Date().toISOString() }],
+  }
   persistRecord(STATUS_HISTORY_KEY, statusHistory)
   emit()
 }
@@ -273,28 +286,51 @@ export function exportPositionData(): PositionBackup {
   return { favorites, statuses, notes, channels, priorities, statusHistory, pinned }
 }
 
-/** 合并导入备份：同 id 以备份数据覆盖本地。返回合并后收藏总数。 */
-export function mergePositionData(data: PositionBackup): number {
+/** 条目最后更新时间（时间线最后一条），缺则视为更早（0）。 */
+export function lastEventTime(history: StatusEvent[] | undefined): number {
+  if (!history || history.length === 0) return 0
+  const t = new Date(history[history.length - 1].at).getTime()
+  return Number.isNaN(t) ? 0 : t
+}
+
+export interface MergeStats {
+  total: number
+  added: number
+  updated: number
+}
+
+/** 合并导入备份：同 id 按条目最后更新时间取较新者（状态/备注/优先级随条目整体走）。 */
+export function mergePositionData(data: PositionBackup): MergeStats {
   const byId = new Map(favorites.map((p) => [p.id, p]))
-  for (const p of data.favorites) byId.set(p.id, p)
+  let added = 0
+  let updated = 0
+  const adopt = (id: number) => {
+    if (data.statuses[id] !== undefined) statuses = { ...statuses, [id]: data.statuses[id] }
+    if (data.notes[id] !== undefined) notes = { ...notes, [id]: data.notes[id] }
+    if (data.channels[id] !== undefined) channels = { ...channels, [id]: data.channels[id] }
+    if (data.priorities[id] !== undefined) priorities = { ...priorities, [id]: data.priorities[id] }
+    if (data.statusHistory?.[id] !== undefined) statusHistory = { ...statusHistory, [id]: data.statusHistory[id] }
+    if (data.pinned?.[id] !== undefined) pinned = { ...pinned, [id]: data.pinned[id] }
+  }
+  for (const p of data.favorites) {
+    if (!byId.has(p.id)) {
+      byId.set(p.id, p)
+      adopt(p.id)
+      added += 1
+    } else if (lastEventTime(data.statusHistory?.[p.id]) > lastEventTime(statusHistory[p.id])) {
+      byId.set(p.id, p)
+      adopt(p.id)
+      updated += 1
+    }
+  }
   favorites = [...byId.values()].slice(0, FAV_MAX)
-  statuses = { ...statuses, ...data.statuses }
-  notes = { ...notes, ...data.notes }
-  channels = { ...channels, ...data.channels }
-  priorities = { ...priorities, ...data.priorities }
-  if (data.statusHistory) {
-    statusHistory = { ...statusHistory, ...data.statusHistory }
-    persistRecord(STATUS_HISTORY_KEY, statusHistory)
-  }
-  if (data.pinned) {
-    pinned = { ...pinned, ...data.pinned }
-    persistRecord(PINNED_KEY, pinned)
-  }
+  persistRecord(STATUS_HISTORY_KEY, statusHistory)
+  persistRecord(PINNED_KEY, pinned)
   persistFavorites()
   persistStatuses()
   persistRecord(NOTE_KEY, notes)
   persistRecord(CHANNEL_KEY, channels)
   persistRecord(PRIORITY_KEY, priorities)
   emit()
-  return favorites.length
+  return { total: favorites.length, added, updated }
 }

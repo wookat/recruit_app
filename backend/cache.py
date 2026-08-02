@@ -77,6 +77,8 @@ def cached(prefix: str, ttl: int = 60, stale: bool = False):
                     except Exception:
                         pass
                 raise
+            if isinstance(result, dict) and result.get("timed_out"):
+                return result  # 语句超时的降级空结果不入缓存，避免把「0 条」钉住 ttl 时长
             try:
                 payload = json.dumps(result, default=str)
                 r.setex(key, ttl, payload)

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Position, PositionList, SearchParams } from '@/api'
 import { formatTotal } from '@/api'
-import { PositionSheet } from './PositionSheet'
+import { LazyPositionSheet } from './LazyPositionSheet'
 import { sheetNavProps } from '@/lib/sheetNav'
 import { EmptyState } from './EmptyState'
 import { Highlight } from './Highlight'
@@ -200,7 +200,7 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
         </div>
       </div>
       {selected && (
-        <PositionSheet
+        <LazyPositionSheet
           item={selected}
           onClose={() => setSelected(null)}
           {...sheetNavProps(items, selected, setSelected)}

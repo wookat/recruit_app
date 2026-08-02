@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import type { BianzhiJob, CampusJob, Position } from '@/api'
-import { daysUntil, formatDayLabel, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
+import { daysUntil, formatDayLabel, getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import {
   APP_STATUSES,
   STATUS_COLORS,
@@ -18,10 +18,12 @@ import {
   useAppStatuses,
   useAppStatusHistory,
   useFavorites,
+  appendFollowUp,
   type AppStatus,
   type StatusEvent,
 } from '@/lib/positionStore'
 import {
+  appendBoardFollowUp,
   setBoardNote,
   setBoardStatus,
   toggleBianzhiFavorite,
@@ -39,11 +41,18 @@ import { APP_CHANNELS, channelClass, PILL_BASE, type AppChannel } from '@/lib/ba
 import { downloadBackup, restoreBackup } from '@/lib/backup'
 import { downloadIcs, type IcsEvent } from '@/lib/ics'
 import { REMIND_OPTIONS, setRemindDays, useRemindDays } from '@/lib/reminderPref'
+import {
+  enableDueNotification,
+  isNotificationSupported,
+  setNotifyEnabled,
+  useNotifyEnabled,
+} from '@/lib/dueNotification'
+import { dismissFollowUp, followUpInfo, useFollowUpDismissed } from '@/lib/followup'
 import { cn } from '@/lib/utils'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { Input } from '@/components/ui/input'
-import { copyText, favoritesShareUrl } from '@/lib/clipboard'
-import { PositionSheet } from './PositionSheet'
+import { copyText, favoritesShareUrl, jobShareUrl } from '@/lib/clipboard'
+import { LazyPositionSheet } from './LazyPositionSheet'
 import { BoardJobSheet } from './BoardJobSheet'
 import { buildShareText } from './ShareTextButton'
 import { CompareButton } from './CompareButton'
@@ -57,7 +66,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, Scale, Square, SquareCheck } from 'lucide-react'
+import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, MonitorSmartphone, Scale, Sparkles, Square, SquareCheck } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,10 +75,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { EmptyState } from './EmptyState'
 import { FavCompareDialog, type FavCompareColumn } from './FavCompareDialog'
+import { WeeklyDigest } from './WeeklyDigest'
+import { SyncCodePanel } from './SyncCodePanel'
 
 interface Props {
   open: boolean
   onClose: () => void
+  /** 打开「最近浏览」面板 */
+  onOpenHistory?: () => void
 }
 
 type Board = 'positions' | 'campus' | 'bianzhi'
@@ -82,7 +95,7 @@ interface CalendarEntry {
   bianzhi?: BianzhiJob
 }
 
-export function FavoritesSheet({ open, onClose }: Props) {
+export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
   const favorites = useFavorites()
   const campusFavs = useCampusFavorites()
   const bianzhiFavs = useBianzhiFavorites()
@@ -100,10 +113,14 @@ export function FavoritesSheet({ open, onClose }: Props) {
   const [noteEditing, setNoteEditing] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [listCopied, setListCopied] = useState(false)
+  const [digestOpen, setDigestOpen] = useState(false)
+  const [syncOpen, setSyncOpen] = useState(false)
   const [board, setBoard] = useState<Board>('positions')
   const [view, setView] = useState<'track' | 'calendar'>('track')
   const [statusFilter, setStatusFilter] = useState<AppStatus | null>(null)
   const [stageFilter, setStageFilter] = useState<AppStatus[] | null>(null)
+  const [followupOnly, setFollowupOnly] = useState(false)
+  const followDismissed = useFollowUpDismissed()
   const [query, setQuery] = useState('')
   const [restoreMsg, setRestoreMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -318,6 +335,49 @@ export function FavoritesSheet({ open, onClose }: Props) {
     return !isNaN(t) && Date.now() - t > 7 * 86400000
   }
 
+  const historyOf = (kind: Board, id: number): StatusEvent[] | undefined =>
+    kind === 'positions'
+      ? statusHistory[id]
+      : kind === 'campus'
+        ? campusMeta[id]?.history
+        : bianzhiMeta[id]?.history
+
+  const followInfoOf = (kind: Board, id: number) =>
+    followUpInfo(
+      statusOf(kind, id) === '已投递',
+      historyOf(kind, id),
+      followDismissed[`${kind}:${id}`],
+    )
+
+  const followUpCount = (
+    board === 'positions'
+      ? favorites.map((p) => p.id)
+      : (board === 'campus' ? campusFavs : bianzhiFavs).map((j) => j.id)
+  ).filter((id) => followInfoOf(board, id)).length
+
+  function renderFollowUpRow(kind: Board, id: number) {
+    const fu = followInfoOf(kind, id)
+    if (!fu) return null
+    const btnCls =
+      'min-h-11 cursor-pointer rounded-md border border-amber-300 bg-background px-2 font-medium text-amber-800 transition-colors hover:bg-amber-100 sm:min-h-6 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/40'
+    return (
+      <div className="mt-1.5 flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-amber-50 px-2 py-1.5 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+        <AlarmClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span>{fu.days} 天未更新，是否跟进？</span>
+        <button
+          type="button"
+          className={btnCls}
+          onClick={() => (kind === 'positions' ? appendFollowUp(id) : appendBoardFollowUp(kind, id))}
+        >
+          已跟进
+        </button>
+        <button type="button" className={btnCls} onClick={() => dismissFollowUp(`${kind}:${id}`, fu.lastAt)}>
+          忽略
+        </button>
+      </div>
+    )
+  }
+
   function renderStaleHint(status: AppStatus, history: StatusEvent[] | undefined) {
     if (!isStale(status, history)) return null
     return (
@@ -344,7 +404,12 @@ export function FavoritesSheet({ open, onClose }: Props) {
     let items: (Position | CampusJob | BianzhiJob)[]
     if (board === 'positions') {
       items = favorites
-        .filter((p) => statusOf('positions', p.id) === s && matchPosition(p))
+        .filter(
+          (p) =>
+            statusOf('positions', p.id) === s &&
+            matchPosition(p) &&
+            (!followupOnly || followInfoOf('positions', p.id)),
+        )
         .sort(
           (a, b) =>
             Number(!!pinnedMap[b.id]) - Number(!!pinnedMap[a.id]) ||
@@ -352,12 +417,22 @@ export function FavoritesSheet({ open, onClose }: Props) {
         )
     } else if (board === 'campus') {
       items = sortByPriority(
-        campusFavs.filter((j) => statusOf('campus', j.id) === s && matchCampus(j)),
+        campusFavs.filter(
+          (j) =>
+            statusOf('campus', j.id) === s &&
+            matchCampus(j) &&
+            (!followupOnly || followInfoOf('campus', j.id)),
+        ),
         campusMeta,
       )
     } else {
       items = sortByPriority(
-        bianzhiFavs.filter((j) => statusOf('bianzhi', j.id) === s && matchBianzhi(j)),
+        bianzhiFavs.filter(
+          (j) =>
+            statusOf('bianzhi', j.id) === s &&
+            matchBianzhi(j) &&
+            (!followupOnly || followInfoOf('bianzhi', j.id)),
+        ),
         bianzhiMeta,
       )
     }
@@ -392,10 +467,10 @@ export function FavoritesSheet({ open, onClose }: Props) {
       push(parseSignupDeadline(p), { kind: 'positions', position: p }, p.signup_time)
     }
     for (const j of campusFavs) {
-      push(parseDeadlineText(j.deadline_text), { kind: 'campus', campus: j }, j.deadline_text)
+      push(getEffectiveDeadline(j), { kind: 'campus', campus: j }, j.deadline_text)
     }
     for (const j of bianzhiFavs) {
-      push(parseDeadlineText(j.deadline_text), { kind: 'bianzhi', bianzhi: j }, j.deadline_text)
+      push(getEffectiveDeadline(j), { kind: 'bianzhi', bianzhi: j }, j.deadline_text)
     }
     return {
       calendarDays: [...byDay.values()].sort((a, b) => a.date.getTime() - b.date.getTime()),
@@ -416,7 +491,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
       })
     }
     for (const j of campusFavs) {
-      const d = j.deadline_date ? parseDeadlineText(j.deadline_date) : parseDeadlineText(j.deadline_text)
+      const d = getEffectiveDeadline(j)
       if (!d) continue
       evts.push({
         uid: `recruit-campus-${j.id}@jobs.zalize.com`,
@@ -426,7 +501,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
       })
     }
     for (const j of bianzhiFavs) {
-      const d = j.deadline_date ? parseDeadlineText(j.deadline_date) : parseDeadlineText(j.deadline_text)
+      const d = getEffectiveDeadline(j)
       if (!d) continue
       evts.push({
         uid: `recruit-bianzhi-${j.id}@jobs.zalize.com`,
@@ -534,6 +609,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
           </button>
         )}
         {renderTimeline(meta?.history)}
+        {renderFollowUpRow(kind, id)}
       </div>
     )
   }
@@ -845,6 +921,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
           </button>
         )}
         {renderTimeline(statusHistory[p.id])}
+        {renderFollowUpRow('positions', p.id)}
       </div>
       </div>
     )
@@ -961,7 +1038,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
         const r = restoreBackup(String(reader.result))
         setRestoreMsg({
           ok: true,
-          text: `已恢复：体制内 ${r.positions} · 校招 ${r.campus} · 编制 ${r.bianzhi}`,
+          text: `已恢复：体制内 ${r.positions} · 校招 ${r.campus} · 编制 ${r.bianzhi}（新增 ${r.added} · 更新 ${r.updated}）`,
         })
       } catch (e) {
         setRestoreMsg({ ok: false, text: e instanceof Error ? e.message : '恢复失败' })
@@ -988,6 +1065,27 @@ export function FavoritesSheet({ open, onClose }: Props) {
               <Badge variant="secondary">{totalCount}</Badge>
             </SheetTitle>
             <div className="flex flex-wrap items-center gap-1">
+              {onOpenHistory && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
+                  onClick={onOpenHistory}
+                >
+                  <HistoryIcon className="mr-1 h-3.5 w-3.5" />
+                  最近浏览
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-pressed={digestOpen}
+                className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
+                onClick={() => setDigestOpen((v) => !v)}
+              >
+                <Sparkles className="mr-1 h-3.5 w-3.5" />
+                本周小结
+              </Button>
               {boardCount > 0 && (
                 <>
                   <Button
@@ -1063,6 +1161,10 @@ export function FavoritesSheet({ open, onClose }: Props) {
                     <FileUp className="mr-1.5 h-3.5 w-3.5" />
                     恢复备份
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSyncOpen(true)}>
+                    <MonitorSmartphone className="mr-1.5 h-3.5 w-3.5" />
+                    多设备同步码
+                  </DropdownMenuItem>
                   {board === 'positions' && boardCount > 0 && (
                     <DropdownMenuItem onClick={clearFavorites}>
                       <Trash2 className="mr-1.5 h-3.5 w-3.5" />
@@ -1097,6 +1199,8 @@ export function FavoritesSheet({ open, onClose }: Props) {
             )}
           </SheetHeader>
           <div className="space-y-2 px-4 pb-1 sm:px-6">
+            {digestOpen && <WeeklyDigest onClose={() => setDigestOpen(false)} />}
+            {syncOpen && <SyncCodePanel onClose={() => setSyncOpen(false)} />}
             {dueAlert && (
               <button
                 type="button"
@@ -1109,7 +1213,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                 )}
               >
                 <AlarmClock className="h-4 w-4 shrink-0" />
-                {dueAlert.count} 条收藏{dueAlert.level === 'red' ? '即将截止（3 天内）' : `将于 ${remindDays} 天内截止`}，点击查看
+                {dueAlert.count} 条收藏{dueAlert.level === 'red' ? ' 3 天内截止' : `将于 ${remindDays} 天内截止`}，点击查看
               </button>
             )}
             <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
@@ -1122,7 +1226,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   aria-pressed={remindDays === n}
                   onClick={() => setRemindDays(n)}
                   className={cn(
-                    'min-h-11 cursor-pointer rounded-full border px-2.5 py-0.5 transition-colors sm:min-h-6',
+                    'min-h-11 min-w-11 cursor-pointer rounded-full border px-2.5 py-0.5 transition-colors sm:min-h-6 sm:min-w-0',
                     remindDays === n
                       ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -1133,6 +1237,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
               ))}
               <span className="hidden sm:inline">顶栏红点与横幅按此计算</span>
             </div>
+            <NotifyToggleRow />
             <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5">
               {BOARD_TABS.map((t) => (
                 <button
@@ -1214,6 +1319,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   onClick={() => {
                     setStageFilter(null)
                     setStatusFilter(null)
+                    setFollowupOnly(false)
                   }}
                 >
                   收藏 <span className="font-semibold">{boardCount}</span>
@@ -1232,6 +1338,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                       )}
                       onClick={() => {
                         setStatusFilter(null)
+                        setFollowupOnly(false)
                         setStageFilter((cur) => (stageActive(st.statuses) && cur ? null : st.statuses))
                       }}
                     >
@@ -1239,6 +1346,26 @@ export function FavoritesSheet({ open, onClose }: Props) {
                     </button>
                   </span>
                 ))}
+                {followUpCount > 0 && (
+                  <button
+                    type="button"
+                    aria-pressed={followupOnly}
+                    className={cn(
+                      'ml-1 flex min-h-9 shrink-0 cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 font-medium transition-colors sm:min-h-0',
+                      followupOnly
+                        ? 'border-amber-400 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                        : 'border-amber-300 bg-background text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/40',
+                    )}
+                    onClick={() => {
+                      setStatusFilter(null)
+                      setStageFilter(null)
+                      setFollowupOnly((v) => !v)
+                    }}
+                  >
+                    <AlarmClock className="h-3 w-3" aria-hidden="true" />
+                    需跟进 <span className="font-semibold">{followUpCount}</span>
+                  </button>
+                )}
               </div>
             )}
             {boardCount > 0 && view === 'track' && (
@@ -1254,6 +1381,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   onClick={() => {
                     setStatusFilter(null)
                     setStageFilter(null)
+                    setFollowupOnly(false)
                   }}
                 >
                   全部 {boardCount}
@@ -1489,7 +1617,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
         columns={compareColumns}
       />
       {selected && (
-        <PositionSheet item={selected} onClose={() => setSelected(null)} snapshotNote />
+        <LazyPositionSheet item={selected} onClose={() => setSelected(null)} snapshotNote />
       )}
       {campusDetail && (
         <BoardJobSheet
@@ -1504,7 +1632,8 @@ export function FavoritesSheet({ open, onClose }: Props) {
             title: campusDetail.positions,
             location: campusDetail.locations,
             deadline: campusDetail.deadline_text,
-            url: campusDetail.apply_url || campusDetail.announce_url,
+            deepLink: jobShareUrl('campus', campusDetail.id),
+            url: campusDetail.announce_url || campusDetail.apply_url,
           })}
           favActive={campusFavs.some((f) => f.id === campusDetail.id)}
           onFavToggle={() => toggleCampusFavorite(campusDetail)}
@@ -1559,6 +1688,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
             title: bianzhiDetail.job_type,
             location: bianzhiDetail.work_location || bianzhiDetail.province,
             deadline: bianzhiDetail.deadline_text || bianzhiDetail.deadline_date,
+            deepLink: jobShareUrl('bianzhi', bianzhiDetail.id),
             url: bianzhiDetail.announce_url || bianzhiDetail.apply_url,
           })}
           favActive={bianzhiFavs.some((f) => f.id === bianzhiDetail.id)}
@@ -1590,5 +1720,60 @@ export function FavoritesSheet({ open, onClose }: Props) {
         />
       )}
     </>
+  )
+}
+
+/** 「截止提醒浏览器通知」开关（默认关）：开启时请求 Notification 权限，被拒提示并回退站内红点。 */
+function NotifyToggleRow() {
+  const enabled = useNotifyEnabled()
+  const [denied, setDenied] = useState(false)
+  if (!isNotificationSupported()) return null
+
+  const toggle = async () => {
+    if (enabled) {
+      setNotifyEnabled(false)
+      return
+    }
+    const perm = await enableDueNotification()
+    setDenied(perm !== 'granted')
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+      <AlarmClock className="h-3.5 w-3.5 shrink-0" />
+      截止提醒浏览器通知
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        aria-label="截止提醒浏览器通知"
+        onClick={toggle}
+        className={cn(
+          'relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:h-6 sm:w-10',
+        )}
+      >
+        <span
+          className={cn(
+            'inline-flex h-5 w-9 items-center rounded-full border px-0.5 transition-colors',
+            enabled ? 'border-primary bg-primary' : 'border-border bg-muted',
+          )}
+        >
+          <span
+            className={cn(
+              'h-4 w-4 rounded-full bg-background shadow transition-transform',
+              enabled ? 'translate-x-4' : 'translate-x-0',
+            )}
+          />
+        </span>
+      </button>
+      <span className="hidden sm:inline">
+        {enabled ? '打开站点时若有临近截止的收藏，每日至多提醒一条' : '默认关闭，仅用站内红点提醒'}
+      </span>
+      {denied && (
+        <span className="w-full text-amber-700 dark:text-amber-300">
+          浏览器已拒绝通知权限（可在地址栏站点设置中重新允许），已回退为站内红点提醒
+        </span>
+      )}
+    </div>
   )
 }

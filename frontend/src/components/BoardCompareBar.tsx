@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Scale, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,8 +13,13 @@ import {
   useBoardCompareHint,
   type BoardCompareBoard,
 } from '@/lib/boardCompare'
-import { FavCompareDialog, type FavCompareColumn } from './FavCompareDialog'
+import type { FavCompareColumn } from './FavCompareDialog'
 import { cn } from '@/lib/utils'
+import { lazyRetry } from '@/lib/lazyRetry'
+
+const FavCompareDialog = lazy(() =>
+  lazyRetry(() => import('./FavCompareDialog').then((m) => ({ default: m.FavCompareDialog }))),
+)
 
 /** 校招/编制列表页对比浮条：已选 chips + 开始对比，复用收藏对比弹窗与差异高亮。 */
 export function BoardCompareBar({
@@ -128,7 +133,11 @@ export function BoardCompareBar({
           </div>
         </div>
       </div>
-      <FavCompareDialog open={open} onClose={() => setOpen(false)} columns={columns} title="岗位对比" />
+      <Suspense fallback={null}>
+        {open && (
+          <FavCompareDialog open={open} onClose={() => setOpen(false)} columns={columns} title="岗位对比" />
+        )}
+      </Suspense>
     </>
   )
 }

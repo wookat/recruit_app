@@ -30,6 +30,8 @@ export interface PositionList {
   total: number
   total_capped?: boolean
   timed_out?: boolean
+  /** count 超时降级：total 为「至少 N 条」部分值，后台正在补算，重试可得精确值 */
+  total_partial?: boolean
   page: number
   page_size: number
   items: Position[]
@@ -259,9 +261,9 @@ export async function createBoardExport(
 
 // ---------- 数据新鲜度 ----------
 export interface Freshness {
-  positions: { last_success: string | null }
-  campus: { last_success: string | null }
-  bianzhi: { last_success: string | null }
+  positions: { last_success: string | null; total?: number | null }
+  campus: { last_success: string | null; total?: number | null }
+  bianzhi: { last_success: string | null; total?: number | null }
 }
 
 let freshnessPromise: Promise<Freshness> | null = null

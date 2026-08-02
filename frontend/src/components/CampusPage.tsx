@@ -40,6 +40,7 @@ import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { SubscribeFilterHint } from '@/components/SubscribeFilterHint'
 import { SynonymHint } from '@/components/SynonymHint'
+import { HotSearchPills } from '@/components/HotSearchPills'
 import { expandKeyword } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
@@ -928,6 +929,13 @@ export function CampusPage({
                   onSubscribe={() =>
                     saveQuery('campus', filterDefaultName, new URLSearchParams(filterSnapshot).toString())
                   }
+                />
+                <HotSearchPills
+                  onPick={(w) => {
+                    setSearchInput(w)
+                    setKeyword(w)
+                    setPage(1)
+                  }}
                 />
               </div>
             }

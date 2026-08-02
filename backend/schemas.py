@@ -40,6 +40,7 @@ class PositionList(BaseModel):
     total: int
     total_capped: bool = False  # True 表示 total 为封顶值（实际结果数 >= total）
     timed_out: bool = False  # True 表示查询超时被取消，结果降级为空（提示换关键词）
+    total_partial: bool = False  # True 表示 count 超时降级，total 为「至少 N 条」部分值
     page: int
     page_size: int
     next_cursor: Optional[int] = None

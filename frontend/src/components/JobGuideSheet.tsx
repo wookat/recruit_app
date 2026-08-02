@@ -661,7 +661,7 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
                 {(['positions', 'campus', 'bianzhi'] as const).map((b) => (
                   <span key={b} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                     {{ positions: '体制内', campus: '校招', bianzhi: '编制' }[b]}：
-                    <FreshnessNote board={b} />
+                    <FreshnessNote board={b} showTotal />
                   </span>
                 ))}
               </div>

@@ -7,6 +7,7 @@ import { Highlight } from '@/components/Highlight'
 import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/EmptyState'
 import { FreshnessNote } from '@/components/FreshnessNote'
+import { InstallAppEntry } from '@/components/InstallAppEntry'
 import {
   Sheet,
   SheetContent,
@@ -768,6 +769,7 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
                 ))}
               </div>
             )}
+            {active === 'faq' && <InstallAppEntry />}
             {active === 'timeline' ? (
               <GuideTimeline />
             ) : active === 'examcal' ? (

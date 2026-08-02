@@ -24,7 +24,7 @@ export function OfflineBanner() {
       className="sticky top-0 z-[60] flex items-center justify-center gap-1.5 bg-amber-500/95 px-3 py-1.5 text-xs font-medium text-amber-950 dark:bg-amber-600/95 dark:text-amber-50"
     >
       <WifiOff className="h-3.5 w-3.5" />
-      网络已断开，部分内容可能无法加载
+      离线模式 · 数据可能不是最新（收藏与最近浏览仍可用）
     </div>
   )
 }

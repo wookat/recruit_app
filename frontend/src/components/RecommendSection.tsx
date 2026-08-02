@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { useFavorites } from '@/lib/positionStore'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
-import { PositionSheet } from '@/components/PositionSheet'
+import { LazyPositionSheet } from '@/components/LazyPositionSheet'
 import { sheetNavProps } from '@/lib/sheetNav'
 
 const COLLAPSED_KEY = 'recruit.recoCollapsed'
@@ -184,7 +184,7 @@ export function RecommendSection() {
         </div>
       )}
       {detail && (
-        <PositionSheet
+        <LazyPositionSheet
           item={detail}
           onClose={() => setDetail(null)}
           {...sheetNavProps(items ?? [], detail, setDetail)}

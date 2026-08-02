@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Scale, X } from 'lucide-react'
 import { clearCompare, toggleCompare, useCompare, COMPARE_MAX } from '@/lib/positionStore'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { CompareDialog } from './CompareDialog'
+
+const CompareDialog = lazy(() =>
+  import('./CompareDialog').then((m) => ({ default: m.CompareDialog })),
+)
 
 export function CompareBar() {
   const compare = useCompare()
@@ -44,7 +47,9 @@ export function CompareBar() {
           </div>
         </div>
       </div>
-      <CompareDialog open={open} onClose={() => setOpen(false)} items={compare} />
+      <Suspense fallback={null}>
+        {open && <CompareDialog open={open} onClose={() => setOpen(false)} items={compare} />}
+      </Suspense>
     </>
   )
 }

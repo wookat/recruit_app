@@ -46,7 +46,7 @@ import { cn } from '@/lib/utils'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { Input } from '@/components/ui/input'
 import { copyText, favoritesShareUrl } from '@/lib/clipboard'
-import { PositionSheet } from './PositionSheet'
+import { LazyPositionSheet } from './LazyPositionSheet'
 import { BoardJobSheet } from './BoardJobSheet'
 import { buildShareText } from './ShareTextButton'
 import { CompareButton } from './CompareButton'
@@ -1590,7 +1590,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
         columns={compareColumns}
       />
       {selected && (
-        <PositionSheet item={selected} onClose={() => setSelected(null)} snapshotNote />
+        <LazyPositionSheet item={selected} onClose={() => setSelected(null)} snapshotNote />
       )}
       {campusDetail && (
         <BoardJobSheet

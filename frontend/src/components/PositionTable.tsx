@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-table'
 import type { Position } from '@/api'
 import { formatTotal } from '@/api'
-import { PositionSheet } from './PositionSheet'
+import { LazyPositionSheet } from './LazyPositionSheet'
 import { sheetNavProps } from '@/lib/sheetNav'
 import { DueBadge } from './DueBadge'
 import { SeenBadge } from './SeenBadge'
@@ -420,7 +420,7 @@ export const PositionTable = memo(function PositionTable({
       </div>
 
       {selected && (
-        <PositionSheet
+        <LazyPositionSheet
           item={selected}
           onClose={() => setSelected(null)}
           {...sheetNavProps(sortedData, selected, setSelected)}

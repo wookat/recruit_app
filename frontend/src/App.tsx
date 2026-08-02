@@ -1,22 +1,21 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchCampusJobs, fetchPosition, fetchPositions, type Position } from '@/api'
 import { importFavorites } from '@/lib/positionStore'
-import { PositionSheet } from '@/components/PositionSheet'
+import { LazyPositionSheet } from '@/components/LazyPositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
 import { BookOpen, Briefcase, CalendarDays, History, Moon, Search, Settings, Star, Sun } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { FavoritesSheet } from '@/components/FavoritesSheet'
-import { ViewHistorySheet } from '@/components/ViewHistorySheet'
+
 import { CompareBar } from '@/components/CompareBar'
 import { BoardCompareBar } from '@/components/BoardCompareBar'
 import { MobileBottomNav } from '@/components/MobileBottomNav'
 import { OnboardingCard } from '@/components/OnboardingCard'
 import { useFavorites } from '@/lib/positionStore'
 import { useBianzhiFavorites, useCampusFavorites } from '@/lib/boardFavorites'
-import { GlobalSearch, type QuickFilter, type SearchBoard } from '@/components/GlobalSearch'
+import type { QuickFilter, SearchBoard } from '@/components/GlobalSearch'
 import { applySeo } from '@/lib/seo'
 import { readJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { POSITION_URL_KEYS } from '@/lib/urlFilters'
@@ -30,6 +29,15 @@ const JobGuideSheet = lazy(() =>
 
 const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'biancal', 'company', 'choose', 'tips']
 
+const GlobalSearch = lazy(() =>
+  import('@/components/GlobalSearch').then((m) => ({ default: m.GlobalSearch })),
+)
+const FavoritesSheet = lazy(() =>
+  import('@/components/FavoritesSheet').then((m) => ({ default: m.FavoritesSheet })),
+)
+const ViewHistorySheet = lazy(() =>
+  import('@/components/ViewHistorySheet').then((m) => ({ default: m.ViewHistorySheet })),
+)
 const AdminPage = lazy(() =>
   import('@/components/AdminPage').then((m) => ({ default: m.AdminPage })),
 )
@@ -340,6 +348,20 @@ export default function App() {
 
 
   useEffect(() => {
+    const prefetch = () => {
+      void import('@/components/GlobalSearch')
+      void import('@/components/FavoritesSheet')
+      void import('@/components/PositionSheet')
+    }
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(prefetch, { timeout: 5000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const t = setTimeout(prefetch, 3000)
+    return () => clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
     const q = new URLSearchParams(window.location.search)
     const positionId = Number(q.get('position_id')) || readJobParam('positions') || 0
     if (positionId > 0) {
@@ -577,26 +599,41 @@ export default function App() {
         onFavorites={() => setFavOpen(true)}
         onGuide={() => setGuideOpen(true)}
       />
-      <GlobalSearch
-        onQuickFilter={quickFilter}
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onOpenBoard={openSearchBoard}
-        onOpenJob={openSearchJob}
-      />
-      <FavoritesSheet open={favOpen} onClose={() => setFavOpen(false)} onOpenHistory={() => { setFavOpen(false); setHistoryOpen(true) }} />
-      <ViewHistorySheet
-        open={historyOpen}
-        onClose={() => setHistoryOpen(false)}
-        onOpenJob={(board, id) => openSearchJob(board, id, '')}
-      />
+      <Suspense fallback={null}>
+        {searchOpen && (
+          <GlobalSearch
+            onQuickFilter={quickFilter}
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            onOpenBoard={openSearchBoard}
+            onOpenJob={openSearchJob}
+          />
+        )}
+        {favOpen && (
+          <FavoritesSheet
+            open={favOpen}
+            onClose={() => setFavOpen(false)}
+            onOpenHistory={() => {
+              setFavOpen(false)
+              setHistoryOpen(true)
+            }}
+          />
+        )}
+        {historyOpen && (
+          <ViewHistorySheet
+            open={historyOpen}
+            onClose={() => setHistoryOpen(false)}
+            onOpenJob={(board, id) => openSearchJob(board, id, '')}
+          />
+        )}
+      </Suspense>
       <Suspense fallback={null}>
         {guideOpen && <JobGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
       </Suspense>
       <CompareBar />
       <BoardCompareBar onOpenJob={(board, id) => openSearchJob(board, id, '')} />
       {deepLinked && (
-        <PositionSheet
+        <LazyPositionSheet
           item={deepLinked}
           onClose={() => setDeepLinked(null)}
           onOpenItem={setDeepLinked}

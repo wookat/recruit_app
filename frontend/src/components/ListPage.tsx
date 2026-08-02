@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import {
   fetchFilters,
   fetchSuggestions,
@@ -15,11 +15,8 @@ import { TodayGlance } from './TodayGlance'
 import { buildShareUrl, paramsFromQueryString, paramsToQueryString, POSITION_URL_KEYS } from '@/lib/urlFilters'
 import { useSeenSet } from '@/lib/viewHistory'
 import { MultiSelect } from './MultiSelect'
-import { PositionTable } from './PositionTable'
-import { PositionCardGrid } from './PositionCardGrid'
-import { VirtualPositionList } from './VirtualPositionList'
 import { QuickMatch, type QuickMatchValues } from './QuickMatch'
-import { RecommendPanel, type RecommendQuery } from './RecommendPanel'
+import type { RecommendQuery } from './RecommendPanel'
 import { buildExportUrl, createExport, exportDownloadUrl, fetchExportStatus } from '@/api'
 import { LocationFilter } from './LocationFilter'
 import {
@@ -78,6 +75,19 @@ import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from './Act
 import { SearchSuggestInput } from './SearchSuggestInput'
 import { RecommendSection } from './RecommendSection'
 import { CrossBoardZeroHint } from './CrossBoardZeroHint'
+
+const RecommendPanel = lazy(() =>
+  import('./RecommendPanel').then((m) => ({ default: m.RecommendPanel })),
+)
+const PositionTable = lazy(() =>
+  import('./PositionTable').then((m) => ({ default: m.PositionTable })),
+)
+const PositionCardGrid = lazy(() =>
+  import('./PositionCardGrid').then((m) => ({ default: m.PositionCardGrid })),
+)
+const VirtualPositionList = lazy(() =>
+  import('./VirtualPositionList').then((m) => ({ default: m.VirtualPositionList })),
+)
 
 interface ListPageProps {
   title: string
@@ -1188,7 +1198,9 @@ export function ListPage({
       />
 
       {recommendQuery && (
-        <RecommendPanel query={recommendQuery} onClose={() => setRecommendQuery(null)} />
+        <Suspense fallback={null}>
+          <RecommendPanel query={recommendQuery} onClose={() => setRecommendQuery(null)} />
+        </Suspense>
       )}
 
       {showStats && !deadlineView && <DeadlinesCard />}
@@ -1350,6 +1362,15 @@ export function ListPage({
         </div>
       )}
 
+      <Suspense
+        fallback={
+          <div className="space-y-3 rounded-xl border bg-card p-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
+          </div>
+        }
+      >
       {view === 'table' && (
         <PositionTable
           emptyAction={emptyAction}
@@ -1376,6 +1397,7 @@ export function ListPage({
         />
       )}
       {view === 'list' && <VirtualPositionList fetcher={fetcher} params={params} />}
+      </Suspense>
 
       {view === 'card' && data && data.total > 0 && (
         <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-3">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchDeadlines, type DeadlineEntry, type Position } from '@/api'
-import { PositionSheet } from './PositionSheet'
+import { LazyPositionSheet } from './LazyPositionSheet'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -119,7 +119,7 @@ export function DeadlinesCard({ days = 7, limit = 20, defaultExpanded = false }:
           })}
         </div>
       </CardContent>
-      {selected && <PositionSheet item={selected} onClose={() => setSelected(null)} onOpenItem={setSelected} />}
+      {selected && <LazyPositionSheet item={selected} onClose={() => setSelected(null)} onOpenItem={setSelected} />}
     </Card>
   )
 }

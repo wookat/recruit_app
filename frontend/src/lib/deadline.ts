@@ -37,6 +37,14 @@ export function parseSignupDeadline(item: Position): Date | null {
   return parseDeadlineText(item.signup_time, item.year || undefined)
 }
 
+/** 校招/编制统一截止解析：优先结构化 deadline_date，缺失时从 deadline_text 提取。 */
+export function getEffectiveDeadline(job: {
+  deadline_date?: string | null
+  deadline_text?: string | null
+}): Date | null {
+  return parseDeadlineText(job.deadline_date) ?? parseDeadlineText(job.deadline_text)
+}
+
 export function daysUntil(d: Date): number {
   const today = new Date()
   today.setHours(0, 0, 0, 0)

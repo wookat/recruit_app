@@ -13,7 +13,7 @@ import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { buildShareText } from '@/components/ShareTextButton'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
-import { parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
+import { getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import { useFavorites } from '@/lib/positionStore'
 import {
   toggleBianzhiFavorite,
@@ -35,13 +35,13 @@ function isoOf(d: Date): string {
 
 function campusDateIso(j: CampusJob): string | null {
   if (j.deadline_date) return j.deadline_date.slice(0, 10)
-  const d = parseDeadlineText(j.deadline_text)
+  const d = getEffectiveDeadline(j)
   return d ? isoOf(d) : null
 }
 
 function bianzhiDateIso(j: BianzhiJob): string | null {
   if (j.deadline_date) return j.deadline_date.slice(0, 10)
-  const d = parseDeadlineText(j.deadline_text)
+  const d = getEffectiveDeadline(j)
   return d ? isoOf(d) : null
 }
 
@@ -165,11 +165,11 @@ export function CalendarPage() {
       if (d) set.add(isoOf(d))
     }
     for (const j of campusFavs) {
-      const d = parseDeadlineText(j.deadline_text)
+      const d = getEffectiveDeadline(j)
       if (d) set.add(isoOf(d))
     }
     for (const j of bianzhiFavs) {
-      const d = parseDeadlineText(j.deadline_text)
+      const d = getEffectiveDeadline(j)
       if (d) set.add(isoOf(d))
     }
     return set

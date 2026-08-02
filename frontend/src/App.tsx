@@ -19,7 +19,7 @@ import type { QuickFilter, SearchBoard } from '@/components/GlobalSearch'
 import { applySeo } from '@/lib/seo'
 import { readJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { POSITION_URL_KEYS } from '@/lib/urlFilters'
-import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
+import { daysUntil, getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import { useRemindDays } from '@/lib/reminderPref'
 import { maybeNotifyDue } from '@/lib/dueNotification'
 import { refreshSavedNews, useSavedNews } from '@/lib/savedNews'
@@ -216,8 +216,8 @@ export default function App() {
     }
     return (
       favorites.filter((p) => within(parseSignupDeadline(p))).length +
-      campusFavorites.filter((j) => within(parseDeadlineText(j.deadline_text))).length +
-      bianzhiFavorites.filter((j) => within(parseDeadlineText(j.deadline_text))).length
+      campusFavorites.filter((j) => within(getEffectiveDeadline(j))).length +
+      bianzhiFavorites.filter((j) => within(getEffectiveDeadline(j))).length
     )
   }, [favorites, campusFavorites, bianzhiFavorites, remindDays])
 

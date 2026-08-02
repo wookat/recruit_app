@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import type { BianzhiJob, CampusJob, Position } from '@/api'
-import { daysUntil, formatDayLabel, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
+import { daysUntil, formatDayLabel, getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import {
   APP_STATUSES,
   STATUS_COLORS,
@@ -66,7 +66,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, Scale, Sparkles, Square, SquareCheck } from 'lucide-react'
+import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, MonitorSmartphone, Scale, Sparkles, Square, SquareCheck } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,6 +76,7 @@ import {
 import { EmptyState } from './EmptyState'
 import { FavCompareDialog, type FavCompareColumn } from './FavCompareDialog'
 import { WeeklyDigest } from './WeeklyDigest'
+import { SyncCodePanel } from './SyncCodePanel'
 
 interface Props {
   open: boolean
@@ -113,6 +114,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
   const [copied, setCopied] = useState(false)
   const [listCopied, setListCopied] = useState(false)
   const [digestOpen, setDigestOpen] = useState(false)
+  const [syncOpen, setSyncOpen] = useState(false)
   const [board, setBoard] = useState<Board>('positions')
   const [view, setView] = useState<'track' | 'calendar'>('track')
   const [statusFilter, setStatusFilter] = useState<AppStatus | null>(null)
@@ -465,10 +467,10 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
       push(parseSignupDeadline(p), { kind: 'positions', position: p }, p.signup_time)
     }
     for (const j of campusFavs) {
-      push(parseDeadlineText(j.deadline_text), { kind: 'campus', campus: j }, j.deadline_text)
+      push(getEffectiveDeadline(j), { kind: 'campus', campus: j }, j.deadline_text)
     }
     for (const j of bianzhiFavs) {
-      push(parseDeadlineText(j.deadline_text), { kind: 'bianzhi', bianzhi: j }, j.deadline_text)
+      push(getEffectiveDeadline(j), { kind: 'bianzhi', bianzhi: j }, j.deadline_text)
     }
     return {
       calendarDays: [...byDay.values()].sort((a, b) => a.date.getTime() - b.date.getTime()),
@@ -489,7 +491,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
       })
     }
     for (const j of campusFavs) {
-      const d = j.deadline_date ? parseDeadlineText(j.deadline_date) : parseDeadlineText(j.deadline_text)
+      const d = getEffectiveDeadline(j)
       if (!d) continue
       evts.push({
         uid: `recruit-campus-${j.id}@jobs.zalize.com`,
@@ -499,7 +501,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
       })
     }
     for (const j of bianzhiFavs) {
-      const d = j.deadline_date ? parseDeadlineText(j.deadline_date) : parseDeadlineText(j.deadline_text)
+      const d = getEffectiveDeadline(j)
       if (!d) continue
       evts.push({
         uid: `recruit-bianzhi-${j.id}@jobs.zalize.com`,
@@ -1159,6 +1161,10 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
                     <FileUp className="mr-1.5 h-3.5 w-3.5" />
                     恢复备份
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSyncOpen(true)}>
+                    <MonitorSmartphone className="mr-1.5 h-3.5 w-3.5" />
+                    多设备同步码
+                  </DropdownMenuItem>
                   {board === 'positions' && boardCount > 0 && (
                     <DropdownMenuItem onClick={clearFavorites}>
                       <Trash2 className="mr-1.5 h-3.5 w-3.5" />
@@ -1194,6 +1200,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
           </SheetHeader>
           <div className="space-y-2 px-4 pb-1 sm:px-6">
             {digestOpen && <WeeklyDigest onClose={() => setDigestOpen(false)} />}
+            {syncOpen && <SyncCodePanel onClose={() => setSyncOpen(false)} />}
             {dueAlert && (
               <button
                 type="button"

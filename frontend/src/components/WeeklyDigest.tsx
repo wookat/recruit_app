@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { CalendarClock, Check, ClipboardCopy, Send, Sparkles, Star, TrendingUp, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { copyText } from '@/lib/clipboard'
-import { parseSignupDeadline } from '@/lib/deadline'
+import { daysUntil, getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import { getFavAddedMap } from '@/lib/favTimes'
 import { useCampusFavorites, useBianzhiFavorites, useCampusMeta, useBianzhiMeta } from '@/lib/boardFavorites'
 import { useAppStatusHistory, useFavorites, type StatusEvent } from '@/lib/positionStore'
@@ -61,16 +61,15 @@ export function WeeklyDigest({ onClose }: { onClose: () => void }) {
     const applied = posEvents.applied + campusEvents.applied + bianzhiEvents.applied
     const advanced = posEvents.advanced + campusEvents.advanced + bianzhiEvents.advanced
 
-    const inWeek = (d: Date | null) => d !== null && d.getTime() >= now && d.getTime() <= now + WEEK_MS
-    const parseDate = (s: string | null | undefined) => {
-      if (!s) return null
-      const d = new Date(`${s}T23:59:59`)
-      return Number.isNaN(d.getTime()) ? null : d
+    const inWeek = (d: Date | null) => {
+      if (!d) return false
+      const n = daysUntil(d)
+      return n >= 0 && n <= 7
     }
     const dueSoon =
       favorites.filter((p) => inWeek(parseSignupDeadline(p))).length +
-      campusFavs.filter((j) => inWeek(parseDate(j.deadline_date))).length +
-      bianzhiFavs.filter((j) => inWeek(parseDate(j.deadline_date))).length
+      campusFavs.filter((j) => inWeek(getEffectiveDeadline(j))).length +
+      bianzhiFavs.filter((j) => inWeek(getEffectiveDeadline(j))).length
 
     return { newFavs, applied, advanced, dueSoon }
   }, [favorites, campusFavs, bianzhiFavs, statusHistory, campusMeta, bianzhiMeta])

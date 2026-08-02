@@ -19,7 +19,7 @@ import { Highlight } from '@/components/Highlight'
 import { BoardExportButton } from '@/components/BoardExportButton'
 import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
-import { formatDueDayLabel, parseDeadlineText } from '@/lib/deadline'
+import { formatDueDayLabel, getEffectiveDeadline, parseDeadlineText } from '@/lib/deadline'
 import {
   Table,
   TableBody,
@@ -1278,7 +1278,7 @@ export function BianzhiPage({
             examType: detail.category || detail.job_type,
             province: detail.province,
             deadline:
-              parseDeadlineText(detail.deadline_date) ?? parseDeadlineText(detail.deadline_text),
+              getEffectiveDeadline(detail),
             icsUid: `bz-${detail.id}`,
             icsSummary: `报名截止：${detail.employer?.trim() || detail.job_type || '编制岗位'}`,
           }}

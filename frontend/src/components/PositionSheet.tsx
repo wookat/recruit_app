@@ -6,7 +6,7 @@ import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { derivePositionTags } from '@/lib/jobTags'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { PrepResources } from './PrepResources'
-import { Building2, ExternalLink, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles } from 'lucide-react'
+import { Building2, ExternalLink, Filter, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -215,29 +215,33 @@ export function PositionSheet({
             岗位详情
             <Badge variant="secondary">{item.year}</Badge>
             {item.job_type && <Badge variant="outline">{item.job_type}</Badge>}
-            {item.edu_level_norm && <Badge variant="outline">{item.edu_level_norm}</Badge>}
+            {item.edu_level_norm &&
+              (onTagClick && item.edu_level_norm === '本科' ? (
+                <button
+                  type="button"
+                  className="cursor-pointer"
+                  title="点击按此学历筛选"
+                  aria-label={`按学历「${item.edu_level_norm}」筛选`}
+                  onClick={() => onTagClick('edu_bk')}
+                >
+                  <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary transition-colors hover:bg-primary/20">
+                    <Filter className="h-3 w-3" aria-hidden="true" />
+                    {item.edu_level_norm}
+                  </Badge>
+                </button>
+              ) : (
+                <Badge variant="outline">{item.edu_level_norm}</Badge>
+              ))}
           </SheetTitle>
-          {derivePositionTags(item).length > 0 && (
+          {derivePositionTags(item).filter((t) => t.key !== 'edu_bk').length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {derivePositionTags(item).map((t) =>
-                onTagClick && t.key === 'edu_bk' ? (
-                  <button
-                    key={t.key}
-                    type="button"
-                    className="cursor-pointer"
-                    title="点击按此标签筛选"
-                    onClick={() => onTagClick(t.key)}
-                  >
-                    <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                      {t.label}
-                    </Badge>
-                  </button>
-                ) : (
+              {derivePositionTags(item)
+                .filter((t) => t.key !== 'edu_bk')
+                .map((t) => (
                   <Badge key={t.key} variant="secondary" className="font-normal">
                     {t.label}
                   </Badge>
-                ),
-              )}
+                ))}
             </div>
           )}
           <div className="flex flex-wrap items-center gap-1">

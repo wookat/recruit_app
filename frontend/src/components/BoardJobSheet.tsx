@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Building2, CalendarClock, ChevronLeft, ChevronRight, ExternalLink, GraduationCap, Info, Link2 } from 'lucide-react'
+import { Building2, CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Filter, GraduationCap, Info, Link2 } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -180,9 +180,11 @@ export function BoardJobSheet({
                     type="button"
                     className="cursor-pointer"
                     title="点击按此标签筛选"
+                    aria-label={`按「${t.label}」筛选`}
                     onClick={t.onClick}
                   >
-                    <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                    <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary transition-colors hover:bg-primary/20">
+                      <Filter className="h-3 w-3" aria-hidden="true" />
                       {t.label}
                     </Badge>
                   </button>

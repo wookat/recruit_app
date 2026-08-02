@@ -55,6 +55,14 @@ app.include_router(bianzhi_router)
 SYNC_EXPORT_MAX_ROWS = 2000  # 同步导出快路径上限，更大请走 POST /api/export 异步任务
 
 
+def _is_query_canceled(e: OperationalError) -> bool:
+    """statement_timeout 取消（如冷缓存低选择性关键词全表扫）。"""
+    return (
+        "QueryCanceled" in type(getattr(e, "orig", None) or e).__name__
+        or "canceling statement" in str(e)
+    )
+
+
 def _build_filter(
     year: Optional[List[int]] = None,
     job_type: Optional[List[str]] = None,
@@ -164,19 +172,26 @@ def get_positions(
             }
         total, items = crud.search_positions(db, filters, page, page_size, sort)
     except OperationalError as e:
-        # statement_timeout 取消（如低选择性关键词全表扫）：降级为空结果而非 500
-        if "QueryCanceled" not in type(getattr(e, "orig", None) or e).__name__ and "canceling statement" not in str(e):
+        if not _is_query_canceled(e):
             raise
         db.rollback()
-        return {
-            "total": 0,
-            "total_capped": False,
-            "page": page,
-            "page_size": page_size,
-            "next_cursor": None,
-            "items": [],
-            "timed_out": True,
-        }
+        try:
+            # 重试一次：首次执行已预热缓冲区，重试通常可在限时内完成
+            total, items = crud.search_positions(db, filters, page, page_size, sort)
+        except OperationalError as e2:
+            if not _is_query_canceled(e2):
+                raise
+            # 两次均被取消：降级为空结果而非 500（timed_out 响应不入缓存）
+            db.rollback()
+            return {
+                "total": 0,
+                "total_capped": False,
+                "page": page,
+                "page_size": page_size,
+                "next_cursor": None,
+                "items": [],
+                "timed_out": True,
+            }
     return {
         "total": total,
         "total_capped": total >= crud.COUNT_CAP,
@@ -381,7 +396,21 @@ def export_positions(
         major_type=major_type,
         category=category,
     )
-    rows = crud.export_positions(db, filters, sort=sort, max_rows=max_rows)
+    # 先物化再流式输出：避免查询在响应体中途被 statement_timeout 取消，
+    # 客户端拿到只有表头的“成功”文件；被取消时重试一次，仍失败则返回明确错误
+    try:
+        rows = list(crud.export_positions(db, filters, sort=sort, max_rows=max_rows))
+    except OperationalError as e:
+        if not _is_query_canceled(e):
+            raise
+        db.rollback()
+        try:
+            rows = list(crud.export_positions(db, filters, sort=sort, max_rows=max_rows))
+        except OperationalError as e2:
+            if not _is_query_canceled(e2):
+                raise
+            db.rollback()
+            raise HTTPException(status_code=503, detail="导出查询超时，请稍后重试或收窄筛选范围")
     cols = crud.EXPORT_COLUMNS
     filename = csv_export.safe_fname(fname, f"positions_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
 

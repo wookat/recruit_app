@@ -293,6 +293,7 @@ export function ListPage({
   const suggestDisabledRef = useRef(false)
   const skipSuggestRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const loadSeqRef = useRef(0)
   const exportTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -369,21 +370,23 @@ export function ListPage({
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
+    const seq = ++loadSeqRef.current
+    const isCurrent = () => seq === loadSeqRef.current && !controller.signal.aborted
     setLoading(true)
     setLoadError(false)
     try {
       const res = await fetcher(params, controller.signal)
-      if (controller.signal.aborted) return
+      if (!isCurrent()) return
       setData(res)
       const kw = (params.keyword || '').trim()
       if (kw.length >= 2) setRecent(addRecentSearch(kw))
     } catch (e) {
-      if (!controller.signal.aborted) {
+      if (isCurrent()) {
         console.error(e)
         setLoadError(true)
       }
     } finally {
-      if (!controller.signal.aborted) setLoading(false)
+      if (isCurrent()) setLoading(false)
     }
   }, [fetcher, params])
 

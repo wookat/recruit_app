@@ -163,9 +163,61 @@ const EXAM_TRACKS: ExamTrack[] = [
   },
 ]
 
+function useLiankaoJobs() {
+  const [jobs, setJobs] = useState<BianzhiJob[] | null>(null)
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    let alive = true
+    fetchBianzhiJobs({ category: ['大型联考'], page_size: 100 })
+      .then((res) => {
+        if (alive) setJobs(res.items)
+      })
+      .catch(() => {
+        if (alive) setFailed(true)
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+  return { jobs, failed }
+}
+
+/** 距最近一场未来大型联考的倒计时横幅；无未来场次则不渲染（不伪造）。 */
+function LiankaoCountdown({ jobs }: { jobs: BianzhiJob[] | null }) {
+  if (!jobs) return null
+  const todayIso = new Date().toISOString().slice(0, 10)
+  const future = jobs
+    .filter((j) => j.deadline_date && j.deadline_date >= todayIso)
+    .sort((a, b) => a.deadline_date!.localeCompare(b.deadline_date!))
+  const next = future[0]
+  if (!next) return null
+  const days = Math.round(
+    (new Date(next.deadline_date! + 'T00:00:00').getTime() - new Date(todayIso + 'T00:00:00').getTime()) / 86400000,
+  )
+  const name = next.employer || `${next.province ?? ''}${next.job_type ?? ''}联考`
+  return (
+    <a
+      href={`?board=bianzhi&bpreset=lk&job=bianzhi:${next.id}`}
+      className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm transition-colors hover:bg-primary/10"
+    >
+      <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
+      <span className="font-medium">
+        距最近一场大型联考还有{' '}
+        <span className="text-primary">{days === 0 ? '今天' : `${days} 天`}</span>
+      </span>
+      <span className="min-w-0 truncate text-xs text-muted-foreground">
+        {name} · {next.deadline_date}
+      </span>
+      <ArrowRight className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+    </a>
+  )
+}
+
 function ExamCalendar2027() {
+  const { jobs, failed } = useLiankaoJobs()
   return (
     <div className="space-y-3">
+      <LiankaoCountdown jobs={jobs} />
       <p className="rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
         以下时间线为往年规律整理，仅供参考；具体场次以官方公告为准。
       </p>
@@ -191,7 +243,7 @@ function ExamCalendar2027() {
       ))}
       <div className="space-y-2">
         <div className="text-sm font-medium">站内大型联考真实场次</div>
-        <BianzhiExamCalendar />
+        <BianzhiExamCalendar jobs={jobs} failed={failed} />
       </div>
     </div>
   )
@@ -459,22 +511,12 @@ function GuideTimeline() {
   )
 }
 
-function BianzhiExamCalendar() {
-  const [jobs, setJobs] = useState<BianzhiJob[] | null>(null)
-  const [failed, setFailed] = useState(false)
-  useEffect(() => {
-    let alive = true
-    fetchBianzhiJobs({ category: ['大型联考'], page_size: 100 })
-      .then((res) => {
-        if (alive) setJobs(res.items)
-      })
-      .catch(() => {
-        if (alive) setFailed(true)
-      })
-    return () => {
-      alive = false
-    }
-  }, [])
+function BianzhiExamCalendarStandalone() {
+  const { jobs, failed } = useLiankaoJobs()
+  return <BianzhiExamCalendar jobs={jobs} failed={failed} />
+}
+
+function BianzhiExamCalendar({ jobs, failed }: { jobs: BianzhiJob[] | null; failed: boolean }) {
   if (failed) return <p className="text-sm text-muted-foreground">联考场次加载失败，可前往编制公告板块查看。</p>
   if (!jobs) return <p className="text-sm text-muted-foreground">正在加载联考场次…</p>
   const todayIso = new Date().toISOString().slice(0, 10)
@@ -675,7 +717,7 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
                 <p className="rounded-lg border bg-background p-3 text-sm leading-relaxed text-muted-foreground">
                   {section.blocks[0].items[0]}
                 </p>
-                <BianzhiExamCalendar />
+                <BianzhiExamCalendarStandalone />
               </div>
             ) : (
               section.blocks.map((b, i) => (

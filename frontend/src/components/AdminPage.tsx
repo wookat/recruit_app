@@ -663,7 +663,7 @@ function QualityCard({
       </Card>
     )
   }
-  const found = quality.issues.filter((i) => i.count > 0)
+  const found = quality.issues
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -680,7 +680,7 @@ function QualityCard({
           </div>
         )}
         {found.map((issue) => (
-          <div key={issue.key} className="rounded-lg border">
+          <div key={issue.key} className={issue.count === 0 ? 'rounded-lg border border-dashed opacity-60' : 'rounded-lg border'}>
             <button
               type="button"
               className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50 sm:min-h-0"
@@ -693,9 +693,13 @@ function QualityCard({
                 ) : (
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
-                {issue.label}
+                <span className={issue.count === 0 ? 'text-muted-foreground' : undefined}>{issue.label}</span>
               </span>
-              <Badge variant="secondary">{issue.count.toLocaleString()}</Badge>
+              {issue.count === 0 ? (
+                <span className="shrink-0 text-xs text-muted-foreground">0 条 ✓</span>
+              ) : (
+                <Badge variant="secondary">{issue.count.toLocaleString()}</Badge>
+              )}
             </button>
             {expanded === issue.key && (
               <div className="border-t px-3 py-2">

@@ -20,7 +20,8 @@ import {
   CommandSeparator,
 } from '@/components/ui/command'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
-import { expandKeyword, HOT_SEARCHES } from '@/lib/synonyms'
+import { pinyinMatch } from '@/lib/pinyin'
+import { expandKeyword, getSynonyms, HOT_SEARCHES } from '@/lib/synonyms'
 import {
   addRecentSearch,
   clearRecentSearches,
@@ -106,6 +107,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
   const [recent, setRecent] = useState<string[]>([])
   const [places, setPlaces] = useState<{ provinces: string[]; cities: Set<string> } | null>(null)
   const [synOff, setSynOff] = useState(false)
+  const [pyTick, setPyTick] = useState(0)
 
   useEffect(() => {
     if (!open) {
@@ -172,6 +174,20 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
   const kw = q.trim()
   const synAdded = kw && !synOff ? expandKeyword(kw).added : []
 
+  const pinyinSuggestions = useMemo(() => {
+    void pyTick
+    if (!/^[a-zA-Z]{2,}$/.test(kw) || !places) return []
+    const pool = [...new Set([...places.provinces, ...places.cities, ...HOT_SEARCHES])]
+    return pool.filter((t) => pinyinMatch(t, kw)).slice(0, 8)
+  }, [kw, places, pyTick])
+
+  // pinyin-pro 懒加载：首次拉丁查询时词库可能未就绪，短延迟后重算一次
+  useEffect(() => {
+    if (!/^[a-zA-Z]{2,}$/.test(kw) || pinyinSuggestions.length > 0) return
+    const t = setTimeout(() => setPyTick((n) => n + 1), 600)
+    return () => clearTimeout(t)
+  }, [kw, pinyinSuggestions.length])
+
   const quickSuggestions = useMemo<QuickSuggestion[]>(() => {
     if (!kw || !places || !onQuickFilter) return []
     const m = matchPlace(kw, places.provinces, places.cities)
@@ -227,7 +243,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
       showCloseButton
       className="max-sm:inset-0 max-sm:top-0 max-sm:h-dvh max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none!"
     >
-      <Command shouldFilter={false} className="max-sm:h-full">
+      <Command shouldFilter={false} loop className="max-sm:h-full">
         <CommandInput
           placeholder="搜索岗位 / 单位 / 公司…（同时搜三板块）"
           value={q}
@@ -301,6 +317,34 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
             <span className="mt-1 block text-xs">
               建议：换更短的关键词（如只搜单位名或岗位名）；若在板块列表页有筛选，可清除筛选后再试
             </span>
+            {/\s/.test(kw) && (
+              <button
+                type="button"
+                className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
+                onClick={() => setQ(kw.replace(/\s+/g, ''))}
+              >
+                试试去掉空格：「{kw.replace(/\s+/g, '')}」
+              </button>
+            )}
+            {getSynonyms(kw).map((syn) => (
+              <button
+                key={syn}
+                type="button"
+                className="ml-1.5 mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
+                onClick={() => setQ(syn)}
+              >
+                试试同义词：「{syn}」
+              </button>
+            ))}
+            {synOff && expandKeyword(kw).added.length > 0 && (
+              <button
+                type="button"
+                className="ml-1.5 mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
+                onClick={() => setSynOff(false)}
+              >
+                重新开启同义匹配（{expandKeyword(kw).added.join('、')}）
+              </button>
+            )}
             <span className="mt-3 block text-xs font-medium text-foreground/70">热门搜索</span>
             <span className="mt-1.5 flex flex-wrap justify-center gap-1.5">
               {HOT_SEARCHES.map((w) => (
@@ -317,7 +361,27 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           </div>
         )}
         <CommandList className="sm:max-h-96 max-sm:max-h-[calc(100dvh-64px)]">
+          {kw && pinyinSuggestions.length > 0 && (
+            <CommandGroup heading="拼音联想">
+              {pinyinSuggestions.map((s) => (
+                <CommandItem
+                  key={`py-${s}`}
+                  value={`py-${s}`}
+                  className="min-h-11"
+                  onSelect={() => setQ(s)}
+                >
+                  <ArrowRight className="text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate">
+                    {s}
+                    <span className="ml-1.5 text-xs text-muted-foreground">拼音匹配「{kw}」</span>
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
           {kw && quickSuggestions.length > 0 && (
+            <>
+            {pinyinSuggestions.length > 0 && <CommandSeparator />}
             <CommandGroup heading="快捷筛选">
               {quickSuggestions.map((s) => (
                 <CommandItem
@@ -332,10 +396,11 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                 </CommandItem>
               ))}
             </CommandGroup>
+            </>
           )}
           {kw && hits && hits.positions.total > 0 && (
             <>
-            {quickSuggestions.length > 0 && <CommandSeparator />}
+            {(quickSuggestions.length > 0 || pinyinSuggestions.length > 0) && <CommandSeparator />}
             <CommandGroup heading={`体制内岗位 · ${hits.positions.total.toLocaleString()} 条`}>
               {hits.positions.items.map((p) => (
                 <CommandItem

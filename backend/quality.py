@@ -75,6 +75,7 @@ def compute_quality_issues(db: Session) -> dict:
         _issue(
             db, "campus", "campus_old_deadline", "校招：截止日期早于 2020",
             CampusJob, CampusJob.deadline_date < OLD_DEADLINE_CUTOFF, CampusJob.deadline_date,
+            note="源表（飞书）截止字段即为该历史日期，保持原值不修改",
         ),
         _issue(
             db, "campus", "campus_trailing_pipe", "校招：地点尾部多「|」",
@@ -102,6 +103,7 @@ def compute_quality_issues(db: Session) -> dict:
         _issue(
             db, "bianzhi", "bz_empty_employer", "编制：招考单位全空",
             BianzhiJob, _blank(BianzhiJob.employer), bz_desc,
+            note="源数据缺失（飞书表未填单位），前端显示「—」，保持不伪造",
         ),
     ]
     return {

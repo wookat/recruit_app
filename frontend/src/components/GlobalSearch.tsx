@@ -152,7 +152,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob }: Props) {
               </button>
             </div>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {recent.map((k) => (
+              {recent.slice(0, 8).map((k) => (
                 <span
                   key={k}
                   className="inline-flex items-center gap-0.5 rounded-full bg-muted pl-2.5 pr-1 text-xs text-foreground/80"

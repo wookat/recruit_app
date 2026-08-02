@@ -123,6 +123,14 @@ export function setBoardStatus(kind: BoardKind, id: number, status: AppStatus) {
   })
 }
 
+/** 投递提醒「已跟进」：只写时间线，不改当前状态。 */
+export function appendBoardFollowUp(kind: BoardKind, id: number) {
+  const current = metaOf(kind)[id]
+  patchMeta(kind, id, {
+    history: [...(current?.history ?? []), { status: '已跟进', at: new Date().toISOString() }],
+  })
+}
+
 export function setBoardNote(kind: BoardKind, id: number, note: string) {
   const trimmed = note.trim()
   patchMeta(kind, id, { note: trimmed || undefined })

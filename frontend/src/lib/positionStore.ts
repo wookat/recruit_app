@@ -24,7 +24,7 @@ export const APP_STATUSES = [
 export type AppStatus = (typeof APP_STATUSES)[number]
 
 export interface StatusEvent {
-  status: AppStatus
+  status: AppStatus | '已跟进'
   at: string
 }
 
@@ -166,6 +166,16 @@ export function setAppStatus(id: number, status: AppStatus) {
     [id]: [...(statusHistory[id] ?? []), { status, at: new Date().toISOString() }],
   }
   persistStatuses()
+  persistRecord(STATUS_HISTORY_KEY, statusHistory)
+  emit()
+}
+
+/** 投递提醒「已跟进」：只写时间线，不改当前状态。 */
+export function appendFollowUp(id: number) {
+  statusHistory = {
+    ...statusHistory,
+    [id]: [...(statusHistory[id] ?? []), { status: '已跟进', at: new Date().toISOString() }],
+  }
   persistRecord(STATUS_HISTORY_KEY, statusHistory)
   emit()
 }

@@ -65,9 +65,17 @@ export function PrepResources({ examType, province, deadline, icsUid, icsSummary
           {links.map((l) => (
             <a
               key={l.key}
-              href={`${window.location.pathname}#${l.key}`}
+              href={`${window.location.origin}${window.location.pathname}#${l.key}`}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                e.preventDefault()
+                window.open(
+                  `${window.location.origin}${window.location.pathname}#${l.key}`,
+                  '_blank',
+                  'noopener,noreferrer',
+                )
+              }}
               className="inline-flex min-h-11 items-center gap-1 rounded-lg border bg-background px-3 text-sm text-foreground transition-colors hover:bg-muted sm:min-h-9"
             >
               {l.label}

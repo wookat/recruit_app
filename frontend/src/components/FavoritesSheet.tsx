@@ -18,10 +18,12 @@ import {
   useAppStatuses,
   useAppStatusHistory,
   useFavorites,
+  appendFollowUp,
   type AppStatus,
   type StatusEvent,
 } from '@/lib/positionStore'
 import {
+  appendBoardFollowUp,
   setBoardNote,
   setBoardStatus,
   toggleBianzhiFavorite,
@@ -39,6 +41,7 @@ import { APP_CHANNELS, channelClass, PILL_BASE, type AppChannel } from '@/lib/ba
 import { downloadBackup, restoreBackup } from '@/lib/backup'
 import { downloadIcs, type IcsEvent } from '@/lib/ics'
 import { REMIND_OPTIONS, setRemindDays, useRemindDays } from '@/lib/reminderPref'
+import { dismissFollowUp, followUpInfo, useFollowUpDismissed } from '@/lib/followup'
 import { cn } from '@/lib/utils'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { Input } from '@/components/ui/input'
@@ -104,6 +107,8 @@ export function FavoritesSheet({ open, onClose }: Props) {
   const [view, setView] = useState<'track' | 'calendar'>('track')
   const [statusFilter, setStatusFilter] = useState<AppStatus | null>(null)
   const [stageFilter, setStageFilter] = useState<AppStatus[] | null>(null)
+  const [followupOnly, setFollowupOnly] = useState(false)
+  const followDismissed = useFollowUpDismissed()
   const [query, setQuery] = useState('')
   const [restoreMsg, setRestoreMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -318,6 +323,49 @@ export function FavoritesSheet({ open, onClose }: Props) {
     return !isNaN(t) && Date.now() - t > 7 * 86400000
   }
 
+  const historyOf = (kind: Board, id: number): StatusEvent[] | undefined =>
+    kind === 'positions'
+      ? statusHistory[id]
+      : kind === 'campus'
+        ? campusMeta[id]?.history
+        : bianzhiMeta[id]?.history
+
+  const followInfoOf = (kind: Board, id: number) =>
+    followUpInfo(
+      statusOf(kind, id) === '已投递',
+      historyOf(kind, id),
+      followDismissed[`${kind}:${id}`],
+    )
+
+  const followUpCount = (
+    board === 'positions'
+      ? favorites.map((p) => p.id)
+      : (board === 'campus' ? campusFavs : bianzhiFavs).map((j) => j.id)
+  ).filter((id) => followInfoOf(board, id)).length
+
+  function renderFollowUpRow(kind: Board, id: number) {
+    const fu = followInfoOf(kind, id)
+    if (!fu) return null
+    const btnCls =
+      'min-h-11 cursor-pointer rounded-md border border-amber-300 bg-background px-2 font-medium text-amber-800 transition-colors hover:bg-amber-100 sm:min-h-6 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/40'
+    return (
+      <div className="mt-1.5 flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-amber-50 px-2 py-1.5 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+        <AlarmClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span>{fu.days} 天未更新，是否跟进？</span>
+        <button
+          type="button"
+          className={btnCls}
+          onClick={() => (kind === 'positions' ? appendFollowUp(id) : appendBoardFollowUp(kind, id))}
+        >
+          已跟进
+        </button>
+        <button type="button" className={btnCls} onClick={() => dismissFollowUp(`${kind}:${id}`, fu.lastAt)}>
+          忽略
+        </button>
+      </div>
+    )
+  }
+
   function renderStaleHint(status: AppStatus, history: StatusEvent[] | undefined) {
     if (!isStale(status, history)) return null
     return (
@@ -344,7 +392,12 @@ export function FavoritesSheet({ open, onClose }: Props) {
     let items: (Position | CampusJob | BianzhiJob)[]
     if (board === 'positions') {
       items = favorites
-        .filter((p) => statusOf('positions', p.id) === s && matchPosition(p))
+        .filter(
+          (p) =>
+            statusOf('positions', p.id) === s &&
+            matchPosition(p) &&
+            (!followupOnly || followInfoOf('positions', p.id)),
+        )
         .sort(
           (a, b) =>
             Number(!!pinnedMap[b.id]) - Number(!!pinnedMap[a.id]) ||
@@ -352,12 +405,22 @@ export function FavoritesSheet({ open, onClose }: Props) {
         )
     } else if (board === 'campus') {
       items = sortByPriority(
-        campusFavs.filter((j) => statusOf('campus', j.id) === s && matchCampus(j)),
+        campusFavs.filter(
+          (j) =>
+            statusOf('campus', j.id) === s &&
+            matchCampus(j) &&
+            (!followupOnly || followInfoOf('campus', j.id)),
+        ),
         campusMeta,
       )
     } else {
       items = sortByPriority(
-        bianzhiFavs.filter((j) => statusOf('bianzhi', j.id) === s && matchBianzhi(j)),
+        bianzhiFavs.filter(
+          (j) =>
+            statusOf('bianzhi', j.id) === s &&
+            matchBianzhi(j) &&
+            (!followupOnly || followInfoOf('bianzhi', j.id)),
+        ),
         bianzhiMeta,
       )
     }
@@ -534,6 +597,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
           </button>
         )}
         {renderTimeline(meta?.history)}
+        {renderFollowUpRow(kind, id)}
       </div>
     )
   }
@@ -845,6 +909,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
           </button>
         )}
         {renderTimeline(statusHistory[p.id])}
+        {renderFollowUpRow('positions', p.id)}
       </div>
       </div>
     )
@@ -1214,6 +1279,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   onClick={() => {
                     setStageFilter(null)
                     setStatusFilter(null)
+                    setFollowupOnly(false)
                   }}
                 >
                   收藏 <span className="font-semibold">{boardCount}</span>
@@ -1232,6 +1298,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                       )}
                       onClick={() => {
                         setStatusFilter(null)
+                        setFollowupOnly(false)
                         setStageFilter((cur) => (stageActive(st.statuses) && cur ? null : st.statuses))
                       }}
                     >
@@ -1239,6 +1306,26 @@ export function FavoritesSheet({ open, onClose }: Props) {
                     </button>
                   </span>
                 ))}
+                {followUpCount > 0 && (
+                  <button
+                    type="button"
+                    aria-pressed={followupOnly}
+                    className={cn(
+                      'ml-1 flex min-h-9 shrink-0 cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 font-medium transition-colors sm:min-h-0',
+                      followupOnly
+                        ? 'border-amber-400 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                        : 'border-amber-300 bg-background text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/40',
+                    )}
+                    onClick={() => {
+                      setStatusFilter(null)
+                      setStageFilter(null)
+                      setFollowupOnly((v) => !v)
+                    }}
+                  >
+                    <AlarmClock className="h-3 w-3" aria-hidden="true" />
+                    需跟进 <span className="font-semibold">{followUpCount}</span>
+                  </button>
+                )}
               </div>
             )}
             {boardCount > 0 && view === 'track' && (
@@ -1254,6 +1341,7 @@ export function FavoritesSheet({ open, onClose }: Props) {
                   onClick={() => {
                     setStatusFilter(null)
                     setStageFilter(null)
+                    setFollowupOnly(false)
                   }}
                 >
                   全部 {boardCount}

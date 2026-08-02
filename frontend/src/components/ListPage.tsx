@@ -73,6 +73,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PullToRefresh } from './PullToRefresh'
 import { cn } from '@/lib/utils'
 import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from './ActiveFilterChips'
+import { SubscribeFilterHint } from './SubscribeFilterHint'
 import { SearchSuggestInput } from './SearchSuggestInput'
 import { RecommendSection } from './RecommendSection'
 import { CrossBoardZeroHint } from './CrossBoardZeroHint'
@@ -514,7 +515,19 @@ export function ListPage({
   )
   const hiddenSeenCount = (data?.items.length ?? 0) - visibleItems.length
 
-  const emptyAction = useMemo(() => <ActiveFilterChips filters={activeFilters} />, [activeFilters])
+  const emptyAction = useMemo(
+    () => (
+      <div className="flex flex-col items-center gap-3">
+        <ActiveFilterChips filters={activeFilters} />
+        <SubscribeFilterHint
+          canSave={activeFilters.length > 0}
+          onSubscribe={() => subscribeCurrentFilter()}
+        />
+      </div>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeFilters],
+  )
   const onPageChange = useCallback((page: number) => updateParam('page', page), [updateParam])
   const onTagClick = useCallback(
     (tagKey: string) => {
@@ -666,6 +679,11 @@ export function ListPage({
     ]
       .filter(Boolean)
       .join('·') || '岗位筛选'
+
+  function subscribeCurrentFilter() {
+    const { list } = saveFilter(defaultFilterName, params)
+    setSaved(list)
+  }
 
   function handleSaveFilter() {
     const name = saveName.trim() || defaultFilterName

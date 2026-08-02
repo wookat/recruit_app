@@ -117,18 +117,22 @@ function syncSectionUrl(section: Section) {
     q.delete('prov')
     q.delete('bkw')
     q.delete('cview')
+    q.delete('ub')
   } else if (section.mode === 'calendar' || section.mode === 'updates') {
     q.set('board', section.mode)
     for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bkw', 'hexp']) q.delete(k)
     if (section.mode === 'updates') {
       q.delete('cview')
       q.delete('cboard')
+    } else {
+      q.delete('ub')
     }
     for (const k of POSITION_URL_KEYS) q.delete(k)
   } else {
     if (q.get('board') !== section.mode) q.delete('hexp')
     q.set('board', section.mode)
     q.delete('cview')
+    q.delete('ub')
     for (const k of POSITION_URL_KEYS) {
       if (k !== 'hexp') q.delete(k)
     }

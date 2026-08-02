@@ -6,6 +6,7 @@ import {
   type RecentUpdateDay,
 } from '@/api'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { FreshnessNote } from '@/components/FreshnessNote'
@@ -44,6 +45,23 @@ interface Props {
 export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
   const [days, setDays] = useState<RecentUpdateDay[] | null>(null)
   const [failed, setFailed] = useState(false)
+  const [boardFilter, setBoardFilter] = useState<Board | 'all'>(() => {
+    const v = new URLSearchParams(window.location.search).get('ub')
+    return v === 'positions' || v === 'campus' || v === 'bianzhi' ? v : 'all'
+  })
+
+  const selectBoard = (v: Board | 'all') => {
+    setBoardFilter(v)
+    const q = new URLSearchParams(window.location.search)
+    if (v === 'all') q.delete('ub')
+    else q.set('ub', v)
+    window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
+  }
+
+  const visibleBoards: Board[] = boardFilter === 'all' ? BOARD_ORDER : [boardFilter]
+  const visibleDays = (days ?? []).filter((day) =>
+    visibleBoards.some((b) => (day.boards[b]?.count ?? 0) > 0),
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -71,6 +89,25 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
         <FreshnessNote board="positions" />
       </div>
 
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="按板块过滤">
+        {(['all', ...BOARD_ORDER] as const).map((b) => (
+          <button
+            key={b}
+            type="button"
+            aria-pressed={boardFilter === b}
+            onClick={() => selectBoard(b)}
+            className={cn(
+              'min-h-11 rounded-full border px-3 py-1 text-xs transition-colors sm:min-h-0',
+              boardFilter === b
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-foreground hover:bg-muted',
+            )}
+          >
+            {b === 'all' ? '全部' : BOARD_META[b].label}
+          </button>
+        ))}
+      </div>
+
       {days === null && !failed && (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -79,15 +116,18 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
         </div>
       )}
       {failed && <EmptyState title="加载失败" description="请稍后刷新重试" />}
-      {days !== null && days.length === 0 && (
-        <EmptyState title="近 7 天暂无新增" description="数据每日自动同步，欢迎明天再来看看" />
+      {days !== null && visibleDays.length === 0 && (
+        <EmptyState
+          title={boardFilter === 'all' ? '近 7 天暂无新增' : `${BOARD_META[boardFilter].label}近 7 天暂无新增`}
+          description="数据每日自动同步，欢迎明天再来看看"
+        />
       )}
 
-      {(days ?? []).map((day) => (
+      {visibleDays.map((day) => (
         <section key={day.date} className="rounded-xl border bg-card p-4">
           <h3 className="mb-3 text-sm font-semibold">{fmtDate(day.date)}</h3>
           <div className="space-y-3">
-            {BOARD_ORDER.map((board) => {
+            {visibleBoards.map((board) => {
               const b: RecentUpdateBoard | undefined = day.boards[board]
               if (!b || b.count === 0) return null
               const meta = BOARD_META[board]

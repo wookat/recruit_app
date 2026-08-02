@@ -38,6 +38,8 @@ import { BoardCompareButton } from '@/components/BoardCompareButton'
 import { CrossBoardZeroHint } from '@/components/CrossBoardZeroHint'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
+import { SubscribeFilterHint } from '@/components/SubscribeFilterHint'
+import { addRecentSearch, saveQuery } from '@/lib/storage'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
@@ -46,7 +48,7 @@ import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { deriveBianzhiTags } from '@/lib/jobTags'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
-import { addRecentSearch } from '@/lib/storage'
+
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
 import { FreshnessNote } from '@/components/FreshnessNote'
@@ -198,6 +200,7 @@ export function BianzhiPage({
   })
   const [page, setPage] = useState(1)
   const [refreshNonce, setRefreshNonce] = useState(0)
+  const refreshResolveRef = useRef<(() => void) | null>(null)
   const [crossTotal, setCrossTotal] = useState(0)
   const [data, setData] = useState<{ total: number; items: BianzhiJob[] } | null>(null)
   const [filters, setFilters] = useState<BianzhiFilterOptions | null>(null)
@@ -307,6 +310,8 @@ export function BianzhiPage({
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
+        refreshResolveRef.current?.()
+        refreshResolveRef.current = null
       })
     return () => {
       cancelled = true
@@ -343,6 +348,27 @@ export function BianzhiPage({
     return parts.filter(Boolean).join('-')
   }, [preset, provinces, keyword, eduFilter, recentOnly, dueOnly, hideExpired])
   const isLiankao = isLiankaoPreset
+
+  const filterSnapshot = (() => {
+    const s: Record<string, string> = {}
+    if (recentOnly && preset === 'all') s.bpreset = 'recent7'
+    else if (preset !== 'all') s.bpreset = preset
+    if (dueOnly) s.due = '7'
+    if (provinces.length) s.prov = provinces.join(',')
+    if (keyword.trim()) s.bkw = keyword.trim()
+    return s
+  })()
+  const filterDefaultName =
+    [
+      provinces[0],
+      preset !== 'all' ? PRESETS.find((p) => p.key === preset)?.label : null,
+      dueOnly ? '即将截止' : null,
+      keyword.trim() || null,
+    ]
+      .filter(Boolean)
+      .join('·') || '编制筛选'
+  const filterCanSave =
+    preset !== 'all' || recentOnly || dueOnly || provinces.length > 0 || !!keyword.trim()
 
   const activeFilters: RemovableFilter[] = []
   if (keyword)
@@ -692,26 +718,9 @@ export function BianzhiPage({
 
       <SavedFilterBar
         board="bianzhi"
-        snapshot={(() => {
-          const s: Record<string, string> = {}
-          if (recentOnly && preset === 'all') s.bpreset = 'recent7'
-          else if (preset !== 'all') s.bpreset = preset
-          if (dueOnly) s.due = '7'
-          if (provinces.length) s.prov = provinces.join(',')
-          if (keyword.trim()) s.bkw = keyword.trim()
-          return s
-        })()}
-        defaultName={
-          [
-            provinces[0],
-            preset !== 'all' ? PRESETS.find((p) => p.key === preset)?.label : null,
-            dueOnly ? '即将截止' : null,
-            keyword.trim() || null,
-          ]
-            .filter(Boolean)
-            .join('·') || '编制筛选'
-        }
-        canSave={preset !== 'all' || recentOnly || dueOnly || provinces.length > 0 || !!keyword.trim()}
+        snapshot={filterSnapshot}
+        defaultName={filterDefaultName}
+        canSave={filterCanSave}
       />
 
       {/* 搜索 + 省份 */}
@@ -849,7 +858,15 @@ export function BianzhiPage({
       )}
 
       {/* 列表 */}
-      <PullToRefresh onRefresh={() => setRefreshNonce((n) => n + 1)} refreshing={loading}>
+      <PullToRefresh
+        onRefresh={() =>
+          new Promise<void>((resolve) => {
+            refreshResolveRef.current = resolve
+            setRefreshNonce((n) => n + 1)
+          })
+        }
+        refreshing={loading}
+      >
       {loading && !data ? (
         view === 'table' ? (
           <div className="space-y-3 rounded-xl border bg-background p-4">
@@ -887,7 +904,17 @@ export function BianzhiPage({
           <EmptyState
             title="没有匹配的编制公告"
             description="建议优先移除关键词，其次省份、分类筛选"
-            action={<ActiveFilterChips filters={activeFilters} />}
+            action={
+              <div className="flex flex-col items-center gap-3">
+                <ActiveFilterChips filters={activeFilters} />
+                <SubscribeFilterHint
+                  canSave={filterCanSave}
+                  onSubscribe={() =>
+                    saveQuery('bianzhi', filterDefaultName, new URLSearchParams(filterSnapshot).toString())
+                  }
+                />
+              </div>
+            }
           />
           {keyword.trim() && onOpenBoardKw && (
             <CrossBoardZeroHint from="bianzhi" keyword={keyword} onOpen={onOpenBoardKw} />

@@ -18,6 +18,7 @@ import crud
 import pipeline
 import precompute
 import backfill_deadlines
+import quality
 import refresh_feishu
 import import_guopin_2027
 from cache import get_redis
@@ -437,6 +438,13 @@ def refresh_feishu_data():
         results["deadline_backfill"] = backfill_deadlines.backfill_all()
     except Exception as exc:  # noqa: BLE001
         results["deadline_backfill"] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    db = SessionLocal()
+    try:
+        results["quality_issues_warm"] = quality.warm_quality_issues(db)
+    except Exception as exc:  # noqa: BLE001
+        results["quality_issues_warm"] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    finally:
+        db.close()
     return results
 
 

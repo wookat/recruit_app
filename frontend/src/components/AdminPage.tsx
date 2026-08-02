@@ -45,6 +45,7 @@ export function AdminPage() {
   const [health, setHealth] = useState<HealthSummary | null>(null)
   const [healthAt, setHealthAt] = useState<Date | null>(null)
   const [quality, setQuality] = useState<QualityIssues | null>(null)
+  const [qualityLoading, setQualityLoading] = useState(false)
   const [runPage, setRunPage] = useState(1)
   const [expandedRun, setExpandedRun] = useState<number | null>(null)
 
@@ -86,9 +87,11 @@ export function AdminPage() {
             setHealthAt(new Date())
           })
           .catch(() => setHealth(null))
+        setQualityLoading(true)
         fetchQualityIssues(tk)
           .then(setQuality)
           .catch(() => setQuality(null))
+          .finally(() => setQualityLoading(false))
         setAuthed(true)
         setError('')
         localStorage.setItem(TOKEN_KEY, tk)
@@ -288,7 +291,7 @@ export function AdminPage() {
 
       {health && <HealthCard health={health} updatedAt={healthAt} />}
 
-      {quality && <QualityCard quality={quality} />}
+      <QualityCard quality={quality} loading={qualityLoading} />
 
       <Card>
         <CardHeader className="pb-2">
@@ -517,8 +520,24 @@ function sampleHref(board: 'positions' | 'campus' | 'bianzhi', id: number): stri
   return `?board=bianzhi&bpreset=all&job=bianzhi:${id}`
 }
 
-function QualityCard({ quality }: { quality: QualityIssues }) {
+function QualityCard({ quality, loading }: { quality: QualityIssues | null; loading: boolean }) {
   const [expanded, setExpanded] = useState<string | null>(null)
+  if (!quality && !loading) return null
+  if (!quality) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">数据质量</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="text-sm text-muted-foreground">扫描中，约 1 分钟…</div>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-9 animate-pulse rounded-lg bg-muted" />
+          ))}
+        </CardContent>
+      </Card>
+    )
+  }
   const found = quality.issues.filter((i) => i.count > 0)
   return (
     <Card>

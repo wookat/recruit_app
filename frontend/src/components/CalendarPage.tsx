@@ -272,7 +272,6 @@ export function CalendarPage() {
       location: j.locations,
       deadline: j.deadline_text,
       deepLink: jobShareUrl('campus', j.id),
-      deepLink: jobShareUrl('bianzhi', j.id),
       url: j.announce_url || j.apply_url,
     })
 
@@ -282,6 +281,7 @@ export function CalendarPage() {
       title: j.job_type,
       location: j.work_location || j.province,
       deadline: j.deadline_text || j.deadline_date,
+      deepLink: jobShareUrl('bianzhi', j.id),
       url: j.announce_url || j.apply_url,
     })
 

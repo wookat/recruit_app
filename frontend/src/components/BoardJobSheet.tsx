@@ -25,11 +25,20 @@ export interface SheetLink {
   primary?: boolean
 }
 
+export interface SheetTag {
+  key: string
+  label: string
+  /** 传入时标签可点，写入对应筛选并关闭面板。 */
+  onClick?: () => void
+}
+
 interface Props {
   open: boolean
   onClose: () => void
   title: string
   badges?: string[]
+  /** 从字段派生的岗位标签；带 onClick 的可点写入筛选。 */
+  tags?: SheetTag[]
   shareText: string
   favActive: boolean
   onFavToggle: () => void
@@ -107,6 +116,7 @@ export function BoardJobSheet({
   onClose,
   title,
   badges,
+  tags,
   shareText,
   favActive,
   onFavToggle,
@@ -151,6 +161,29 @@ export function BoardJobSheet({
               </Badge>
             ))}
           </SheetTitle>
+          {(tags ?? []).length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {(tags ?? []).map((t) =>
+                t.onClick ? (
+                  <button
+                    key={t.key}
+                    type="button"
+                    className="cursor-pointer"
+                    title="点击按此标签筛选"
+                    onClick={t.onClick}
+                  >
+                    <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                      {t.label}
+                    </Badge>
+                  </button>
+                ) : (
+                  <Badge key={t.key} variant="secondary" className="font-normal">
+                    {t.label}
+                  </Badge>
+                ),
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-1">
             <BoardFavoriteButton active={favActive} onToggle={onFavToggle} />
             <ShareTextButton text={shareText} />

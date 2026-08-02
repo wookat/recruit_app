@@ -460,6 +460,12 @@ export function ListPage({
 
   const emptyAction = useMemo(() => <ActiveFilterChips filters={activeFilters} />, [activeFilters])
   const onPageChange = useCallback((page: number) => updateParam('page', page), [updateParam])
+  const onTagClick = useCallback(
+    (tagKey: string) => {
+      if (tagKey === 'edu_bk') updateParam('edu_level', ['本科'])
+    },
+    [updateParam],
+  )
   const onPageSizeChange = useCallback(
     (size: number) => updateParam('page_size', size),
     [updateParam],
@@ -1285,6 +1291,7 @@ export function ListPage({
           onPageChange={onPageChange}
           onPageSizeChange={onPageSizeChange}
           columnFilters={columnFilters}
+          onTagClick={onTagClick}
         />
       )}
       {view === 'card' && (
@@ -1293,6 +1300,7 @@ export function ListPage({
           loading={loading}
           emptyAction={emptyAction}
           highlight={params.keyword}
+          onTagClick={onTagClick}
         />
       )}
       {view === 'list' && <VirtualPositionList fetcher={fetcher} params={params} />}

@@ -101,6 +101,7 @@ interface Props {
   columnFilters?: Partial<Record<string, ColumnFilterConfig>>
   emptyAction?: ReactNode
   highlight?: string
+  onTagClick?: (tagKey: string) => void
 }
 
 /** memo：父页面无关状态变化时不重渲整表。 */
@@ -116,6 +117,7 @@ export const PositionTable = memo(function PositionTable({
   columnFilters,
   emptyAction,
   highlight,
+  onTagClick,
 }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
   const [sort, setSort] = useState<SortState | null>(null)
@@ -417,6 +419,7 @@ export const PositionTable = memo(function PositionTable({
           onClose={() => setSelected(null)}
           {...sheetNavProps(sortedData, selected, setSelected)}
           onOpenItem={setSelected}
+          onTagClick={onTagClick}
         />
       )}
     </div>

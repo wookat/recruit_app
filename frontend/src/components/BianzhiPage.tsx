@@ -36,6 +36,7 @@ import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
 import { getProfile, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
+import { deriveBianzhiTags } from '@/lib/jobTags'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
 import { addRecentSearch } from '@/lib/storage'
@@ -885,6 +886,11 @@ export function BianzhiPage({
                   )
                 )}
                 {!isLiankao && <DueBadge date={job.deadline_date} />}
+                {deriveBianzhiTags(job).map((t) => (
+                  <Badge key={t.key} variant="secondary" className="border-0 bg-muted font-normal text-foreground/80 dark:text-muted-foreground">
+                    {t.label}
+                  </Badge>
+                ))}
               </div>
               {job.major_requirement && job.major_requirement.trim() !== '/' && (
                 <p
@@ -1173,6 +1179,7 @@ export function BianzhiPage({
               : '-')
           }
           badges={[detail.category, detail.province].filter((b): b is string => !!b)}
+          tags={deriveBianzhiTags(detail)}
           shareText={bianzhiShareText(detail)}
           favActive={bianzhiFavorites.some((f) => f.id === detail.id)}
           onFavToggle={() => toggleBianzhiFavorite(detail)}

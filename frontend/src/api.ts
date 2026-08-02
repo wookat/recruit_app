@@ -348,6 +348,11 @@ export async function fetchSuggestions(q: string, limit = 8): Promise<Suggestion
     .slice(0, limit)
 }
 
+export async function fetchSimilarPositions(id: number): Promise<Position[]> {
+  const res = await axios.get(`${API_BASE}/api/positions/${id}/similar`)
+  return res.data
+}
+
 export async function fetchPosition(id: number): Promise<Position> {
   const res = await axios.get(`${API_BASE}/api/positions/${id}`)
   return res.data

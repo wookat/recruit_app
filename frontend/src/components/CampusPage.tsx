@@ -36,6 +36,7 @@ import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
 import { getProfile, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
+import { deriveCampusTags } from '@/lib/jobTags'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
 import { addRecentSearch } from '@/lib/storage'
@@ -1089,6 +1090,13 @@ export function CampusPage({
                     内推码 {job.referral_code.length > 16 ? job.referral_code.slice(0, 16) + '…' : job.referral_code}
                   </Badge>
                 )}
+                {deriveCampusTags(job)
+                  .filter((t) => t.key === 'anymajor')
+                  .map((t) => (
+                    <Badge key={t.key} variant="secondary" className="border-0 bg-muted font-normal text-foreground/80 dark:text-muted-foreground">
+                      {t.label}
+                    </Badge>
+                  ))}
                 {job.source_table && (
                   <Badge
                     variant="secondary"
@@ -1236,6 +1244,16 @@ export function CampusPage({
           onClose={() => setDetail(null)}
           title={detail.company || '-'}
           badges={[detail.company_type, detail.source_table].filter((b): b is string => !!b)}
+          tags={deriveCampusTags(detail).map((t) => ({
+            ...t,
+            onClick:
+              t.key === 'noexam' || t.key === 'referral'
+                ? () => {
+                    selectPreset(t.key)
+                    setDetail(null)
+                  }
+                : undefined,
+          }))}
           shareText={campusShareText(detail)}
           favActive={campusFavorites.some((f) => f.id === detail.id)}
           onFavToggle={() => toggleCampusFavorite(detail)}

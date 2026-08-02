@@ -12,6 +12,7 @@ import { Highlight } from './Highlight'
 import { ShareTextButton, buildShareText } from './ShareTextButton'
 import { positionShareUrl } from '@/lib/clipboard'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
+import { derivePositionTags } from '@/lib/jobTags'
 import { DueBadge } from './DueBadge'
 
 interface Props {
@@ -43,6 +44,16 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
                 {status}
               </span>
             )}
+            {derivePositionTags(item)
+              .filter((t) => t.key !== 'edu_bk')
+              .map((t) => (
+                <span
+                  key={t.key}
+                  className={cn(PILL_BASE, 'bg-muted text-foreground/80 dark:text-muted-foreground')}
+                >
+                  {t.label}
+                </span>
+              ))}
           </div>
           <div className="flex shrink-0 items-center">
             <FavoriteButton item={item} />

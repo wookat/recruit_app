@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { fetchPositions, type Position } from '@/api'
+import { fetchPositions, fetchSimilarPositions, type Position } from '@/api'
 import { copyText, positionShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
-import { Building2, ExternalLink, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check } from 'lucide-react'
+import { derivePositionTags } from '@/lib/jobTags'
+import { Building2, ExternalLink, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -40,8 +41,10 @@ interface Props {
   nextDisabled?: boolean
   /** 收藏面板打开时标注数据为收藏时快照。 */
   snapshotNote?: boolean
-  /** 传入时展示「同单位其他岗位」区块，点击切换详情。 */
+  /** 传入时展示「同单位其他岗位」「相似岗位」区块，点击切换详情。 */
   onOpenItem?: (p: Position) => void
+  /** 传入时可点标签写入对应筛选（如「本科可报」→学历筛选）。 */
+  onTagClick?: (tagKey: string) => void
 }
 
 function parseMajors(raw: string): string[] {
@@ -122,10 +125,12 @@ export function PositionSheet({
   nextDisabled,
   snapshotNote,
   onOpenItem,
+  onTagClick,
 }: Props) {
   const [copied, setCopied] = useState(false)
   const statuses = useAppStatuses()
   const [related, setRelated] = useState<Position[]>([])
+  const [similar, setSimilar] = useState<Position[]>([])
   const itemId = item?.id
   const employer = item?.employer?.trim()
 
@@ -151,6 +156,24 @@ export function PositionSheet({
       cancelled = true
     }
   }, [employer, itemId, onOpenItem])
+
+  useEffect(() => {
+    if (!itemId || !onOpenItem) {
+      setSimilar([])
+      return
+    }
+    let cancelled = false
+    fetchSimilarPositions(itemId)
+      .then((res) => {
+        if (!cancelled) setSimilar(res)
+      })
+      .catch(() => {
+        if (!cancelled) setSimilar([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [itemId, onOpenItem])
 
   useEffect(() => {
     if (!itemId) return
@@ -192,6 +215,29 @@ export function PositionSheet({
             {item.job_type && <Badge variant="outline">{item.job_type}</Badge>}
             {item.edu_level_norm && <Badge variant="outline">{item.edu_level_norm}</Badge>}
           </SheetTitle>
+          {derivePositionTags(item).length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {derivePositionTags(item).map((t) =>
+                onTagClick && t.key === 'edu_bk' ? (
+                  <button
+                    key={t.key}
+                    type="button"
+                    className="cursor-pointer"
+                    title="点击按此标签筛选"
+                    onClick={() => onTagClick(t.key)}
+                  >
+                    <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                      {t.label}
+                    </Badge>
+                  </button>
+                ) : (
+                  <Badge key={t.key} variant="secondary" className="font-normal">
+                    {t.label}
+                  </Badge>
+                ),
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-1">
             <Button
               variant="ghost"
@@ -368,6 +414,46 @@ export function PositionSheet({
                           </span>
                           <span className="line-clamp-1 text-xs text-muted-foreground">
                             {[p.work_location, p.year ? `${p.year} 年` : null]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              </>
+            )}
+
+            {onOpenItem && similar.length > 0 && (
+              <>
+                <Separator />
+                <Section icon={Sparkles} title="相似岗位">
+                  <p className="text-xs text-muted-foreground">
+                    同省份 · 同考试类型 · 学历相近
+                  </p>
+                  <ul className="space-y-1">
+                    {similar.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          className="flex min-h-11 w-full cursor-pointer flex-wrap items-center gap-x-2 rounded-lg border bg-background px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                          onClick={() => onOpenItem(p)}
+                        >
+                          <span className="font-medium">
+                            {p.employer?.trim() ||
+                              (p.position_example
+                                ? stripOrgPrefix(p.position_example, p.employer)
+                                : p.job_type || '-')}
+                          </span>
+                          <span className="line-clamp-1 text-xs text-muted-foreground">
+                            {[
+                              p.employer?.trim() && p.position_example
+                                ? stripOrgPrefix(p.position_example, p.employer)
+                                : null,
+                              p.work_location,
+                              p.edu_level_norm,
+                            ]
                               .filter(Boolean)
                               .join(' · ')}
                           </span>

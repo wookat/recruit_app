@@ -12,9 +12,10 @@ interface Props {
   loading: boolean
   emptyAction?: ReactNode
   highlight?: string
+  onTagClick?: (tagKey: string) => void
 }
 
-export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, emptyAction, highlight }: Props) {
+export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, emptyAction, highlight, onTagClick }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
 
   if (loading) {
@@ -72,6 +73,7 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, 
           onClose={() => setSelected(null)}
           {...sheetNavProps(data, selected, setSelected)}
           onOpenItem={setSelected}
+          onTagClick={onTagClick}
         />
       )}
     </div>

@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from database import engine, Base, get_db
 from celery_app import celery_app
 import crud
+import models
 import schemas
 import cache
 from admin import require_admin, router as admin_router
@@ -191,6 +192,33 @@ def get_position(position_id: int, db: Session = Depends(get_db)):
     if item is None:
         raise HTTPException(status_code=404, detail="Position not found")
     return schemas.PositionOut.model_validate(item)
+
+
+_EDU_ORDER = ["大专/中专", "本科", "硕士研究生", "博士研究生"]
+
+
+@app.get("/api/positions/{position_id}/similar", response_model=List[schemas.PositionOut])
+@cache.cached("pos_similar", ttl=600)
+def get_similar_positions(position_id: int, db: Session = Depends(get_db)):
+    """相似岗位：同省份 + 同考试类型 + 学历相近（同级或 ±1 级），最多 5 条。"""
+    item = crud.get_position(db, position_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Position not found")
+    q = db.query(models.Position).filter(
+        models.Position.id != position_id,
+        models.Position.dup_of_id.is_(None),
+        models.Position.invalid_reason.is_(None),
+    )
+    if item.province:
+        q = q.filter(models.Position.province == item.province)
+    if item.exam_type_norm:
+        q = q.filter(models.Position.exam_type_norm == item.exam_type_norm)
+    if item.edu_level_norm in _EDU_ORDER:
+        i = _EDU_ORDER.index(item.edu_level_norm)
+        near = _EDU_ORDER[max(0, i - 1) : i + 2] + ["其他/不限"]
+        q = q.filter(models.Position.edu_level_norm.in_(near))
+    items = q.order_by(models.Position.year.desc(), models.Position.id.desc()).limit(5).all()
+    return [schemas.PositionOut.model_validate(p).model_dump() for p in items]
 
 
 @app.get("/api/sources", response_model=schemas.PositionList)

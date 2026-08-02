@@ -289,6 +289,7 @@ def get_positions(
                 "next_cursor": None,
                 "items": [],
                 "timed_out": True,
+                "total_partial": True,
             }
     return {
         "total": total,
@@ -299,6 +300,8 @@ def get_positions(
         "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
         # tier3/count 超时降级：仅标题/单位命中结果，响应不入缓存
         "timed_out": bool(meta.get("timed_out")),
+        # count 超时降级：total 为「至少 N 条」部分值，后台正在补算精确值
+        "total_partial": bool(meta.get("total_partial")),
     }
 
 

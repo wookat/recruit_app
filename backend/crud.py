@@ -1,5 +1,6 @@
 import json
 import re
+import threading
 from collections import Counter
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
@@ -11,6 +12,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, defer
 
 import cache
+from database import SessionLocal
 from models import Position, Source
 from major_map import expand_major
 from normalizer import (
@@ -91,12 +93,27 @@ def _bigram_hit_clause(col, keyword: str):
     return or_(*clauses)
 
 
-TIER3_TIMEOUT_MS = 3000  # search_text 兜底层/冷 count 语句级超时，超时降级不入缓存
+TIER3_TIMEOUT_MS = 3000  # search_text 兜底层语句级超时，超时降级不入缓存
+COUNT_BIGRAM_TIMEOUT_MS = 1000  # count 竞速 bigram 路超时（胜出场景冷查 ~0.4-0.7s，早停释放 IO）
+COUNT_ILIKE_TIMEOUT_MS = 2200  # count 竞速纯 ILIKE 路超时（高频词 LIMIT 触顶 ~0.5-1.1s）
+BITMAP_IO_CONCURRENCY = 64  # 位图堆扫描预取并发：冷缓存随机 IO 串行读是慢查主因之一
 
 
 def _is_query_canceled(e: OperationalError) -> bool:
     orig = e.orig if e.orig is not None else e
     return "QueryCanceled" in type(orig).__name__ or "canceling statement" in str(e)
+
+
+def _set_bitmap_io(db) -> None:
+    """关键词查询会话调优，仅当前事务生效：
+    提高位图堆扫描预取并发（默认 1 = 冷缓存随机读串行）；
+    关闭并行查询（2GB 机上并行收益小，且 docker 默认 64MB /dev/shm
+    会被并行动态共享内存打爆报 DiskFull）。"""
+    try:
+        db.execute(sa_text(f"SET LOCAL effective_io_concurrency = {BITMAP_IO_CONCURRENCY}"))
+        db.execute(sa_text("SET LOCAL max_parallel_workers_per_gather = 0"))
+    except Exception:  # noqa: BLE001  平台不支持时不影响查询
+        pass
 
 
 def _keyword_tiered_items(db, q_nokw, keyword: str, order_keys, page: int, page_size: int):
@@ -106,6 +123,7 @@ def _keyword_tiered_items(db, q_nokw, keyword: str, order_keys, page: int, page_
     负向排除用纯 ILIKE（IS NOT TRUE 把 NULL 归入非命中层，与 CASE else 语义一致）。
     前两层凑满窗口则不执行 tier3；tier3 带语句级超时，超时降级为仅标题/单位命中。
     返回 (id 列表, tier3_timed_out)。"""
+    _set_bitmap_io(db)
     pos_ilike = _hit_clause(Position.position_example, keyword)
     emp_ilike = _hit_clause(Position.employer, keyword)
     tiers = [
@@ -267,40 +285,109 @@ def _cache_set_json(key: str, ttl: int, value) -> None:
         pass
 
 
-def _keyword_capped_count(db, q, q_nokw, keyword: str):
-    """关键词 count：自适应两级尝试 + 语句级超时兜底，返回 (count, timed_out)。
+def _nokw_base_query(db, filters: PositionFilter):
+    """清洗行基础查询 + 除关键词外的全部筛选（供 count 竞速/后台补算在独立会话中重建）。"""
+    nokw = PositionFilter(**{**filters.model_dump(), "keyword": None})
+    q = db.query(Position).filter(
+        Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)
+    ).options(defer(Position.search_text))
+    return _apply_filters(q, Position, nokw)
 
-    低频词 bigram 位图预过滤快（毫秒级）、高频词纯 ILIKE 顺扫提前触顶（LIMIT 10001）快，
-    互为对方的坏情形（planner 对表达式索引的行数估计不可靠，不能靠它选路）：
-    先试 bigram 版（短超时 800ms 快速失败），超时再试纯 ILIKE 版（3s）；
-    两者都超时才降级为仅标题/单位命中计数（timed_out=True，不入缓存）。"""
-    attempts = [
-        (q, 800, False),  # q 内含 bigram 预过滤（_apply_filters）
-        (q_nokw.filter(_hit_clause(Position.search_text, keyword)), TIER3_TIMEOUT_MS, False),
-        (
-            q_nokw.filter(
-                or_(
-                    _bigram_hit_clause(Position.position_example, keyword),
-                    _bigram_hit_clause(Position.employer, keyword),
-                )
-            ),
-            0,
-            True,
-        ),
-    ]
-    for count_q, timeout_ms, degraded in attempts:
+
+def _count_race_worker(filters: PositionFilter, keyword: str, use_bigram: bool, state: dict, cv: "threading.Condition"):
+    db = SessionLocal()
+    n = None
+    timeout_ms = COUNT_BIGRAM_TIMEOUT_MS if use_bigram else COUNT_ILIKE_TIMEOUT_MS
+    try:
+        db.execute(sa_text(f"SET statement_timeout = '{timeout_ms}'"))
+        _set_bitmap_io(db)
+        q = _nokw_base_query(db, filters)
+        clause = (
+            _bigram_hit_clause(Position.search_text, keyword)
+            if use_bigram
+            else _hit_clause(Position.search_text, keyword)
+        )
+        n = _capped_count(q.filter(clause))
+    except Exception:  # noqa: BLE001  超时/资源不足视为该路失败，由另一路或降级兜底
+        pass
+    finally:
+        db.close()
+        with cv:
+            if n is not None and state["result"] is None:
+                state["result"] = n
+            state["finished"] += 1
+            cv.notify_all()
+
+
+def _keyword_capped_count(db, q_nokw, keyword: str, filters: PositionFilter):
+    """关键词 count：bigram 版与纯 ILIKE 版双路竞速，先完成者胜，返回 (count, partial)。
+
+    两路互补且互为对方的坏情形（planner 估计不可靠，不能靠它选路）：
+    低频/中频词 bigram 位图候选集小（冷查 ~0.6s），但高频词位图构建要读大段 GIN 索引（>10s）；
+    高频词纯 ILIKE 顺扫 LIMIT 10001 提前触顶（冷查 ~0.5-0.9s），但中频词扫全表（~4s）。
+    各带语句级超时并行执行，先成功者返回；bigram 路超时更短，
+    输掉时早停释放磁盘 IO，避免拖慢另一路（冷缓存下两路抢同一块盘）；
+    双路都失败才降级为仅标题/单位命中计数（partial=True，不入缓存），
+    并由调用方后台补算精确值写入缓存，前端重试即可拿到精确 total。"""
+    cv = threading.Condition()
+    state: dict = {"result": None, "finished": 0}
+    for ub in (True, False):
+        threading.Thread(
+            target=_count_race_worker, args=(filters, keyword, ub, state, cv), daemon=True
+        ).start()
+    deadline = COUNT_ILIKE_TIMEOUT_MS / 1000 + 1.5
+    with cv:
+        cv.wait_for(lambda: state["result"] is not None or state["finished"] >= 2, timeout=deadline)
+        if state["result"] is not None:
+            return state["result"], False
+    # 双路失败：降级为仅标题/单位命中计数（走小 bigram 索引，毫秒级）
+    _set_bitmap_io(db)
+    degraded_q = q_nokw.filter(
+        or_(
+            _bigram_hit_clause(Position.position_example, keyword),
+            _bigram_hit_clause(Position.employer, keyword),
+        )
+    )
+    try:
+        return _capped_count(degraded_q), True
+    except OperationalError as e:
+        if not _is_query_canceled(e):
+            raise
+        db.rollback()
+        return 0, True
+
+
+def _refresh_exact_count_async(filters: PositionFilter) -> None:
+    """count 降级后后台补算精确 capped count 并写入缓存（redis 锁防并发重算），
+    前端「点击重试」或下一次请求命中缓存即可拿到精确 total。"""
+    count_key = "cnt:pos:" + filters.model_dump_json()
+    lock_key = "lock:" + count_key
+    try:
+        if not cache.get_redis().set(lock_key, "1", nx=True, ex=120):
+            return
+    except Exception:  # noqa: BLE001  Redis 不可用时不补算
+        return
+
+    def run():
+        db = SessionLocal()
         try:
-            if timeout_ms:
-                db.execute(sa_text(f"SET LOCAL statement_timeout = '{timeout_ms}'"))
-            n = _capped_count(count_q)
-            if timeout_ms:
-                db.execute(sa_text("SET LOCAL statement_timeout = DEFAULT"))
-            return n, degraded
-        except OperationalError as e:
-            if not _is_query_canceled(e):
-                raise
-            db.rollback()
-    return 0, True  # 不可达，防御性兜底
+            db.execute(sa_text("SET statement_timeout = '30s'"))
+            _set_bitmap_io(db)
+            # 纯 ILIKE 版：高频词 LIMIT 触顶快、中低频词全表顺扫有上界（~几秒），
+            # bigram 版对高频词要读大段 GIN 索引，30s 内未必能完成
+            q = _nokw_base_query(db, filters)
+            n = _capped_count(q.filter(_hit_clause(Position.search_text, filters.keyword)))
+            _cache_set_json(count_key, 1800, n)
+        except Exception:  # noqa: BLE001  补算失败不影响主链路
+            pass
+        finally:
+            db.close()
+            try:
+                cache.get_redis().delete(lock_key)
+            except Exception:  # noqa: BLE001
+                pass
+
+    threading.Thread(target=run, daemon=True).start()
 
 
 def search_positions(
@@ -311,7 +398,8 @@ def search_positions(
     sort: str = "year_desc",
     meta: Optional[dict] = None,
 ):
-    """meta（可选 dict）会写入 timed_out=True 当冷查降级（tier3/count 超时），供响应标记且不入缓存。"""
+    """meta（可选 dict）：tier3 超时写 timed_out=True（列表不完整），
+    count 超时写 total_partial=True（total 为「至少 N 条」部分值），两者均不入缓存。"""
     q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
     q = _apply_filters(q, Position, filters)
     # 类别筛选是高选择性条件：用 year+0 阻止 planner 走全量 (year,id) 有序索引扫描，
@@ -335,10 +423,14 @@ def search_positions(
         q_nokw = _apply_filters(q_nokw, Position, nokw)
         total = _cache_get_json(count_key)
         if total is None:
-            total, count_to = _keyword_capped_count(db, q, q_nokw, filters.keyword)
-            if not count_to:
+            total, count_partial = _keyword_capped_count(db, q_nokw, filters.keyword, filters)
+            if count_partial:
+                # 降级计数不入缓存；后台补算精确值，重试/下次请求命中缓存即精确
+                _refresh_exact_count_async(filters)
+                if meta is not None:
+                    meta["total_partial"] = True
+            else:
                 _cache_set_json(count_key, 1800, total)
-            timed_out = timed_out or count_to
         items_key = f"items:pos:{sort}:{page}:{page_size}:" + filters.model_dump_json()
         ids = _cache_get_json(items_key)
         if ids is None:

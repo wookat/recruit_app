@@ -30,6 +30,8 @@ export interface PositionList {
   total: number
   total_capped?: boolean
   timed_out?: boolean
+  /** count 超时降级：total 为「至少 N 条」部分值，后台正在补算，重试可得精确值 */
+  total_partial?: boolean
   page: number
   page_size: number
   items: Position[]

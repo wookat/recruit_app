@@ -95,6 +95,7 @@ interface Props {
   data: Position[]
   total: number
   totalCapped?: boolean
+  totalPartial?: boolean
   page: number
   pageSize: number
   onPageChange: (page: number) => void
@@ -111,6 +112,7 @@ export const PositionTable = memo(function PositionTable({
   data,
   total,
   totalCapped,
+  totalPartial,
   page,
   pageSize,
   onPageChange,
@@ -339,7 +341,8 @@ export const PositionTable = memo(function PositionTable({
 
         <div className="flex flex-col items-center justify-between gap-3 border-t px-4 py-3 sm:flex-row">
           <div className="text-sm text-muted-foreground">
-            共 <span className="font-medium text-foreground">{formatTotal(total, totalCapped)}</span> 条 · 第{' '}
+            {totalPartial ? '至少 ' : '共 '}
+            <span className="font-medium text-foreground">{formatTotal(total, totalCapped)}</span> 条 · 第{' '}
             <span className="font-medium text-foreground">
               {page}/{totalPages}
             </span>{' '}

@@ -3,9 +3,10 @@ import { Scale, X } from 'lucide-react'
 import { clearCompare, toggleCompare, useCompare, COMPARE_MAX } from '@/lib/positionStore'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { lazyRetry } from '@/lib/lazyRetry'
 
 const CompareDialog = lazy(() =>
-  import('./CompareDialog').then((m) => ({ default: m.CompareDialog })),
+  lazyRetry(() => import('./CompareDialog').then((m) => ({ default: m.CompareDialog }))),
 )
 
 export function CompareBar() {

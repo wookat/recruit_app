@@ -53,9 +53,10 @@ import { cmpNullableStr, nextSort, normalizeDateStr, type SortState } from '@/li
 import { toggleBianzhiFavorite, useBianzhiFavorites } from '@/lib/boardFavorites'
 import hrSites from '@/data/hrSites.json'
 import { applySeo } from '@/lib/seo'
+import { lazyRetry } from '@/lib/lazyRetry'
 
 const MajorGuideSheet = lazy(() =>
-  import('@/components/MajorGuideSheet').then((m) => ({ default: m.MajorGuideSheet })),
+  lazyRetry(() => import('@/components/MajorGuideSheet').then((m) => ({ default: m.MajorGuideSheet }))),
 )
 
 const CATEGORY_TONES: Record<string, Tone> = {

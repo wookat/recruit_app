@@ -75,18 +75,19 @@ import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from './Act
 import { SearchSuggestInput } from './SearchSuggestInput'
 import { RecommendSection } from './RecommendSection'
 import { CrossBoardZeroHint } from './CrossBoardZeroHint'
+import { lazyRetry } from '@/lib/lazyRetry'
 
 const RecommendPanel = lazy(() =>
-  import('./RecommendPanel').then((m) => ({ default: m.RecommendPanel })),
+  lazyRetry(() => import('./RecommendPanel').then((m) => ({ default: m.RecommendPanel }))),
 )
 const PositionTable = lazy(() =>
-  import('./PositionTable').then((m) => ({ default: m.PositionTable })),
+  lazyRetry(() => import('./PositionTable').then((m) => ({ default: m.PositionTable }))),
 )
 const PositionCardGrid = lazy(() =>
-  import('./PositionCardGrid').then((m) => ({ default: m.PositionCardGrid })),
+  lazyRetry(() => import('./PositionCardGrid').then((m) => ({ default: m.PositionCardGrid }))),
 )
 const VirtualPositionList = lazy(() =>
-  import('./VirtualPositionList').then((m) => ({ default: m.VirtualPositionList })),
+  lazyRetry(() => import('./VirtualPositionList').then((m) => ({ default: m.VirtualPositionList }))),
 )
 
 interface ListPageProps {

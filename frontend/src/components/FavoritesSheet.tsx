@@ -41,6 +41,12 @@ import { APP_CHANNELS, channelClass, PILL_BASE, type AppChannel } from '@/lib/ba
 import { downloadBackup, restoreBackup } from '@/lib/backup'
 import { downloadIcs, type IcsEvent } from '@/lib/ics'
 import { REMIND_OPTIONS, setRemindDays, useRemindDays } from '@/lib/reminderPref'
+import {
+  enableDueNotification,
+  isNotificationSupported,
+  setNotifyEnabled,
+  useNotifyEnabled,
+} from '@/lib/dueNotification'
 import { dismissFollowUp, followUpInfo, useFollowUpDismissed } from '@/lib/followup'
 import { cn } from '@/lib/utils'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
@@ -1211,6 +1217,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
               ))}
               <span className="hidden sm:inline">顶栏红点与横幅按此计算</span>
             </div>
+            <NotifyToggleRow />
             <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5">
               {BOARD_TABS.map((t) => (
                 <button
@@ -1691,5 +1698,60 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
         />
       )}
     </>
+  )
+}
+
+/** 「截止提醒浏览器通知」开关（默认关）：开启时请求 Notification 权限，被拒提示并回退站内红点。 */
+function NotifyToggleRow() {
+  const enabled = useNotifyEnabled()
+  const [denied, setDenied] = useState(false)
+  if (!isNotificationSupported()) return null
+
+  const toggle = async () => {
+    if (enabled) {
+      setNotifyEnabled(false)
+      return
+    }
+    const perm = await enableDueNotification()
+    setDenied(perm !== 'granted')
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+      <AlarmClock className="h-3.5 w-3.5 shrink-0" />
+      截止提醒浏览器通知
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        aria-label="截止提醒浏览器通知"
+        onClick={toggle}
+        className={cn(
+          'relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:h-6 sm:w-10',
+        )}
+      >
+        <span
+          className={cn(
+            'inline-flex h-5 w-9 items-center rounded-full border px-0.5 transition-colors',
+            enabled ? 'border-primary bg-primary' : 'border-border bg-muted',
+          )}
+        >
+          <span
+            className={cn(
+              'h-4 w-4 rounded-full bg-background shadow transition-transform',
+              enabled ? 'translate-x-4' : 'translate-x-0',
+            )}
+          />
+        </span>
+      </button>
+      <span className="hidden sm:inline">
+        {enabled ? '打开站点时若有临近截止的收藏，每日至多提醒一条' : '默认关闭，仅用站内红点提醒'}
+      </span>
+      {denied && (
+        <span className="w-full text-amber-700 dark:text-amber-300">
+          浏览器已拒绝通知权限（可在地址栏站点设置中重新允许），已回退为站内红点提醒
+        </span>
+      )}
+    </div>
   )
 }

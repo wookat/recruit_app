@@ -21,37 +21,39 @@ import { readJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { POSITION_URL_KEYS } from '@/lib/urlFilters'
 import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
 import { useRemindDays } from '@/lib/reminderPref'
+import { maybeNotifyDue } from '@/lib/dueNotification'
 import { refreshSavedNews, useSavedNews } from '@/lib/savedNews'
+import { lazyRetry } from '@/lib/lazyRetry'
 
 const JobGuideSheet = lazy(() =>
-  import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet })),
+  lazyRetry(() => import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet }))),
 )
 
 const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'biancal', 'company', 'choose', 'tips', 'about']
 
 const GlobalSearch = lazy(() =>
-  import('@/components/GlobalSearch').then((m) => ({ default: m.GlobalSearch })),
+  lazyRetry(() => import('@/components/GlobalSearch').then((m) => ({ default: m.GlobalSearch }))),
 )
 const FavoritesSheet = lazy(() =>
-  import('@/components/FavoritesSheet').then((m) => ({ default: m.FavoritesSheet })),
+  lazyRetry(() => import('@/components/FavoritesSheet').then((m) => ({ default: m.FavoritesSheet }))),
 )
 const ViewHistorySheet = lazy(() =>
-  import('@/components/ViewHistorySheet').then((m) => ({ default: m.ViewHistorySheet })),
+  lazyRetry(() => import('@/components/ViewHistorySheet').then((m) => ({ default: m.ViewHistorySheet }))),
 )
 const AdminPage = lazy(() =>
-  import('@/components/AdminPage').then((m) => ({ default: m.AdminPage })),
+  lazyRetry(() => import('@/components/AdminPage').then((m) => ({ default: m.AdminPage }))),
 )
 const CampusPage = lazy(() =>
-  import('@/components/CampusPage').then((m) => ({ default: m.CampusPage })),
+  lazyRetry(() => import('@/components/CampusPage').then((m) => ({ default: m.CampusPage }))),
 )
 const BianzhiPage = lazy(() =>
-  import('@/components/BianzhiPage').then((m) => ({ default: m.BianzhiPage })),
+  lazyRetry(() => import('@/components/BianzhiPage').then((m) => ({ default: m.BianzhiPage }))),
 )
 const CalendarPage = lazy(() =>
-  import('@/components/CalendarPage').then((m) => ({ default: m.CalendarPage })),
+  lazyRetry(() => import('@/components/CalendarPage').then((m) => ({ default: m.CalendarPage }))),
 )
 const RecentUpdatesPage = lazy(() =>
-  import('@/components/RecentUpdatesPage').then((m) => ({ default: m.RecentUpdatesPage })),
+  lazyRetry(() => import('@/components/RecentUpdatesPage').then((m) => ({ default: m.RecentUpdatesPage }))),
 )
 
 const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
@@ -228,6 +230,10 @@ export default function App() {
     const h = window.location.hash.slice(1)
     if (GUIDE_SECTION_KEYS.includes(h)) setGuideOpen(true)
   }, [])
+
+  useEffect(() => {
+    maybeNotifyDue(dueSoon, remindDays, () => setFavOpen(true))
+  }, [dueSoon, remindDays])
 
   const savedNews = useSavedNews()
   useEffect(() => {

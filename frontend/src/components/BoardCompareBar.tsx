@@ -15,9 +15,10 @@ import {
 } from '@/lib/boardCompare'
 import type { FavCompareColumn } from './FavCompareDialog'
 import { cn } from '@/lib/utils'
+import { lazyRetry } from '@/lib/lazyRetry'
 
 const FavCompareDialog = lazy(() =>
-  import('./FavCompareDialog').then((m) => ({ default: m.FavCompareDialog })),
+  lazyRetry(() => import('./FavCompareDialog').then((m) => ({ default: m.FavCompareDialog }))),
 )
 
 /** 校招/编制列表页对比浮条：已选 chips + 开始对比，复用收藏对比弹窗与差异高亮。 */

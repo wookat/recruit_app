@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchPositions, fetchSimilarPositions, type Position } from '@/api'
-import { copyText, positionShareUrl } from '@/lib/clipboard'
+import { copyText, jobShareUrl, positionShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { addViewHistory } from '@/lib/viewHistory'
@@ -20,7 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
-import { ShareTextButton, buildShareText } from './ShareTextButton'
+import { ShareMenuButton, buildShareText } from './ShareTextButton'
 import {
   APP_STATUSES,
   STATUS_COLORS,
@@ -286,8 +286,10 @@ export function PositionSheet({
                 ))}
               </SelectContent>
             </Select>
-            <ShareTextButton
-              className="h-8 w-8"
+            <ShareMenuButton
+              className="h-11 w-11 sm:h-8 sm:w-8"
+              url={jobShareUrl('positions', item.id)}
+              title={`${item.position_example || item.exam_type || ''} - ${item.employer || ''}`}
               text={buildShareText({
                 org: item.employer,
                 title: item.position_example,

@@ -11,7 +11,8 @@ import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
-import { ShareTextButton } from '@/components/ShareTextButton'
+import { ShareMenuButton, ShareTextButton } from '@/components/ShareTextButton'
+import { jobShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { addViewHistory } from '@/lib/viewHistory'
 import { PrepResources } from '@/components/PrepResources'
@@ -208,7 +209,15 @@ export function BoardJobSheet({
           )}
           <div className="flex flex-wrap items-center gap-1">
             <BoardFavoriteButton active={favActive} onToggle={onFavToggle} />
-            <ShareTextButton text={shareText} />
+            {(() => {
+              const [b, idStr] = (jobKey || '').split(':')
+              const id = Number(idStr)
+              return (b === 'campus' || b === 'bianzhi') && id > 0 ? (
+                <ShareMenuButton text={shareText} url={jobShareUrl(b, id)} title={title} />
+              ) : (
+                <ShareTextButton text={shareText} />
+              )
+            })()}
             {(onPrev || onNext) && (
               <span className="ml-auto inline-flex items-center gap-1">
                 <Button

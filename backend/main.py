@@ -8,7 +8,7 @@ from typing import List, Optional
 import pandas as pd
 from fastapi import FastAPI, Depends, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
@@ -21,6 +21,7 @@ import models
 import schemas
 import cache
 import csv_export
+import share_meta
 from admin import require_admin, router as admin_router
 from campus import router as campus_router
 from bianzhi import router as bianzhi_router
@@ -576,6 +577,23 @@ def task_status(task_id: str):
 
 dist_dir = os.path.join(os.path.dirname(__file__), "../frontend/dist")
 if os.path.isdir(dist_dir):
+    index_path = os.path.join(dist_dir, "index.html")
+
+    @app.get("/", include_in_schema=False)
+    def index_html_route(request: Request, db: Session = Depends(get_db)):
+        """带 ?job=board:id 时注入岗位 meta（分享卡片），否则原样返回 index.html。"""
+        job_key = request.query_params.get("job")
+        if job_key:
+            try:
+                meta = share_meta.get_share_meta(db, job_key)
+            except Exception:
+                meta = None
+            if meta:
+                with open(index_path, encoding="utf-8") as f:
+                    raw = f.read()
+                return HTMLResponse(share_meta.inject_meta(raw, meta["title"], meta["desc"]))
+        return FileResponse(index_path, media_type="text/html")
+
     app.mount("/", StaticFiles(directory=dist_dir, html=True), name="static")
 else:
     @app.get("/")

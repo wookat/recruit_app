@@ -295,7 +295,8 @@ export function PositionSheet({
                 title: item.position_example,
                 location: item.work_location,
                 deadline: item.signup_time,
-                url: item.source_url || positionShareUrl(item.id),
+                deepLink: jobShareUrl('positions', item.id),
+                url: item.source_url,
               })}
             />
             <FavoriteButton item={item} />

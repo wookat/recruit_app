@@ -51,7 +51,7 @@ import { dismissFollowUp, followUpInfo, useFollowUpDismissed } from '@/lib/follo
 import { cn } from '@/lib/utils'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { Input } from '@/components/ui/input'
-import { copyText, favoritesShareUrl } from '@/lib/clipboard'
+import { copyText, favoritesShareUrl, jobShareUrl } from '@/lib/clipboard'
 import { LazyPositionSheet } from './LazyPositionSheet'
 import { BoardJobSheet } from './BoardJobSheet'
 import { buildShareText } from './ShareTextButton'
@@ -66,7 +66,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, Scale, Square, SquareCheck } from 'lucide-react'
+import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, Scale, Sparkles, Square, SquareCheck } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,6 +75,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { EmptyState } from './EmptyState'
 import { FavCompareDialog, type FavCompareColumn } from './FavCompareDialog'
+import { WeeklyDigest } from './WeeklyDigest'
 
 interface Props {
   open: boolean
@@ -111,6 +112,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
   const [noteEditing, setNoteEditing] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [listCopied, setListCopied] = useState(false)
+  const [digestOpen, setDigestOpen] = useState(false)
   const [board, setBoard] = useState<Board>('positions')
   const [view, setView] = useState<'track' | 'calendar'>('track')
   const [statusFilter, setStatusFilter] = useState<AppStatus | null>(null)
@@ -1072,6 +1074,16 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
                   最近浏览
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-pressed={digestOpen}
+                className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
+                onClick={() => setDigestOpen((v) => !v)}
+              >
+                <Sparkles className="mr-1 h-3.5 w-3.5" />
+                本周小结
+              </Button>
               {boardCount > 0 && (
                 <>
                   <Button
@@ -1181,6 +1193,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
             )}
           </SheetHeader>
           <div className="space-y-2 px-4 pb-1 sm:px-6">
+            {digestOpen && <WeeklyDigest onClose={() => setDigestOpen(false)} />}
             {dueAlert && (
               <button
                 type="button"
@@ -1612,7 +1625,8 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
             title: campusDetail.positions,
             location: campusDetail.locations,
             deadline: campusDetail.deadline_text,
-            url: campusDetail.apply_url || campusDetail.announce_url,
+            deepLink: jobShareUrl('campus', campusDetail.id),
+            url: campusDetail.announce_url || campusDetail.apply_url,
           })}
           favActive={campusFavs.some((f) => f.id === campusDetail.id)}
           onFavToggle={() => toggleCampusFavorite(campusDetail)}
@@ -1667,6 +1681,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
             title: bianzhiDetail.job_type,
             location: bianzhiDetail.work_location || bianzhiDetail.province,
             deadline: bianzhiDetail.deadline_text || bianzhiDetail.deadline_date,
+            deepLink: jobShareUrl('bianzhi', bianzhiDetail.id),
             url: bianzhiDetail.announce_url || bianzhiDetail.apply_url,
           })}
           favActive={bianzhiFavs.some((f) => f.id === bianzhiDetail.id)}

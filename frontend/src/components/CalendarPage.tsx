@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { downloadIcs, type IcsEvent } from '@/lib/ics'
 import { CalendarDays, ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { jobShareUrl } from '@/lib/clipboard'
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
 
@@ -270,7 +271,9 @@ export function CalendarPage() {
       title: j.positions,
       location: j.locations,
       deadline: j.deadline_text,
-      url: j.apply_url || j.announce_url,
+      deepLink: jobShareUrl('campus', j.id),
+      deepLink: jobShareUrl('bianzhi', j.id),
+      url: j.announce_url || j.apply_url,
     })
 
   const bianzhiShare = (j: BianzhiJob) =>

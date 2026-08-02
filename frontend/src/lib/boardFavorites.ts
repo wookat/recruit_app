@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { BianzhiJob, CampusJob } from '@/api'
 import type { AppStatus, StatusEvent } from '@/lib/positionStore'
+import { recordFavAdded, removeFavAdded } from '@/lib/favTimes'
 
 export type BoardKind = 'campus' | 'bianzhi'
 
@@ -70,8 +71,10 @@ export function isCampusFavorite(id: number): boolean {
 export function toggleCampusFavorite(item: CampusJob) {
   if (isCampusFavorite(item.id)) {
     campusFavorites = campusFavorites.filter((j) => j.id !== item.id)
+    removeFavAdded('campus', item.id)
   } else {
     campusFavorites = [item, ...campusFavorites].slice(0, FAV_MAX)
+    recordFavAdded('campus', item.id)
   }
   writeJson(FAV_KEYS.campus, campusFavorites)
   emit()
@@ -84,8 +87,10 @@ export function isBianzhiFavorite(id: number): boolean {
 export function toggleBianzhiFavorite(item: BianzhiJob) {
   if (isBianzhiFavorite(item.id)) {
     bianzhiFavorites = bianzhiFavorites.filter((j) => j.id !== item.id)
+    removeFavAdded('bianzhi', item.id)
   } else {
     bianzhiFavorites = [item, ...bianzhiFavorites].slice(0, FAV_MAX)
+    recordFavAdded('bianzhi', item.id)
   }
   writeJson(FAV_KEYS.bianzhi, bianzhiFavorites)
   emit()

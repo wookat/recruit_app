@@ -10,7 +10,7 @@ import { eduClass, jobTypeClass, yearClass, PILL_BASE } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
 import { Highlight } from './Highlight'
 import { ShareTextButton, buildShareText } from './ShareTextButton'
-import { positionShareUrl } from '@/lib/clipboard'
+import { jobShareUrl } from '@/lib/clipboard'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { derivePositionTags } from '@/lib/jobTags'
 import { DueBadge } from './DueBadge'
@@ -66,7 +66,8 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
                 title: item.position_example,
                 location: item.work_location,
                 deadline: item.signup_time,
-                url: item.source_url || positionShareUrl(item.id),
+                deepLink: jobShareUrl('positions', item.id),
+                url: item.source_url,
               })}
             />
           </div>

@@ -118,12 +118,14 @@ export function ShareTextButton({ text, className }: { text: string; className?:
   )
 }
 
-/** 「【公司/单位】岗位 | 地点 | 截止:X | 链接」格式，空字段跳过。 */
+/** 「【公司/单位】岗位 | 地点 | 截止:X | 本站深链 | 官方公告:链接」格式，空字段跳过。 */
 export function buildShareText(parts: {
   org?: string | null
   title?: string | null
   location?: string | null
   deadline?: string | null
+  /** 本站详情深链，置于链接首位（分享卡片由后端 og 注入）。 */
+  deepLink?: string | null
   url?: string | null
 }): string {
   const segs: string[] = []
@@ -131,6 +133,11 @@ export function buildShareText(parts: {
   if (head) segs.push(head)
   if (parts.location) segs.push(parts.location)
   if (parts.deadline) segs.push(`截止:${parts.deadline}`)
-  if (parts.url) segs.push(parts.url)
+  if (parts.deepLink) {
+    segs.push(parts.deepLink)
+    if (parts.url) segs.push(`官方公告:${parts.url}`)
+  } else if (parts.url) {
+    segs.push(parts.url)
+  }
   return segs.join(' | ')
 }

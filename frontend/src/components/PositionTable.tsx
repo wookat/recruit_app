@@ -45,7 +45,7 @@ import { eduClass, jobTypeClass, provinceClass, yearClass, PILL_BASE } from '@/l
 import { cn } from '@/lib/utils'
 import { Highlight } from '@/components/Highlight'
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
-import { positionShareUrl } from '@/lib/clipboard'
+import { jobShareUrl } from '@/lib/clipboard'
 import { SortableHead } from '@/components/SortableHead'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
@@ -311,7 +311,8 @@ export const PositionTable = memo(function PositionTable({
                             title: row.original.position_example,
                             location: row.original.work_location,
                             deadline: row.original.signup_time,
-                            url: row.original.source_url || positionShareUrl(row.original.id),
+                            deepLink: jobShareUrl('positions', row.original.id),
+                            url: row.original.source_url,
                           })}
                         />
                         <Button

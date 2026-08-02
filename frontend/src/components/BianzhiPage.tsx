@@ -54,6 +54,7 @@ import { toggleBianzhiFavorite, useBianzhiFavorites } from '@/lib/boardFavorites
 import hrSites from '@/data/hrSites.json'
 import { applySeo } from '@/lib/seo'
 import { lazyRetry } from '@/lib/lazyRetry'
+import { jobShareUrl } from '@/lib/clipboard'
 
 const MajorGuideSheet = lazy(() =>
   lazyRetry(() => import('@/components/MajorGuideSheet').then((m) => ({ default: m.MajorGuideSheet }))),
@@ -81,6 +82,7 @@ function bianzhiShareText(job: BianzhiJob): string {
     title: job.job_type,
     location: job.work_location || job.province,
     deadline: job.deadline_text || job.deadline_date,
+    deepLink: jobShareUrl('bianzhi', job.id),
     url: job.announce_url || job.apply_url,
   })
 }

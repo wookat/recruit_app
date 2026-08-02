@@ -52,6 +52,7 @@ import { SortableHead } from '@/components/SortableHead'
 import { cmpNullableStr, nextSort, normalizeDateStr, type SortState } from '@/lib/tableSort'
 import { toggleCampusFavorite, useCampusFavorites } from '@/lib/boardFavorites'
 import { applySeo } from '@/lib/seo'
+import { jobShareUrl } from '@/lib/clipboard'
 
 const COMPANY_TYPE_TONES: Record<string, Tone> = {
   民企: 'blue',
@@ -187,7 +188,8 @@ function campusShareText(job: CampusJob): string {
     title: job.positions,
     location: job.locations,
     deadline: job.deadline_text || job.deadline_date,
-    url: job.apply_url || job.announce_url,
+    deepLink: jobShareUrl('campus', job.id),
+    url: job.announce_url || job.apply_url,
   })
 }
 

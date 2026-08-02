@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { Position } from '@/api'
 import type { AppChannel } from '@/lib/badgeColors'
+import { recordFavAdded, removeFavAdded } from '@/lib/favTimes'
 
 const FAV_KEY = 'recruit.favorites'
 const STATUS_KEY = 'recruit.appStatus'
@@ -101,8 +102,10 @@ export function isFavorite(id: number): boolean {
 export function toggleFavorite(item: Position) {
   if (isFavorite(item.id)) {
     favorites = favorites.filter((p) => p.id !== item.id)
+    removeFavAdded('positions', item.id)
   } else {
     favorites = [item, ...favorites].slice(0, FAV_MAX)
+    recordFavAdded('positions', item.id)
   }
   persistFavorites()
   emit()

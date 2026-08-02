@@ -16,6 +16,7 @@ import { jobShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { addViewHistory } from '@/lib/viewHistory'
 import { PrepResources } from '@/components/PrepResources'
+import { SheetDragHandle } from '@/components/SheetDragHandle'
 
 export interface SheetField {
   label: string
@@ -173,7 +174,8 @@ export function BoardJobSheet({
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-full max-w-2xl p-0 data-[side=right]:w-full sm:max-w-xl">
-        <SheetHeader className="space-y-2 px-4 pt-6 sm:px-6">
+        <SheetDragHandle onDismiss={onClose} />
+        <SheetHeader className="space-y-2 px-4 pt-1 sm:px-6 sm:pt-6">
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             <span className="break-all">{title}</span>
             {(badges ?? []).filter(Boolean).map((b) => (

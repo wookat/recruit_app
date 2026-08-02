@@ -1,3 +1,4 @@
+import { TableSwipeHint } from './TableSwipeHint'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   buildCampusExportUrl,
@@ -13,6 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PullToRefresh } from './PullToRefresh'
 import { EmptyState } from '@/components/EmptyState'
 import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from '@/components/ActiveFilterChips'
 import { Highlight } from '@/components/Highlight'
@@ -245,6 +247,7 @@ export function CampusPage({
   })
   const seenSet = useSeenSet()
   const [page, setPage] = useState(1)
+  const [refreshNonce, setRefreshNonce] = useState(0)
   const [typeCounts, setTypeCounts] = useState<Record<string, number> | null>(null)
 
   useEffect(() => {
@@ -398,7 +401,7 @@ export function CampusPage({
       cancelled = true
       controller.abort()
     }
-  }, [params])
+  }, [params, refreshNonce])
 
   const selectPreset = useCallback((key: string) => {
     setPreset(key)
@@ -855,6 +858,7 @@ export function CampusPage({
       )}
 
       {/* 列表 */}
+      <PullToRefresh onRefresh={() => setRefreshNonce((n) => n + 1)} refreshing={loading}>
       {loading && !data ? (
         view === 'table' ? (
           <div className="space-y-3 rounded-xl border bg-background p-4">
@@ -905,6 +909,7 @@ export function CampusPage({
             loading && 'pointer-events-none opacity-60',
           )}
         >
+          <TableSwipeHint />
           <Table>
             <TableHeader>
               <TableRow>
@@ -1283,6 +1288,7 @@ export function CampusPage({
           ))}
         </div>
       )}
+      </PullToRefresh>
 
       {/* 分页 */}
       {data && data.total > PAGE_SIZE && (

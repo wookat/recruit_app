@@ -1,3 +1,4 @@
+import { TableSwipeHint } from './TableSwipeHint'
 import { memo, useMemo, useState, type ReactNode } from 'react'
 
 import {
@@ -168,6 +169,7 @@ export const PositionTable = memo(function PositionTable({
     <div className="space-y-3">
       <div className="rounded-xl border bg-card shadow-sm">
         <div className="overflow-x-auto [scrollbar-width:thin]">
+          <TableSwipeHint />
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (

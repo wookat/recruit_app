@@ -38,7 +38,8 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, 
   const listRef = useRef<HTMLDivElement>(null)
   const virtualize = singleColumn && data.length > 12
   const virtualizer = useWindowVirtualizer({
-    count: virtualize ? data.length : 0,
+    count: data.length,
+    enabled: virtualize,
     estimateSize: () => CARD_ESTIMATE,
     overscan: 5,
     scrollMargin: listRef.current?.offsetTop ?? 0,
@@ -83,7 +84,7 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, 
   return (
     <div className="space-y-3">
       {virtualize ? (
-        <div ref={listRef} className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
+        <div key="virtual" ref={listRef} className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
           {virtualizer.getVirtualItems().map((vi) => {
             const item = data[vi.index]
             return (
@@ -100,7 +101,7 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, 
           })}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div key="grid" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.map((item, i) => (
             <div
               key={item.id}

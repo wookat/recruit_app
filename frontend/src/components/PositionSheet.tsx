@@ -7,6 +7,7 @@ import { addViewHistory } from '@/lib/viewHistory'
 import { derivePositionTags } from '@/lib/jobTags'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { PrepResources } from './PrepResources'
+import { SheetDragHandle } from './SheetDragHandle'
 import { Building2, ExternalLink, Filter, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles } from 'lucide-react'
 import {
   Sheet,
@@ -222,7 +223,8 @@ export function PositionSheet({
   return (
     <Sheet open={!!item} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full max-w-2xl p-0 data-[side=right]:w-full sm:max-w-xl">
-        <SheetHeader className="space-y-2 px-4 pt-6 sm:px-6">
+        <SheetDragHandle onDismiss={onClose} />
+        <SheetHeader className="space-y-2 px-4 pt-1 sm:px-6 sm:pt-6">
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             岗位详情
             <Badge variant="secondary">{item.year}</Badge>

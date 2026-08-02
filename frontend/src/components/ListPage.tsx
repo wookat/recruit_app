@@ -70,6 +70,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PullToRefresh } from './PullToRefresh'
 import { cn } from '@/lib/utils'
 import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from './ActiveFilterChips'
 import { SearchSuggestInput } from './SearchSuggestInput'
@@ -1369,6 +1370,7 @@ export function ListPage({
         </div>
       )}
 
+      <PullToRefresh onRefresh={load} refreshing={loading} disabled={view === 'list'}>
       <Suspense
         fallback={
           <div className="space-y-3 rounded-xl border bg-card p-4">
@@ -1405,6 +1407,7 @@ export function ListPage({
       )}
       {view === 'list' && <VirtualPositionList fetcher={fetcher} params={params} />}
       </Suspense>
+      </PullToRefresh>
 
       {view === 'card' && data && data.total > 0 && (
         <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-3">

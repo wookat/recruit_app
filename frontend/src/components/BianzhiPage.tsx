@@ -1,3 +1,4 @@
+import { TableSwipeHint } from './TableSwipeHint'
 import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   buildBianzhiExportUrl,
@@ -13,6 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PullToRefresh } from './PullToRefresh'
 import { EmptyState } from '@/components/EmptyState'
 import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from '@/components/ActiveFilterChips'
 import { Highlight } from '@/components/Highlight'
@@ -195,6 +197,7 @@ export function BianzhiPage({
     return v ? v.split(',').filter(Boolean) : []
   })
   const [page, setPage] = useState(1)
+  const [refreshNonce, setRefreshNonce] = useState(0)
   const [crossTotal, setCrossTotal] = useState(0)
   const [data, setData] = useState<{ total: number; items: BianzhiJob[] } | null>(null)
   const [filters, setFilters] = useState<BianzhiFilterOptions | null>(null)
@@ -309,7 +312,7 @@ export function BianzhiPage({
       cancelled = true
       controller.abort()
     }
-  }, [params])
+  }, [params, refreshNonce])
 
   const selectPreset = useCallback((key: string) => {
     setPreset(key)
@@ -846,6 +849,7 @@ export function BianzhiPage({
       )}
 
       {/* 列表 */}
+      <PullToRefresh onRefresh={() => setRefreshNonce((n) => n + 1)} refreshing={loading}>
       {loading && !data ? (
         view === 'table' ? (
           <div className="space-y-3 rounded-xl border bg-background p-4">
@@ -1035,6 +1039,7 @@ export function BianzhiPage({
             loading && 'pointer-events-none opacity-60',
           )}
         >
+          <TableSwipeHint />
           <Table>
             <TableHeader>
               <TableRow>
@@ -1225,6 +1230,7 @@ export function BianzhiPage({
           </Table>
         </div>
       )}
+      </PullToRefresh>
 
       {/* 分页 */}
       {data && data.total > PAGE_SIZE && (

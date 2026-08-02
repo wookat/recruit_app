@@ -15,11 +15,26 @@ from sqlalchemy import create_engine, text
 
 DB_URL = os.getenv("DATABASE_URL", "postgresql://recruit:recruit@localhost:5432/recruit")
 
+# 自建 2-gram：2 字中文关键词无法提取 trigram，pg_trgm 索引帮不到；
+# 用 IMMUTABLE 函数生成 bigram text[] 建表达式 GIN 索引，
+# 查询侧 bigrams(col) @> ARRAY[..] 预过滤 + 原 ILIKE 精确校验（结果集不变）。
+# 仅覆盖分层查询 tier1/tier2 的短列，不对超长 search_text 建（体积不可控）。
+BIGRAM_FUNCTION = """
+CREATE OR REPLACE FUNCTION bigrams(txt text) RETURNS text[] AS $$
+SELECT COALESCE(array_agg(DISTINCT substr(lower(txt), i, 2)), '{}'::text[])
+FROM generate_series(1, greatest(length(txt) - 1, 0)) AS i
+$$ LANGUAGE sql IMMUTABLE PARALLEL SAFE
+"""
+
 # (name, table, 定义 SQL 片段)
 BTREE_INDEXES = [
     # 关键词分层查询按 year DESC, id DESC 提前终止：单列 year 索引下
     # incremental sort 需读完整个年份组才能按 id 排序，复合索引免排序早停
     ("idx_pos_year_id", "positions", "USING BTREE (year, id)"),
+    ("idx_pos_position_bigrams", "positions", "USING GIN (bigrams(position_example))"),
+    ("idx_pos_employer_bigrams", "positions", "USING GIN (bigrams(employer))"),
+    # tier3/count 兜底列：本地实测体积 321MB、建索引 ~28min（128MB maintenance_work_mem）
+    ("idx_pos_search_text_bigrams", "positions", "USING GIN (bigrams(search_text))"),
 ]
 
 INDEXES = [
@@ -57,6 +72,8 @@ def main():
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
         conn.execute(text("SET maintenance_work_mem = '128MB'"))
         conn.execute(text("SET statement_timeout = 0"))
+        conn.execute(text(BIGRAM_FUNCTION))
+        print("bigrams(text) 函数已创建/更新")
         for name, table, definition in BTREE_INDEXES:
             state = index_state(conn, name)
             if state is True:
@@ -70,6 +87,7 @@ def main():
                 text(f"CREATE INDEX CONCURRENTLY IF NOT EXISTS {name} ON {table} {definition}")
             )
             print(f"{name}: 完成，state={index_state(conn, name)}")
+            conn.execute(text(f"ANALYZE {table}"))
         for name, table, column in INDEXES:
             state = index_state(conn, name)
             if state is True:

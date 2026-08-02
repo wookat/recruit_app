@@ -266,14 +266,16 @@ def get_positions(
                 "next_cursor": items[-1].id if items else None,
                 "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
             }
-        total, items = crud.search_positions(db, filters, page, page_size, sort)
+        meta: dict = {}
+        total, items = crud.search_positions(db, filters, page, page_size, sort, meta=meta)
     except OperationalError as e:
         if not _is_query_canceled(e):
             raise
         db.rollback()
         try:
             # 重试一次：首次执行已预热缓冲区，重试通常可在限时内完成
-            total, items = crud.search_positions(db, filters, page, page_size, sort)
+            meta = {}
+            total, items = crud.search_positions(db, filters, page, page_size, sort, meta=meta)
         except OperationalError as e2:
             if not _is_query_canceled(e2):
                 raise
@@ -295,6 +297,8 @@ def get_positions(
         "page_size": page_size,
         "next_cursor": None,
         "items": [schemas.PositionOut.model_validate(item).model_dump() for item in items],
+        # tier3/count 超时降级：仅标题/单位命中结果，响应不入缓存
+        "timed_out": bool(meta.get("timed_out")),
     }
 
 

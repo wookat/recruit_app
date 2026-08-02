@@ -1406,7 +1406,9 @@ export function ListPage({
           role="status"
           className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
         >
-          搜索超时，请换关键词（更具体的词或加筛选条件）
+          {data.items.length > 0
+            ? '搜索部分超时，当前仅显示岗位名/单位名命中的结果，稍后重试可获得完整结果'
+            : '搜索超时，请换关键词（更具体的词或加筛选条件）'}
         </div>
       )}
 

@@ -1,10 +1,13 @@
+import json
 import re
 from collections import Counter
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel
-from sqlalchemy import case, or_, func
+from sqlalchemy import and_, case, or_, func, text as sa_text
+from sqlalchemy.dialects.postgresql import array
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, defer
 
 import cache
@@ -67,29 +70,73 @@ def _hit_clause(col, keyword: str):
     return or_(*(col.ilike(f"%{v}%") for v in keyword_variants(keyword)))
 
 
-def _keyword_tiered_items(q_nokw, keyword: str, order_keys, page: int, page_size: int):
+def _kw_bigrams(v: str) -> List[str]:
+    v = v.lower()
+    return [v[i : i + 2] for i in range(len(v) - 1)]
+
+
+def _bigram_hit_clause(col, keyword: str):
+    """bigrams(col) @> ARRAY[..] GIN 预过滤 + 原 ILIKE 精确校验，结果集与纯 ILIKE 一致。
+
+    2 字中文词无法提取 trigram，自建 bigram 表达式索引（migrate_trgm.py）可覆盖；
+    单字词无 bigram，回退纯 ILIKE。"""
+    clauses = []
+    for v in keyword_variants(keyword):
+        ilike = col.ilike(f"%{v}%")
+        bgs = _kw_bigrams(v)
+        if bgs:
+            clauses.append(and_(func.bigrams(col).op("@>")(array(bgs)), ilike))
+        else:
+            clauses.append(ilike)
+    return or_(*clauses)
+
+
+TIER3_TIMEOUT_MS = 3000  # search_text 兜底层/冷 count 语句级超时，超时降级不入缓存
+
+
+def _is_query_canceled(e: OperationalError) -> bool:
+    orig = e.orig if e.orig is not None else e
+    return "QueryCanceled" in type(orig).__name__ or "canceling statement" in str(e)
+
+
+def _keyword_tiered_items(db, q_nokw, keyword: str, order_keys, page: int, page_size: int):
     """关键词搜索的相关性分层取数：岗位名命中 > 单位名命中 > 其他字段命中。
 
-    每层是无 CASE 排序的独立查询，频繁词可走 (year,id) 索引提前终止、
-    低频词可走 trgm 位图，避免 CASE 排序强制全表扫描+全量排序。
-    前两层不带 search_text 条件（标题命中已蕴含关键词命中，且避免大列 detoast）；
-    NULL 列用 IS NOT TRUE 归入非命中层，与 CASE else 语义一致。"""
-    pos_hit = _hit_clause(Position.position_example, keyword)
-    emp_hit = _hit_clause(Position.employer, keyword)
-    kw_hit = _hit_clause(Position.search_text, keyword)
+    每层是无 CASE 排序的独立查询：正向命中走 bigram/trgm 位图或 (year,id) 提前终止，
+    负向排除用纯 ILIKE（IS NOT TRUE 把 NULL 归入非命中层，与 CASE else 语义一致）。
+    前两层凑满窗口则不执行 tier3；tier3 带语句级超时，超时降级为仅标题/单位命中。
+    返回 (id 列表, tier3_timed_out)。"""
+    pos_ilike = _hit_clause(Position.position_example, keyword)
+    emp_ilike = _hit_clause(Position.employer, keyword)
     tiers = [
-        q_nokw.filter(pos_hit),
-        q_nokw.filter(pos_hit.is_not(True), emp_hit),
-        q_nokw.filter(kw_hit, pos_hit.is_not(True), emp_hit.is_not(True)),
+        q_nokw.filter(_bigram_hit_clause(Position.position_example, keyword)),
+        q_nokw.filter(pos_ilike.is_not(True), _bigram_hit_clause(Position.employer, keyword)),
     ]
     end = page * page_size
-    collected = []
+    collected: List[int] = []
     for tier_q in tiers:
         remaining = end - len(collected)
         if remaining <= 0:
             break
-        collected.extend(tier_q.order_by(*order_keys).limit(remaining).all())
-    return collected[(page - 1) * page_size : end]
+        collected.extend(p.id for p in tier_q.order_by(*order_keys).limit(remaining).all())
+    timed_out = False
+    remaining = end - len(collected)
+    if remaining > 0:
+        tier3 = q_nokw.filter(
+            _bigram_hit_clause(Position.search_text, keyword),
+            pos_ilike.is_not(True),
+            emp_ilike.is_not(True),
+        )
+        try:
+            db.execute(sa_text(f"SET LOCAL statement_timeout = '{TIER3_TIMEOUT_MS}'"))
+            collected.extend(p.id for p in tier3.order_by(*order_keys).limit(remaining).all())
+            db.execute(sa_text("SET LOCAL statement_timeout = DEFAULT"))
+        except OperationalError as e:
+            if not _is_query_canceled(e):
+                raise
+            db.rollback()
+            timed_out = True
+    return collected[(page - 1) * page_size : end], timed_out
 
 
 def _major_columns(model, major_type: str):
@@ -174,7 +221,8 @@ def _apply_filters(query, model, filters: PositionFilter):
     if filters.keyword:
         variants = keyword_variants(filters.keyword)
         if hasattr(model, "search_text"):
-            query = query.filter(or_(*(model.search_text.ilike(f"%{v}%") for v in variants)))
+            # bigram GIN 预过滤 + ILIKE 精校（2 字词 trgm 覆盖不到，结果集不变）
+            query = query.filter(_bigram_hit_clause(model.search_text, filters.keyword))
         else:
             clauses = []
             for v in variants:
@@ -204,7 +252,66 @@ def _capped_count(q) -> int:
     return q.order_by(None).limit(COUNT_CAP).count() or 0
 
 
-def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_size: int = 20, sort: str = "year_desc"):
+def _cache_get_json(key: str):
+    try:
+        raw = cache.get_redis().get(key)
+        return json.loads(raw) if raw is not None else None
+    except Exception:  # noqa: BLE001  Redis 不可用时直接回源
+        return None
+
+
+def _cache_set_json(key: str, ttl: int, value) -> None:
+    try:
+        cache.get_redis().setex(key, ttl, json.dumps(value))
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _keyword_capped_count(db, q, q_nokw, keyword: str):
+    """关键词 count：自适应两级尝试 + 语句级超时兜底，返回 (count, timed_out)。
+
+    低频词 bigram 位图预过滤快（毫秒级）、高频词纯 ILIKE 顺扫提前触顶（LIMIT 10001）快，
+    互为对方的坏情形（planner 对表达式索引的行数估计不可靠，不能靠它选路）：
+    先试 bigram 版（短超时 800ms 快速失败），超时再试纯 ILIKE 版（3s）；
+    两者都超时才降级为仅标题/单位命中计数（timed_out=True，不入缓存）。"""
+    attempts = [
+        (q, 800, False),  # q 内含 bigram 预过滤（_apply_filters）
+        (q_nokw.filter(_hit_clause(Position.search_text, keyword)), TIER3_TIMEOUT_MS, False),
+        (
+            q_nokw.filter(
+                or_(
+                    _bigram_hit_clause(Position.position_example, keyword),
+                    _bigram_hit_clause(Position.employer, keyword),
+                )
+            ),
+            0,
+            True,
+        ),
+    ]
+    for count_q, timeout_ms, degraded in attempts:
+        try:
+            if timeout_ms:
+                db.execute(sa_text(f"SET LOCAL statement_timeout = '{timeout_ms}'"))
+            n = _capped_count(count_q)
+            if timeout_ms:
+                db.execute(sa_text("SET LOCAL statement_timeout = DEFAULT"))
+            return n, degraded
+        except OperationalError as e:
+            if not _is_query_canceled(e):
+                raise
+            db.rollback()
+    return 0, True  # 不可达，防御性兜底
+
+
+def search_positions(
+    db: Session,
+    filters: PositionFilter,
+    page: int = 1,
+    page_size: int = 20,
+    sort: str = "year_desc",
+    meta: Optional[dict] = None,
+):
+    """meta（可选 dict）会写入 timed_out=True 当冷查降级（tier3/count 超时），供响应标记且不入缓存。"""
     q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
     q = _apply_filters(q, Position, filters)
     # 类别筛选是高选择性条件：用 year+0 阻止 planner 走全量 (year,id) 有序索引扫描，
@@ -217,7 +324,7 @@ def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_s
     else:
         order_keys = [(Position.id + 0).desc() if filters.category else Position.id.desc()]
     count_key = "cnt:pos:" + filters.model_dump_json()
-    total = cache.get_or_set(count_key, 1800, lambda: _capped_count(q))
+    timed_out = False
     if filters.keyword:
         # 相关性分层取数代替 CASE 排序，避免同义 OR 首查全表扫描；
         # id 列表入缓存（与 count 同寿命，预热任务会延长热词 TTL）
@@ -226,18 +333,27 @@ def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_s
             Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)
         ).options(defer(Position.search_text))
         q_nokw = _apply_filters(q_nokw, Position, nokw)
+        total = _cache_get_json(count_key)
+        if total is None:
+            total, count_to = _keyword_capped_count(db, q, q_nokw, filters.keyword)
+            if not count_to:
+                _cache_set_json(count_key, 1800, total)
+            timed_out = timed_out or count_to
         items_key = f"items:pos:{sort}:{page}:{page_size}:" + filters.model_dump_json()
-        ids = cache.get_or_set(
-            items_key,
-            1800,
-            lambda: [
-                p.id
-                for p in _keyword_tiered_items(q_nokw, filters.keyword, order_keys, page, page_size)
-            ],
-        )
+        ids = _cache_get_json(items_key)
+        if ids is None:
+            ids, tier3_to = _keyword_tiered_items(
+                db, q_nokw, filters.keyword, order_keys, page, page_size
+            )
+            if not tier3_to:
+                _cache_set_json(items_key, 1800, ids)
+            timed_out = timed_out or tier3_to
         items = _positions_by_ids(db, ids)
     else:
+        total = cache.get_or_set(count_key, 1800, lambda: _capped_count(q))
         items = q.order_by(*order_keys).offset((page - 1) * page_size).limit(page_size).all()
+    if meta is not None and timed_out:
+        meta["timed_out"] = True
     return total, items
 
 

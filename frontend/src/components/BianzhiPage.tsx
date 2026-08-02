@@ -1,5 +1,7 @@
 import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  buildBianzhiExportUrl,
+  createBoardExport,
   fetchBianzhiCounts,
   fetchBianzhiFilters,
   fetchBianzhiJob,
@@ -14,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from '@/components/ActiveFilterChips'
 import { Highlight } from '@/components/Highlight'
+import { BoardExportButton } from '@/components/BoardExportButton'
 import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
 import { formatDueDayLabel, parseDeadlineText } from '@/lib/deadline'
@@ -308,6 +311,23 @@ export function BianzhiPage({
   }, [])
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
+
+  /** 导出文件名：板块+筛选摘要+日期 */
+  const exportFname = useMemo(() => {
+    const presetLabel = PRESETS.find((v) => v.key === preset)?.label
+    const parts = [
+      '编制',
+      preset !== 'all' ? presetLabel : undefined,
+      ...provinces,
+      keyword || undefined,
+      eduFilter || undefined,
+      recentOnly ? '近7天' : undefined,
+      dueOnly ? '7天内截止' : undefined,
+      !dueOnly && hideExpired ? '未过期' : undefined,
+      new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+    ]
+    return parts.filter(Boolean).join('-')
+  }, [preset, provinces, keyword, eduFilter, recentOnly, dueOnly, hideExpired])
   const isLiankao = isLiankaoPreset
 
   const activeFilters: RemovableFilter[] = []
@@ -755,13 +775,19 @@ export function BianzhiPage({
         </MobileFilterCollapse>
       )}
 
-      {/* 计数 */}
+      {/* 计数 + 导出 */}
       {data && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span>
             共 <span className="font-medium text-foreground">{data.total.toLocaleString()}</span> 条
           </span>
           <FreshnessNote board="bianzhi" />
+          <BoardExportButton
+            className="ml-auto"
+            total={data.total}
+            buildSyncUrl={() => buildBianzhiExportUrl(params, exportFname)}
+            startAsync={(maxRows) => createBoardExport('bianzhi', params, exportFname, maxRows)}
+          />
         </div>
       )}
 

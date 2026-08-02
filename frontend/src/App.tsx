@@ -15,7 +15,7 @@ import { MobileBottomNav } from '@/components/MobileBottomNav'
 import { OnboardingCard } from '@/components/OnboardingCard'
 import { useFavorites } from '@/lib/positionStore'
 import { useBianzhiFavorites, useCampusFavorites } from '@/lib/boardFavorites'
-import { GlobalSearch, type SearchBoard } from '@/components/GlobalSearch'
+import { GlobalSearch, type QuickFilter, type SearchBoard } from '@/components/GlobalSearch'
 import { applySeo } from '@/lib/seo'
 import { readJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { POSITION_URL_KEYS } from '@/lib/urlFilters'
@@ -182,6 +182,8 @@ export default function App() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [deepLinked, setDeepLinked] = useState<Position | null>(null)
   const [posEduLevel, setPosEduLevel] = useState<string[] | undefined>(undefined)
+  const [posQuick, setPosQuick] = useState<QuickFilter | undefined>(undefined)
+  const [boardQuickNonce, setBoardQuickNonce] = useState(0)
   const favorites = useFavorites()
   const campusFavorites = useCampusFavorites()
   const bianzhiFavorites = useBianzhiFavorites()
@@ -244,6 +246,7 @@ export default function App() {
     (preset?: string, keyword?: string, eduLevel?: string[]) => {
       clearBoardParams()
       setPosEduLevel(eduLevel)
+      setPosQuick(undefined)
       setSection({ mode: 'positions', preset, keyword })
       window.scrollTo({ top: 0 })
     },
@@ -292,6 +295,28 @@ export default function App() {
       else goBianzhi('all', kw || undefined)
     },
     [goPositions, goCampus, goBianzhi],
+  )
+
+  /** 全站搜索快捷筛选：带省份/城市筛选直达对应板块 */
+  const quickFilter = useCallback(
+    (board: SearchBoard, filter: QuickFilter, kw: string) => {
+      clearBoardParams()
+      if (board === 'positions') {
+        setPosEduLevel(undefined)
+        setPosQuick(filter)
+        setSection({ mode: 'positions', preset: 'all', keyword: kw || undefined })
+        window.scrollTo({ top: 0 })
+        return
+      }
+      const q = new URLSearchParams(window.location.search)
+      if (board === 'bianzhi' && filter.province) q.set('prov', filter.province)
+      if (board === 'campus' && filter.city) q.set('city', filter.city)
+      window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
+      setBoardQuickNonce((n) => n + 1)
+      setSection({ mode: board, preset: 'all', keyword: kw || undefined })
+      window.scrollTo({ top: 0 })
+    },
+    [clearBoardParams],
   )
 
   const openSearchJob = useCallback(
@@ -449,10 +474,12 @@ export default function App() {
         <div key={tab === 'admin' ? 'admin' : section.mode} className="animate-fade-in-up">
           {tab !== 'admin' && section.mode === 'positions' && (
             <SearchPage
-              key={`${section.preset ?? ''}|${section.keyword ?? ''}|${(posEduLevel ?? []).join(',')}`}
+              key={`${section.preset ?? ''}|${section.keyword ?? ''}|${(posEduLevel ?? []).join(',')}|${posQuick?.province ?? ''}|${posQuick?.city ?? ''}`}
               initialPresetKey={section.preset}
               initialKeyword={section.keyword}
               initialEduLevel={posEduLevel}
+              initialProvince={posQuick?.province ? [posQuick.province] : undefined}
+              initialLocation={posQuick?.city ? [posQuick.city] : undefined}
               crossPresets={CAMPUS_CROSS}
               onCrossPreset={(k) => (k.startsWith('bz:') ? goBianzhi(k.slice(3)) : goCampus(k))}
               crossLabel="校招信息"
@@ -464,7 +491,7 @@ export default function App() {
           <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
             {tab !== 'admin' && section.mode === 'campus' && (
               <CampusPage
-                key={`${section.preset ?? ''}|${section.keyword ?? ''}`}
+                key={`${section.preset ?? ''}|${section.keyword ?? ''}|${boardQuickNonce}`}
                 initialPreset={section.preset}
                 initialKeyword={section.keyword}
                 crossPresets={POSITION_CROSS}
@@ -477,7 +504,7 @@ export default function App() {
             )}
             {tab !== 'admin' && section.mode === 'bianzhi' && (
               <BianzhiPage
-                key={`${section.preset ?? ''}|${section.keyword ?? ''}`}
+                key={`${section.preset ?? ''}|${section.keyword ?? ''}|${boardQuickNonce}`}
                 initialPreset={section.preset}
                 initialKeyword={section.keyword}
                 crossPresets={BIANZHI_CROSS}
@@ -537,6 +564,7 @@ export default function App() {
         onGuide={() => setGuideOpen(true)}
       />
       <GlobalSearch
+        onQuickFilter={quickFilter}
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         onOpenBoard={openSearchBoard}

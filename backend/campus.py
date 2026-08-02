@@ -1,5 +1,5 @@
 """校招/社招信息 API：/api/campus 列表与筛选项。"""
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -8,6 +8,7 @@ from sqlalchemy import or_, func
 from sqlalchemy.orm import Session
 
 import cache
+import csv_export
 from database import get_db
 from models import CampusJob
 
@@ -46,6 +47,73 @@ class CampusList(BaseModel):
     items: List[CampusJobOut]
 
 
+#: 列表导出列（attr, 中文列名）
+CAMPUS_EXPORT_COLUMNS = [
+    ("company", "公司"),
+    ("positions", "招聘岗位"),
+    ("company_type", "企业类型"),
+    ("industry", "行业"),
+    ("batch", "批次"),
+    ("grad_years", "届别"),
+    ("no_exam", "笔试要求"),
+    ("edu_requirement", "学历要求"),
+    ("major_requirement", "专业要求"),
+    ("locations", "工作地点"),
+    ("start_date", "开始时间"),
+    ("deadline_text", "截止时间"),
+    ("referral_code", "内推码"),
+    ("announce_url", "公告链接"),
+    ("apply_url", "投递链接"),
+    ("updated_at_src", "更新时间"),
+]
+
+
+def apply_campus_filters(q, f: dict):
+    """列表/导出共用的筛选链；f 为列表接口同名参数的 dict。"""
+    if f.get("hide_expired"):
+        q = q.filter(or_(CampusJob.deadline_date == None,  # noqa: E711
+                         CampusJob.deadline_date >= date.today()))
+    if f.get("source_table"):
+        q = q.filter(CampusJob.source_table.in_(f["source_table"]))
+    if f.get("company_type"):
+        q = q.filter(CampusJob.company_type.in_(f["company_type"]))
+    if f.get("industry"):
+        q = q.filter(or_(*(CampusJob.industry.ilike(f"%{i}%") for i in f["industry"])))
+    if f.get("batch"):
+        q = q.filter(CampusJob.batch.ilike(f"%{f['batch']}%"))
+    if f.get("grad_year"):
+        q = q.filter(CampusJob.grad_years.ilike(f"%{f['grad_year']}%"))
+    if f.get("no_exam_only"):
+        q = q.filter(or_(CampusJob.no_exam.ilike("%免笔试%"), CampusJob.no_exam == "/"))
+    if f.get("referral_only"):
+        q = q.filter(CampusJob.referral_code != None, CampusJob.referral_code != "")  # noqa: E711
+    if f.get("location"):
+        q = q.filter(CampusJob.locations.ilike(f"%{f['location']}%"))
+    if f.get("updated_after"):
+        q = q.filter(CampusJob.updated_at_src >= f["updated_after"])
+    if f.get("keyword"):
+        k = f"%{f['keyword']}%"
+        q = q.filter(or_(
+            CampusJob.company.ilike(k),
+            CampusJob.positions.ilike(k),
+            CampusJob.industry.ilike(k),
+            CampusJob.major_requirement.ilike(k),
+        ))
+    if f.get("due_within_days") is not None:
+        today = date.today()
+        q = q.filter(CampusJob.deadline_date >= today,
+                     CampusJob.deadline_date <= today + timedelta(days=f["due_within_days"]))
+    return q
+
+
+def campus_export_order(due_within_days):
+    return (
+        (CampusJob.deadline_date.asc(), CampusJob.id.desc())
+        if due_within_days is not None
+        else (CampusJob.updated_at_src.desc().nullslast(), CampusJob.id.desc())
+    )
+
+
 @router.get("", response_model=CampusList)
 def list_campus_jobs(
     keyword: Optional[str] = None,
@@ -64,53 +132,66 @@ def list_campus_jobs(
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    q = db.query(CampusJob)
-    if hide_expired:
-        q = q.filter(or_(CampusJob.deadline_date == None,  # noqa: E711
-                         CampusJob.deadline_date >= date.today()))
-    if source_table:
-        q = q.filter(CampusJob.source_table.in_(source_table))
-    if company_type:
-        q = q.filter(CampusJob.company_type.in_(company_type))
-    if industry:
-        q = q.filter(or_(*(CampusJob.industry.ilike(f"%{i}%") for i in industry)))
-    if batch:
-        q = q.filter(CampusJob.batch.ilike(f"%{batch}%"))
-    if grad_year:
-        q = q.filter(CampusJob.grad_years.ilike(f"%{grad_year}%"))
-    if no_exam_only:
-        q = q.filter(or_(CampusJob.no_exam.ilike("%免笔试%"), CampusJob.no_exam == "/"))
-    if referral_only:
-        q = q.filter(CampusJob.referral_code != None, CampusJob.referral_code != "")  # noqa: E711
-    if location:
-        q = q.filter(CampusJob.locations.ilike(f"%{location}%"))
-    if updated_after:
-        q = q.filter(CampusJob.updated_at_src >= updated_after)
-    if keyword:
-        k = f"%{keyword}%"
-        q = q.filter(or_(
-            CampusJob.company.ilike(k),
-            CampusJob.positions.ilike(k),
-            CampusJob.industry.ilike(k),
-            CampusJob.major_requirement.ilike(k),
-        ))
-    if due_within_days is not None:
-        today = date.today()
-        q = q.filter(CampusJob.deadline_date >= today,
-                     CampusJob.deadline_date <= today + timedelta(days=due_within_days))
+    q = apply_campus_filters(db.query(CampusJob), {
+        "keyword": keyword,
+        "source_table": source_table,
+        "company_type": company_type,
+        "industry": industry,
+        "batch": batch,
+        "grad_year": grad_year,
+        "no_exam_only": no_exam_only,
+        "referral_only": referral_only,
+        "location": location,
+        "updated_after": updated_after,
+        "due_within_days": due_within_days,
+        "hide_expired": hide_expired,
+    })
     total = q.count()
-    order_by = (
-        (CampusJob.deadline_date.asc(), CampusJob.id.desc())
-        if due_within_days is not None
-        else (CampusJob.updated_at_src.desc().nullslast(), CampusJob.id.desc())
-    )
     items = (
-        q.order_by(*order_by)
+        q.order_by(*campus_export_order(due_within_days))
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
     )
     return {"total": total, "page": page, "page_size": page_size, "items": items}
+
+
+@router.get("/export")
+def export_campus_jobs(
+    keyword: Optional[str] = None,
+    source_table: Optional[List[str]] = Query(None),
+    company_type: Optional[List[str]] = Query(None),
+    industry: Optional[List[str]] = Query(None),
+    batch: Optional[str] = None,
+    grad_year: Optional[str] = None,
+    no_exam_only: bool = False,
+    referral_only: bool = False,
+    location: Optional[str] = None,
+    updated_after: Optional[str] = None,
+    due_within_days: Optional[int] = Query(None, ge=0, le=365),
+    hide_expired: bool = False,
+    fname: Optional[str] = None,
+    max_rows: int = Query(2000, ge=1, le=2000),
+    db: Session = Depends(get_db),
+):
+    """同步导出当前筛选结果 CSV（≤2000 行；更大请走 POST /api/export 异步任务）。"""
+    q = apply_campus_filters(db.query(CampusJob), {
+        "keyword": keyword,
+        "source_table": source_table,
+        "company_type": company_type,
+        "industry": industry,
+        "batch": batch,
+        "grad_year": grad_year,
+        "no_exam_only": no_exam_only,
+        "referral_only": referral_only,
+        "location": location,
+        "updated_after": updated_after,
+        "due_within_days": due_within_days,
+        "hide_expired": hide_expired,
+    })
+    rows = q.order_by(*campus_export_order(due_within_days)).limit(max_rows).all()
+    default = f"校招-{datetime.now().strftime('%Y%m%d')}"
+    return csv_export.stream_csv(rows, CAMPUS_EXPORT_COLUMNS, csv_export.safe_fname(fname, default))
 
 
 @router.get("/counts")

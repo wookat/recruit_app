@@ -86,6 +86,9 @@ interface ListPageProps {
   initialPresetKey?: string
   initialKeyword?: string
   initialEduLevel?: string[]
+  /** 全站搜索快捷筛选：初始省份/城市（location 标签） */
+  initialProvince?: string[]
+  initialLocation?: string[]
   crossPresets?: { key: string; label: string }[]
   onCrossPreset?: (key: string) => void
   crossLabel?: string
@@ -188,6 +191,8 @@ export function ListPage({
   initialPresetKey,
   initialKeyword,
   initialEduLevel,
+  initialProvince,
+  initialLocation,
   crossPresets,
   onCrossPreset,
   crossLabel,
@@ -215,6 +220,8 @@ export function ListPage({
     if (preset?.year) base.year = preset.year
     if (initialKeyword) base.keyword = initialKeyword
     if (initialEduLevel?.length) base.edu_level = initialEduLevel
+    if (initialProvince?.length) base.province = initialProvince
+    if (initialLocation?.length) base.location = initialLocation
     return base
   })
   const [crossTotal, setCrossTotal] = useState(0)
@@ -528,11 +535,27 @@ export function ListPage({
     })
   }
 
+  /** 导出文件名：板块+筛选摘要+日期 */
+  function exportFname(): string {
+    const parts = [
+      '体制内',
+      ...(params.province ?? []),
+      ...(params.location ?? []),
+      ...(params.exam_type_norm ?? []),
+      ...(params.category ?? []),
+      ...(params.edu_level ?? []),
+      params.keyword || undefined,
+      params.major || undefined,
+      new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+    ]
+    return parts.filter(Boolean).join('-')
+  }
+
   function handleExport(format: 'csv' | 'xlsx', all = false) {
     if (exportTask) return
     const total = data?.total ?? 0
     if (!all && total <= SYNC_EXPORT_MAX) {
-      window.open(buildExportUrl(params, format), '_blank')
+      window.open(buildExportUrl(params, format, exportFname()), '_blank')
       return
     }
     void startAsyncExport(format, all ? ASYNC_EXPORT_MAX : Math.min(total || ASYNC_EXPORT_MAX, ASYNC_EXPORT_MAX))
@@ -542,7 +565,7 @@ export function ListPage({
     setExportError('')
     setExportTask('starting')
     try {
-      const { task_id } = await createExport(params, format, maxRows)
+      const { task_id } = await createExport(params, format, maxRows, exportFname())
       setExportTask(task_id)
       pollExport(task_id)
     } catch {

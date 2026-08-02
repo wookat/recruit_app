@@ -1,6 +1,6 @@
-import csv
 import io
 import os
+from urllib.parse import quote
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List, Optional
@@ -20,10 +20,11 @@ import crud
 import models
 import schemas
 import cache
+import csv_export
 from admin import require_admin, router as admin_router
 from campus import router as campus_router
 from bianzhi import router as bianzhi_router
-from tasks import EXPORTS_DIR, export_positions_task, scrape_year
+from tasks import EXPORTS_DIR, export_board_task, export_positions_task, scrape_year
 
 
 @asynccontextmanager
@@ -360,6 +361,7 @@ def export_positions(
     category: Optional[List[str]] = Query(None),
     sort: str = Query("year_desc"),
     max_rows: int = Query(2000, ge=1, le=50000),
+    fname: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
     _rate_limit(request, "export", limit=3, window=60)
@@ -381,25 +383,10 @@ def export_positions(
     )
     rows = crud.export_positions(db, filters, sort=sort, max_rows=max_rows)
     cols = crud.EXPORT_COLUMNS
-    filename = f"positions_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    filename = csv_export.safe_fname(fname, f"positions_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
 
     if format == "csv":
-        def iter_csv():
-            buf = io.StringIO()
-            writer = csv.writer(buf)
-            writer.writerow([label for _, label in cols])
-            yield "\ufeff" + buf.getvalue()  # BOM for Excel compatibility
-            for pos in rows:
-                buf.seek(0)
-                buf.truncate(0)
-                writer.writerow([getattr(pos, attr, "") or "" for attr, _ in cols])
-                yield buf.getvalue()
-
-        return StreamingResponse(
-            iter_csv(),
-            media_type="text/csv; charset=utf-8",
-            headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
-        )
+        return csv_export.stream_csv(rows, cols, filename)
 
     # xlsx
     data = [[getattr(pos, attr, "") or "" for attr, _ in cols] for pos in rows]
@@ -411,7 +398,7 @@ def export_positions(
     return StreamingResponse(
         out,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}.xlsx"'},
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}.xlsx"},
     )
 
 
@@ -424,10 +411,24 @@ def create_export(
     _rate_limit(request, "export", limit=3, window=60)
     if body.format not in ("csv", "xlsx"):
         raise HTTPException(status_code=422, detail="format 仅支持 csv/xlsx")
-    filters = body.model_dump(exclude={"format", "sort", "max_rows"}, exclude_none=True)
+    max_rows = max(1, min(body.max_rows, 50000))
+    if body.board in ("campus", "bianzhi"):
+        board_filters = body.campus if body.board == "campus" else body.bianzhi
+        task = export_board_task.delay(
+            body.board,
+            board_filters.model_dump(exclude_none=True) if board_filters else {},
+            fname=body.fname,
+            max_rows=max_rows,
+        )
+        return {"task_id": task.id, "status": "started"}
+    if body.board != "positions":
+        raise HTTPException(status_code=422, detail="board 仅支持 positions/campus/bianzhi")
+    filters = body.model_dump(
+        exclude={"format", "sort", "max_rows", "board", "campus", "bianzhi", "fname"},
+        exclude_none=True,
+    )
     task = export_positions_task.delay(
-        filters, format=body.format, sort=body.sort,
-        max_rows=max(1, min(body.max_rows, 50000)),
+        filters, format=body.format, sort=body.sort, max_rows=max_rows, fname=body.fname,
     )
     return {"task_id": task.id, "status": "started"}
 

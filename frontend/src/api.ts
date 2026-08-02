@@ -166,6 +166,12 @@ export async function fetchCampusFilters(): Promise<CampusFilterOptions> {
   return res.data
 }
 
+/** 校招列表同步导出 CSV URL（≤2000 行）。 */
+export function buildCampusExportUrl(params: CampusParams, fname: string): string {
+  const { page: _p, page_size: _ps, ...rest } = params
+  return `${API_BASE}/api/campus/export?${toQuery({ ...rest, fname })}`
+}
+
 // ---------- 编制公告（公务员事业单位/教育/医疗/高校/科研院所/央国企社招/大型联考） ----------
 export interface BianzhiJob {
   id: number
@@ -224,6 +230,30 @@ export async function fetchBianzhiJob(id: number): Promise<BianzhiJob> {
 
 export async function fetchBianzhiFilters(): Promise<BianzhiFilterOptions> {
   const res = await axios.get(`${API_BASE}/api/bianzhi/filters`)
+  return res.data
+}
+
+/** 编制列表同步导出 CSV URL（≤2000 行）。 */
+export function buildBianzhiExportUrl(params: BianzhiParams, fname: string): string {
+  const { page: _p, page_size: _ps, ...rest } = params
+  return `${API_BASE}/api/bianzhi/export?${toQuery({ ...rest, fname })}`
+}
+
+/** 校招/编制列表异步导出（>2000 行）：走现有 POST /api/export 任务链路。 */
+export async function createBoardExport(
+  board: 'campus' | 'bianzhi',
+  filters: CampusParams | BianzhiParams,
+  fname: string,
+  maxRows: number,
+): Promise<{ task_id: string }> {
+  const { page: _p, page_size: _ps, ...rest } = filters
+  const res = await axios.post(`${API_BASE}/api/export`, {
+    board,
+    [board]: rest,
+    format: 'csv',
+    fname,
+    max_rows: maxRows,
+  })
   return res.data
 }
 
@@ -424,9 +454,9 @@ export async function fetchRecommend(params: {
   return res.data
 }
 
-export function buildExportUrl(params: SearchParams, format: 'csv' | 'xlsx'): string {
+export function buildExportUrl(params: SearchParams, format: 'csv' | 'xlsx', fname?: string): string {
   const { page: _p, page_size: _ps, after_id: _a, after_year: _ay, ...rest } = params
-  const qs = toQuery(rest)
+  const qs = toQuery(fname ? { ...rest, fname } : rest)
   return `${API_BASE}/api/export?format=${format}${qs ? `&${qs}` : ''}`
 }
 
@@ -442,8 +472,10 @@ export async function createExport(
   params: SearchParams,
   format: 'csv' | 'xlsx',
   maxRows: number,
+  fname?: string,
 ): Promise<{ task_id: string }> {
   const body = {
+    fname: fname || undefined,
     year: params.year,
     job_type: params.job_type,
     exam_type: params.exam_type,

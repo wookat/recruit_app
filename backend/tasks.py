@@ -18,7 +18,11 @@ import crud
 import pipeline
 import precompute
 import backfill_deadlines
+import bianzhi as bianzhi_api
+import campus as campus_api
+import csv_export
 import quality
+from models import BianzhiJob, CampusJob
 import refresh_feishu
 import import_guopin_2027
 from cache import get_redis
@@ -277,11 +281,12 @@ def _write_export_xlsx(rows, path):
 
 
 @celery_app.task(bind=True)
-def export_positions_task(self, filters: dict, format: str = "csv", sort: str = "year_desc", max_rows: int = 50000):
+def export_positions_task(self, filters: dict, format: str = "csv", sort: str = "year_desc", max_rows: int = 50000, fname: "str | None" = None):
     """异步导出：分批读库逐行写文件到 exports/，返回文件名与行数。"""
     self.update_state(state="PROGRESS", meta={"step": "exporting"})
     fmt = "xlsx" if format == "xlsx" else "csv"
-    fname = f"positions_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{self.request.id[:8]}.{fmt}"
+    base = csv_export.safe_fname(fname, f"positions_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+    fname = f"{base}_{self.request.id[:8]}.{fmt}"
     path = os.path.join(EXPORTS_DIR, fname)
     db = SessionLocal()
     try:
@@ -295,6 +300,41 @@ def export_positions_task(self, filters: dict, format: str = "csv", sort: str = 
     finally:
         db.close()
     return {"file": fname, "rows": n, "format": fmt}
+
+
+@celery_app.task(bind=True)
+def export_board_task(self, board: str, filters: dict, fname: "str | None" = None, max_rows: int = 50000):
+    """校招/编制列表异步导出 CSV：写文件到 exports/，返回文件名与行数。"""
+    self.update_state(state="PROGRESS", meta={"step": "exporting"})
+    if board == "campus":
+        cols = campus_api.CAMPUS_EXPORT_COLUMNS
+    elif board == "bianzhi":
+        cols = bianzhi_api.BIANZHI_EXPORT_COLUMNS
+    else:
+        raise ValueError(f"不支持的导出板块: {board}")
+    default = f"{board}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    base = csv_export.safe_fname(fname, default)
+    out_name = f"{base}_{self.request.id[:8]}.csv"
+    path = os.path.join(EXPORTS_DIR, out_name)
+    db = SessionLocal()
+    try:
+        f = filters or {}
+        due = f.get("due_within_days")
+        if board == "campus":
+            q = campus_api.apply_campus_filters(db.query(CampusJob), f)
+            order = campus_api.campus_export_order(due)
+        else:
+            q = bianzhi_api.apply_bianzhi_filters(db.query(BianzhiJob), f)
+            order = bianzhi_api.bianzhi_export_order(due)
+        rows = q.order_by(*order).limit(max(1, min(int(max_rows), 50000))).yield_per(500)
+        n = csv_export.write_csv(rows, cols, path)
+    except Exception:
+        if os.path.exists(path):
+            os.remove(path)
+        raise
+    finally:
+        db.close()
+    return {"file": out_name, "rows": n, "format": "csv"}
 
 
 @celery_app.task

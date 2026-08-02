@@ -5,6 +5,8 @@ interface SearchPageProps {
   initialPresetKey?: string
   initialKeyword?: string
   initialEduLevel?: string[]
+  initialProvince?: string[]
+  initialLocation?: string[]
   crossPresets?: { key: string; label: string }[]
   onCrossPreset?: (key: string) => void
   crossLabel?: string

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { ShareTextButton } from '@/components/ShareTextButton'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
+import { PrepResources } from '@/components/PrepResources'
 
 export interface SheetField {
   label: string
@@ -59,6 +60,14 @@ interface Props {
     title: string
     items: { key: string; label: string; sub?: string | null }[]
     onSelect: (key: string) => void
+  }
+  /** 传入时展示「备考资源」区块（攻略锚点 + 省人社官网 + 日历提醒）。 */
+  prep?: {
+    examType: string | null | undefined
+    province: string | null | undefined
+    deadline: Date | null
+    icsUid: string
+    icsSummary: string
   }
 }
 
@@ -131,6 +140,7 @@ export function BoardJobSheet({
   nextDisabled,
   snapshotNote,
   related,
+  prep,
 }: Props) {
   const validLinks = (links ?? []).filter((l) => safeUrl(l.url))
 
@@ -290,6 +300,13 @@ export function BoardJobSheet({
                     ))}
                   </ul>
                 </section>
+              </>
+            )}
+
+            {prep && (
+              <>
+                <Separator />
+                <PrepResources {...prep} />
               </>
             )}
           </div>

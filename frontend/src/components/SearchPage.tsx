@@ -4,6 +4,7 @@ import { fetchPositions } from '@/api'
 interface SearchPageProps {
   initialPresetKey?: string
   initialKeyword?: string
+  initialEduLevel?: string[]
   crossPresets?: { key: string; label: string }[]
   onCrossPreset?: (key: string) => void
   crossLabel?: string

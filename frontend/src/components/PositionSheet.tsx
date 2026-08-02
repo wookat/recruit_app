@@ -4,6 +4,8 @@ import { copyText, positionShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { derivePositionTags } from '@/lib/jobTags'
+import { parseSignupDeadline } from '@/lib/deadline'
+import { PrepResources } from './PrepResources'
 import { Building2, ExternalLink, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles } from 'lucide-react'
 import {
   Sheet,
@@ -464,6 +466,15 @@ export function PositionSheet({
                 </Section>
               </>
             )}
+
+            <Separator />
+            <PrepResources
+              examType={item.exam_type || item.job_type}
+              province={(item.work_location || '').split(/[-—·，,]/)[0] || null}
+              deadline={parseSignupDeadline(item)}
+              icsUid={`pos-${item.id}`}
+              icsSummary={`报名截止：${item.employer?.trim() || stripOrgPrefix(item.position_example ?? '', item.employer) || item.job_type || '岗位'}`}
+            />
           </div>
         </ScrollArea>
       </SheetContent>

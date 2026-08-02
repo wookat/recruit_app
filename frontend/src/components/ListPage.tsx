@@ -85,6 +85,7 @@ interface ListPageProps {
   syncUrl?: boolean
   initialPresetKey?: string
   initialKeyword?: string
+  initialEduLevel?: string[]
   crossPresets?: { key: string; label: string }[]
   onCrossPreset?: (key: string) => void
   crossLabel?: string
@@ -186,6 +187,7 @@ export function ListPage({
   syncUrl,
   initialPresetKey,
   initialKeyword,
+  initialEduLevel,
   crossPresets,
   onCrossPreset,
   crossLabel,
@@ -212,6 +214,7 @@ export function ListPage({
     if (preset?.category) base.category = preset.category
     if (preset?.year) base.year = preset.year
     if (initialKeyword) base.keyword = initialKeyword
+    if (initialEduLevel?.length) base.edu_level = initialEduLevel
     return base
   })
   const [crossTotal, setCrossTotal] = useState(0)

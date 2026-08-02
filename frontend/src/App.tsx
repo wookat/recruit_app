@@ -27,7 +27,7 @@ const JobGuideSheet = lazy(() =>
   import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet })),
 )
 
-const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'company', 'choose', 'tips']
+const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'biancal', 'company', 'choose', 'tips']
 
 const AdminPage = lazy(() =>
   import('@/components/AdminPage').then((m) => ({ default: m.AdminPage })),
@@ -181,6 +181,7 @@ export default function App() {
   const [guideOpen, setGuideOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [deepLinked, setDeepLinked] = useState<Position | null>(null)
+  const [posEduLevel, setPosEduLevel] = useState<string[] | undefined>(undefined)
   const favorites = useFavorites()
   const campusFavorites = useCampusFavorites()
   const bianzhiFavorites = useBianzhiFavorites()
@@ -240,8 +241,9 @@ export default function App() {
     [clearBoardParams],
   )
   const goPositions = useCallback(
-    (preset?: string, keyword?: string) => {
+    (preset?: string, keyword?: string, eduLevel?: string[]) => {
       clearBoardParams()
+      setPosEduLevel(eduLevel)
       setSection({ mode: 'positions', preset, keyword })
       window.scrollTo({ top: 0 })
     },
@@ -447,9 +449,10 @@ export default function App() {
         <div key={tab === 'admin' ? 'admin' : section.mode} className="animate-fade-in-up">
           {tab !== 'admin' && section.mode === 'positions' && (
             <SearchPage
-              key={`${section.preset ?? ''}|${section.keyword ?? ''}`}
+              key={`${section.preset ?? ''}|${section.keyword ?? ''}|${(posEduLevel ?? []).join(',')}`}
               initialPresetKey={section.preset}
               initialKeyword={section.keyword}
+              initialEduLevel={posEduLevel}
               crossPresets={CAMPUS_CROSS}
               onCrossPreset={(k) => (k.startsWith('bz:') ? goBianzhi(k.slice(3)) : goCampus(k))}
               crossLabel="校招信息"
@@ -545,7 +548,18 @@ export default function App() {
       </Suspense>
       <CompareBar />
       <BoardCompareBar onOpenJob={(board, id) => openSearchJob(board, id, '')} />
-      {deepLinked && <PositionSheet item={deepLinked} onClose={() => setDeepLinked(null)} onOpenItem={setDeepLinked} />}
+      {deepLinked && (
+        <PositionSheet
+          item={deepLinked}
+          onClose={() => setDeepLinked(null)}
+          onOpenItem={setDeepLinked}
+          onTagClick={(k) => {
+            if (k !== 'edu_bk') return
+            setDeepLinked(null)
+            goPositions('all', undefined, ['本科'])
+          }}
+        />
+      )}
     </div>
   )
 }

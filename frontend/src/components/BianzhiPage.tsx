@@ -134,6 +134,9 @@ export function BianzhiPage({
   const [hideExpired, setHideExpired] = useState(
     urlQuery.get('board') === 'bianzhi' && urlQuery.get('hexp') === '1',
   )
+  const [eduFilter, setEduFilter] = useState(
+    urlQuery.get('board') === 'bianzhi' ? urlQuery.get('bedu') ?? '' : '',
+  )
   const [provinceCounts, setProvinceCounts] = useState<Record<string, number> | null>(null)
 
   useEffect(() => {
@@ -223,9 +226,11 @@ export function BianzhiPage({
     else q.delete('prov')
     if (keyword.trim()) q.set('bkw', keyword.trim())
     else q.delete('bkw')
+    if (eduFilter) q.set('bedu', eduFilter)
+    else q.delete('bedu')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('bianzhi', preset)
-  }, [preset, recentOnly, dueOnly, hideExpired, provinces, keyword])
+  }, [preset, recentOnly, dueOnly, hideExpired, provinces, keyword, eduFilter])
 
   const isLiankaoPreset = preset === 'lk'
   const fetchPage = isLiankaoPreset ? 1 : page
@@ -236,13 +241,14 @@ export function BianzhiPage({
       category: cat ? [cat] : undefined,
       province: provinces.length ? provinces : undefined,
       keyword: keyword || undefined,
+      edu: eduFilter || undefined,
       updated_after: recentOnly ? daysAgoStr(7) : undefined,
       due_within_days: dueOnly ? 7 : undefined,
       hide_expired: !dueOnly && hideExpired ? true : undefined,
       page: fetchPage,
       page_size: isLiankaoPreset ? 100 : PAGE_SIZE,
     }
-  }, [preset, recentOnly, keyword, provinces, dueOnly, hideExpired, fetchPage, isLiankaoPreset])
+  }, [preset, recentOnly, keyword, provinces, dueOnly, hideExpired, fetchPage, isLiankaoPreset, eduFilter])
 
   useEffect(() => {
     let cancelled = false
@@ -321,6 +327,14 @@ export function BianzhiPage({
     if (presetLabel)
       activeFilters.push({ label: `分类：${presetLabel}`, onRemove: () => selectPreset('all') })
   }
+  if (eduFilter)
+    activeFilters.push({
+      label: `学历：${eduFilter}`,
+      onRemove: () => {
+        setEduFilter('')
+        setPage(1)
+      },
+    })
   if (dueOnly)
     activeFilters.push({
       label: '即将截止',
@@ -359,6 +373,7 @@ export function BianzhiPage({
 
   function clearAllFilters() {
     selectPreset('all')
+    setEduFilter('')
     setRecentOnly(false)
     setDueOnly(false)
     setHideExpired(false)
@@ -1179,11 +1194,29 @@ export function BianzhiPage({
               : '-')
           }
           badges={[detail.category, detail.province].filter((b): b is string => !!b)}
-          tags={deriveBianzhiTags(detail)}
+          tags={deriveBianzhiTags(detail).map((t) => ({
+            ...t,
+            onClick:
+              t.key === 'edu_bk'
+                ? () => {
+                    setEduFilter('本科')
+                    setPage(1)
+                    setDetail(null)
+                  }
+                : undefined,
+          }))}
           shareText={bianzhiShareText(detail)}
           favActive={bianzhiFavorites.some((f) => f.id === detail.id)}
           onFavToggle={() => toggleBianzhiFavorite(detail)}
           jobKey={`bianzhi:${detail.id}`}
+          prep={{
+            examType: detail.category || detail.job_type,
+            province: detail.province,
+            deadline:
+              parseDeadlineText(detail.deadline_date) ?? parseDeadlineText(detail.deadline_text),
+            icsUid: `bz-${detail.id}`,
+            icsSummary: `报名截止：${detail.employer?.trim() || detail.job_type || '编制岗位'}`,
+          }}
           {...sheetNavProps(pageItems, detail, setDetail)}
           basics={[
             { label: '招聘单位', value: detail.employer },

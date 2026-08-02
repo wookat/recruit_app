@@ -60,7 +60,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, Scale, Square, SquareCheck } from 'lucide-react'
+import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, Scale, Square, SquareCheck } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,6 +73,8 @@ import { FavCompareDialog, type FavCompareColumn } from './FavCompareDialog'
 interface Props {
   open: boolean
   onClose: () => void
+  /** 打开「最近浏览」面板 */
+  onOpenHistory?: () => void
 }
 
 type Board = 'positions' | 'campus' | 'bianzhi'
@@ -85,7 +87,7 @@ interface CalendarEntry {
   bianzhi?: BianzhiJob
 }
 
-export function FavoritesSheet({ open, onClose }: Props) {
+export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
   const favorites = useFavorites()
   const campusFavs = useCampusFavorites()
   const bianzhiFavs = useBianzhiFavorites()
@@ -1053,6 +1055,17 @@ export function FavoritesSheet({ open, onClose }: Props) {
               <Badge variant="secondary">{totalCount}</Badge>
             </SheetTitle>
             <div className="flex flex-wrap items-center gap-1">
+              {onOpenHistory && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
+                  onClick={onOpenHistory}
+                >
+                  <HistoryIcon className="mr-1 h-3.5 w-3.5" />
+                  最近浏览
+                </Button>
+              )}
               {boardCount > 0 && (
                 <>
                   <Button

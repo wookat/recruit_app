@@ -5,10 +5,11 @@ import { PositionSheet } from '@/components/PositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BookOpen, Briefcase, CalendarDays, Moon, Search, Settings, Star, Sun } from 'lucide-react'
+import { BookOpen, Briefcase, CalendarDays, History, Moon, Search, Settings, Star, Sun } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FavoritesSheet } from '@/components/FavoritesSheet'
+import { ViewHistorySheet } from '@/components/ViewHistorySheet'
 import { CompareBar } from '@/components/CompareBar'
 import { BoardCompareBar } from '@/components/BoardCompareBar'
 import { MobileBottomNav } from '@/components/MobileBottomNav'
@@ -178,6 +179,7 @@ export default function App() {
   const [section, setSection] = useState<Section>(initialSection)
   const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>(getTheme)
   const [favOpen, setFavOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [deepLinked, setDeepLinked] = useState<Position | null>(null)
@@ -331,6 +333,7 @@ export default function App() {
       if (board === 'campus') goCampus('all', kw || undefined)
       else goBianzhi('all', kw || undefined)
       setJobParam(`${board}:${id}`)
+      setBoardQuickNonce((n) => n + 1)
     },
     [goPositions, goCampus, goBianzhi],
   )
@@ -420,6 +423,17 @@ export default function App() {
           <Button variant="ghost" size="sm" className="hidden min-h-11 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setGuideOpen(true)}>
             <BookOpen className="h-4 w-4" />
             求职攻略
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-11 gap-1.5 px-2 sm:min-h-8"
+            aria-label="最近浏览"
+            title="最近浏览"
+            onClick={() => setHistoryOpen(true)}
+          >
+            <History className="h-4 w-4" />
+            <span className="hidden lg:inline">最近浏览</span>
           </Button>
           <Button variant="outline" size="sm" className="relative hidden min-h-11 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setFavOpen(true)}>
             <Star className="h-4 w-4 text-amber-400" />
@@ -570,7 +584,12 @@ export default function App() {
         onOpenBoard={openSearchBoard}
         onOpenJob={openSearchJob}
       />
-      <FavoritesSheet open={favOpen} onClose={() => setFavOpen(false)} />
+      <FavoritesSheet open={favOpen} onClose={() => setFavOpen(false)} onOpenHistory={() => { setFavOpen(false); setHistoryOpen(true) }} />
+      <ViewHistorySheet
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        onOpenJob={(board, id) => openSearchJob(board, id, '')}
+      />
       <Suspense fallback={null}>
         {guideOpen && <JobGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
       </Suspense>

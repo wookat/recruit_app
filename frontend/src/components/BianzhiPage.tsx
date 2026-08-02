@@ -30,6 +30,8 @@ import {
 } from '@/components/ui/table'
 import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { SeenBadge } from '@/components/SeenBadge'
+import { useSeenSet } from '@/lib/viewHistory'
 import { BoardCompareButton } from '@/components/BoardCompareButton'
 import { CrossBoardZeroHint } from '@/components/CrossBoardZeroHint'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
@@ -137,6 +139,10 @@ export function BianzhiPage({
   const [hideExpired, setHideExpired] = useState(
     urlQuery.get('board') === 'bianzhi' && urlQuery.get('hexp') === '1',
   )
+  const [hideSeen, setHideSeen] = useState(
+    urlQuery.get('board') === 'bianzhi' && urlQuery.get('hseen') === '1',
+  )
+  const seenSet = useSeenSet()
   const [eduFilter, setEduFilter] = useState(
     urlQuery.get('board') === 'bianzhi' ? urlQuery.get('bedu') ?? '' : '',
   )
@@ -225,6 +231,8 @@ export function BianzhiPage({
     else q.delete('due')
     if (hideExpired) q.set('hexp', '1')
     else q.delete('hexp')
+    if (hideSeen) q.set('hseen', '1')
+    else q.delete('hseen')
     if (provinces.length) q.set('prov', provinces.join(','))
     else q.delete('prov')
     if (keyword.trim()) q.set('bkw', keyword.trim())
@@ -233,7 +241,7 @@ export function BianzhiPage({
     else q.delete('bedu')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('bianzhi', preset)
-  }, [preset, recentOnly, dueOnly, hideExpired, provinces, keyword, eduFilter])
+  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, provinces, keyword, eduFilter])
 
   const isLiankaoPreset = preset === 'lk'
   const fetchPage = isLiankaoPreset ? 1 : page
@@ -379,6 +387,11 @@ export function BianzhiPage({
         setPage(1)
       },
     })
+  if (hideSeen)
+    activeFilters.push({
+      label: '隐藏已看过',
+      onRemove: () => setHideSeen(false),
+    })
   if (profileMatched)
     activeFilters.push({
       label: '按我的条件匹配',
@@ -397,6 +410,7 @@ export function BianzhiPage({
     setRecentOnly(false)
     setDueOnly(false)
     setHideExpired(false)
+    setHideSeen(false)
     setProvinces([])
     setSearchInput('')
     setKeyword('')
@@ -453,11 +467,15 @@ export function BianzhiPage({
     return [...data.items].sort((a, b) => cmpNullableStr(field(a), field(b), sort.dir))
   }, [data, sort, liankaoInfo])
 
-  const pageItems = useMemo(
-    () =>
-      isLiankao ? sortedItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) : sortedItems,
-    [isLiankao, sortedItems, page],
-  )
+  const pageItems = useMemo(() => {
+    const items = isLiankao
+      ? sortedItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+      : sortedItems
+    return hideSeen ? items.filter((j) => !seenSet.has(`bianzhi:${j.id}`)) : items
+  }, [isLiankao, sortedItems, page, hideSeen, seenSet])
+  const hiddenSeenCount =
+    (isLiankao ? Math.min(PAGE_SIZE, Math.max(0, sortedItems.length - (page - 1) * PAGE_SIZE)) : sortedItems.length) -
+    pageItems.length
 
   const [relatedJobs, setRelatedJobs] = useState<BianzhiJob[]>([])
 
@@ -591,6 +609,18 @@ export function BianzhiPage({
             )}
           >
             隐藏已截止
+          </button>
+          <button
+            type="button"
+            onClick={() => setHideSeen((v) => !v)}
+            className={cn(
+              'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+              hideSeen
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-foreground hover:bg-muted',
+            )}
+          >
+            隐藏已看过
           </button>
           {crossPresets && crossPresets.length > 0 && onCrossPreset && (
             <>
@@ -808,6 +838,10 @@ export function BianzhiPage({
 
       <FilterSummaryBar filters={activeFilters} onClearAll={clearAllFilters} />
 
+      {hideSeen && hiddenSeenCount > 0 && (
+        <div className="text-xs text-muted-foreground">本页已隐藏 {hiddenSeenCount} 条已看过的岗位</div>
+      )}
+
       {/* 列表 */}
       {loading && !data ? (
         view === 'table' ? (
@@ -884,6 +918,7 @@ export function BianzhiPage({
                     query={keyword}
                   />
                 </span>
+                <SeenBadge board="bianzhi" id={job.id} />
                 {job.category && (
                   <Badge variant="secondary" className={cn('border-0', toneClass(CATEGORY_TONES, job.category))}>
                     {job.category}
@@ -1072,6 +1107,7 @@ export function BianzhiPage({
                         }
                         query={keyword}
                       />
+                      <SeenBadge board="bianzhi" id={job.id} className="ml-1.5" />
                     </span>
                     {job.notes && job.notes.trim() !== '/' && (
                       <span className="mt-0.5 block max-w-[380px] truncate text-[11px] text-muted-foreground" title={job.notes}>

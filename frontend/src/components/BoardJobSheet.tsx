@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { ShareTextButton } from '@/components/ShareTextButton'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
+import { addViewHistory } from '@/lib/viewHistory'
 import { PrepResources } from '@/components/PrepResources'
 
 export interface SheetField {
@@ -149,6 +150,15 @@ export function BoardJobSheet({
     setJobParam(jobKey)
     return () => clearJobParam(jobKey)
   }, [open, jobKey])
+
+  useEffect(() => {
+    if (!open || !jobKey) return
+    const [board, idStr] = jobKey.split(':')
+    const id = Number(idStr)
+    if ((board === 'campus' || board === 'bianzhi') && id > 0) {
+      addViewHistory(board, id, title)
+    }
+  }, [open, jobKey, title])
 
   useEffect(() => {
     if (!open || (!onPrev && !onNext)) return

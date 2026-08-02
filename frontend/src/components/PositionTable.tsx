@@ -11,6 +11,7 @@ import { formatTotal } from '@/api'
 import { PositionSheet } from './PositionSheet'
 import { sheetNavProps } from '@/lib/sheetNav'
 import { DueBadge } from './DueBadge'
+import { SeenBadge } from './SeenBadge'
 import { EmptyState } from './EmptyState'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
@@ -280,15 +281,20 @@ export const PositionTable = memo(function PositionTable({
                           String(cell.getValue() || '-').slice(0, 10)
                         ) : cell.column.id === 'employer' ||
                           cell.column.id === 'position_example' ? (
-                          <Highlight
-                            text={truncate(
-                              String(
-                                cell.getValue() ||
-                                  (cell.column.id === 'employer' ? '—' : '-'),
-                              ),
+                          <>
+                            <Highlight
+                              text={truncate(
+                                String(
+                                  cell.getValue() ||
+                                    (cell.column.id === 'employer' ? '—' : '-'),
+                                ),
+                              )}
+                              query={highlight}
+                            />
+                            {cell.column.id === 'employer' && (
+                              <SeenBadge board="positions" id={row.original.id} className="ml-1.5" />
                             )}
-                            query={highlight}
-                          />
+                          </>
                         ) : (
                           truncate(String(cell.getValue() || '-'))
                         )}

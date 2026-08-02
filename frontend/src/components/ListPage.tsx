@@ -13,6 +13,7 @@ import { FreshnessNote } from './FreshnessNote'
 import { DeadlinesCard } from './DeadlinesCard'
 import { TodayGlance } from './TodayGlance'
 import { buildShareUrl, paramsFromQueryString, paramsToQueryString, POSITION_URL_KEYS } from '@/lib/urlFilters'
+import { useSeenSet } from '@/lib/viewHistory'
 import { MultiSelect } from './MultiSelect'
 import { PositionTable } from './PositionTable'
 import { PositionCardGrid } from './PositionCardGrid'
@@ -225,6 +226,24 @@ export function ListPage({
     return base
   })
   const [crossTotal, setCrossTotal] = useState(0)
+  const [hideSeen, setHideSeen] = useState(
+    () => new URLSearchParams(window.location.search).get('hseen') === '1',
+  )
+  const seenSet = useSeenSet()
+
+  useEffect(() => {
+    if (!syncUrl) return
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('board')) return
+    if (hideSeen) q.set('hseen', '1')
+    else q.delete('hseen')
+    const qs = q.toString()
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`,
+    )
+  }, [syncUrl, hideSeen])
 
   useEffect(() => {
     const kw = (params.keyword || '').trim()
@@ -465,8 +484,18 @@ export function ListPage({
     })
     if (params.hide_expired)
       out.push({ label: '隐藏已截止', onRemove: () => updateParam('hide_expired', undefined) })
+    if (hideSeen) out.push({ label: '隐藏已看过', onRemove: () => setHideSeen(false) })
     return out
-  }, [params, updateParam])
+  }, [params, updateParam, hideSeen])
+
+  const visibleItems = useMemo(
+    () =>
+      hideSeen
+        ? (data?.items ?? []).filter((p) => !seenSet.has(`positions:${p.id}`))
+        : data?.items ?? [],
+    [data, hideSeen, seenSet],
+  )
+  const hiddenSeenCount = (data?.items.length ?? 0) - visibleItems.length
 
   const emptyAction = useMemo(() => <ActiveFilterChips filters={activeFilters} />, [activeFilters])
   const onPageChange = useCallback((page: number) => updateParam('page', page), [updateParam])
@@ -521,6 +550,7 @@ export function ListPage({
 
   function clearFilters() {
     setParams({ ...DEFAULT_PARAMS })
+    setHideSeen(false)
     setRecommendQuery(null)
     setQuickMatchKey((k) => k + 1)
   }
@@ -1194,6 +1224,18 @@ export function ListPage({
         >
           隐藏已截止
         </button>
+        <button
+          type="button"
+          onClick={() => setHideSeen((v) => !v)}
+          className={cn(
+            'min-h-11 shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
+            hideSeen
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+          )}
+        >
+          隐藏已看过
+        </button>
         {crossPresets && crossPresets.length > 0 && onCrossPreset && (
           <>
             <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
@@ -1291,6 +1333,10 @@ export function ListPage({
 
       <FilterSummaryBar filters={activeFilters} onClearAll={clearFilters} />
 
+      {hideSeen && hiddenSeenCount > 0 && view !== 'list' && (
+        <div className="text-xs text-muted-foreground">本页已隐藏 {hiddenSeenCount} 条已看过的岗位</div>
+      )}
+
       {data && !loading && data.total === 0 && (params.keyword || '').trim() && onOpenBoardKw && (
         <CrossBoardZeroHint from="positions" keyword={params.keyword || ''} onOpen={onOpenBoardKw} />
       )}
@@ -1308,7 +1354,7 @@ export function ListPage({
         <PositionTable
           emptyAction={emptyAction}
           highlight={params.keyword}
-          data={data?.items || []}
+          data={visibleItems}
           total={data?.total || 0}
           totalCapped={data?.total_capped}
           page={data?.page || 1}
@@ -1322,7 +1368,7 @@ export function ListPage({
       )}
       {view === 'card' && (
         <PositionCardGrid
-          data={data?.items || []}
+          data={visibleItems}
           loading={loading}
           emptyAction={emptyAction}
           highlight={params.keyword}

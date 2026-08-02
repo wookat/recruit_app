@@ -3,6 +3,7 @@ import { fetchPositions, fetchSimilarPositions, type Position } from '@/api'
 import { copyText, positionShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
+import { addViewHistory } from '@/lib/viewHistory'
 import { derivePositionTags } from '@/lib/jobTags'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { PrepResources } from './PrepResources'
@@ -135,6 +136,17 @@ export function PositionSheet({
   const [similar, setSimilar] = useState<Position[]>([])
   const itemId = item?.id
   const employer = item?.employer?.trim()
+
+  useEffect(() => {
+    if (!item) return
+    const t =
+      item.employer?.trim() ||
+      stripOrgPrefix(item.position_example ?? '', item.employer) ||
+      item.exam_type ||
+      item.job_type ||
+      '体制内岗位'
+    addViewHistory('positions', item.id, t)
+  }, [item])
 
   useEffect(() => {
     if (!employer || !onOpenItem) {

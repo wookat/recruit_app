@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 import cache
 import csv_export
+from crud import keyword_variants, title_hit_rank
 from database import get_db
 from models import BianzhiJob
 
@@ -79,12 +80,15 @@ def apply_bianzhi_filters(q, f: dict):
     if f.get("updated_after"):
         q = q.filter(BianzhiJob.updated_at_src >= f["updated_after"])
     if f.get("keyword"):
-        k = f"%{f['keyword']}%"
-        q = q.filter(or_(
-            BianzhiJob.employer.ilike(k),
-            BianzhiJob.work_location.ilike(k),
-            BianzhiJob.major_requirement.ilike(k),
-        ))
+        clauses = []
+        for v in keyword_variants(f["keyword"]):
+            k = f"%{v}%"
+            clauses.extend([
+                BianzhiJob.employer.ilike(k),
+                BianzhiJob.work_location.ilike(k),
+                BianzhiJob.major_requirement.ilike(k),
+            ])
+        q = q.filter(or_(*clauses))
     if f.get("due_within_days") is not None:
         today = date.today()
         q = q.filter(BianzhiJob.deadline_date >= today,
@@ -92,12 +96,16 @@ def apply_bianzhi_filters(q, f: dict):
     return q
 
 
-def bianzhi_export_order(due_within_days):
-    return (
+def bianzhi_export_order(due_within_days, keyword=None):
+    base = (
         (BianzhiJob.deadline_date.asc(), BianzhiJob.id.desc())
         if due_within_days is not None
         else (BianzhiJob.updated_at_src.desc().nullslast(), BianzhiJob.id.desc())
     )
+    if keyword:
+        # 关键词搜索时标题（单位名）命中优先
+        return (title_hit_rank(BianzhiJob.employer, keyword), *base)
+    return base
 
 
 @router.get("", response_model=BianzhiList)
@@ -126,7 +134,7 @@ def list_bianzhi_jobs(
     })
     total = q.count()
     items = (
-        q.order_by(*bianzhi_export_order(due_within_days))
+        q.order_by(*bianzhi_export_order(due_within_days, keyword))
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()

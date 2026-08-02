@@ -39,6 +39,8 @@ import { CrossBoardZeroHint } from '@/components/CrossBoardZeroHint'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { SubscribeFilterHint } from '@/components/SubscribeFilterHint'
+import { SynonymHint } from '@/components/SynonymHint'
+import { expandKeyword } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
@@ -230,6 +232,7 @@ export function CampusPage({
   const [keyword, setKeyword] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
   const [searchInput, setSearchInput] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
   const [crossTotal, setCrossTotal] = useState(0)
+  const [synOff, setSynOff] = useState(false)
   const [companyTypes, setCompanyTypes] = useState<string[]>(() => {
     const v = urlQuery.get('ctype')
     return v ? v.split(',').filter(Boolean) : []
@@ -355,11 +358,20 @@ export function CampusPage({
     }
   }, [keyword, crossFetchTotal])
 
+  const kwTrim = keyword.trim()
+  useEffect(() => {
+    setSynOff(false)
+  }, [kwTrim])
+  const synAdded = useMemo(
+    () => (synOff || !kwTrim ? [] : expandKeyword(kwTrim).added),
+    [kwTrim, synOff],
+  )
+
   const params = useMemo<CampusParams>(() => {
     const p = PRESETS.find((v) => v.key === preset)?.params ?? {}
     return {
       ...p,
-      keyword: keyword || undefined,
+      keyword: kwTrim ? (synAdded.length ? expandKeyword(kwTrim).expanded : kwTrim) : undefined,
       company_type: companyTypes.length ? companyTypes : p.company_type,
       location: city || undefined,
       updated_after: recentOnly ? daysAgoStr(7) : undefined,
@@ -368,7 +380,7 @@ export function CampusPage({
       page,
       page_size: PAGE_SIZE,
     }
-  }, [preset, keyword, companyTypes, city, recentOnly, dueOnly, hideExpired, page])
+  }, [preset, kwTrim, synAdded, companyTypes, city, recentOnly, dueOnly, hideExpired, page])
 
   useEffect(() => {
     let cancelled = false
@@ -827,6 +839,8 @@ export function CampusPage({
         </div>
         {typeChips && <div className="hidden md:block">{typeChips}</div>}
       </div>
+
+      {synAdded.length > 0 && <SynonymHint added={synAdded} onClose={() => setSynOff(true)} />}
 
       {/* 城市筛选 + 近7天更新（桌面） */}
       <div className="hidden md:block">{cityFilterRow}</div>

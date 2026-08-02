@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel
-from sqlalchemy import or_, func
+from sqlalchemy import case, or_, func
 from sqlalchemy.orm import Session, defer
 
 import cache
@@ -48,6 +48,19 @@ CATEGORY_KEYWORDS = {
     "上市公司": ["上市公司"],
     "其他企业": ["民营企业", "股份制企业", "中外合资", "其他"],
 }
+
+
+def keyword_variants(keyword: str) -> List[str]:
+    """关键词可用「|」分隔多个同义变体（前端同义扩展），OR 匹配任意一个。"""
+    return [v.strip() for v in keyword.split("|") if v.strip()] or [keyword]
+
+
+def title_hit_rank(col, keyword: str):
+    """标题列命中任一关键词变体则排前（0），否则排后（1）。"""
+    return case(
+        (or_(*(col.ilike(f"%{v}%") for v in keyword_variants(keyword))), 0),
+        else_=1,
+    )
 
 
 def _major_columns(model, major_type: str):
@@ -130,22 +143,26 @@ def _apply_filters(query, model, filters: PositionFilter):
         ))
 
     if filters.keyword:
-        k = f"%{filters.keyword}%"
+        variants = keyword_variants(filters.keyword)
         if hasattr(model, "search_text"):
-            query = query.filter(model.search_text.ilike(k))
+            query = query.filter(or_(*(model.search_text.ilike(f"%{v}%") for v in variants)))
         else:
-            query = query.filter(or_(
-                model.position_example.ilike(k),
-                model.employer.ilike(k),
-                model.undergrad_major.ilike(k),
-                model.grad_major.ilike(k),
-                model.raw_major.ilike(k),
-                model.special_requirements.ilike(k),
-                model.exam_type.ilike(k),
-                model.work_location.ilike(k),
-                model.job_type.ilike(k),
-                model.notes.ilike(k),
-            ))
+            clauses = []
+            for v in variants:
+                k = f"%{v}%"
+                clauses.extend([
+                    model.position_example.ilike(k),
+                    model.employer.ilike(k),
+                    model.undergrad_major.ilike(k),
+                    model.grad_major.ilike(k),
+                    model.raw_major.ilike(k),
+                    model.special_requirements.ilike(k),
+                    model.exam_type.ilike(k),
+                    model.work_location.ilike(k),
+                    model.job_type.ilike(k),
+                    model.notes.ilike(k),
+                ])
+            query = query.filter(or_(*clauses))
     return query
 
 
@@ -164,12 +181,18 @@ def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_s
     # 类别筛选是高选择性条件：用 year+0 阻止 planner 走全量 (year,id) 有序索引扫描，
     # 改走 job_type/exam_type 位图索引后再排序
     year_col = (Position.year + 0) if filters.category else Position.year
+    # 关键词搜索时标题（岗位名）命中优先，其次单位名命中，再按原排序
+    rel_keys = (
+        [title_hit_rank(Position.position_example, filters.keyword),
+         title_hit_rank(Position.employer, filters.keyword)]
+        if filters.keyword else []
+    )
     if sort == "year_desc":
-        q = q.order_by(year_col.desc(), Position.id.desc())
+        q = q.order_by(*rel_keys, year_col.desc(), Position.id.desc())
     elif sort == "year_asc":
-        q = q.order_by(year_col.asc(), Position.id.asc())
+        q = q.order_by(*rel_keys, year_col.asc(), Position.id.asc())
     else:
-        q = q.order_by((Position.id + 0).desc() if filters.category else Position.id.desc())
+        q = q.order_by(*rel_keys, (Position.id + 0).desc() if filters.category else Position.id.desc())
     count_key = "cnt:pos:" + filters.model_dump_json()
     total = cache.get_or_set(count_key, 1800, lambda: _capped_count(q))
     items = q.offset((page - 1) * page_size).limit(page_size).all()

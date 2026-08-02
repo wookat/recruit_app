@@ -39,6 +39,8 @@ import { CrossBoardZeroHint } from '@/components/CrossBoardZeroHint'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { SubscribeFilterHint } from '@/components/SubscribeFilterHint'
+import { SynonymHint } from '@/components/SynonymHint'
+import { expandKeyword } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
@@ -202,6 +204,7 @@ export function BianzhiPage({
   const [refreshNonce, setRefreshNonce] = useState(0)
   const refreshResolveRef = useRef<(() => void) | null>(null)
   const [crossTotal, setCrossTotal] = useState(0)
+  const [synOff, setSynOff] = useState(false)
   const [data, setData] = useState<{ total: number; items: BianzhiJob[] } | null>(null)
   const [filters, setFilters] = useState<BianzhiFilterOptions | null>(null)
   const [loading, setLoading] = useState(true)
@@ -255,12 +258,21 @@ export function BianzhiPage({
   const isLiankaoPreset = preset === 'lk'
   const fetchPage = isLiankaoPreset ? 1 : page
 
+  const kwTrim = keyword.trim()
+  useEffect(() => {
+    setSynOff(false)
+  }, [kwTrim])
+  const synAdded = useMemo(
+    () => (synOff || !kwTrim ? [] : expandKeyword(kwTrim).added),
+    [kwTrim, synOff],
+  )
+
   const params = useMemo<BianzhiParams>(() => {
     const cat = PRESETS.find((v) => v.key === preset)?.category
     return {
       category: cat ? [cat] : undefined,
       province: provinces.length ? provinces : undefined,
-      keyword: keyword || undefined,
+      keyword: kwTrim ? (synAdded.length ? expandKeyword(kwTrim).expanded : kwTrim) : undefined,
       edu: eduFilter || undefined,
       updated_after: recentOnly ? daysAgoStr(7) : undefined,
       due_within_days: dueOnly ? 7 : undefined,
@@ -268,7 +280,7 @@ export function BianzhiPage({
       page: fetchPage,
       page_size: isLiankaoPreset ? 100 : PAGE_SIZE,
     }
-  }, [preset, recentOnly, keyword, provinces, dueOnly, hideExpired, fetchPage, isLiankaoPreset, eduFilter])
+  }, [preset, recentOnly, kwTrim, synAdded, provinces, dueOnly, hideExpired, fetchPage, isLiankaoPreset, eduFilter])
 
   useEffect(() => {
     let cancelled = false
@@ -786,6 +798,8 @@ export function BianzhiPage({
           </Button>
         </div>
       </div>
+
+      {synAdded.length > 0 && <SynonymHint added={synAdded} onClose={() => setSynOff(true)} />}
 
       {showHrSites && (
         <div className="rounded-xl border bg-background p-3">

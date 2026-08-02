@@ -574,6 +574,9 @@ function QualityCard({ quality, loading }: { quality: QualityIssues | null; load
             </button>
             {expanded === issue.key && (
               <div className="border-t px-3 py-2">
+                {issue.note && (
+                  <div className="mb-1 text-xs text-amber-700 dark:text-amber-300">{issue.note}</div>
+                )}
                 <div className="mb-1 text-xs text-muted-foreground">
                   样例（最多 {issue.samples.length} 条，点 id 直达详情）
                 </div>

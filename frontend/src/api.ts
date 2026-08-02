@@ -609,6 +609,7 @@ export interface QualityIssue {
   label: string
   count: number
   samples: QualityIssueSample[]
+  note?: string
 }
 
 export interface QualityIssues {

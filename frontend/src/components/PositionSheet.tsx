@@ -268,7 +268,7 @@ export function PositionSheet({
         <ScrollArea className="min-h-0 flex-1 px-4 sm:px-6">
           <div className="space-y-5 pb-8 pt-2">
             <Section icon={Info} title="基本信息">
-              <Field label="用人单位/系统" value={item.employer} />
+              <Field label="用人单位/系统" value={item.employer?.trim() || '—'} />
               <Field
                 label="岗位示例"
                 value={

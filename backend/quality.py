@@ -19,7 +19,7 @@ def _blank(col):
     return (col.is_(None)) | (func.trim(col) == "")
 
 
-def _issue(db: Session, board: str, key: str, label: str, model, cond, value_col) -> dict:
+def _issue(db: Session, board: str, key: str, label: str, model, cond, value_col, note: str = "") -> dict:
     count = db.query(func.count(model.id)).filter(cond).scalar() or 0
     samples = []
     if count:
@@ -31,7 +31,10 @@ def _issue(db: Session, board: str, key: str, label: str, model, cond, value_col
             .all()
         )
         samples = [{"id": r[0], "value": str(r[1]) if r[1] is not None else ""} for r in rows]
-    return {"board": board, "key": key, "label": label, "count": count, "samples": samples}
+    out = {"board": board, "key": key, "label": label, "count": count, "samples": samples}
+    if note:
+        out["note"] = note
+    return out
 
 
 def compute_quality_issues(db: Session) -> dict:
@@ -55,10 +58,12 @@ def compute_quality_issues(db: Session) -> dict:
         _issue(
             db, "positions", "pos_empty_employer", "体制内：招考单位全空",
             Position, pos_valid & _blank(Position.employer), Position.position_example,
+            note="可运行 backend/backfill_unit.py 从源站回填；回填后余量为源数据缺失，前端显示「—」",
         ),
         _issue(
             db, "campus", "campus_empty_url", "校招：公告/投递链接均为空",
             CampusJob, _blank(CampusJob.announce_url) & _blank(CampusJob.apply_url), CampusJob.company,
+            note="源数据缺失（飞书表未填链接），保持不伪造",
         ),
         _issue(
             db, "campus", "campus_literal_url", "校招：链接为「投递/公告」字面量",

@@ -279,7 +279,12 @@ export const PositionTable = memo(function PositionTable({
                         ) : cell.column.id === 'employer' ||
                           cell.column.id === 'position_example' ? (
                           <Highlight
-                            text={truncate(String(cell.getValue() || '-'))}
+                            text={truncate(
+                              String(
+                                cell.getValue() ||
+                                  (cell.column.id === 'employer' ? '—' : '-'),
+                              ),
+                            )}
                             query={highlight}
                           />
                         ) : (

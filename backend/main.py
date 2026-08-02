@@ -163,16 +163,19 @@ def recent_updates(days: int = Query(7, ge=1, le=30), db: Session = Depends(get_
                 ORDER BY id DESC LIMIT :n"""), {"d": d, "n": RECENT_ITEM_MAX}).all()
             entry["items"] = [{"id": r.id, "title": r.title, "sub": r.sub, "extra": r.extra} for r in rows]
 
-    bz_days = db.execute(text("""
+    # 编制说明行（非岗位）排除：单位名含引导提示词（同 refresh_feishu.NOTE_PHRASE_RE）或裸 URL，
+    # 计数与样例同口径
+    bz_not_note = "NOT (coalesce(employer, '') ~ '请到|特此提示|【提示】|更多.*查看' OR coalesce(employer, '') ILIKE '%http%')"
+    bz_days = db.execute(text(f"""
         SELECT created_at::date::text d, count(*) c FROM bianzhi_jobs
-        WHERE created_at >= :cutoff GROUP BY 1"""), {"cutoff": cutoff}).all()
+        WHERE created_at >= :cutoff AND {bz_not_note} GROUP BY 1"""), {"cutoff": cutoff}).all()
     for d, c in bz_days:
         entry = add(d, "bianzhi", c)
         if not entry["bulk"]:
-            rows = db.execute(text("""
+            rows = db.execute(text(f"""
                 SELECT id, coalesce(nullif(employer, ''), concat(province, category)) AS title,
                        coalesce(job_type, '') AS sub, coalesce(province, '') AS extra
-                FROM bianzhi_jobs WHERE created_at::date = :d
+                FROM bianzhi_jobs WHERE created_at::date = :d AND {bz_not_note}
                 ORDER BY id DESC LIMIT :n"""), {"d": d, "n": RECENT_ITEM_MAX}).all()
             entry["items"] = [{"id": r.id, "title": r.title, "sub": r.sub, "extra": r.extra} for r in rows]
 

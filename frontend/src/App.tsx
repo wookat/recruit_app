@@ -434,7 +434,7 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1.5 px-2"
+            className="min-h-11 min-w-11 gap-1.5 px-2 sm:min-h-8 sm:min-w-0"
             onClick={cycleTheme}
             title={theme === 'system' ? '主题：跟随系统' : theme === 'dark' ? '主题：暗色' : '主题：亮色'}
             aria-label="切换主题"

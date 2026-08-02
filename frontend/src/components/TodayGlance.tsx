@@ -71,7 +71,7 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
     onUpdates && (
       <button key="updates" type="button" className={PILL} onClick={onUpdates}>
         <Sparkles className="h-3.5 w-3.5 text-primary" />
-        今日更新：近 7 天新增一览
+        近 7 天更新
         <ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ),

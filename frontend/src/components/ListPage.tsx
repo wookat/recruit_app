@@ -75,6 +75,7 @@ import { PullToRefresh } from './PullToRefresh'
 import { cn } from '@/lib/utils'
 import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from './ActiveFilterChips'
 import { SubscribeFilterHint } from './SubscribeFilterHint'
+import { HotSearchPills } from './HotSearchPills'
 import { SynonymHint } from './SynonymHint'
 import { SearchSuggestInput } from './SearchSuggestInput'
 import { RecommendSection } from './RecommendSection'
@@ -541,6 +542,7 @@ export function ListPage({
           canSave={activeFilters.length > 0}
           onSubscribe={() => subscribeCurrentFilter()}
         />
+        <HotSearchPills onPick={(w) => updateParam('keyword', w)} />
       </div>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps

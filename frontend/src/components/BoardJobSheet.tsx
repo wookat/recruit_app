@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Building2, CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Filter, GraduationCap, Info, Link2 } from 'lucide-react'
+import { Building2, CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Filter, GraduationCap, Info, Link2, Sparkles } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -61,6 +61,12 @@ interface Props {
   snapshotNote?: boolean
   /** 相关条目区块（如同单位其他公告），点击切换详情。 */
   related?: {
+    title: string
+    items: { key: string; label: string; sub?: string | null }[]
+    onSelect: (key: string) => void
+  }
+  /** 相似岗位区块（同分类/同行业推荐），点击切换详情。 */
+  similar?: {
     title: string
     items: { key: string; label: string; sub?: string | null }[]
     onSelect: (key: string) => void
@@ -144,6 +150,7 @@ export function BoardJobSheet({
   nextDisabled,
   snapshotNote,
   related,
+  similar,
   prep,
 }: Props) {
   const validLinks = (links ?? []).filter((l) => safeUrl(l.url))
@@ -317,6 +324,34 @@ export function BoardJobSheet({
                           type="button"
                           className="flex min-h-11 w-full cursor-pointer flex-wrap items-center gap-x-2 rounded-lg border bg-background px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
                           onClick={() => related.onSelect(it.key)}
+                        >
+                          <span className="font-medium">{it.label}</span>
+                          {it.sub && (
+                            <span className="line-clamp-1 text-xs text-muted-foreground">{it.sub}</span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </>
+            )}
+
+            {similar && similar.items.length > 0 && (
+              <>
+                <Separator />
+                <section className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-sm font-semibold">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    {similar.title}
+                  </div>
+                  <ul className="space-y-1 pl-0.5">
+                    {similar.items.map((it) => (
+                      <li key={it.key}>
+                        <button
+                          type="button"
+                          className="flex min-h-11 w-full cursor-pointer flex-wrap items-center gap-x-2 rounded-lg border bg-background px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                          onClick={() => similar.onSelect(it.key)}
                         >
                           <span className="font-medium">{it.label}</span>
                           {it.sub && (

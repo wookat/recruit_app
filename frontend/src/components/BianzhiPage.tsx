@@ -51,6 +51,7 @@ import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { deriveBianzhiTags } from '@/lib/jobTags'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
+import { fetchSimilarBianzhi } from '@/lib/similarJobs'
 
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
@@ -548,6 +549,27 @@ export function BianzhiPage({
       cancelled = true
     }
   }, [detail?.employer, detail?.id])
+
+  const [similarJobs, setSimilarJobs] = useState<BianzhiJob[]>([])
+
+  useEffect(() => {
+    if (!detail) {
+      setSimilarJobs([])
+      return
+    }
+    let cancelled = false
+    const d = detail
+    fetchSimilarBianzhi(d)
+      .then((items) => {
+        if (!cancelled) setSimilarJobs(items)
+      })
+      .catch(() => {
+        if (!cancelled) setSimilarJobs([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [detail])
 
   const [cardMore, setCardMore] = useState<Set<number>>(new Set())
   const toggleCardMore = useCallback((id: number) => {
@@ -1374,6 +1396,24 @@ export function BianzhiPage({
                   })),
                   onSelect: (key) => {
                     const hit = relatedJobs.find((j) => String(j.id) === key)
+                    if (hit) setDetail(hit)
+                  },
+                }
+              : undefined
+          }
+          similar={
+            similarJobs.length > 0
+              ? {
+                  title: '相似岗位（同分类·同省）',
+                  items: similarJobs.map((j) => ({
+                    key: String(j.id),
+                    label: [j.employer, j.job_type].filter(Boolean).join(' · ') || '-',
+                    sub: [j.work_location || j.province, j.deadline_text ? `截止：${j.deadline_text}` : null]
+                      .filter(Boolean)
+                      .join(' · '),
+                  })),
+                  onSelect: (key) => {
+                    const hit = similarJobs.find((j) => String(j.id) === key)
                     if (hit) setDetail(hit)
                   },
                 }

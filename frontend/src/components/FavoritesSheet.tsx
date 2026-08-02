@@ -47,6 +47,11 @@ import {
   setNotifyEnabled,
   useNotifyEnabled,
 } from '@/lib/dueNotification'
+import {
+  enableNewsNotification,
+  setNewsNotifyEnabled,
+  useNewsNotifyEnabled,
+} from '@/lib/savedNews'
 import { dismissFollowUp, followUpInfo, useFollowUpDismissed } from '@/lib/followup'
 import { cn } from '@/lib/utils'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
@@ -66,7 +71,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, ArrowRight, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, MonitorSmartphone, Scale, Sparkles, Square, SquareCheck } from 'lucide-react'
+import { AlarmClock, ArrowRight, Bookmark, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, MonitorSmartphone, Scale, Sparkles, Square, SquareCheck } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1262,6 +1267,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
               <span className="hidden sm:inline">顶栏红点与横幅按此计算</span>
             </div>
             <NotifyToggleRow />
+            <NewsNotifyToggleRow />
             <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5">
               {BOARD_TABS.map((t) => (
                 <button
@@ -1770,6 +1776,61 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
         />
       )}
     </>
+  )
+}
+
+/** 「订阅上新浏览器通知」独立开关（默认关）：常用筛选检测到新增时每日至多一条聚合通知，无权限回退红点。 */
+function NewsNotifyToggleRow() {
+  const enabled = useNewsNotifyEnabled()
+  const [denied, setDenied] = useState(false)
+  if (!isNotificationSupported()) return null
+
+  const toggle = async () => {
+    if (enabled) {
+      setNewsNotifyEnabled(false)
+      return
+    }
+    const perm = await enableNewsNotification()
+    setDenied(perm !== 'granted')
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+      <Bookmark className="h-3.5 w-3.5 shrink-0" />
+      订阅上新浏览器通知
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        aria-label="订阅上新浏览器通知"
+        onClick={toggle}
+        className={cn(
+          'relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:h-6 sm:w-10',
+        )}
+      >
+        <span
+          className={cn(
+            'inline-flex h-5 w-9 items-center rounded-full border px-0.5 transition-colors',
+            enabled ? 'border-primary bg-primary' : 'border-border bg-muted',
+          )}
+        >
+          <span
+            className={cn(
+              'h-4 w-4 rounded-full bg-background shadow transition-transform',
+              enabled ? 'translate-x-4' : 'translate-x-0',
+            )}
+          />
+        </span>
+      </button>
+      <span className="hidden sm:inline">
+        {enabled ? '常用筛选有上新时每日至多提醒一条' : '默认关闭，仅用站内红点提示上新'}
+      </span>
+      {denied && (
+        <span className="w-full text-amber-700 dark:text-amber-300">
+          浏览器已拒绝通知权限（可在地址栏站点设置中重新允许），已回退为站内红点提示
+        </span>
+      )}
+    </div>
   )
 }
 

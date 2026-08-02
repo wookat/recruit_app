@@ -21,7 +21,13 @@ import { POSITION_URL_KEYS } from '@/lib/urlFilters'
 import { daysUntil, getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import { useRemindDays } from '@/lib/reminderPref'
 import { maybeNotifyDue } from '@/lib/dueNotification'
-import { refreshSavedNews, useSavedNews } from '@/lib/savedNews'
+import {
+  maybeNotifySavedNews,
+  openSubscriptionsPanel,
+  refreshSavedNews,
+  useSavedNews,
+} from '@/lib/savedNews'
+import { SubscriptionsSheet } from '@/components/SubscriptionsSheet'
 import { lazyRetry } from '@/lib/lazyRetry'
 
 const JobGuideSheet = lazy(() =>
@@ -240,7 +246,7 @@ export default function App() {
 
   const savedNews = useSavedNews()
   useEffect(() => {
-    refreshSavedNews()
+    refreshSavedNews(() => maybeNotifySavedNews(openSubscriptionsPanel))
   }, [])
 
   const cycleTheme = useCallback(() => {
@@ -701,6 +707,7 @@ export default function App() {
         {guideOpen && <JobGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
       </Suspense>
       <BoardCompareBar onOpenJob={(board, id) => openSearchJob(board, id, '')} />
+      <SubscriptionsSheet />
       {deepLinked && (
         <LazyPositionSheet
           item={deepLinked}

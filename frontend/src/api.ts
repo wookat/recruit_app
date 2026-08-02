@@ -598,6 +598,30 @@ export async function adminOverview(token: string): Promise<AdminOverview> {
   return res.data
 }
 
+export interface QualityIssueSample {
+  id: number
+  value: string
+}
+
+export interface QualityIssue {
+  board: 'positions' | 'campus' | 'bianzhi'
+  key: string
+  label: string
+  count: number
+  samples: QualityIssueSample[]
+}
+
+export interface QualityIssues {
+  generated_at: string
+  total: number
+  issues: QualityIssue[]
+}
+
+export async function fetchQualityIssues(token: string): Promise<QualityIssues> {
+  const res = await axios.get(`${API_BASE}/api/admin/quality-issues`, adminHeaders(token))
+  return res.data
+}
+
 export async function fetchCrawlRuns(token: string, page = 1, pageSize = 20): Promise<CrawlRunList> {
   const res = await axios.get(`${API_BASE}/api/admin/crawl-runs`, {
     params: { page, page_size: pageSize },

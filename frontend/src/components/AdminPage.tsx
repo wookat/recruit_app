@@ -9,6 +9,7 @@ import {
   adminUpdateSource,
   fetchCrawlRuns,
   fetchHealthSummary,
+  fetchQualityIssues,
   fetchTaskStatus,
   triggerScrape,
   type AdminOverview,
@@ -17,6 +18,7 @@ import {
   type CrawlRunList,
   type HealthSummary,
   type HealthTrendDay,
+  type QualityIssues,
   type WatchSource,
 } from '@/api'
 import { Button } from '@/components/ui/button'
@@ -42,6 +44,7 @@ export function AdminPage() {
   const [runs, setRuns] = useState<CrawlRunList | null>(null)
   const [health, setHealth] = useState<HealthSummary | null>(null)
   const [healthAt, setHealthAt] = useState<Date | null>(null)
+  const [quality, setQuality] = useState<QualityIssues | null>(null)
   const [runPage, setRunPage] = useState(1)
   const [expandedRun, setExpandedRun] = useState<number | null>(null)
 
@@ -83,6 +86,9 @@ export function AdminPage() {
             setHealthAt(new Date())
           })
           .catch(() => setHealth(null))
+        fetchQualityIssues(tk)
+          .then(setQuality)
+          .catch(() => setQuality(null))
         setAuthed(true)
         setError('')
         localStorage.setItem(TOKEN_KEY, tk)
@@ -281,6 +287,8 @@ export function AdminPage() {
       </Card>
 
       {health && <HealthCard health={health} updatedAt={healthAt} />}
+
+      {quality && <QualityCard quality={quality} />}
 
       <Card>
         <CardHeader className="pb-2">
@@ -501,6 +509,77 @@ const TABLE_LABELS: Record<string, string> = {
 function formatClock(d: Date): string {
   const p = (n: number) => String(n).padStart(2, '0')
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+}
+
+function sampleHref(board: 'positions' | 'campus' | 'bianzhi', id: number): string {
+  if (board === 'positions') return `?board=positions&job=positions:${id}`
+  if (board === 'campus') return `?board=campus&job=campus:${id}`
+  return `?board=bianzhi&bpreset=all&job=bianzhi:${id}`
+}
+
+function QualityCard({ quality }: { quality: QualityIssues }) {
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const found = quality.issues.filter((i) => i.count > 0)
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-base">数据质量</CardTitle>
+        <span className="text-xs text-muted-foreground">
+          问题数据共 {quality.total.toLocaleString()} 条 · 扫描于{' '}
+          {new Date(quality.generated_at).toLocaleString('zh-CN')} · 1h 缓存 · 只读展示
+        </span>
+      </CardHeader>
+      <CardContent className="space-y-1.5">
+        {found.length === 0 && (
+          <div className="py-4 text-center text-sm text-muted-foreground">
+            未扫描到已知类型的脏数据
+          </div>
+        )}
+        {found.map((issue) => (
+          <div key={issue.key} className="rounded-lg border">
+            <button
+              type="button"
+              className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50 sm:min-h-0"
+              aria-expanded={expanded === issue.key}
+              onClick={() => setExpanded((k) => (k === issue.key ? null : issue.key))}
+            >
+              <span className="flex items-center gap-1.5">
+                {expanded === issue.key ? (
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                )}
+                {issue.label}
+              </span>
+              <Badge variant="secondary">{issue.count.toLocaleString()}</Badge>
+            </button>
+            {expanded === issue.key && (
+              <div className="border-t px-3 py-2">
+                <div className="mb-1 text-xs text-muted-foreground">
+                  样例（最多 {issue.samples.length} 条，点 id 直达详情）
+                </div>
+                <ul className="space-y-0.5 text-xs">
+                  {issue.samples.map((s) => (
+                    <li key={s.id} className="flex items-baseline gap-2">
+                      <a
+                        href={sampleHref(issue.board, s.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="shrink-0 font-mono text-primary underline-offset-2 hover:underline"
+                      >
+                        #{s.id}
+                      </a>
+                      <span className="truncate text-muted-foreground">{s.value || '（空）'}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
 }
 
 function HealthCard({ health, updatedAt }: { health: HealthSummary; updatedAt: Date | null }) {

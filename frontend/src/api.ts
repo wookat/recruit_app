@@ -274,6 +274,31 @@ export function fetchFreshness(): Promise<Freshness> {
   return freshnessPromise
 }
 
+// ---------- 近 7 天更新 ----------
+export interface RecentUpdateItem {
+  id: number
+  title: string
+  sub: string
+  extra: string
+}
+
+export interface RecentUpdateBoard {
+  count: number
+  /** 单日入库量过大（全量同步导入），不逐条展示 */
+  bulk: boolean
+  items: RecentUpdateItem[]
+}
+
+export interface RecentUpdateDay {
+  date: string
+  boards: Partial<Record<'positions' | 'campus' | 'bianzhi', RecentUpdateBoard>>
+}
+
+export async function fetchRecentUpdates(days = 7): Promise<{ days: RecentUpdateDay[] }> {
+  const res = await axios.get(`${API_BASE}/api/recent-updates?days=${days}`)
+  return res.data
+}
+
 // ---------- chips 计数 ----------
 export interface BianzhiCounts {
   categories: Record<string, number>

@@ -5,7 +5,7 @@ import { LazyPositionSheet } from '@/components/LazyPositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BookOpen, Briefcase, CalendarDays, History, Moon, Search, Settings, Star, Sun } from 'lucide-react'
+import { BookOpen, Briefcase, CalendarDays, History, Moon, Search, Settings, Sparkles, Star, Sun } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
@@ -27,7 +27,7 @@ const JobGuideSheet = lazy(() =>
   import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet })),
 )
 
-const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'biancal', 'company', 'choose', 'tips']
+const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'biancal', 'company', 'choose', 'tips', 'about']
 
 const GlobalSearch = lazy(() =>
   import('@/components/GlobalSearch').then((m) => ({ default: m.GlobalSearch })),
@@ -49,6 +49,9 @@ const BianzhiPage = lazy(() =>
 )
 const CalendarPage = lazy(() =>
   import('@/components/CalendarPage').then((m) => ({ default: m.CalendarPage })),
+)
+const RecentUpdatesPage = lazy(() =>
+  import('@/components/RecentUpdatesPage').then((m) => ({ default: m.RecentUpdatesPage })),
 )
 
 const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
@@ -84,7 +87,7 @@ const BIANZHI_CROSS = [
 ]
 
 interface Section {
-  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar'
+  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar' | 'updates'
   preset?: string
   keyword?: string
 }
@@ -96,6 +99,7 @@ function initialSection(): Section {
     return { mode: board, preset: q.get('bpreset') || undefined }
   }
   if (board === 'calendar') return { mode: 'calendar' }
+  if (board === 'updates') return { mode: 'updates' }
   return { mode: 'positions' }
 }
 
@@ -111,9 +115,13 @@ function syncSectionUrl(section: Section) {
     q.delete('prov')
     q.delete('bkw')
     q.delete('cview')
-  } else if (section.mode === 'calendar') {
-    q.set('board', 'calendar')
+  } else if (section.mode === 'calendar' || section.mode === 'updates') {
+    q.set('board', section.mode)
     for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bkw', 'hexp']) q.delete(k)
+    if (section.mode === 'updates') {
+      q.delete('cview')
+      q.delete('cboard')
+    }
     for (const k of POSITION_URL_KEYS) q.delete(k)
   } else {
     if (q.get('board') !== section.mode) q.delete('hexp')
@@ -431,6 +439,20 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
+            className={`hidden min-h-11 gap-1.5 px-2 sm:min-h-8 md:inline-flex ${section.mode === 'updates' ? 'text-primary' : ''}`}
+            aria-label="今日更新"
+            title="近 7 天新增岗位"
+            onClick={() => {
+              setSection(section.mode === 'updates' ? { mode: 'positions' } : { mode: 'updates' })
+              window.scrollTo({ top: 0 })
+            }}
+          >
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline">今日更新</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             className={`hidden min-h-11 gap-1.5 px-2 sm:min-h-8 md:inline-flex ${section.mode === 'calendar' ? 'text-primary' : ''}`}
             aria-label="截止日历"
             title="截止日历"
@@ -522,6 +544,10 @@ export default function App() {
               crossFetchTotal={campusTotal}
               onCrossOpen={(kw) => goCampus('all', kw)}
               onOpenBoardKw={openBoardKw}
+              onOpenUpdates={() => {
+                setSection({ mode: 'updates' })
+                window.scrollTo({ top: 0 })
+              }}
             />
           )}
           <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
@@ -554,6 +580,16 @@ export default function App() {
               />
             )}
             {tab !== 'admin' && section.mode === 'calendar' && <CalendarPage />}
+            {tab !== 'admin' && section.mode === 'updates' && (
+              <RecentUpdatesPage
+                onOpenJob={(board, id) => openSearchJob(board, id, '')}
+                onOpenBoard={(board) => {
+                  if (board === 'positions') goPositions('all')
+                  else if (board === 'campus') goCampus('all')
+                  else goBianzhi('all')
+                }}
+              />
+            )}
             {tab === 'admin' && showAdmin && <AdminPage />}
           </Suspense>
         </div>
@@ -561,6 +597,17 @@ export default function App() {
 
       <footer className="border-t bg-background py-6 pb-24 text-center text-xs text-muted-foreground md:pb-16">
         <div className="mb-2 flex items-center justify-center gap-4">
+          <button
+            type="button"
+            className="inline-flex min-h-11 items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:min-h-0"
+            onClick={() => {
+              setSection({ mode: 'updates' })
+              window.scrollTo({ top: 0 })
+            }}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            今日更新
+          </button>
           <button
             type="button"
             className="inline-flex min-h-11 items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:min-h-0"
@@ -581,7 +628,21 @@ export default function App() {
             求职攻略
           </button>
         </div>
-        数据来源：国家公务员局、军队人才网、国聘网及各省官方/汇总页面 · 仅供参考
+        数据来源：国家公务员局、军队人才网、国聘网及各省官方/汇总页面 · 仅供参考 ·{' '}
+        <button
+          type="button"
+          className="underline underline-offset-4 hover:text-foreground"
+          onClick={() => {
+            window.history.replaceState(
+              null,
+              '',
+              window.location.pathname + window.location.search + '#about',
+            )
+            setGuideOpen(true)
+          }}
+        >
+          数据说明
+        </button>
       </footer>
 
       <MobileBottomNav

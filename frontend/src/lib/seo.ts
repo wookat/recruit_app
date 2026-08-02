@@ -18,7 +18,7 @@ const BIANZHI_PRESET_LABELS: Record<string, string> = {
 }
 
 export function applySeo(
-  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar',
+  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar' | 'updates',
   preset?: string,
 ) {
   let title = DEFAULT_TITLE
@@ -26,6 +26,9 @@ export function applySeo(
   if (mode === 'calendar') {
     title = `截止日历 - ${SITE}`
     desc = '未来 60 天校招与编制公告报名截止汇总日历，按日期查看当日截止岗位，不错过每一个报名窗口。'
+  } else if (mode === 'updates') {
+    title = `近 7 天更新 - ${SITE}`
+    desc = '体制内、校招、编制三板块近 7 天新增岗位按日聚合，每日自动同步，新机会一目了然。'
   } else if (mode === 'campus') {
     const label = preset ? CAMPUS_PRESET_LABELS[preset] : undefined
     title = `校招信息${label ? `·${label}` : ''} - ${SITE}`

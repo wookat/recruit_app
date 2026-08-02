@@ -106,6 +106,7 @@ interface ListPageProps {
   crossFetchTotal?: (keyword: string) => Promise<number>
   onCrossOpen?: (keyword: string) => void
   onOpenBoardKw?: (board: 'positions' | 'campus' | 'bianzhi', keyword: string) => void
+  onOpenUpdates?: () => void
 }
 
 const HOT_SEARCH = [
@@ -210,6 +211,7 @@ export function ListPage({
   crossFetchTotal,
   onCrossOpen,
   onOpenBoardKw,
+  onOpenUpdates,
 }: ListPageProps) {
   const [filters, setFilters] = useState<FilterOptions | null>(null)
   const [data, setData] = useState<PositionList | null>(null)
@@ -1270,6 +1272,7 @@ export function ListPage({
 
       {showStats && onCrossPreset && (
         <TodayGlance
+          onUpdates={onOpenUpdates}
           onCampus={() => onCrossPreset('recent7')}
           onCampusAll={() => onCrossPreset('all')}
           onBianzhi={() => onCrossPreset('bz:all')}

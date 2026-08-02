@@ -2,7 +2,7 @@ import io
 import os
 from urllib.parse import quote
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 import pandas as pd
@@ -118,6 +118,70 @@ def data_freshness(db: Session = Depends(get_db)):
     """)).all()
     by_grp = {r.grp: r.last_success.isoformat() for r in rows}
     return {k: {"last_success": by_grp.get(k)} for k in ("positions", "campus", "bianzhi")}
+
+
+RECENT_BULK_THRESHOLD = 2000  # 单日入库超过该值视为全量同步导入，不逐条展示
+RECENT_ITEM_MAX = 6
+
+
+@app.get("/api/recent-updates")
+@cache.cached("recent_updates", ttl=600)
+def recent_updates(days: int = Query(7, ge=1, le=30), db: Session = Depends(get_db)):
+    """近 N 天三板块新增岗位：按日分组的计数 + 每板块每日样例（入库时间 created_at）。"""
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    by_date: dict = {}
+
+    def add(day: str, board: str, count: int):
+        entry = {"count": count, "bulk": count > RECENT_BULK_THRESHOLD, "items": []}
+        by_date.setdefault(day, {})[board] = entry
+        return entry
+
+    pos_days = db.execute(text("""
+        SELECT created_at::date::text d, count(*) c FROM positions
+        WHERE dup_of_id IS NULL AND invalid_reason IS NULL AND created_at >= :cutoff
+        GROUP BY 1"""), {"cutoff": cutoff}).all()
+    for d, c in pos_days:
+        entry = add(d, "positions", c)
+        if not entry["bulk"]:
+            rows = db.execute(text("""
+                SELECT id, coalesce(nullif(employer, ''), exam_type) AS title,
+                       coalesce(position_example, '') AS sub, coalesce(province, '') AS extra
+                FROM positions
+                WHERE dup_of_id IS NULL AND invalid_reason IS NULL AND created_at::date = :d
+                ORDER BY id DESC LIMIT :n"""), {"d": d, "n": RECENT_ITEM_MAX}).all()
+            entry["items"] = [{"id": r.id, "title": r.title, "sub": r.sub, "extra": r.extra} for r in rows]
+
+    campus_days = db.execute(text("""
+        SELECT created_at::date::text d, count(*) c FROM campus_jobs
+        WHERE created_at >= :cutoff GROUP BY 1"""), {"cutoff": cutoff}).all()
+    for d, c in campus_days:
+        entry = add(d, "campus", c)
+        if not entry["bulk"]:
+            rows = db.execute(text("""
+                SELECT id, coalesce(company, '') AS title, coalesce(positions, '') AS sub, coalesce(batch, '') AS extra
+                FROM campus_jobs WHERE created_at::date = :d
+                ORDER BY id DESC LIMIT :n"""), {"d": d, "n": RECENT_ITEM_MAX}).all()
+            entry["items"] = [{"id": r.id, "title": r.title, "sub": r.sub, "extra": r.extra} for r in rows]
+
+    bz_days = db.execute(text("""
+        SELECT created_at::date::text d, count(*) c FROM bianzhi_jobs
+        WHERE created_at >= :cutoff GROUP BY 1"""), {"cutoff": cutoff}).all()
+    for d, c in bz_days:
+        entry = add(d, "bianzhi", c)
+        if not entry["bulk"]:
+            rows = db.execute(text("""
+                SELECT id, coalesce(nullif(employer, ''), concat(province, category)) AS title,
+                       coalesce(job_type, '') AS sub, coalesce(province, '') AS extra
+                FROM bianzhi_jobs WHERE created_at::date = :d
+                ORDER BY id DESC LIMIT :n"""), {"d": d, "n": RECENT_ITEM_MAX}).all()
+            entry["items"] = [{"id": r.id, "title": r.title, "sub": r.sub, "extra": r.extra} for r in rows]
+
+    return {
+        "days": [
+            {"date": d, "boards": by_date[d]}
+            for d in sorted(by_date.keys(), reverse=True)
+        ],
+    }
 
 
 @app.get("/api/positions", response_model=schemas.PositionList)

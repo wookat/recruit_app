@@ -14,6 +14,7 @@ import {
   type BoardCompareItem,
 } from '@/lib/boardCompare'
 import type { FavCompareColumn } from './FavCompareDialog'
+import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { lazyRetry } from '@/lib/lazyRetry'
 
 const FavCompareDialog = lazy(() =>
@@ -35,7 +36,7 @@ function unifiedFields(s: BoardCompareItem): { label: string; value: string }[] 
     return [
       { label: '来源板块', value: BOARD_NAMES.positions },
       { label: '单位', value: j.employer || dash },
-      { label: '岗位', value: j.position_example || dash },
+      { label: '岗位', value: j.position_example ? stripOrgPrefix(j.position_example, j.employer) : dash },
       { label: '工作地点', value: j.work_location || dash },
       { label: '学历要求', value: j.edu_level_norm || j.edu_requirement || dash },
       { label: '专业要求', value: major || j.raw_major || dash },
@@ -48,7 +49,7 @@ function unifiedFields(s: BoardCompareItem): { label: string; value: string }[] 
     return [
       { label: '来源板块', value: BOARD_NAMES.campus },
       { label: '单位', value: j.company || dash },
-      { label: '岗位', value: j.positions || dash },
+      { label: '岗位', value: j.positions ? stripOrgPrefix(j.positions, j.company) : dash },
       { label: '工作地点', value: j.locations || dash },
       { label: '学历要求', value: j.edu_requirement || dash },
       { label: '专业要求', value: j.major_requirement || dash },
@@ -60,7 +61,7 @@ function unifiedFields(s: BoardCompareItem): { label: string; value: string }[] 
   return [
     { label: '来源板块', value: BOARD_NAMES.bianzhi },
     { label: '单位', value: j.employer || dash },
-    { label: '岗位', value: j.job_type || dash },
+    { label: '岗位', value: j.job_type ? stripOrgPrefix(j.job_type, j.employer) : dash },
     { label: '工作地点', value: j.work_location || j.province || dash },
     { label: '学历要求', value: j.edu_requirement || dash },
     { label: '专业要求', value: j.major_requirement || dash },

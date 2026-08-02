@@ -10,6 +10,7 @@ import sys
 
 from sqlalchemy import text
 
+from data_clean import clean_major_requirement
 from database import Base, SessionLocal, engine
 from models import CampusJob
 
@@ -74,6 +75,8 @@ def import_file(db, path: str, source_table: str, colmap: dict) -> tuple[int, in
             if not d.get("company"):
                 skipped += 1
                 continue
+            if "major_requirement" in d:
+                d["major_requirement"] = clean_major_requirement(d["major_requirement"])
             h = row_hash(source_table, d)
             if h in existing:
                 skipped += 1

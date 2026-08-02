@@ -655,6 +655,34 @@ export async function fetchHealthSummary(token: string): Promise<HealthSummary> 
   return res.data
 }
 
+export interface SyncTodayItem {
+  source_id: number
+  source_name: string
+  status: string
+  started_at: string | null
+  finished_at: string | null
+  rows_ingested: number
+  error: string | null
+}
+
+export async function fetchSyncToday(token: string): Promise<{ date: string; items: SyncTodayItem[] }> {
+  const res = await axios.get(`${API_BASE}/api/admin/sync-today`, adminHeaders(token))
+  return res.data
+}
+
+export async function triggerSyncNow(token: string): Promise<{ task_id: string }> {
+  const res = await axios.post(`${API_BASE}/api/admin/sync-now`, null, adminHeaders(token))
+  return res.data
+}
+
+export async function fetchSyncStatus(
+  token: string,
+  taskId: string,
+): Promise<{ state: string; result?: unknown; error?: string }> {
+  const res = await axios.get(`${API_BASE}/api/admin/sync-status/${taskId}`, adminHeaders(token))
+  return res.data
+}
+
 export async function adminOverview(token: string): Promise<AdminOverview> {
   const res = await axios.get(`${API_BASE}/api/admin/overview`, adminHeaders(token))
   return res.data

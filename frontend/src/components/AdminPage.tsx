@@ -10,8 +10,11 @@ import {
   fetchCrawlRuns,
   fetchHealthSummary,
   fetchQualityIssues,
+  fetchSyncStatus,
+  fetchSyncToday,
   fetchTaskStatus,
   triggerScrape,
+  triggerSyncNow,
   type AdminOverview,
   type Announcement,
   type CrawlRun,
@@ -19,6 +22,7 @@ import {
   type HealthSummary,
   type HealthTrendDay,
   type QualityIssues,
+  type SyncTodayItem,
   type WatchSource,
 } from '@/api'
 import { Button } from '@/components/ui/button'
@@ -289,7 +293,7 @@ export function AdminPage() {
         </CardContent>
       </Card>
 
-      {health && <HealthCard health={health} updatedAt={healthAt} />}
+      {health && <HealthCard health={health} updatedAt={healthAt} token={token} />}
 
       <QualityCard quality={quality} loading={qualityLoading} />
 
@@ -604,7 +608,7 @@ function QualityCard({ quality, loading }: { quality: QualityIssues | null; load
   )
 }
 
-function HealthCard({ health, updatedAt }: { health: HealthSummary; updatedAt: Date | null }) {
+function HealthCard({ health, updatedAt, token }: { health: HealthSummary; updatedAt: Date | null; token: string }) {
   const cacheMissing = health.cache_ttl_seconds.stats <= 0 || health.cache_ttl_seconds.filters <= 0
   const hasFailures =
     health.crawl_24h.failed > 0 || health.failed_sources_yesterday.sources.length > 0
@@ -678,6 +682,8 @@ function HealthCard({ health, updatedAt }: { health: HealthSummary; updatedAt: D
           </div>
         )}
 
+        <SyncTodaySection token={token} />
+
         {health.trend && health.trend.length > 0 && <TrendSection trend={health.trend} />}
 
         {health.crawl_24h.latest_by_source.length > 0 && (
@@ -728,6 +734,123 @@ function HealthCard({ health, updatedAt }: { health: HealthSummary; updatedAt: D
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/** 今日同步结果明细 + 立即触发同步（唯一写操作，带确认与进行中状态）。 */
+function SyncTodaySection({ token }: { token: string }) {
+  const [detail, setDetail] = useState<{ date: string; items: SyncTodayItem[] } | null>(null)
+  const [confirming, setConfirming] = useState(false)
+  const [running, setRunning] = useState(false)
+  const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  const loadDetail = useCallback(() => {
+    fetchSyncToday(token)
+      .then(setDetail)
+      .catch(() => undefined)
+  }, [token])
+
+  useEffect(() => {
+    loadDetail()
+  }, [loadDetail])
+
+  const trigger = async () => {
+    setConfirming(false)
+    setRunning(true)
+    setSyncMsg(null)
+    try {
+      const { task_id } = await triggerSyncNow(token)
+      const deadline = Date.now() + 180_000
+      for (;;) {
+        await new Promise((r) => setTimeout(r, 3000))
+        const s = await fetchSyncStatus(token, task_id)
+        if (s.state === 'SUCCESS') {
+          setSyncMsg({ ok: true, text: '同步完成，明细已刷新' })
+          break
+        }
+        if (s.state === 'FAILURE') {
+          setSyncMsg({ ok: false, text: `同步失败：${s.error || '未知错误'}` })
+          break
+        }
+        if (Date.now() > deadline) {
+          setSyncMsg({ ok: false, text: '同步仍在后台进行（超 3 分钟），稍后刷新查看明细' })
+          break
+        }
+      }
+    } catch (e) {
+      setSyncMsg({ ok: false, text: e instanceof Error ? e.message : '触发失败' })
+    } finally {
+      setRunning(false)
+      loadDetail()
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium">今日同步结果{detail ? `（${detail.date}）` : ''}</span>
+        {confirming ? (
+          <span className="inline-flex items-center gap-1 text-xs">
+            确认立即触发飞书数据同步？
+            <Button size="sm" variant="destructive" className="h-auto min-h-11 text-xs sm:min-h-7" onClick={trigger}>
+              确认触发
+            </Button>
+            <Button size="sm" variant="ghost" className="h-auto min-h-11 text-xs sm:min-h-7" onClick={() => setConfirming(false)}>
+              取消
+            </Button>
+          </span>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-auto min-h-11 gap-1 text-xs sm:min-h-7"
+            disabled={running}
+            onClick={() => setConfirming(true)}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${running ? 'animate-spin' : ''}`} />
+            {running ? '同步进行中…' : '立即触发同步'}
+          </Button>
+        )}
+        {syncMsg && (
+          <span className={`text-xs ${syncMsg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            {syncMsg.text}
+          </span>
+        )}
+      </div>
+      {detail && detail.items.length === 0 && (
+        <p className="text-xs text-muted-foreground">今日暂无同步记录（每日 6:20 自动同步，或点上方按钮立即触发）</p>
+      )}
+      {detail && detail.items.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[520px] text-sm">
+            <thead>
+              <tr className="border-b text-left text-xs text-muted-foreground">
+                <th className="py-1.5 pr-3">来源</th>
+                <th className="py-1.5 pr-3">状态</th>
+                <th className="py-1.5 pr-3">新增</th>
+                <th className="py-1.5">失败原因</th>
+              </tr>
+            </thead>
+            <tbody>
+              {detail.items.map((s) => (
+                <tr key={s.source_id} className="border-b last:border-0">
+                  <td className="max-w-[200px] truncate py-1.5 pr-3">{s.source_name}</td>
+                  <td className="py-1.5 pr-3">
+                    <Badge className={`border-transparent ${RUN_STATUS_STYLES[s.status] || RUN_STATUS_STYLES.running}`}>
+                      {RUN_STATUS_LABELS[s.status] || s.status}
+                    </Badge>
+                  </td>
+                  <td className="py-1.5 pr-3 text-xs tabular-nums">{s.rows_ingested}</td>
+                  <td className="max-w-[260px] truncate py-1.5 text-xs text-red-600 dark:text-red-400" title={s.error || undefined}>
+                    {s.status === 'success' ? '-' : s.error || '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   )
 }
 

@@ -42,7 +42,7 @@ export function SyncCodePanel({ onClose }: { onClose: () => void }) {
       ].filter(Boolean)
       setMsg({
         ok: true,
-        text: `已合并：体制内 ${r.positions} · 校招 ${r.campus} · 编制 ${r.bianzhi}${extras.length ? `（${extras.join('，')}）` : ''}`,
+        text: `已合并：体制内 ${r.positions} · 校招 ${r.campus} · 编制 ${r.bianzhi}，新增 ${r.added} 条 · 更新 ${r.updated} 条${extras.length ? `（${extras.join('，')}）` : ''}`,
       })
       setPasted('')
     } catch (e) {

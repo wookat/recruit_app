@@ -1038,7 +1038,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
         const r = restoreBackup(String(reader.result))
         setRestoreMsg({
           ok: true,
-          text: `已恢复：体制内 ${r.positions} · 校招 ${r.campus} · 编制 ${r.bianzhi}`,
+          text: `已恢复：体制内 ${r.positions} · 校招 ${r.campus} · 编制 ${r.bianzhi}（新增 ${r.added} · 更新 ${r.updated}）`,
         })
       } catch (e) {
         setRestoreMsg({ ok: false, text: e instanceof Error ? e.message : '恢复失败' })
@@ -1213,7 +1213,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
                 )}
               >
                 <AlarmClock className="h-4 w-4 shrink-0" />
-                {dueAlert.count} 条收藏{dueAlert.level === 'red' ? '即将截止（3 天内）' : `将于 ${remindDays} 天内截止`}，点击查看
+                {dueAlert.count} 条收藏{dueAlert.level === 'red' ? ' 3 天内截止' : `将于 ${remindDays} 天内截止`}，点击查看
               </button>
             )}
             <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">

@@ -63,6 +63,8 @@ export interface RestoreResult {
   positions: number
   campus: number
   bianzhi: number
+  added: number
+  updated: number
 }
 
 /** 解析并合并导入备份 JSON。格式非法抛出 Error，不修改现有数据。 */
@@ -83,22 +85,30 @@ export function restoreBackup(text: string): RestoreResult {
   const campus = isRecord(parsed.campus) ? parsed.campus : {}
   const bianzhi = isRecord(parsed.bianzhi) ? parsed.bianzhi : {}
 
-  const positionsCount = mergePositionData({
+  const posStats = mergePositionData({
     favorites: itemsWithId<Position>(pos.favorites),
     statuses: recordOf(pos.statuses),
     notes: recordOf(pos.notes),
     channels: recordOf(pos.channels),
     priorities: recordOf(pos.priorities),
+    statusHistory: isRecord(pos.statusHistory) ? (pos.statusHistory as PositionBackup['statusHistory']) : undefined,
+    pinned: isRecord(pos.pinned) ? (pos.pinned as PositionBackup['pinned']) : undefined,
   })
-  const campusCount = mergeBoardData(
+  const campusStats = mergeBoardData(
     'campus',
     itemsWithId<CampusJob>(campus.favorites),
     recordOf(campus.meta),
   )
-  const bianzhiCount = mergeBoardData(
+  const bianzhiStats = mergeBoardData(
     'bianzhi',
     itemsWithId<BianzhiJob>(bianzhi.favorites),
     recordOf(bianzhi.meta),
   )
-  return { positions: positionsCount, campus: campusCount, bianzhi: bianzhiCount }
+  return {
+    positions: posStats.total,
+    campus: campusStats.total,
+    bianzhi: bianzhiStats.total,
+    added: posStats.added + campusStats.added + bianzhiStats.added,
+    updated: posStats.updated + campusStats.updated + bianzhiStats.updated,
+  }
 }

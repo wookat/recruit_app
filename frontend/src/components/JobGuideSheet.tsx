@@ -120,6 +120,83 @@ const TIMELINE_STAGES: TimelineStage[] = [
   },
 ]
 
+interface ExamTrack {
+  key: string
+  title: string
+  stages: { phase: string; when: string }[]
+  link: { label: string; href: string }
+}
+
+const EXAM_TRACKS: ExamTrack[] = [
+  {
+    key: 'guokao',
+    title: '国考（2027 年度）',
+    stages: [
+      { phase: '公告发布 / 报名', when: '2026 年 10 月中旬' },
+      { phase: '笔试（行测 + 申论）', when: '2026 年 11 月底至 12 月初' },
+      { phase: '成绩公布 / 入面名单', when: '2027 年 1 月' },
+      { phase: '面试 / 体检考察', when: '2027 年 2-4 月' },
+    ],
+    link: { label: '搜站内国考岗位', href: '/?keyword=%E5%9B%BD%E8%80%83' },
+  },
+  {
+    key: 'shengkao',
+    title: '省考联考（2027 年）',
+    stages: [
+      { phase: '各省公告发布', when: '2027 年 1-2 月' },
+      { phase: '集中报名', when: '2027 年 2 月' },
+      { phase: '联考笔试', when: '2027 年 3 月中下旬' },
+      { phase: '面试 / 体检政审', when: '2027 年 4-6 月' },
+    ],
+    link: { label: '搜站内省考岗位', href: '/?keyword=%E7%9C%81%E8%80%83' },
+  },
+  {
+    key: 'sydw',
+    title: '事业单位联考',
+    stages: [
+      { phase: '下半年联考：公告 / 报名', when: '2026 年 8-9 月' },
+      { phase: '下半年联考：笔试（A-E 类）', when: '2026 年 9-10 月' },
+      { phase: '上半年联考：公告 / 报名', when: '2027 年 2-3 月' },
+      { phase: '上半年联考：笔试（A-E 类）', when: '2027 年 3 月底至 4 月' },
+    ],
+    link: { label: '看编制公告板块', href: '?board=bianzhi' },
+  },
+]
+
+function ExamCalendar2027() {
+  return (
+    <div className="space-y-3">
+      <p className="rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
+        以下时间线为往年规律整理，仅供参考；具体场次以官方公告为准。
+      </p>
+      {EXAM_TRACKS.map((t) => (
+        <div key={t.key} className="rounded-lg border bg-background p-3">
+          <div className="text-sm font-medium">{t.title}</div>
+          <ul className="mt-1.5 space-y-1 text-sm text-muted-foreground">
+            {t.stages.map((s, i) => (
+              <li key={i} className="flex flex-wrap items-baseline gap-x-2">
+                <span>· {s.phase}</span>
+                <span className="text-xs">{s.when}</span>
+              </li>
+            ))}
+          </ul>
+          <a
+            href={t.link.href}
+            className="mt-2 inline-flex min-h-11 items-center gap-1 rounded-full border border-primary/30 bg-background px-2.5 py-1 text-xs text-primary transition-colors hover:bg-primary/10 sm:min-h-0"
+          >
+            {t.link.label}
+            <ArrowRight className="h-3 w-3" />
+          </a>
+        </div>
+      ))}
+      <div className="space-y-2">
+        <div className="text-sm font-medium">站内大型联考真实场次</div>
+        <BianzhiExamCalendar />
+      </div>
+    </div>
+  )
+}
+
 const SECTIONS: GuideSection[] = [
   {
     key: 'mindset',
@@ -188,6 +265,18 @@ const SECTIONS: GuideSection[] = [
       heading: `${st.label} ${st.title}`,
       items: st.tasks,
     })),
+  },
+  {
+    key: 'examcal',
+    title: '报考日历 2026-2027',
+    blocks: [
+      {
+        heading: '国考/省考/事业单位典型时间线',
+        items: EXAM_TRACKS.map(
+          (t) => `${t.title}：${t.stages.map((s) => `${s.phase} ${s.when}`).join('；')}（往年规律仅供参考）`,
+        ),
+      },
+    ],
   },
   {
     key: 'biancal',
@@ -579,6 +668,8 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
             )}
             {active === 'timeline' ? (
               <GuideTimeline />
+            ) : active === 'examcal' ? (
+              <ExamCalendar2027 />
             ) : active === 'biancal' ? (
               <div className="space-y-3">
                 <p className="rounded-lg border bg-background p-3 text-sm leading-relaxed text-muted-foreground">

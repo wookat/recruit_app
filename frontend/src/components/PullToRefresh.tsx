@@ -20,14 +20,15 @@ function atListTop(el: HTMLElement | null): boolean {
   return el.getBoundingClientRect().top >= -2
 }
 
-/** 移动端列表下拉刷新：页面顶部下拉超过阈值触发 onRefresh，带旋转指示；桌面端直接透传。 */
+/** 移动端列表下拉刷新：页面顶部下拉超过阈值触发 onRefresh，带旋转指示；桌面端直接透传。
+ * onRefresh 返回 Promise 时，指示器在请求落地（含失败）即清除；refreshing 观察与 10s 超时仅作兜底。 */
 export function PullToRefresh({
   onRefresh,
   refreshing,
   disabled,
   children,
 }: {
-  onRefresh: () => void
+  onRefresh: () => void | Promise<unknown>
   refreshing: boolean
   disabled?: boolean
   children: ReactNode
@@ -91,7 +92,10 @@ export function PullToRefresh({
       triggeredAt.current = Date.now()
       sawRefreshing.current = false
       setActive(true)
-      onRefresh()
+      const ret = onRefresh()
+      if (ret && typeof ret === 'object' && 'finally' in ret) {
+        void ret.finally(() => setActive(false))
+      }
     }
     reset()
   }

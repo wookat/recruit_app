@@ -14,6 +14,7 @@ import { DeadlinesCard } from './DeadlinesCard'
 import { TodayGlance } from './TodayGlance'
 import { buildShareUrl, paramsFromQueryString, paramsToQueryString, POSITION_URL_KEYS } from '@/lib/urlFilters'
 import { useSeenSet } from '@/lib/viewHistory'
+import { expandKeyword } from '@/lib/synonyms'
 import { MultiSelect } from './MultiSelect'
 import { QuickMatch, type QuickMatchValues } from './QuickMatch'
 import type { RecommendQuery } from './RecommendPanel'
@@ -73,6 +74,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PullToRefresh } from './PullToRefresh'
 import { cn } from '@/lib/utils'
 import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from './ActiveFilterChips'
+import { SubscribeFilterHint } from './SubscribeFilterHint'
+import { SynonymHint } from './SynonymHint'
 import { SearchSuggestInput } from './SearchSuggestInput'
 import { RecommendSection } from './RecommendSection'
 import { CrossBoardZeroHint } from './CrossBoardZeroHint'
@@ -294,6 +297,7 @@ export function ListPage({
   const [exportTask, setExportTask] = useState<string | null>(null)
   const [exportError, setExportError] = useState('')
   const [loadError, setLoadError] = useState(false)
+  const [synOff, setSynOff] = useState(false)
   const suggestDisabledRef = useRef(false)
   const skipSuggestRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -370,6 +374,21 @@ export function ListPage({
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const kwTrim = (params.keyword || '').trim()
+  useEffect(() => {
+    setSynOff(false)
+  }, [kwTrim])
+  const synAdded = useMemo(
+    () => (synOff || !kwTrim ? [] : expandKeyword(kwTrim).added),
+    [kwTrim, synOff],
+  )
+  // 同义扩展后的请求参数（列表/导出/无限滚动统一口径）；URL/分享/保存筛选仍用原始关键词
+  const effParams = useMemo(
+    () =>
+      synAdded.length ? { ...params, keyword: expandKeyword(kwTrim).expanded } : params,
+    [params, synAdded, kwTrim],
+  )
+
   const load = useCallback(async () => {
     abortRef.current?.abort()
     const controller = new AbortController()
@@ -379,7 +398,7 @@ export function ListPage({
     setLoading(true)
     setLoadError(false)
     try {
-      const res = await fetcher(params, controller.signal)
+      const res = await fetcher(effParams, controller.signal)
       if (!isCurrent()) return
       setData(res)
       const kw = (params.keyword || '').trim()
@@ -392,7 +411,7 @@ export function ListPage({
     } finally {
       if (isCurrent()) setLoading(false)
     }
-  }, [fetcher, params])
+  }, [fetcher, effParams, params])
 
   useEffect(() => {
     if (view === 'list') return
@@ -514,7 +533,19 @@ export function ListPage({
   )
   const hiddenSeenCount = (data?.items.length ?? 0) - visibleItems.length
 
-  const emptyAction = useMemo(() => <ActiveFilterChips filters={activeFilters} />, [activeFilters])
+  const emptyAction = useMemo(
+    () => (
+      <div className="flex flex-col items-center gap-3">
+        <ActiveFilterChips filters={activeFilters} />
+        <SubscribeFilterHint
+          canSave={activeFilters.length > 0}
+          onSubscribe={() => subscribeCurrentFilter()}
+        />
+      </div>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeFilters],
+  )
   const onPageChange = useCallback((page: number) => updateParam('page', page), [updateParam])
   const onTagClick = useCallback(
     (tagKey: string) => {
@@ -602,7 +633,7 @@ export function ListPage({
     if (exportTask) return
     const total = data?.total ?? 0
     if (!all && total <= SYNC_EXPORT_MAX) {
-      window.open(buildExportUrl(params, format, exportFname()), '_blank')
+      window.open(buildExportUrl(effParams, format, exportFname()), '_blank')
       return
     }
     void startAsyncExport(format, all ? ASYNC_EXPORT_MAX : Math.min(total || ASYNC_EXPORT_MAX, ASYNC_EXPORT_MAX))
@@ -612,7 +643,7 @@ export function ListPage({
     setExportError('')
     setExportTask('starting')
     try {
-      const { task_id } = await createExport(params, format, maxRows, exportFname())
+      const { task_id } = await createExport(effParams, format, maxRows, exportFname())
       setExportTask(task_id)
       pollExport(task_id)
     } catch {
@@ -666,6 +697,11 @@ export function ListPage({
     ]
       .filter(Boolean)
       .join('·') || '岗位筛选'
+
+  function subscribeCurrentFilter() {
+    const { list } = saveFilter(defaultFilterName, params)
+    setSaved(list)
+  }
 
   function handleSaveFilter() {
     const name = saveName.trim() || defaultFilterName
@@ -954,6 +990,8 @@ export function ListPage({
               </Button>
             </div>
           </div>
+
+          {synAdded.length > 0 && <SynonymHint added={synAdded} onClose={() => setSynOff(true)} />}
 
           {keyFilterRow}
 
@@ -1405,7 +1443,7 @@ export function ListPage({
           onTagClick={onTagClick}
         />
       )}
-      {view === 'list' && <VirtualPositionList fetcher={fetcher} params={params} />}
+      {view === 'list' && <VirtualPositionList fetcher={fetcher} params={effParams} />}
       </Suspense>
       </PullToRefresh>
 

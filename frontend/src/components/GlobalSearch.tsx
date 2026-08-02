@@ -20,6 +20,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
+import { expandKeyword, HOT_SEARCHES } from '@/lib/synonyms'
 import {
   addRecentSearch,
   clearRecentSearches,
@@ -104,6 +105,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
   const [loading, setLoading] = useState(false)
   const [recent, setRecent] = useState<string[]>([])
   const [places, setPlaces] = useState<{ provinces: string[]; cities: Set<string> } | null>(null)
+  const [synOff, setSynOff] = useState(false)
 
   useEffect(() => {
     if (!open) {
@@ -124,19 +126,24 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
   }, [open, places])
 
   useEffect(() => {
+    setSynOff(false)
+  }, [q])
+
+  useEffect(() => {
     const kw = q.trim()
     if (!kw) {
       setHits(null)
       setLoading(false)
       return
     }
+    const sendKw = synOff ? kw : expandKeyword(kw).expanded
     let cancelled = false
     setLoading(true)
     const t = setTimeout(() => {
       Promise.allSettled([
-        fetchPositions({ keyword: kw, page: 1, page_size: SHOW }),
-        fetchCampusJobs({ keyword: kw, page: 1, page_size: SHOW }),
-        fetchBianzhiJobs({ keyword: kw, page: 1, page_size: SHOW }),
+        fetchPositions({ keyword: sendKw, page: 1, page_size: SHOW }),
+        fetchCampusJobs({ keyword: sendKw, page: 1, page_size: SHOW }),
+        fetchBianzhiJobs({ keyword: sendKw, page: 1, page_size: SHOW }),
       ]).then(([p, c, b]) => {
         if (cancelled) return
         setHits({
@@ -160,9 +167,10 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
       cancelled = true
       clearTimeout(t)
     }
-  }, [q])
+  }, [q, synOff])
 
   const kw = q.trim()
+  const synAdded = kw && !synOff ? expandKeyword(kw).added : []
 
   const quickSuggestions = useMemo<QuickSuggestion[]>(() => {
     if (!kw || !places || !onQuickFilter) return []
@@ -225,6 +233,19 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           value={q}
           onValueChange={setQ}
         />
+        {kw && synAdded.length > 0 && (
+          <div className="flex items-center gap-1 border-b bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+            <span className="min-w-0 flex-1 truncate">已同时匹配：{synAdded.join('、')}</span>
+            <button
+              type="button"
+              aria-label="关闭同义扩展"
+              className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground hover:text-foreground sm:h-7 sm:w-7"
+              onClick={() => setSynOff(true)}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
         {!kw && (
           <div className="px-3 py-6 text-center text-sm text-muted-foreground">
             输入关键词，同时搜索 体制内 / 校招 / 编制 三个板块
@@ -279,6 +300,19 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
             三个板块均无「{kw}」的相关结果
             <span className="mt-1 block text-xs">
               建议：换更短的关键词（如只搜单位名或岗位名）；若在板块列表页有筛选，可清除筛选后再试
+            </span>
+            <span className="mt-3 block text-xs font-medium text-foreground/70">热门搜索</span>
+            <span className="mt-1.5 flex flex-wrap justify-center gap-1.5">
+              {HOT_SEARCHES.map((w) => (
+                <button
+                  key={w}
+                  type="button"
+                  className="min-h-11 cursor-pointer rounded-full border bg-muted/50 px-3 py-1 text-xs text-foreground/80 transition-colors hover:bg-muted hover:text-foreground sm:min-h-7"
+                  onClick={() => setQ(w)}
+                >
+                  {w}
+                </button>
+              ))}
             </span>
           </div>
         )}

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 import cache
 import csv_export
+from crud import keyword_variants, title_hit_rank
 from database import get_db
 from models import CampusJob
 
@@ -92,13 +93,16 @@ def apply_campus_filters(q, f: dict):
     if f.get("updated_after"):
         q = q.filter(CampusJob.updated_at_src >= f["updated_after"])
     if f.get("keyword"):
-        k = f"%{f['keyword']}%"
-        q = q.filter(or_(
-            CampusJob.company.ilike(k),
-            CampusJob.positions.ilike(k),
-            CampusJob.industry.ilike(k),
-            CampusJob.major_requirement.ilike(k),
-        ))
+        clauses = []
+        for v in keyword_variants(f["keyword"]):
+            k = f"%{v}%"
+            clauses.extend([
+                CampusJob.company.ilike(k),
+                CampusJob.positions.ilike(k),
+                CampusJob.industry.ilike(k),
+                CampusJob.major_requirement.ilike(k),
+            ])
+        q = q.filter(or_(*clauses))
     if f.get("due_within_days") is not None:
         today = date.today()
         q = q.filter(CampusJob.deadline_date >= today,
@@ -106,12 +110,20 @@ def apply_campus_filters(q, f: dict):
     return q
 
 
-def campus_export_order(due_within_days):
-    return (
+def campus_export_order(due_within_days, keyword=None):
+    base = (
         (CampusJob.deadline_date.asc(), CampusJob.id.desc())
         if due_within_days is not None
         else (CampusJob.updated_at_src.desc().nullslast(), CampusJob.id.desc())
     )
+    if keyword:
+        # 关键词搜索时标题（公司名）命中优先，其次岗位命中
+        return (
+            title_hit_rank(CampusJob.company, keyword),
+            title_hit_rank(CampusJob.positions, keyword),
+            *base,
+        )
+    return base
 
 
 @router.get("", response_model=CampusList)
@@ -148,7 +160,7 @@ def list_campus_jobs(
     })
     total = q.count()
     items = (
-        q.order_by(*campus_export_order(due_within_days))
+        q.order_by(*campus_export_order(due_within_days, keyword))
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()

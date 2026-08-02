@@ -38,6 +38,10 @@ import { BoardCompareButton } from '@/components/BoardCompareButton'
 import { CrossBoardZeroHint } from '@/components/CrossBoardZeroHint'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { SavedFilterBar } from '@/components/SavedFilterBar'
+import { SubscribeFilterHint } from '@/components/SubscribeFilterHint'
+import { SynonymHint } from '@/components/SynonymHint'
+import { expandKeyword } from '@/lib/synonyms'
+import { addRecentSearch, saveQuery } from '@/lib/storage'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
@@ -46,7 +50,7 @@ import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { deriveCampusTags } from '@/lib/jobTags'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
-import { addRecentSearch } from '@/lib/storage'
+
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
 import { FreshnessNote } from '@/components/FreshnessNote'
@@ -228,6 +232,7 @@ export function CampusPage({
   const [keyword, setKeyword] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
   const [searchInput, setSearchInput] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
   const [crossTotal, setCrossTotal] = useState(0)
+  const [synOff, setSynOff] = useState(false)
   const [companyTypes, setCompanyTypes] = useState<string[]>(() => {
     const v = urlQuery.get('ctype')
     return v ? v.split(',').filter(Boolean) : []
@@ -248,6 +253,7 @@ export function CampusPage({
   const seenSet = useSeenSet()
   const [page, setPage] = useState(1)
   const [refreshNonce, setRefreshNonce] = useState(0)
+  const refreshResolveRef = useRef<(() => void) | null>(null)
   const [typeCounts, setTypeCounts] = useState<Record<string, number> | null>(null)
 
   useEffect(() => {
@@ -352,11 +358,20 @@ export function CampusPage({
     }
   }, [keyword, crossFetchTotal])
 
+  const kwTrim = keyword.trim()
+  useEffect(() => {
+    setSynOff(false)
+  }, [kwTrim])
+  const synAdded = useMemo(
+    () => (synOff || !kwTrim ? [] : expandKeyword(kwTrim).added),
+    [kwTrim, synOff],
+  )
+
   const params = useMemo<CampusParams>(() => {
     const p = PRESETS.find((v) => v.key === preset)?.params ?? {}
     return {
       ...p,
-      keyword: keyword || undefined,
+      keyword: kwTrim ? (synAdded.length ? expandKeyword(kwTrim).expanded : kwTrim) : undefined,
       company_type: companyTypes.length ? companyTypes : p.company_type,
       location: city || undefined,
       updated_after: recentOnly ? daysAgoStr(7) : undefined,
@@ -365,7 +380,7 @@ export function CampusPage({
       page,
       page_size: PAGE_SIZE,
     }
-  }, [preset, keyword, companyTypes, city, recentOnly, dueOnly, hideExpired, page])
+  }, [preset, kwTrim, synAdded, companyTypes, city, recentOnly, dueOnly, hideExpired, page])
 
   useEffect(() => {
     let cancelled = false
@@ -396,6 +411,8 @@ export function CampusPage({
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
+        refreshResolveRef.current?.()
+        refreshResolveRef.current = null
       })
     return () => {
       cancelled = true
@@ -431,6 +448,30 @@ export function CampusPage({
     ]
     return parts.filter(Boolean).join('-')
   }, [preset, companyTypes, city, keyword, recentOnly, dueOnly, hideExpired])
+
+  const filterSnapshot = (() => {
+    const s: Record<string, string> = {}
+    const urlPreset = recentOnly && preset === 'all' ? 'recent7' : preset
+    if (urlPreset !== 'all') s.bpreset = urlPreset
+    if (dueOnly) s.due = '7'
+    if (city) s.city = city
+    if (companyTypes.length) s.ctype = companyTypes.join(',')
+    if (keyword.trim()) s.bkw = keyword.trim()
+    return s
+  })()
+  const filterDefaultName =
+    [
+      city,
+      companyTypes[0],
+      preset !== 'all' ? PRESETS.find((p) => p.key === preset)?.label : null,
+      recentOnly ? '近7天更新' : null,
+      dueOnly ? '即将截止' : null,
+      keyword.trim() || null,
+    ]
+      .filter(Boolean)
+      .join('·') || '校招筛选'
+  const filterCanSave =
+    preset !== 'all' || recentOnly || dueOnly || !!city || companyTypes.length > 0 || !!keyword.trim()
 
   const activeFilters: RemovableFilter[] = []
   if (keyword)
@@ -744,36 +785,9 @@ export function CampusPage({
 
       <SavedFilterBar
         board="campus"
-        snapshot={(() => {
-          const s: Record<string, string> = {}
-          const urlPreset = recentOnly && preset === 'all' ? 'recent7' : preset
-          if (urlPreset !== 'all') s.bpreset = urlPreset
-          if (dueOnly) s.due = '7'
-          if (city) s.city = city
-          if (companyTypes.length) s.ctype = companyTypes.join(',')
-          if (keyword.trim()) s.bkw = keyword.trim()
-          return s
-        })()}
-        defaultName={
-          [
-            city,
-            companyTypes[0],
-            preset !== 'all' ? PRESETS.find((p) => p.key === preset)?.label : null,
-            recentOnly ? '近7天更新' : null,
-            dueOnly ? '即将截止' : null,
-            keyword.trim() || null,
-          ]
-            .filter(Boolean)
-            .join('·') || '校招筛选'
-        }
-        canSave={
-          preset !== 'all' ||
-          recentOnly ||
-          dueOnly ||
-          !!city ||
-          companyTypes.length > 0 ||
-          !!keyword.trim()
-        }
+        snapshot={filterSnapshot}
+        defaultName={filterDefaultName}
+        canSave={filterCanSave}
       />
 
       {/* 搜索 + 企业类型 */}
@@ -826,6 +840,8 @@ export function CampusPage({
         {typeChips && <div className="hidden md:block">{typeChips}</div>}
       </div>
 
+      {synAdded.length > 0 && <SynonymHint added={synAdded} onClose={() => setSynOff(true)} />}
+
       {/* 城市筛选 + 近7天更新（桌面） */}
       <div className="hidden md:block">{cityFilterRow}</div>
 
@@ -858,7 +874,15 @@ export function CampusPage({
       )}
 
       {/* 列表 */}
-      <PullToRefresh onRefresh={() => setRefreshNonce((n) => n + 1)} refreshing={loading}>
+      <PullToRefresh
+        onRefresh={() =>
+          new Promise<void>((resolve) => {
+            refreshResolveRef.current = resolve
+            setRefreshNonce((n) => n + 1)
+          })
+        }
+        refreshing={loading}
+      >
       {loading && !data ? (
         view === 'table' ? (
           <div className="space-y-3 rounded-xl border bg-background p-4">
@@ -896,7 +920,17 @@ export function CampusPage({
           <EmptyState
             title="没有匹配的校招信息"
             description="建议优先移除关键词，其次城市、企业类型筛选"
-            action={<ActiveFilterChips filters={activeFilters} />}
+            action={
+              <div className="flex flex-col items-center gap-3">
+                <ActiveFilterChips filters={activeFilters} />
+                <SubscribeFilterHint
+                  canSave={filterCanSave}
+                  onSubscribe={() =>
+                    saveQuery('campus', filterDefaultName, new URLSearchParams(filterSnapshot).toString())
+                  }
+                />
+              </div>
+            }
           />
           {keyword.trim() && onOpenBoardKw && (
             <CrossBoardZeroHint from="campus" keyword={keyword} onOpen={onOpenBoardKw} />

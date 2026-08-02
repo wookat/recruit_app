@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from cache import get_or_set, get_redis
 from database import get_db
-from models import Position, WatchSource, Announcement, CrawlRun
+from models import Feedback, Position, WatchSource, Announcement, CrawlRun
 from celery_app import celery_app
 from tasks import DQ_REPORT_KEY, data_quality_audit, refresh_feishu_data
 import collector
@@ -185,6 +185,39 @@ def quality_issues(db: Session = Depends(get_db)):
         quality.QUALITY_ISSUES_KEY, quality.QUALITY_ISSUES_TTL,
         lambda: quality.compute_quality_issues(db),
     )
+
+
+@router.get("/feedback", dependencies=[Depends(require_admin)])
+def list_feedback(db: Session = Depends(get_db)):
+    """用户「举报数据有误」反馈：最近 50 条 + 待处理数。"""
+    rows = db.query(Feedback).order_by(Feedback.created_at.desc()).limit(50).all()
+    pending = db.query(func.count(Feedback.id)).filter(Feedback.handled == 0).scalar() or 0
+    return {
+        "pending": int(pending),
+        "items": [
+            {
+                "id": f.id,
+                "board": f.board,
+                "item_id": f.item_id,
+                "issue_type": f.issue_type,
+                "note": f.note,
+                "handled": bool(f.handled),
+                "created_at": f.created_at.isoformat() if f.created_at else None,
+            }
+            for f in rows
+        ],
+    }
+
+
+@router.post("/feedback/{fid}/handled", dependencies=[Depends(require_admin)])
+def set_feedback_handled(fid: int, handled: bool = Query(True), db: Session = Depends(get_db)):
+    """标记反馈已处理/待处理。"""
+    fb = db.query(Feedback).filter(Feedback.id == fid).first()
+    if not fb:
+        raise HTTPException(status_code=404, detail="反馈不存在")
+    fb.handled = 1 if handled else 0
+    db.commit()
+    return {"ok": True, "id": fid, "handled": bool(fb.handled)}
 
 
 @router.post("/data-quality/refresh", dependencies=[Depends(require_admin)])

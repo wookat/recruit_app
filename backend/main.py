@@ -592,6 +592,28 @@ def export_download(task_id: str):
     return FileResponse(path, media_type=media, filename=fname)
 
 
+FEEDBACK_BOARDS = {"positions", "campus", "bianzhi"}
+FEEDBACK_ISSUE_TYPES = {"link_broken", "wrong_info", "expired", "other"}
+
+
+@app.post("/api/feedback")
+def create_feedback(request: Request, body: schemas.FeedbackIn, db: Session = Depends(get_db)):
+    """用户「举报数据有误」：写入 feedback 表，管理后台数据质量卡查看处理。"""
+    _rate_limit(request, "feedback", limit=5, window=60)
+    if body.board not in FEEDBACK_BOARDS:
+        raise HTTPException(status_code=422, detail="board 仅支持 positions/campus/bianzhi")
+    if body.issue_type not in FEEDBACK_ISSUE_TYPES:
+        raise HTTPException(status_code=422, detail="issue_type 无效")
+    note = (body.note or "").strip()[:500] or None
+    ua = (request.headers.get("user-agent") or "")[:300] or None
+    fb = models.Feedback(
+        board=body.board, item_id=body.item_id, issue_type=body.issue_type, note=note, ua=ua
+    )
+    db.add(fb)
+    db.commit()
+    return {"ok": True, "id": fb.id}
+
+
 @app.post(
     "/api/admin/scrape/{year}",
     response_model=schemas.TaskOut,

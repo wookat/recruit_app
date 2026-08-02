@@ -9,7 +9,6 @@ import { BookOpen, Briefcase, CalendarDays, History, Moon, Search, Settings, Spa
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
-import { CompareBar } from '@/components/CompareBar'
 import { BoardCompareBar } from '@/components/BoardCompareBar'
 import { MobileBottomNav } from '@/components/MobileBottomNav'
 import { OnboardingCard } from '@/components/OnboardingCard'
@@ -701,7 +700,6 @@ export default function App() {
       <Suspense fallback={null}>
         {guideOpen && <JobGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
       </Suspense>
-      <CompareBar />
       <BoardCompareBar onOpenJob={(board, id) => openSearchJob(board, id, '')} />
       {deepLinked && (
         <LazyPositionSheet

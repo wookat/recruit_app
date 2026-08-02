@@ -128,6 +128,17 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
   const [compareSel, setCompareSel] = useState<{ kind: Board; id: number }[]>([])
   const [compareHint, setCompareHint] = useState<string | null>(null)
   const [compareOpen, setCompareOpen] = useState(false)
+  const [sortMode, setSortMode] = useState<'added' | 'deadline'>(() =>
+    localStorage.getItem('recruit.favSort') === 'deadline' ? 'deadline' : 'added',
+  )
+  const changeSortMode = (m: 'added' | 'deadline') => {
+    setSortMode(m)
+    try {
+      localStorage.setItem('recruit.favSort', m)
+    } catch {
+      // ignore quota / privacy-mode errors
+    }
+  }
 
   const totalCount = favorites.length + campusFavs.length + bianzhiFavs.length
   const boardCount =
@@ -316,11 +327,19 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [board, favorites, campusFavs, bianzhiFavs, statuses, campusMeta, bianzhiMeta])
 
-  function sortByPriority<T extends { id: number }>(items: T[], meta: Record<number, BoardMeta>) {
+  /** 置顶/重点优先，同级内按截止日升序（无截止排末尾）或保持加入顺序。 */
+  function sortFavs<T extends { id: number }>(
+    items: T[],
+    isPinned: (id: number) => boolean,
+    isPriority: (id: number) => boolean,
+    deadlineOf: (item: T) => Date | null,
+  ) {
+    const dl = (item: T) => deadlineOf(item)?.getTime() ?? Infinity
     return [...items].sort(
       (a, b) =>
-        Number(!!meta[b.id]?.pinned) - Number(!!meta[a.id]?.pinned) ||
-        Number(!!meta[b.id]?.priority) - Number(!!meta[a.id]?.priority),
+        Number(isPinned(b.id)) - Number(isPinned(a.id)) ||
+        Number(isPriority(b.id)) - Number(isPriority(a.id)) ||
+        (sortMode === 'deadline' ? dl(a) - dl(b) : 0),
     )
   }
 
@@ -410,30 +429,35 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
             matchPosition(p) &&
             (!followupOnly || followInfoOf('positions', p.id)),
         )
-        .sort(
-          (a, b) =>
-            Number(!!pinnedMap[b.id]) - Number(!!pinnedMap[a.id]) ||
-            Number(!!priorities[b.id]) - Number(!!priorities[a.id]),
-        )
+      items = sortFavs(
+        items as Position[],
+        (id) => !!pinnedMap[id],
+        (id) => !!priorities[id],
+        (p) => parseSignupDeadline(p),
+      )
     } else if (board === 'campus') {
-      items = sortByPriority(
+      items = sortFavs(
         campusFavs.filter(
           (j) =>
             statusOf('campus', j.id) === s &&
             matchCampus(j) &&
             (!followupOnly || followInfoOf('campus', j.id)),
         ),
-        campusMeta,
+        (id) => !!campusMeta[id]?.pinned,
+        (id) => !!campusMeta[id]?.priority,
+        (j) => getEffectiveDeadline(j),
       )
     } else {
-      items = sortByPriority(
+      items = sortFavs(
         bianzhiFavs.filter(
           (j) =>
             statusOf('bianzhi', j.id) === s &&
             matchBianzhi(j) &&
             (!followupOnly || followInfoOf('bianzhi', j.id)),
         ),
-        bianzhiMeta,
+        (id) => !!bianzhiMeta[id]?.pinned,
+        (id) => !!bianzhiMeta[id]?.priority,
+        (j) => getEffectiveDeadline(j),
       )
     }
     return { status: s, items }
@@ -1366,6 +1390,32 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
                     需跟进 <span className="font-semibold">{followUpCount}</span>
                   </button>
                 )}
+              </div>
+            )}
+            {boardCount > 0 && view === 'track' && (
+              <div className="flex items-center gap-1 text-[11px]">
+                <span className="text-muted-foreground">排序</span>
+                {(
+                  [
+                    ['added', '按加入时间'],
+                    ['deadline', '按截止日'],
+                  ] as const
+                ).map(([m, label]) => (
+                  <button
+                    key={m}
+                    type="button"
+                    aria-pressed={sortMode === m}
+                    className={cn(
+                      'min-h-9 cursor-pointer rounded-full px-2 py-0.5 font-medium transition-colors sm:min-h-0',
+                      sortMode === m
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/70',
+                    )}
+                    onClick={() => changeSortMode(m)}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             )}
             {boardCount > 0 && view === 'track' && (

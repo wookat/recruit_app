@@ -296,6 +296,23 @@ export interface RecentUpdateDay {
   boards: Partial<Record<'positions' | 'campus' | 'bianzhi', RecentUpdateBoard>>
 }
 
+export type FeedbackIssueType = 'link_broken' | 'wrong_info' | 'expired' | 'other'
+
+/** 「举报数据有误」：提交岗位数据问题反馈。 */
+export async function submitFeedback(
+  board: 'positions' | 'campus' | 'bianzhi',
+  itemId: number,
+  issueType: FeedbackIssueType,
+  note?: string,
+): Promise<void> {
+  await axios.post(`${API_BASE}/api/feedback`, {
+    board,
+    item_id: itemId,
+    issue_type: issueType,
+    note: note || undefined,
+  })
+}
+
 export async function fetchRecentUpdates(days = 7): Promise<{ days: RecentUpdateDay[] }> {
   const res = await axios.get(`${API_BASE}/api/recent-updates?days=${days}`)
   return res.data
@@ -713,6 +730,34 @@ export interface QualityIssues {
 export async function fetchQualityIssues(token: string): Promise<QualityIssues> {
   const res = await axios.get(`${API_BASE}/api/admin/quality-issues`, adminHeaders(token))
   return res.data
+}
+
+export interface AdminFeedbackItem {
+  id: number
+  board: 'positions' | 'campus' | 'bianzhi'
+  item_id: number
+  issue_type: FeedbackIssueType
+  note: string | null
+  handled: boolean
+  created_at: string | null
+}
+
+export interface AdminFeedbackList {
+  pending: number
+  items: AdminFeedbackItem[]
+}
+
+export async function fetchAdminFeedback(token: string): Promise<AdminFeedbackList> {
+  const res = await axios.get(`${API_BASE}/api/admin/feedback`, adminHeaders(token))
+  return res.data
+}
+
+export async function setFeedbackHandled(token: string, id: number, handled: boolean): Promise<void> {
+  await axios.post(
+    `${API_BASE}/api/admin/feedback/${id}/handled`,
+    null,
+    { params: { handled }, ...adminHeaders(token) },
+  )
 }
 
 export async function fetchCrawlRuns(token: string, page = 1, pageSize = 20): Promise<CrawlRunList> {

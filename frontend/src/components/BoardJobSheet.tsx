@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { ShareMenuButton, ShareTextButton } from '@/components/ShareTextButton'
+import { ReportIssueButton } from '@/components/ReportIssueButton'
 import { jobShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { addViewHistory } from '@/lib/viewHistory'
@@ -215,7 +216,10 @@ export function BoardJobSheet({
               const [b, idStr] = (jobKey || '').split(':')
               const id = Number(idStr)
               return (b === 'campus' || b === 'bianzhi') && id > 0 ? (
-                <ShareMenuButton text={shareText} url={jobShareUrl(b, id)} title={title} />
+                <>
+                  <ShareMenuButton text={shareText} url={jobShareUrl(b, id)} title={title} />
+                  <ReportIssueButton board={b} itemId={id} />
+                </>
               ) : (
                 <ShareTextButton text={shareText} />
               )

@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { Scale, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useCompare } from '@/lib/positionStore'
 import {
   BOARD_COMPARE_MAX,
   clearBoardCompare,
@@ -12,16 +11,71 @@ import {
   useBoardCompare,
   useBoardCompareHint,
   type BoardCompareBoard,
+  type BoardCompareItem,
 } from '@/lib/boardCompare'
 import type { FavCompareColumn } from './FavCompareDialog'
-import { cn } from '@/lib/utils'
 import { lazyRetry } from '@/lib/lazyRetry'
 
 const FavCompareDialog = lazy(() =>
   lazyRetry(() => import('./FavCompareDialog').then((m) => ({ default: m.FavCompareDialog }))),
 )
 
-/** 校招/编制列表页对比浮条：已选 chips + 开始对比，复用收藏对比弹窗与差异高亮。 */
+const BOARD_NAMES: Record<BoardCompareBoard, string> = {
+  positions: '体制内',
+  campus: '校招',
+  bianzhi: '编制',
+}
+
+/** 跨板块通用字段映射：三板块字段名不同，统一到同一组标签，缺失显示 —。 */
+function unifiedFields(s: BoardCompareItem): { label: string; value: string }[] {
+  const dash = '—'
+  if (s.board === 'positions') {
+    const j = s.job
+    const major = [j.undergrad_major, j.grad_major].filter(Boolean).join(' / ')
+    return [
+      { label: '来源板块', value: BOARD_NAMES.positions },
+      { label: '单位', value: j.employer || dash },
+      { label: '岗位', value: j.position_example || dash },
+      { label: '工作地点', value: j.work_location || dash },
+      { label: '学历要求', value: j.edu_level_norm || j.edu_requirement || dash },
+      { label: '专业要求', value: major || j.raw_major || dash },
+      { label: '截止/报名', value: j.signup_deadline?.slice(0, 10) || j.signup_time || dash },
+      { label: '批次/类型', value: j.exam_type || j.job_type || dash },
+    ]
+  }
+  if (s.board === 'campus') {
+    const j = s.job
+    return [
+      { label: '来源板块', value: BOARD_NAMES.campus },
+      { label: '单位', value: j.company || dash },
+      { label: '岗位', value: j.positions || dash },
+      { label: '工作地点', value: j.locations || dash },
+      { label: '学历要求', value: j.edu_requirement || dash },
+      { label: '专业要求', value: j.major_requirement || dash },
+      { label: '截止/报名', value: j.deadline_text || dash },
+      { label: '批次/类型', value: j.batch || j.industry || dash },
+    ]
+  }
+  const j = s.job
+  return [
+    { label: '来源板块', value: BOARD_NAMES.bianzhi },
+    { label: '单位', value: j.employer || dash },
+    { label: '岗位', value: j.job_type || dash },
+    { label: '工作地点', value: j.work_location || j.province || dash },
+    { label: '学历要求', value: j.edu_requirement || dash },
+    { label: '专业要求', value: j.major_requirement || dash },
+    { label: '截止/报名', value: j.deadline_text || dash },
+    { label: '批次/类型', value: j.category || dash },
+  ]
+}
+
+function itemTitle(s: BoardCompareItem): string {
+  if (s.board === 'positions') return s.job.position_example || s.job.employer || `#${s.job.id}`
+  if (s.board === 'campus') return s.job.company || `#${s.job.id}`
+  return s.job.employer || s.job.category || `#${s.job.id}`
+}
+
+/** 跨板块对比浮条：体制内/校招/编制混合勾选 2-3 条，通用字段映射 + 差异高亮。 */
 export function BoardCompareBar({
   onOpenJob,
 }: {
@@ -29,7 +83,6 @@ export function BoardCompareBar({
 }) {
   const items = useBoardCompare()
   const hint = useBoardCompareHint()
-  const positionsCompare = useCompare()
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -44,58 +97,21 @@ export function BoardCompareBar({
 
   if (items.length === 0) return null
 
-  const columns: FavCompareColumn[] = items.map((s) => {
-    const common = {
-      onRemove: () => removeBoardCompare(s.board, s.job.id),
-      onOpenDetail: () => {
-        setOpen(false)
-        onOpenJob(s.board, s.job.id)
-      },
-    }
-    if (s.board === 'campus') {
-      const j = s.job
-      return {
-        key: `campus-${j.id}`,
-        title: j.company || '-',
-        badge: j.company_type || undefined,
-        ...common,
-        fields: [
-          { label: '岗位', value: j.positions || '-' },
-          { label: '行业', value: j.industry || '-' },
-          { label: '批次', value: j.batch || '-' },
-          { label: '工作地点', value: j.locations || '-' },
-          { label: '学历要求', value: j.edu_requirement || '-' },
-          { label: '专业要求', value: j.major_requirement || '-' },
-          { label: '截止', value: j.deadline_text || '-' },
-        ],
-      }
-    }
-    const j = s.job
-    return {
-      key: `bianzhi-${j.id}`,
-      title: j.employer || j.category || '-',
-      badge: j.category || undefined,
-      ...common,
-      fields: [
-        { label: '省份', value: j.province || '-' },
-        { label: '岗位类型', value: j.job_type || '-' },
-        { label: '招聘人数', value: j.headcount || '-' },
-        { label: '工作地点', value: j.work_location || '-' },
-        { label: '学历要求', value: j.edu_requirement || '-' },
-        { label: '专业要求', value: j.major_requirement || '-' },
-        { label: '截止', value: j.deadline_text || '-' },
-      ],
-    }
-  })
+  const columns: FavCompareColumn[] = items.map((s) => ({
+    key: `${s.board}-${s.job.id}`,
+    title: itemTitle(s),
+    badge: BOARD_NAMES[s.board],
+    fields: unifiedFields(s),
+    onRemove: () => removeBoardCompare(s.board, s.job.id),
+    onOpenDetail: () => {
+      setOpen(false)
+      onOpenJob(s.board, s.job.id)
+    },
+  }))
 
   return (
     <>
-      <div
-        className={cn(
-          'fixed inset-x-0 z-40 border-t bg-background/95 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] backdrop-blur',
-          positionsCompare.length > 0 ? 'bottom-[7.5rem] md:bottom-[3.75rem]' : 'bottom-14 md:bottom-0',
-        )}
-      >
+      <div className="fixed inset-x-0 bottom-14 z-40 border-t bg-background/95 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] backdrop-blur md:bottom-0">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-2.5">
           <Scale className="h-4 w-4 shrink-0 text-primary" />
           <span className="shrink-0 text-sm font-medium">
@@ -108,9 +124,7 @@ export function BoardCompareBar({
                 variant="secondary"
                 className="max-w-[120px] gap-1 font-normal sm:max-w-[180px]"
               >
-                <span className="truncate">
-                  {s.board === 'campus' ? s.job.company || `#${s.job.id}` : s.job.employer || `#${s.job.id}`}
-                </span>
+                <span className="truncate">{itemTitle(s)}</span>
                 <button
                   type="button"
                   aria-label="移出对比"

@@ -120,6 +120,21 @@ class WatchSource(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class Feedback(Base):
+    """用户「举报数据有误」反馈。"""
+
+    __tablename__ = "feedback"
+
+    id = Column(Integer, primary_key=True, index=True)
+    board = Column(String(20), nullable=False, index=True)  # positions/campus/bianzhi
+    item_id = Column(Integer, nullable=False)
+    issue_type = Column(String(20), nullable=False)  # link_broken/wrong_info/expired/other
+    note = Column(Text)
+    ua = Column(String(300))
+    handled = Column(Integer, default=0, index=True)  # 1=已处理 0=待处理
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
 class Announcement(Base):
     """采集到的公告链接，待管理员审核/处理。"""
 

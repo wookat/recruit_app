@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
 import { ShareMenuButton, buildShareText } from './ShareTextButton'
+import { ReportIssueButton } from './ReportIssueButton'
 import {
   APP_STATUSES,
   STATUS_COLORS,
@@ -303,6 +304,7 @@ export function PositionSheet({
             />
             <FavoriteButton item={item} />
             <CompareButton item={item} />
+            <ReportIssueButton board="positions" itemId={item.id} />
             {(onPrev || onNext) && (
               <span className="ml-auto inline-flex items-center gap-1">
                 <Button

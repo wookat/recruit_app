@@ -17,6 +17,7 @@ import { useSeenSet } from '@/lib/viewHistory'
 import { expandKeyword } from '@/lib/synonyms'
 import { MultiSelect } from './MultiSelect'
 import { QuickMatch, type QuickMatchValues } from './QuickMatch'
+import { ValuePropBanner } from './ValuePropBanner'
 import type { RecommendQuery } from './RecommendPanel'
 import { buildExportUrl, createExport, exportDownloadUrl, fetchExportStatus } from '@/api'
 import { LocationFilter } from './LocationFilter'
@@ -227,6 +228,8 @@ export function ListPage({
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [deadlineView, setDeadlineView] = useState(false)
   const [quickMatchKey, setQuickMatchKey] = useState(0)
+  const [qmOpenSignal, setQmOpenSignal] = useState(0)
+  const quickMatchRef = useRef<HTMLDivElement | null>(null)
   const [params, setParams] = useState<SearchParams>(() => {
     const fromUrl = syncUrl && !new URLSearchParams(window.location.search).get('board')
     const base = fromUrl
@@ -903,6 +906,15 @@ export function ListPage({
 
   return (
     <div className="space-y-5">
+      {onOpenUpdates && (
+        <ValuePropBanner
+          onMatch={() => {
+            setQmOpenSignal((s) => s + 1)
+            setTimeout(() => quickMatchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
+          }}
+          onOpenUpdates={onOpenUpdates}
+        />
+      )}
       <Card>
         <CardContent className="space-y-4 p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
@@ -1236,13 +1248,16 @@ export function ListPage({
         </CardContent>
       </Card>
 
-      <QuickMatch
-        key={quickMatchKey}
-        filters={filters}
-        onSearch={applyQuickMatch}
-        onReset={clearFilters}
-        onRecommend={applyRecommend}
-      />
+      <div ref={quickMatchRef}>
+        <QuickMatch
+          key={quickMatchKey}
+          filters={filters}
+          onSearch={applyQuickMatch}
+          onReset={clearFilters}
+          onRecommend={applyRecommend}
+          openSignal={qmOpenSignal}
+        />
+      </div>
 
       {recommendQuery && (
         <Suspense fallback={null}>

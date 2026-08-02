@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { ShareMenuButton, ShareTextButton } from '@/components/ShareTextButton'
+import { ShareLandingBanner } from '@/components/ShareLandingBanner'
 import { ReportIssueButton } from '@/components/ReportIssueButton'
 import { jobShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
@@ -184,6 +185,7 @@ export function BoardJobSheet({
       <SheetContent side="right" className="w-full max-w-2xl p-0 data-[side=right]:w-full sm:max-w-xl">
         <SheetDragHandle onDismiss={onClose} />
         <SheetHeader className="space-y-2 px-4 pt-1 sm:px-6 sm:pt-6">
+          {jobKey && <ShareLandingBanner key={jobKey} jobKey={jobKey} onBrowseAll={onClose} />}
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             <span className="break-all">{title}</span>
             {(badges ?? []).filter(Boolean).map((b) => (

@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
 import { ShareMenuButton, buildShareText } from './ShareTextButton'
+import { ShareLandingBanner } from './ShareLandingBanner'
 import { ReportIssueButton } from './ReportIssueButton'
 import {
   APP_STATUSES,
@@ -226,6 +227,7 @@ export function PositionSheet({
       <SheetContent side="right" className="w-full max-w-2xl p-0 data-[side=right]:w-full sm:max-w-xl">
         <SheetDragHandle onDismiss={onClose} />
         <SheetHeader className="space-y-2 px-4 pt-1 sm:px-6 sm:pt-6">
+          <ShareLandingBanner key={item.id} jobKey={`positions:${item.id}`} onBrowseAll={onClose} />
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             岗位详情
             <Badge variant="secondary">{item.year}</Badge>

@@ -25,6 +25,11 @@ export function expandKeyword(keyword: string): KeywordExpansion {
   return { expanded: [kw, ...added].join('|'), added }
 }
 
+/** 关键词的同义候选（整词命中词表才返回，供无结果提示「试试同义词」）。 */
+export function getSynonyms(keyword: string): string[] {
+  return SYNONYMS[keyword.trim()] ?? []
+}
+
 /** 热门搜索建议词（无结果空态展示，可点直搜）。 */
 export const HOT_SEARCHES = [
   '国考',

@@ -1,5 +1,23 @@
 const PARAM = 'job'
 
+// 页面加载时若 URL 已带 job 参数，说明是分享深链直达（非站内点开）
+let shareLandingKey: string | null = null
+try {
+  shareLandingKey = new URLSearchParams(window.location.search).get(PARAM)
+} catch {
+  shareLandingKey = null
+}
+
+/** 当前详情是否为分享深链直达打开（首次，未被消费）。 */
+export function isShareLanding(key: string): boolean {
+  return shareLandingKey !== null && shareLandingKey === key
+}
+
+/** 消费分享深链标记（关闭详情后不再显示「来自分享」提示）。 */
+export function clearShareLanding() {
+  shareLandingKey = null
+}
+
 /** 打开详情时把 job=board:id 写入 URL（replaceState，不换路由）。 */
 export function setJobParam(key: string) {
   const q = new URLSearchParams(window.location.search)

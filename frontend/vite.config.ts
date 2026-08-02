@@ -1,10 +1,47 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [tailwindcss(), react()],
+  plugins: [
+    tailwindcss(),
+    react(),
+    VitePWA({
+      registerType: 'prompt',
+      manifest: false, // 复用 public/manifest.webmanifest
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            // 列表数据：stale-while-revalidate，缓存不超过 1 小时
+            urlPattern: /\/api\/(positions|campus|bianzhi)(\/|\?|$)/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'api-lists',
+              expiration: { maxEntries: 120, maxAgeSeconds: 3600 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
+            // 其余 API：networkFirst 短超时回退缓存
+            urlPattern: /\/api\//,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api',
+              networkTimeoutSeconds: 4,
+              expiration: { maxEntries: 200, maxAgeSeconds: 3600 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+        ],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -12,6 +49,15 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
+  preview: {
+    port: 4173,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

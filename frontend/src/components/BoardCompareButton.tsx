@@ -14,11 +14,11 @@ interface Props {
   className?: string
 }
 
-/** 校招/编制列表行「加入对比」按钮（行数据快照，不要求收藏）。 */
+/** 列表行「加入对比」按钮（行数据快照，不要求收藏，三板块混合）。 */
 export function BoardCompareButton({ item, className }: Props) {
   const compare = useBoardCompare()
   const active = isBoardCompared(item.board, item.job.id)
-  const full = !active && compare.length >= BOARD_COMPARE_MAX && compare[0]?.board === item.board
+  const full = !active && compare.length >= BOARD_COMPARE_MAX
   return (
     <Button
       variant="ghost"

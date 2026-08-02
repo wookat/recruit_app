@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FilterOptions } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,6 +21,8 @@ interface QuickMatchProps {
   onSearch: (values: QuickMatchValues) => void
   onReset: () => void
   onRecommend?: (values: QuickMatchValues) => void
+  /** 递增信号：变化时展开面板（供外部 CTA 打开画像面板）。 */
+  openSignal?: number
 }
 
 const EDU_LEVELS = ['大专/中专', '本科', '硕士研究生', '博士研究生']
@@ -31,8 +33,12 @@ const HOT_CITIES = [
   '西安', '苏州', '天津', '重庆', '长沙', '青岛', '郑州', '合肥',
 ]
 
-export function QuickMatch({ filters, onSearch, onReset, onRecommend }: QuickMatchProps) {
+export function QuickMatch({ filters, onSearch, onReset, onRecommend, openSignal }: QuickMatchProps) {
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (openSignal) setOpen(true)
+  }, [openSignal])
   const [eduLevel, setEduLevel] = useState<string[]>(() => getProfile().eduLevel)
   const [major, setMajor] = useState(() => getProfile().major)
   const [location, setLocation] = useState<string[]>(() => getProfile().location)

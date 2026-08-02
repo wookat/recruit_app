@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Building2, CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Filter, GraduationCap, Info, Link2 } from 'lucide-react'
+import { Building2, CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Filter, GraduationCap, Info, Link2, Sparkles } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -12,6 +12,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { ShareMenuButton, ShareTextButton } from '@/components/ShareTextButton'
+import { ShareLandingBanner } from '@/components/ShareLandingBanner'
+import { ReportIssueButton } from '@/components/ReportIssueButton'
 import { jobShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { addViewHistory } from '@/lib/viewHistory'
@@ -60,6 +62,12 @@ interface Props {
   snapshotNote?: boolean
   /** 相关条目区块（如同单位其他公告），点击切换详情。 */
   related?: {
+    title: string
+    items: { key: string; label: string; sub?: string | null }[]
+    onSelect: (key: string) => void
+  }
+  /** 相似岗位区块（同分类/同行业推荐），点击切换详情。 */
+  similar?: {
     title: string
     items: { key: string; label: string; sub?: string | null }[]
     onSelect: (key: string) => void
@@ -143,6 +151,7 @@ export function BoardJobSheet({
   nextDisabled,
   snapshotNote,
   related,
+  similar,
   prep,
 }: Props) {
   const validLinks = (links ?? []).filter((l) => safeUrl(l.url))
@@ -176,6 +185,7 @@ export function BoardJobSheet({
       <SheetContent side="right" className="w-full max-w-2xl p-0 data-[side=right]:w-full sm:max-w-xl">
         <SheetDragHandle onDismiss={onClose} />
         <SheetHeader className="space-y-2 px-4 pt-1 sm:px-6 sm:pt-6">
+          {jobKey && <ShareLandingBanner key={jobKey} jobKey={jobKey} onBrowseAll={onClose} />}
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             <span className="break-all">{title}</span>
             {(badges ?? []).filter(Boolean).map((b) => (
@@ -215,7 +225,10 @@ export function BoardJobSheet({
               const [b, idStr] = (jobKey || '').split(':')
               const id = Number(idStr)
               return (b === 'campus' || b === 'bianzhi') && id > 0 ? (
-                <ShareMenuButton text={shareText} url={jobShareUrl(b, id)} title={title} />
+                <>
+                  <ShareMenuButton text={shareText} url={jobShareUrl(b, id)} title={title} />
+                  <ReportIssueButton board={b} itemId={id} />
+                </>
               ) : (
                 <ShareTextButton text={shareText} />
               )
@@ -313,6 +326,34 @@ export function BoardJobSheet({
                           type="button"
                           className="flex min-h-11 w-full cursor-pointer flex-wrap items-center gap-x-2 rounded-lg border bg-background px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
                           onClick={() => related.onSelect(it.key)}
+                        >
+                          <span className="font-medium">{it.label}</span>
+                          {it.sub && (
+                            <span className="line-clamp-1 text-xs text-muted-foreground">{it.sub}</span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </>
+            )}
+
+            {similar && similar.items.length > 0 && (
+              <>
+                <Separator />
+                <section className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-sm font-semibold">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    {similar.title}
+                  </div>
+                  <ul className="space-y-1 pl-0.5">
+                    {similar.items.map((it) => (
+                      <li key={it.key}>
+                        <button
+                          type="button"
+                          className="flex min-h-11 w-full cursor-pointer flex-wrap items-center gap-x-2 rounded-lg border bg-background px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                          onClick={() => similar.onSelect(it.key)}
                         >
                           <span className="font-medium">{it.label}</span>
                           {it.sub && (

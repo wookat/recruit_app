@@ -51,6 +51,7 @@ import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { deriveCampusTags } from '@/lib/jobTags'
 import { readJobParam } from '@/lib/jobDeepLink'
 import { sheetNavProps } from '@/lib/sheetNav'
+import { fetchSimilarCampus } from '@/lib/similarJobs'
 
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
@@ -301,6 +302,27 @@ export function CampusPage({
       cancelled = true
     }
   }, [detail?.company, detail?.id])
+
+  const [similarJobs, setSimilarJobs] = useState<CampusJob[]>([])
+
+  useEffect(() => {
+    if (!detail) {
+      setSimilarJobs([])
+      return
+    }
+    let cancelled = false
+    const d = detail
+    fetchSimilarCampus(d)
+      .then((items) => {
+        if (!cancelled) setSimilarJobs(items)
+      })
+      .catch(() => {
+        if (!cancelled) setSimilarJobs([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [detail])
   const [profileMatched, setProfileMatched] = useState(() => {
     const p = getProfile()
     if (!profileUsable(p)) return false
@@ -1414,6 +1436,24 @@ export function CampusPage({
                   })),
                   onSelect: (key) => {
                     const hit = relatedJobs.find((j) => String(j.id) === key)
+                    if (hit) setDetail(hit)
+                  },
+                }
+              : undefined
+          }
+          similar={
+            similarJobs.length > 0
+              ? {
+                  title: '相似岗位（同行业·同城市）',
+                  items: similarJobs.map((j) => ({
+                    key: String(j.id),
+                    label: [j.company, j.positions].filter(Boolean).join(' · ') || '-',
+                    sub: [j.locations, j.deadline_text ? `截止：${j.deadline_text}` : null]
+                      .filter(Boolean)
+                      .join(' · '),
+                  })),
+                  onSelect: (key) => {
+                    const hit = similarJobs.find((j) => String(j.id) === key)
                     if (hit) setDetail(hit)
                   },
                 }

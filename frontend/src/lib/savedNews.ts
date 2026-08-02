@@ -172,12 +172,116 @@ function bianzhiQueryToParams(query: string): BianzhiParams {
   return p
 }
 
+// ---------- 上新浏览器通知（独立开关，默认关） ----------
+
+const NEWS_NOTIFY_KEY = 'recruit.newsNotifyEnabled'
+const NEWS_LAST_DATE_KEY = 'recruit.lastNewsNotifiedDate'
+const NEWS_NOTIFY_EVENT = 'recruit-news-notify-change'
+
+export function getNewsNotifyEnabled(): boolean {
+  try {
+    return localStorage.getItem(NEWS_NOTIFY_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function setNewsNotifyEnabled(v: boolean) {
+  try {
+    localStorage.setItem(NEWS_NOTIFY_KEY, v ? '1' : '0')
+  } catch {
+    // ignore
+  }
+  window.dispatchEvent(new Event(NEWS_NOTIFY_EVENT))
+}
+
+function subscribeNewsNotify(cb: () => void) {
+  window.addEventListener(NEWS_NOTIFY_EVENT, cb)
+  window.addEventListener('storage', cb)
+  return () => {
+    window.removeEventListener(NEWS_NOTIFY_EVENT, cb)
+    window.removeEventListener('storage', cb)
+  }
+}
+
+export function useNewsNotifyEnabled(): boolean {
+  return useSyncExternalStore(subscribeNewsNotify, getNewsNotifyEnabled)
+}
+
+/** 开启上新通知：请求权限，被拒返回 'denied'（调用方提示并回退站内红点）。 */
+export async function enableNewsNotification(): Promise<NotificationPermission> {
+  if (!('Notification' in window)) return 'denied'
+  let perm = Notification.permission
+  if (perm === 'default') {
+    try {
+      perm = await Notification.requestPermission()
+    } catch {
+      perm = 'denied'
+    }
+  }
+  setNewsNotifyEnabled(perm === 'granted')
+  return perm
+}
+
+function todayStr(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** 刷新完成后调用：开关开且已授权、当日未发过、有上新时发一条聚合通知，点击进站打开订阅面板。 */
+export function maybeNotifySavedNews(onOpen: () => void) {
+  const filterCount = Object.keys(state.counts).length
+  if (state.sum <= 0 || filterCount === 0 || !getNewsNotifyEnabled()) return
+  if (!('Notification' in window) || Notification.permission !== 'granted') return
+  try {
+    if (localStorage.getItem(NEWS_LAST_DATE_KEY) === todayStr()) return
+    localStorage.setItem(NEWS_LAST_DATE_KEY, todayStr())
+  } catch {
+    return
+  }
+  const n = new Notification('上岸罗盘 · 订阅上新', {
+    body: `你订阅的 ${filterCount} 个筛选共新增 ${state.sum} 条，点击查看`,
+    tag: 'recruit-news-daily',
+    icon: '/favicon.svg',
+  })
+  n.onclick = () => {
+    window.focus()
+    onOpen()
+    n.close()
+  }
+}
+
+// ---------- 订阅面板（全局挂载，速览胶囊/通知点击打开） ----------
+
+let panelOpen = false
+const panelListeners = new Set<() => void>()
+
+export function openSubscriptionsPanel() {
+  panelOpen = true
+  for (const l of panelListeners) l()
+}
+
+export function closeSubscriptionsPanel() {
+  panelOpen = false
+  for (const l of panelListeners) l()
+}
+
+export function useSubscriptionsPanelOpen(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      panelListeners.add(cb)
+      return () => panelListeners.delete(cb)
+    },
+    () => panelOpen,
+  )
+}
+
 // ---------- 后台静默刷新 ----------
 
 let refreshed = false
 
 /** 打开站点时调用一次：逐组静默请求当前总数（并发 ≤2），失败静默跳过。 */
-export function refreshSavedNews() {
+export function refreshSavedNews(onDone?: () => void) {
   if (refreshed) return
   refreshed = true
 
@@ -202,7 +306,10 @@ export function refreshSavedNews() {
         ),
     })),
   ]
-  if (jobs.length === 0) return
+  if (jobs.length === 0) {
+    onDone?.()
+    return
+  }
 
   const validKeys = new Set(jobs.map((j) => j.key))
   const counts: Record<string, number> = {}
@@ -243,5 +350,6 @@ export function refreshSavedNews() {
     }
     if (dirty) writeBaselines(map)
     setCounts({ ...counts })
+    onDone?.()
   })
 }

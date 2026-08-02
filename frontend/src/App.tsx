@@ -9,7 +9,6 @@ import { BookOpen, Briefcase, CalendarDays, History, Moon, Search, Settings, Spa
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
-import { CompareBar } from '@/components/CompareBar'
 import { BoardCompareBar } from '@/components/BoardCompareBar'
 import { MobileBottomNav } from '@/components/MobileBottomNav'
 import { OnboardingCard } from '@/components/OnboardingCard'
@@ -22,14 +21,20 @@ import { POSITION_URL_KEYS } from '@/lib/urlFilters'
 import { daysUntil, getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import { useRemindDays } from '@/lib/reminderPref'
 import { maybeNotifyDue } from '@/lib/dueNotification'
-import { refreshSavedNews, useSavedNews } from '@/lib/savedNews'
+import {
+  maybeNotifySavedNews,
+  openSubscriptionsPanel,
+  refreshSavedNews,
+  useSavedNews,
+} from '@/lib/savedNews'
+import { SubscriptionsSheet } from '@/components/SubscriptionsSheet'
 import { lazyRetry } from '@/lib/lazyRetry'
 
 const JobGuideSheet = lazy(() =>
   lazyRetry(() => import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet }))),
 )
 
-const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'biancal', 'company', 'choose', 'tips', 'examcal', 'about']
+const GUIDE_SECTION_KEYS = ['mindset', 'resume', 'interview', 'timeline', 'biancal', 'company', 'choose', 'tips', 'examcal', 'about', 'faq']
 
 const GlobalSearch = lazy(() =>
   lazyRetry(() => import('@/components/GlobalSearch').then((m) => ({ default: m.GlobalSearch }))),
@@ -241,7 +246,7 @@ export default function App() {
 
   const savedNews = useSavedNews()
   useEffect(() => {
-    refreshSavedNews()
+    refreshSavedNews(() => maybeNotifySavedNews(openSubscriptionsPanel))
   }, [])
 
   const cycleTheme = useCallback(() => {
@@ -701,8 +706,8 @@ export default function App() {
       <Suspense fallback={null}>
         {guideOpen && <JobGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
       </Suspense>
-      <CompareBar />
       <BoardCompareBar onOpenJob={(board, id) => openSearchJob(board, id, '')} />
+      <SubscriptionsSheet />
       {deepLinked && (
         <LazyPositionSheet
           item={deepLinked}

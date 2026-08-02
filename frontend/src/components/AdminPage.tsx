@@ -9,12 +9,15 @@ import {
   adminUpdateSource,
   fetchCrawlRuns,
   fetchHealthSummary,
+  fetchAdminFeedback,
   fetchQualityIssues,
   fetchSyncStatus,
+  setFeedbackHandled,
   fetchSyncToday,
   fetchTaskStatus,
   triggerScrape,
   triggerSyncNow,
+  type AdminFeedbackItem,
   type AdminOverview,
   type Announcement,
   type CrawlRun,
@@ -295,7 +298,7 @@ export function AdminPage() {
 
       {health && <HealthCard health={health} updatedAt={healthAt} token={token} />}
 
-      <QualityCard quality={quality} loading={qualityLoading} />
+      <QualityCard quality={quality} loading={qualityLoading} token={token} />
 
       <Card>
         <CardHeader className="pb-2">
@@ -524,7 +527,125 @@ function sampleHref(board: 'positions' | 'campus' | 'bianzhi', id: number): stri
   return `?board=bianzhi&bpreset=all&job=bianzhi:${id}`
 }
 
-function QualityCard({ quality, loading }: { quality: QualityIssues | null; loading: boolean }) {
+const ISSUE_TYPE_LABELS: Record<string, string> = {
+  link_broken: '链接失效',
+  wrong_info: '信息错误',
+  expired: '已过期',
+  other: '其他',
+}
+
+const BOARD_LABELS: Record<string, string> = {
+  positions: '体制内',
+  campus: '校招',
+  bianzhi: '编制',
+}
+
+function FeedbackSection({ token }: { token: string }) {
+  const [open, setOpen] = useState(false)
+  const [feedback, setFeedback] = useState<{ pending: number; items: AdminFeedbackItem[] } | null>(null)
+  const [busy, setBusy] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetchAdminFeedback(token)
+      .then(setFeedback)
+      .catch(() => setFeedback(null))
+  }, [token])
+
+  if (!feedback) return null
+  return (
+    <div className="rounded-lg border">
+      <button
+        type="button"
+        className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50 sm:min-h-0"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="flex items-center gap-1.5">
+          {open ? (
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
+          用户反馈（最近 50 条）
+        </span>
+        <Badge variant={feedback.pending > 0 ? 'destructive' : 'secondary'}>
+          待处理 {feedback.pending}
+        </Badge>
+      </button>
+      {open && (
+        <div className="space-y-1 border-t px-3 py-2">
+          {feedback.items.length === 0 && (
+            <p className="py-3 text-center text-xs text-muted-foreground">暂无用户反馈</p>
+          )}
+          {feedback.items.map((f) => (
+            <div
+              key={f.id}
+              className={`flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md px-1.5 py-1.5 text-xs ${
+                f.handled ? 'opacity-50' : ''
+              }`}
+            >
+              <Badge variant="secondary" className="shrink-0">
+                {ISSUE_TYPE_LABELS[f.issue_type] || f.issue_type}
+              </Badge>
+              <a
+                href={sampleHref(f.board, f.item_id)}
+                target="_blank"
+                rel="noreferrer"
+                className="shrink-0 font-mono text-primary underline-offset-2 hover:underline"
+              >
+                {BOARD_LABELS[f.board] || f.board} #{f.item_id}
+              </a>
+              {f.note && (
+                <span className="max-w-60 truncate text-muted-foreground" title={f.note}>
+                  {f.note}
+                </span>
+              )}
+              <span className="text-muted-foreground">
+                {f.created_at ? new Date(f.created_at).toLocaleString('zh-CN') : ''}
+              </span>
+              <Button
+                size="sm"
+                variant={f.handled ? 'ghost' : 'outline'}
+                className="ml-auto min-h-11 shrink-0 px-2 text-xs sm:min-h-7"
+                disabled={busy === f.id}
+                onClick={async () => {
+                  setBusy(f.id)
+                  try {
+                    await setFeedbackHandled(token, f.id, !f.handled)
+                    setFeedback((cur) =>
+                      cur
+                        ? {
+                            pending: cur.pending + (f.handled ? 1 : -1),
+                            items: cur.items.map((x) =>
+                              x.id === f.id ? { ...x, handled: !f.handled } : x,
+                            ),
+                          }
+                        : cur,
+                    )
+                  } finally {
+                    setBusy(null)
+                  }
+                }}
+              >
+                {f.handled ? '恢复待处理' : '标记已处理'}
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function QualityCard({
+  quality,
+  loading,
+  token,
+}: {
+  quality: QualityIssues | null
+  loading: boolean
+  token: string
+}) {
   const [expanded, setExpanded] = useState<string | null>(null)
   if (!quality && !loading) return null
   if (!quality) {
@@ -542,7 +663,7 @@ function QualityCard({ quality, loading }: { quality: QualityIssues | null; load
       </Card>
     )
   }
-  const found = quality.issues.filter((i) => i.count > 0)
+  const found = quality.issues
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -559,7 +680,7 @@ function QualityCard({ quality, loading }: { quality: QualityIssues | null; load
           </div>
         )}
         {found.map((issue) => (
-          <div key={issue.key} className="rounded-lg border">
+          <div key={issue.key} className={issue.count === 0 ? 'rounded-lg border border-dashed opacity-60' : 'rounded-lg border'}>
             <button
               type="button"
               className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50 sm:min-h-0"
@@ -572,9 +693,13 @@ function QualityCard({ quality, loading }: { quality: QualityIssues | null; load
                 ) : (
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
-                {issue.label}
+                <span className={issue.count === 0 ? 'text-muted-foreground' : undefined}>{issue.label}</span>
               </span>
-              <Badge variant="secondary">{issue.count.toLocaleString()}</Badge>
+              {issue.count === 0 ? (
+                <span className="shrink-0 text-xs text-muted-foreground">0 条 ✓</span>
+              ) : (
+                <Badge variant="secondary">{issue.count.toLocaleString()}</Badge>
+              )}
             </button>
             {expanded === issue.key && (
               <div className="border-t px-3 py-2">
@@ -603,6 +728,7 @@ function QualityCard({ quality, loading }: { quality: QualityIssues | null; load
             )}
           </div>
         ))}
+        <FeedbackSection token={token} />
       </CardContent>
     </Card>
   )

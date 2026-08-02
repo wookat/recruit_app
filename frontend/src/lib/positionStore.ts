@@ -11,7 +11,6 @@ const PRIORITY_KEY = 'recruit.appPriority'
 const PINNED_KEY = 'recruit.appPinned'
 const STATUS_HISTORY_KEY = 'recruit.appStatusHistory'
 const FAV_MAX = 200
-export const COMPARE_MAX = 4
 
 export const APP_STATUSES = [
   '未投递',
@@ -75,7 +74,6 @@ let channels: Record<number, AppChannel> = readRecord<AppChannel>(CHANNEL_KEY)
 let priorities: Record<number, boolean> = readRecord<boolean>(PRIORITY_KEY)
 let pinned: Record<number, boolean> = readRecord<boolean>(PINNED_KEY)
 let statusHistory: Record<number, StatusEvent[]> = readRecord<StatusEvent[]>(STATUS_HISTORY_KEY)
-let compare: Position[] = []
 const listeners = new Set<Listener>()
 
 function emit() {
@@ -123,27 +121,6 @@ export function importFavorites(items: Position[]): number {
 export function clearFavorites() {
   favorites = []
   persistFavorites()
-  emit()
-}
-
-export function isInCompare(id: number): boolean {
-  return compare.some((p) => p.id === id)
-}
-
-/** Returns false when the compare list is full and the item was not added. */
-export function toggleCompare(item: Position): boolean {
-  if (isInCompare(item.id)) {
-    compare = compare.filter((p) => p.id !== item.id)
-  } else {
-    if (compare.length >= COMPARE_MAX) return false
-    compare = [...compare, item]
-  }
-  emit()
-  return true
-}
-
-export function clearCompare() {
-  compare = []
   emit()
 }
 
@@ -266,10 +243,6 @@ export function useAppChannels(): Record<number, AppChannel> {
 
 export function useFavorites(): Position[] {
   return useSyncExternalStore(subscribe, () => favorites)
-}
-
-export function useCompare(): Position[] {
-  return useSyncExternalStore(subscribe, () => compare)
 }
 
 export interface PositionBackup {

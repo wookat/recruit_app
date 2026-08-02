@@ -7,6 +7,7 @@ import { Highlight } from '@/components/Highlight'
 import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/EmptyState'
 import { FreshnessNote } from '@/components/FreshnessNote'
+import { InstallAppEntry } from '@/components/InstallAppEntry'
 import {
   Sheet,
   SheetContent,
@@ -163,9 +164,61 @@ const EXAM_TRACKS: ExamTrack[] = [
   },
 ]
 
+function useLiankaoJobs() {
+  const [jobs, setJobs] = useState<BianzhiJob[] | null>(null)
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    let alive = true
+    fetchBianzhiJobs({ category: ['大型联考'], page_size: 100 })
+      .then((res) => {
+        if (alive) setJobs(res.items)
+      })
+      .catch(() => {
+        if (alive) setFailed(true)
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+  return { jobs, failed }
+}
+
+/** 距最近一场未来大型联考的倒计时横幅；无未来场次则不渲染（不伪造）。 */
+function LiankaoCountdown({ jobs }: { jobs: BianzhiJob[] | null }) {
+  if (!jobs) return null
+  const todayIso = new Date().toISOString().slice(0, 10)
+  const future = jobs
+    .filter((j) => j.deadline_date && j.deadline_date >= todayIso)
+    .sort((a, b) => a.deadline_date!.localeCompare(b.deadline_date!))
+  const next = future[0]
+  if (!next) return null
+  const days = Math.round(
+    (new Date(next.deadline_date! + 'T00:00:00').getTime() - new Date(todayIso + 'T00:00:00').getTime()) / 86400000,
+  )
+  const name = next.employer || `${next.province ?? ''}${next.job_type ?? ''}联考`
+  return (
+    <a
+      href={`?board=bianzhi&bpreset=lk&job=bianzhi:${next.id}`}
+      className="flex min-h-11 flex-wrap items-center gap-x-2 gap-y-0.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm transition-colors hover:bg-primary/10"
+    >
+      <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
+      <span className="font-medium">
+        距最近一场大型联考还有{' '}
+        <span className="text-primary">{days === 0 ? '今天' : `${days} 天`}</span>
+      </span>
+      <span className="min-w-0 truncate text-xs text-muted-foreground">
+        {name} · {next.deadline_date}
+      </span>
+      <ArrowRight className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+    </a>
+  )
+}
+
 function ExamCalendar2027() {
+  const { jobs, failed } = useLiankaoJobs()
   return (
     <div className="space-y-3">
+      <LiankaoCountdown jobs={jobs} />
       <p className="rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
         以下时间线为往年规律整理，仅供参考；具体场次以官方公告为准。
       </p>
@@ -191,7 +244,7 @@ function ExamCalendar2027() {
       ))}
       <div className="space-y-2">
         <div className="text-sm font-medium">站内大型联考真实场次</div>
-        <BianzhiExamCalendar />
+        <BianzhiExamCalendar jobs={jobs} failed={failed} />
       </div>
     </div>
   )
@@ -391,6 +444,66 @@ const SECTIONS: GuideSection[] = [
       },
     ],
   },
+  {
+    key: 'faq',
+    title: '常见问题 FAQ',
+    blocks: [
+      {
+        heading: '数据从哪来？多久更新一次？',
+        items: [
+          '体制内岗位采自国家公务员局、军队人才网、国聘网及各省官方招考公告；校招/编制公告汇总自飞书多维表格，每天 6:00-6:20 自动同步一次。各板块条数与最近同步时间见「数据说明」章节。',
+        ],
+      },
+      {
+        heading: '岗位信息不准确 / 链接失效怎么办？',
+        items: [
+          '一切以官方公告原文为准（详情内附来源链接）。若确认是本站数据问题，点开岗位详情右上角的旗标「举报数据有误」，选择问题类型提交即可，我们会在每日同步中修正。链接失效或岗位下线属正常情况（招考方会关闭批次）。',
+        ],
+      },
+      {
+        heading: '收藏、投递记录存在哪里？会不会丢？',
+        items: [
+          '全部保存在你当前浏览器本地（localStorage），不上传服务器；清除浏览器数据会丢失。建议定期在「收藏 → 备份」导出 JSON 备份文件，随时可导入恢复。',
+        ],
+      },
+      {
+        heading: '换手机 / 换电脑怎么同步数据？',
+        items: [
+          '收藏面板里的「多设备同步」：在旧设备生成同步码（SC1: 开头一串文本），复制到新设备粘贴导入即可合并收藏、投递状态与备注，不需要注册账号。',
+        ],
+      },
+      {
+        heading: '如何订阅某个筛选的上新提示？',
+        items: [
+          '在任意板块设置好筛选后点「保存当前筛选」（列表为空时也有「订阅此筛选」按钮）。之后每次打开站点会自动对比结果数，有新增会在今日速览显示「我的订阅上新 +N」，点开可直达新增结果。',
+        ],
+      },
+      {
+        heading: '截止提醒和上新通知怎么开启？',
+        items: [
+          '收藏面板顶部有两个独立开关：「截止提醒」（收藏岗位临近截止时通知）和「订阅上新浏览器通知」（订阅筛选有新增时每日至多一条聚合通知）。开启时需允许浏览器通知权限；未开启也会保留站内红点提示。',
+        ],
+      },
+      {
+        heading: '这个网站免费吗？需要注册吗？',
+        items: [
+          '完全免费，无需注册登录，打开即用。所有个人数据（收藏、画像、订阅）只存在你自己的浏览器里。',
+        ],
+      },
+      {
+        heading: '官方报名入口在哪？能在本站投递吗？',
+        items: [
+          '本站是公开招考信息的聚合检索工具，不提供代报名。每条岗位详情内都附「官方公告 / 投递链接」，请通过该链接前往官方渠道报名。',
+        ],
+      },
+      {
+        heading: '搜索有什么技巧？',
+        items: [
+          'Ctrl K（手机点顶栏搜索图标）打开全站搜索，同时搜三板块；支持拼音（bj → 北京）、同义词自动扩展（老师 ↔ 教师）、「省份+关键词」快捷筛选（如「江西教师」）。',
+        ],
+      },
+    ],
+  },
 ]
 
 export const GUIDE_SECTION_KEYS = SECTIONS.map((s) => s.key)
@@ -459,22 +572,12 @@ function GuideTimeline() {
   )
 }
 
-function BianzhiExamCalendar() {
-  const [jobs, setJobs] = useState<BianzhiJob[] | null>(null)
-  const [failed, setFailed] = useState(false)
-  useEffect(() => {
-    let alive = true
-    fetchBianzhiJobs({ category: ['大型联考'], page_size: 100 })
-      .then((res) => {
-        if (alive) setJobs(res.items)
-      })
-      .catch(() => {
-        if (alive) setFailed(true)
-      })
-    return () => {
-      alive = false
-    }
-  }, [])
+function BianzhiExamCalendarStandalone() {
+  const { jobs, failed } = useLiankaoJobs()
+  return <BianzhiExamCalendar jobs={jobs} failed={failed} />
+}
+
+function BianzhiExamCalendar({ jobs, failed }: { jobs: BianzhiJob[] | null; failed: boolean }) {
   if (failed) return <p className="text-sm text-muted-foreground">联考场次加载失败，可前往编制公告板块查看。</p>
   if (!jobs) return <p className="text-sm text-muted-foreground">正在加载联考场次…</p>
   const todayIso = new Date().toISOString().slice(0, 10)
@@ -666,6 +769,7 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
                 ))}
               </div>
             )}
+            {active === 'faq' && <InstallAppEntry />}
             {active === 'timeline' ? (
               <GuideTimeline />
             ) : active === 'examcal' ? (
@@ -675,7 +779,7 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
                 <p className="rounded-lg border bg-background p-3 text-sm leading-relaxed text-muted-foreground">
                   {section.blocks[0].items[0]}
                 </p>
-                <BianzhiExamCalendar />
+                <BianzhiExamCalendarStandalone />
               </div>
             ) : (
               section.blocks.map((b, i) => (

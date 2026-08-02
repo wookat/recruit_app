@@ -6,6 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from cache import get_redis
+from data_clean import BIANZHI_JUNK_PATTERN, MAJOR_PLACEHOLDER_PATTERN
 from models import BianzhiJob, CampusJob, Position
 
 QUALITY_ISSUES_KEY = "admin:quality_issues"
@@ -99,6 +100,20 @@ def compute_quality_issues(db: Session) -> dict:
         _issue(
             db, "bianzhi", "bz_old_deadline", "编制：截止日期早于 2020",
             BianzhiJob, BianzhiJob.deadline_date < OLD_DEADLINE_CUTOFF, BianzhiJob.deadline_date,
+        ),
+        _issue(
+            db, "bianzhi", "bz_junk_note", "编制：导流/说明行（含链接或「更多…信息」「直接在…查看」句式）",
+            BianzhiJob,
+            BianzhiJob.employer.op("~")(BIANZHI_JUNK_PATTERN)
+            | BianzhiJob.job_type.op("~")(BIANZHI_JUNK_PATTERN),
+            BianzhiJob.employer,
+            note="入库层已持久过滤；如再出现可运行 backend/cleanup_junk_rows.py 清理",
+        ),
+        _issue(
+            db, "campus", "campus_colloquial_major", "校招：专业要求为口语占位句（宝宝~ 等）",
+            CampusJob, CampusJob.major_requirement.op("~")(MAJOR_PLACEHOLDER_PATTERN),
+            CampusJob.major_requirement,
+            note="入库层已清洗；存量可运行 backend/cleanup_junk_rows.py 置空",
         ),
         _issue(
             db, "bianzhi", "bz_empty_employer", "编制：招考单位全空",

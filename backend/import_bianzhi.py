@@ -10,6 +10,7 @@ import sys
 
 from sqlalchemy import text
 
+from data_clean import is_bianzhi_junk_row
 from database import Base, SessionLocal, engine
 from models import BianzhiJob
 
@@ -86,6 +87,9 @@ def import_file(db, path: str, category: str, colmap: dict) -> tuple[int, int]:
         for row in csv.DictReader(fp):
             d = {field: norm(row.get(col, "")) for field, col in colmap.items()}
             if not d.get("employer") and not d.get("province"):
+                skipped += 1
+                continue
+            if is_bianzhi_junk_row(d):
                 skipped += 1
                 continue
             h = row_hash(category, d)

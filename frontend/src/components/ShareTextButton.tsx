@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { Check, ClipboardCopy, Link2, Share2, Smartphone } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Check, ClipboardCopy, Link2, QrCode, Share2, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +10,68 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { copyText } from '@/lib/clipboard'
 import { cn } from '@/lib/utils'
+
+/** 二维码分享弹层：懒加载 qrcode 生成深链二维码，长按可保存。 */
+function QrShareDialog({
+  url,
+  title,
+  open,
+  onClose,
+}: {
+  url: string
+  title?: string
+  open: boolean
+  onClose: () => void
+}) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setDataUrl(null)
+    setError(false)
+    import('qrcode')
+      .then((m) => m.toDataURL(url, { width: 480, margin: 2 }))
+      .then((d) => {
+        if (!cancelled) setDataUrl(d)
+      })
+      .catch(() => {
+        if (!cancelled) setError(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [open, url])
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-xs">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <QrCode className="h-4 w-4 text-primary" />
+            扫码打开岗位详情
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col items-center gap-2">
+          {error ? (
+            <p className="py-8 text-sm text-muted-foreground">二维码生成失败，请重试</p>
+          ) : dataUrl ? (
+            <img
+              src={dataUrl}
+              alt={`岗位深链二维码：${title || url}`}
+              className="h-56 w-56 rounded-lg border border-border bg-white p-1"
+            />
+          ) : (
+            <div className="h-56 w-56 animate-pulse rounded-lg bg-muted" />
+          )}
+          {title && <p className="line-clamp-2 text-center text-xs text-muted-foreground">{title}</p>}
+          <p className="text-xs text-muted-foreground">手机扫码直达；长按图片可保存分享</p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 /** 分享菜单按钮：复制链接 / 复制分享文本 / 系统分享（navigator.share 支持时）。 */
 export function ShareMenuButton({
@@ -23,6 +86,7 @@ export function ShareMenuButton({
   className?: string
 }) {
   const [copied, setCopied] = useState<'link' | 'text' | null>(null)
+  const [qrOpen, setQrOpen] = useState(false)
   const canNativeShare = typeof navigator !== 'undefined' && 'share' in navigator
 
   const flash = (kind: 'link' | 'text') => {
@@ -31,6 +95,7 @@ export function ShareMenuButton({
   }
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
@@ -75,6 +140,10 @@ export function ShareMenuButton({
           <ClipboardCopy className="h-4 w-4" />
           复制分享文本
         </DropdownMenuItem>
+        <DropdownMenuItem className="min-h-11 gap-2 sm:min-h-8" onClick={() => setQrOpen(true)}>
+          <QrCode className="h-4 w-4" />
+          二维码分享
+        </DropdownMenuItem>
         {canNativeShare && (
           <DropdownMenuItem
             className="min-h-11 gap-2 sm:min-h-8"
@@ -88,6 +157,8 @@ export function ShareMenuButton({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+    <QrShareDialog url={url} title={title} open={qrOpen} onClose={() => setQrOpen(false)} />
+    </>
   )
 }
 

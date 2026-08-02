@@ -159,3 +159,11 @@ class ExportRequest(BaseModel):
     bianzhi: Optional[BianzhiExportFilters] = None
     #: 可选文件名（板块+筛选摘要+日期），服务端会清洗
     fname: Optional[str] = None
+
+
+class FeedbackIn(BaseModel):
+    """用户「举报数据有误」提交体。"""
+    board: str  # positions / campus / bianzhi
+    item_id: int
+    issue_type: str  # link_broken / wrong_info / expired / other
+    note: Optional[str] = None

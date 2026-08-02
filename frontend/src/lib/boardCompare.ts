@@ -1,11 +1,12 @@
 import { useSyncExternalStore } from 'react'
-import type { BianzhiJob, CampusJob } from '@/api'
+import type { BianzhiJob, CampusJob, Position } from '@/api'
 
 export const BOARD_COMPARE_MAX = 3
 
-export type BoardCompareBoard = 'campus' | 'bianzhi'
+export type BoardCompareBoard = 'positions' | 'campus' | 'bianzhi'
 
 export type BoardCompareItem =
+  | { board: 'positions'; job: Position }
   | { board: 'campus'; job: CampusJob }
   | { board: 'bianzhi'; job: BianzhiJob }
 
@@ -28,16 +29,11 @@ export function isBoardCompared(board: BoardCompareBoard, id: number): boolean {
   return items.some((s) => s.board === board && s.job.id === id)
 }
 
-/** 加入/移出对比（行数据快照，不要求已收藏）。同板块限制、最多 3 条。 */
+/** 加入/移出对比（行数据快照，不要求已收藏）。支持三板块混合，最多 3 条。 */
 export function toggleBoardCompare(item: BoardCompareItem) {
   if (isBoardCompared(item.board, item.job.id)) {
     items = items.filter((s) => !(s.board === item.board && s.job.id === item.job.id))
     hint = null
-    emit()
-    return
-  }
-  if (items.length > 0 && items[0].board !== item.board) {
-    hint = '仅支持同板块岗位对比，请先清空已选'
     emit()
     return
   }

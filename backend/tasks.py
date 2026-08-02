@@ -485,6 +485,10 @@ def refresh_feishu_data():
         results["quality_issues_warm"] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
     finally:
         db.close()
+    try:
+        results["hot_keywords_warm"] = precompute.warm_hot_keywords()
+    except Exception as exc:  # noqa: BLE001
+        results["hot_keywords_warm"] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
     return results
 
 

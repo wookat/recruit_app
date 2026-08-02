@@ -7,7 +7,10 @@ import json
 
 import cache
 import crud
+from bianzhi import apply_bianzhi_filters, bianzhi_export_order
+from campus import apply_campus_filters, campus_export_order
 from database import SessionLocal
+from models import BianzhiJob, CampusJob
 
 HOT_TTL = 24 * 3600
 
@@ -38,11 +41,14 @@ WARM_CATEGORIES = ("公务员", "事业单位/事业编", "军队文职", "国�
 
 
 def _warm_count(db, r, filters: "crud.PositionFilter") -> None:
-    """重算一个筛选组合的 count 缓存（key 与 crud 完全一致），并把 TTL 提到 24h。"""
+    """重算一个筛选组合的 count 与首页 items 缓存（key 与 crud 完全一致），并把 TTL 提到 24h。"""
     key = "cnt:pos:" + filters.model_dump_json()
-    r.delete(key)  # 先删再由 search_positions 内的 get_or_set 重算写入
+    items_key = "items:pos:year_desc:1:20:" + filters.model_dump_json()
+    r.delete(key, items_key)  # 先删再由 search_positions 内的 get_or_set 重算写入
     crud.search_positions(db, filters, page=1, page_size=20)
     r.expire(key, HOT_TTL)
+    if filters.keyword:
+        r.expire(items_key, HOT_TTL)
 
 
 def warm_common_queries() -> dict:
@@ -74,3 +80,43 @@ def warm_common_queries() -> dict:
     finally:
         db.close()
     return {"warmed": warmed, "errors": errors, "combos": len(combos)}
+
+
+# 与前端 synonyms.ts 的 HOT_SEARCHES 词表 + expandKeyword 的同义组合保持一致
+HOT_KEYWORDS = (
+    "国考", "省考", "事业单位", "选调生", "教师",
+    "护士", "银行", "央企", "国企", "三支一扶",
+)
+SYNONYM_COMBOS = (
+    "老师|教师", "研究生|硕士", "大专|专科", "事业编|事业单位", "公务员|国考|省考",
+)
+
+
+def warm_hot_keywords() -> dict:
+    """预热热门搜索词与常见同义组合（三板块）。
+
+    positions 刷新 count 缓存（24h TTL）并执行分层首页查询；
+    campus/bianzhi 列表接口无 Redis 缓存，直接执行同口径查询预热 PG 缓冲区。
+    逐个执行，单词失败不影响其余。
+    """
+    keywords = list(HOT_KEYWORDS) + list(SYNONYM_COMBOS)
+    r = cache.get_redis()
+    warmed, errors = 0, 0
+    db = SessionLocal()
+    try:
+        for kw in keywords:
+            try:
+                _warm_count(db, r, crud.PositionFilter(keyword=kw))
+                q = apply_campus_filters(db.query(CampusJob), {"keyword": kw})
+                q.count()
+                q.order_by(*campus_export_order(None, kw)).limit(20).all()
+                q = apply_bianzhi_filters(db.query(BianzhiJob), {"keyword": kw})
+                q.count()
+                q.order_by(*bianzhi_export_order(None, kw)).limit(20).all()
+                warmed += 1
+            except Exception:  # noqa: BLE001
+                errors += 1
+                db.rollback()
+    finally:
+        db.close()
+    return {"warmed": warmed, "errors": errors, "keywords": len(keywords)}

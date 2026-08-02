@@ -15,6 +15,13 @@ from sqlalchemy import create_engine, text
 
 DB_URL = os.getenv("DATABASE_URL", "postgresql://recruit:recruit@localhost:5432/recruit")
 
+# (name, table, 定义 SQL 片段)
+BTREE_INDEXES = [
+    # 关键词分层查询按 year DESC, id DESC 提前终止：单列 year 索引下
+    # incremental sort 需读完整个年份组才能按 id 排序，复合索引免排序早停
+    ("idx_pos_year_id", "positions", "USING BTREE (year, id)"),
+]
+
 INDEXES = [
     ("idx_pos_search_text", "positions", "search_text"),
     ("idx_campus_company_trgm", "campus_jobs", "company"),
@@ -50,6 +57,19 @@ def main():
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
         conn.execute(text("SET maintenance_work_mem = '128MB'"))
         conn.execute(text("SET statement_timeout = 0"))
+        for name, table, definition in BTREE_INDEXES:
+            state = index_state(conn, name)
+            if state is True:
+                print(f"{name}: 已存在且有效，跳过")
+                continue
+            if state is False:
+                print(f"{name}: 存在但 invalid，先删除重建")
+                conn.execute(text(f"DROP INDEX CONCURRENTLY IF EXISTS {name}"))
+            print(f"{name}: CREATE INDEX CONCURRENTLY ON {table} {definition}...")
+            conn.execute(
+                text(f"CREATE INDEX CONCURRENTLY IF NOT EXISTS {name} ON {table} {definition}")
+            )
+            print(f"{name}: 完成，state={index_state(conn, name)}")
         for name, table, column in INDEXES:
             state = index_state(conn, name)
             if state is True:

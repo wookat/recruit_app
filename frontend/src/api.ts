@@ -259,9 +259,9 @@ export async function createBoardExport(
 
 // ---------- 数据新鲜度 ----------
 export interface Freshness {
-  positions: { last_success: string | null }
-  campus: { last_success: string | null }
-  bianzhi: { last_success: string | null }
+  positions: { last_success: string | null; total?: number | null }
+  campus: { last_success: string | null; total?: number | null }
+  bianzhi: { last_success: string | null; total?: number | null }
 }
 
 let freshnessPromise: Promise<Freshness> | null = null

@@ -63,6 +63,35 @@ def title_hit_rank(col, keyword: str):
     )
 
 
+def _hit_clause(col, keyword: str):
+    return or_(*(col.ilike(f"%{v}%") for v in keyword_variants(keyword)))
+
+
+def _keyword_tiered_items(q_nokw, keyword: str, order_keys, page: int, page_size: int):
+    """关键词搜索的相关性分层取数：岗位名命中 > 单位名命中 > 其他字段命中。
+
+    每层是无 CASE 排序的独立查询，频繁词可走 (year,id) 索引提前终止、
+    低频词可走 trgm 位图，避免 CASE 排序强制全表扫描+全量排序。
+    前两层不带 search_text 条件（标题命中已蕴含关键词命中，且避免大列 detoast）；
+    NULL 列用 IS NOT TRUE 归入非命中层，与 CASE else 语义一致。"""
+    pos_hit = _hit_clause(Position.position_example, keyword)
+    emp_hit = _hit_clause(Position.employer, keyword)
+    kw_hit = _hit_clause(Position.search_text, keyword)
+    tiers = [
+        q_nokw.filter(pos_hit),
+        q_nokw.filter(pos_hit.is_not(True), emp_hit),
+        q_nokw.filter(kw_hit, pos_hit.is_not(True), emp_hit.is_not(True)),
+    ]
+    end = page * page_size
+    collected = []
+    for tier_q in tiers:
+        remaining = end - len(collected)
+        if remaining <= 0:
+            break
+        collected.extend(tier_q.order_by(*order_keys).limit(remaining).all())
+    return collected[(page - 1) * page_size : end]
+
+
 def _major_columns(model, major_type: str):
     cols = [model.undergrad_major, model.grad_major, model.raw_major]
     if major_type == "undergrad":
@@ -181,22 +210,48 @@ def search_positions(db: Session, filters: PositionFilter, page: int = 1, page_s
     # 类别筛选是高选择性条件：用 year+0 阻止 planner 走全量 (year,id) 有序索引扫描，
     # 改走 job_type/exam_type 位图索引后再排序
     year_col = (Position.year + 0) if filters.category else Position.year
-    # 关键词搜索时标题（岗位名）命中优先，其次单位名命中，再按原排序
-    rel_keys = (
-        [title_hit_rank(Position.position_example, filters.keyword),
-         title_hit_rank(Position.employer, filters.keyword)]
-        if filters.keyword else []
-    )
     if sort == "year_desc":
-        q = q.order_by(*rel_keys, year_col.desc(), Position.id.desc())
+        order_keys = [year_col.desc(), Position.id.desc()]
     elif sort == "year_asc":
-        q = q.order_by(*rel_keys, year_col.asc(), Position.id.asc())
+        order_keys = [year_col.asc(), Position.id.asc()]
     else:
-        q = q.order_by(*rel_keys, (Position.id + 0).desc() if filters.category else Position.id.desc())
+        order_keys = [(Position.id + 0).desc() if filters.category else Position.id.desc()]
     count_key = "cnt:pos:" + filters.model_dump_json()
     total = cache.get_or_set(count_key, 1800, lambda: _capped_count(q))
-    items = q.offset((page - 1) * page_size).limit(page_size).all()
+    if filters.keyword:
+        # 相关性分层取数代替 CASE 排序，避免同义 OR 首查全表扫描；
+        # id 列表入缓存（与 count 同寿命，预热任务会延长热词 TTL）
+        nokw = PositionFilter(**{**filters.model_dump(), "keyword": None})
+        q_nokw = db.query(Position).filter(
+            Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)
+        ).options(defer(Position.search_text))
+        q_nokw = _apply_filters(q_nokw, Position, nokw)
+        items_key = f"items:pos:{sort}:{page}:{page_size}:" + filters.model_dump_json()
+        ids = cache.get_or_set(
+            items_key,
+            1800,
+            lambda: [
+                p.id
+                for p in _keyword_tiered_items(q_nokw, filters.keyword, order_keys, page, page_size)
+            ],
+        )
+        items = _positions_by_ids(db, ids)
+    else:
+        items = q.order_by(*order_keys).offset((page - 1) * page_size).limit(page_size).all()
     return total, items
+
+
+def _positions_by_ids(db: Session, ids: List[int]) -> List[Position]:
+    if not ids:
+        return []
+    rows = (
+        db.query(Position)
+        .filter(Position.id.in_(ids))
+        .options(defer(Position.search_text))
+        .all()
+    )
+    by_id = {p.id: p for p in rows}
+    return [by_id[i] for i in ids if i in by_id]
 
 
 def get_position(db: Session, position_id: int):

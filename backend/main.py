@@ -1,5 +1,7 @@
 import io
+import logging
 import os
+import threading
 from urllib.parse import quote
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -26,6 +28,17 @@ from admin import require_admin, router as admin_router
 from campus import router as campus_router
 from bianzhi import router as bianzhi_router
 from tasks import EXPORTS_DIR, export_board_task, export_positions_task, scrape_year
+import precompute
+
+logger = logging.getLogger("uvicorn.error")
+
+
+def _warm_hot_keywords_bg():
+    try:
+        result = precompute.warm_hot_keywords()
+        logger.info("启动热词预热完成: %s", result)
+    except Exception as exc:  # noqa: BLE001  预热失败不影响启动
+        logger.warning("启动热词预热失败: %s: %s", type(exc).__name__, exc)
 
 
 @asynccontextmanager
@@ -34,6 +47,7 @@ async def lifespan(app: FastAPI):
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
         conn.commit()
     Base.metadata.create_all(bind=engine)
+    threading.Thread(target=_warm_hot_keywords_bg, name="warm-hot-keywords", daemon=True).start()
     yield
 
 
@@ -106,7 +120,7 @@ def health():
 @app.get("/api/freshness")
 @cache.cached("freshness", ttl=600)
 def data_freshness(db: Session = Depends(get_db)):
-    """各数据板块最近一次采集成功时间（crawl_runs 聚合，10 分钟缓存）。"""
+    """各数据板块最近一次采集成功时间与总条数（crawl_runs 聚合，10 分钟缓存）。"""
     rows = db.execute(text("""
         SELECT CASE WHEN ws.name = 'feishu_campus' THEN 'campus'
                     WHEN ws.name = 'feishu_bianzhi' THEN 'bianzhi'
@@ -118,7 +132,21 @@ def data_freshness(db: Session = Depends(get_db)):
         GROUP BY 1
     """)).all()
     by_grp = {r.grp: r.last_success.isoformat() for r in rows}
-    return {k: {"last_success": by_grp.get(k)} for k in ("positions", "campus", "bianzhi")}
+    counts = {}
+    for grp, sql in (
+        ("positions", "SELECT count(*) FROM positions WHERE dup_of_id IS NULL AND invalid_reason IS NULL"),
+        ("campus", "SELECT count(*) FROM campus_jobs"),
+        ("bianzhi", "SELECT count(*) FROM bianzhi_jobs"),
+    ):
+        try:
+            counts[grp] = db.execute(text(sql)).scalar()
+        except Exception:  # noqa: BLE001  计数失败时前端显示「—」
+            db.rollback()
+            counts[grp] = None
+    return {
+        k: {"last_success": by_grp.get(k), "total": counts.get(k)}
+        for k in ("positions", "campus", "bianzhi")
+    }
 
 
 RECENT_BULK_THRESHOLD = 2000  # 单日入库超过该值视为全量同步导入，不逐条展示
@@ -189,7 +217,7 @@ def recent_updates(days: int = Query(7, ge=1, le=30), db: Session = Depends(get_
 
 
 @app.get("/api/positions", response_model=schemas.PositionList)
-@cache.cached("positions", ttl=120)
+@cache.cached("positions", ttl=300)
 def get_positions(
     year: Optional[List[int]] = Query(None),
     job_type: Optional[List[str]] = Query(None),
@@ -306,7 +334,7 @@ def get_similar_positions(position_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/api/sources", response_model=schemas.PositionList)
-@cache.cached("sources", ttl=120)
+@cache.cached("sources", ttl=300)
 def get_sources(
     year: Optional[List[int]] = Query(None),
     job_type: Optional[List[str]] = Query(None),

@@ -1560,7 +1560,7 @@ export function ListPage({
           variant="sidebar"
           onSelectYear={(y) => updateParam('year', [y])}
           onSelectExamType={(t) => updateParam('exam_type_norm', [t])}
-          onSelectProvince={(p) => updateParam('province', [p])}
+          onSelectProvince={(p) => updateParam('location', [...new Set([...(params.location || []), p])])}
         />
       </aside>
     )}

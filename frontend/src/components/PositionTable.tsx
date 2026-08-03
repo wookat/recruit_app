@@ -218,7 +218,7 @@ export const PositionTable = memo(function PositionTable({
                     </TableHead>
                     ),
                   )}
-                  <TableHead className="sticky right-0 w-32 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
+                  <TableHead className="w-32 sm:sticky sm:right-0 sm:border-l sm:bg-card sm:shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
                     操作
                   </TableHead>
                 </TableRow>
@@ -325,7 +325,7 @@ export const PositionTable = memo(function PositionTable({
                         )}
                       </TableCell>
                     ))}
-                    <TableCell className="sticky right-0 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)] group-hover:bg-muted">
+                    <TableCell className="group-hover:bg-muted sm:sticky sm:right-0 sm:border-l sm:bg-card sm:shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
                       <div className="flex items-center gap-0.5">
                         <FavoriteButton item={row.original} />
                         <CompareButton item={row.original} />

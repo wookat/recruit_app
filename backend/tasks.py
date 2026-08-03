@@ -407,8 +407,12 @@ def push_due_reminders():
                     ttl=3600 * 12,
                 )
                 sent += 1
-            except WebPushException as exc:
-                status = exc.response.status_code if exc.response is not None else None
+            except Exception as exc:  # noqa: BLE001  单个坏订阅不阻断其余推送
+                status = (
+                    exc.response.status_code
+                    if isinstance(exc, WebPushException) and exc.response is not None
+                    else None
+                )
                 if status in (404, 410):
                     db.delete(sub)
                     removed += 1

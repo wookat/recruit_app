@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import or_, func
+from sqlalchemy import and_, case, or_, func
 from sqlalchemy.orm import Session
 
 import cache
@@ -98,11 +98,15 @@ def apply_bianzhi_filters(q, f: dict):
 
 
 def bianzhi_export_order(due_within_days, keyword=None):
-    base = (
-        (BianzhiJob.deadline_date.asc(), BianzhiJob.id.desc())
-        if due_within_days is not None
-        else (BianzhiJob.updated_at_src.desc().nullslast(), BianzhiJob.id.desc())
-    )
+    if due_within_days is not None:
+        base = (BianzhiJob.deadline_date.asc(), BianzhiJob.id.desc())
+    else:
+        # 默认视图：已截止（deadline_date 早于今天）沉底，无日期视为未截止
+        expired_rank = case(
+            (and_(BianzhiJob.deadline_date != None, BianzhiJob.deadline_date < date.today()), 1),  # noqa: E711
+            else_=0,
+        )
+        base = (expired_rank.asc(), BianzhiJob.updated_at_src.desc().nullslast(), BianzhiJob.id.desc())
     if keyword:
         # 关键词搜索时标题（单位名）命中优先
         return (title_hit_rank(BianzhiJob.employer, keyword), *base)

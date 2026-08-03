@@ -158,6 +158,16 @@ export function CalendarPage() {
     return map
   }, [campusJobs, bianzhiJobs, calBoard, campusFavs, bianzhiFavs])
 
+  /** 体制内收藏按截止日分组，供当日清单展示 */
+  const favPositionsByDate = useMemo(() => {
+    const map: Record<string, typeof favorites> = {}
+    for (const p of favorites) {
+      const d = parseSignupDeadline(p)
+      if (d) (map[isoOf(d)] ??= []).push(p)
+    }
+    return map
+  }, [favorites])
+
   const favDates = useMemo(() => {
     const set = new Set<string>()
     for (const p of favorites) {
@@ -575,11 +585,26 @@ export function CalendarPage() {
           <h3 className="text-sm font-semibold">
             {Number(selectedIso.slice(5, 7))} 月 {Number(selectedIso.slice(8, 10))} 日截止
           </h3>
-          {!selectedDay || (selectedDay.campus.length === 0 && selectedDay.bianzhi.length === 0) ? (
+          {(!selectedDay || (selectedDay.campus.length === 0 && selectedDay.bianzhi.length === 0)) &&
+          (favPositionsByDate[selectedIso]?.length ?? 0) === 0 ? (
             <EmptyState title="当日无截止岗位" description="换个日期看看，或关注收藏截止提醒" />
           ) : (
             <ul className="mt-2 divide-y">
-              {selectedDay.campus.map((j) => (
+              {(favPositionsByDate[selectedIso] ?? []).map((p) => (
+                <li key={`p-${p.id}`}>
+                  <a
+                    href={jobShareUrl('positions', p.id)}
+                    className="flex min-h-11 w-full flex-wrap items-center gap-2 py-2 text-left hover:bg-muted/50"
+                  >
+                    <Badge className="border-0 bg-amber-500/15 text-amber-700 dark:text-amber-400">收藏·体制内</Badge>
+                    <span className="text-sm font-medium">{p.employer || p.position_example || '-'}</span>
+                    {p.employer && p.position_example && (
+                      <span className="line-clamp-1 text-xs text-muted-foreground">{p.position_example}</span>
+                    )}
+                  </a>
+                </li>
+              ))}
+              {(selectedDay?.campus ?? []).map((j) => (
                 <li key={`c-${j.id}`} className="flex items-center gap-1">
                   <button
                     type="button"
@@ -598,7 +623,7 @@ export function CalendarPage() {
                   />
                 </li>
               ))}
-              {selectedDay.bianzhi.map((j) => (
+              {(selectedDay?.bianzhi ?? []).map((j) => (
                 <li key={`b-${j.id}`} className="flex items-center gap-1">
                   <button
                     type="button"

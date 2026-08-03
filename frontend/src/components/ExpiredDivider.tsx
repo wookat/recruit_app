@@ -19,7 +19,7 @@ function DividerContent({ onHide }: { onHide: () => void }) {
           e.stopPropagation()
           onHide()
         }}
-        className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-foreground transition-colors hover:bg-muted"
+        className="min-h-11 rounded-full border border-border bg-background px-3 py-0.5 text-[11px] text-foreground transition-colors hover:bg-muted sm:min-h-0 sm:px-2"
       >
         隐藏已截止
       </button>

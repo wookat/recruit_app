@@ -216,6 +216,8 @@ _EXAM_TYPE_RULES: List[Tuple[re.Pattern, str]] = [
     (re.compile(r"综合管理|^(综合类|综合岗)"), "综合管理类"),
     (re.compile(r"社会科学专技|自然科学专技|(?<![A-Za-z])[BC]类"), "专业技术岗"),
     (re.compile(r"(?<![A-Za-z])A类"), "综合管理类"),
+    (re.compile(r"高校毕业生招聘.*(机关|事业单位)"), "事业单位招聘"),
+    (re.compile(r"(高校毕业生招聘|国有企业)"), "企业招聘"),
     (re.compile(r"(?<![A-Za-z])D类|中小学教师"), "教育教学"),
     (re.compile(r"(?<![A-Za-z])E类"), "医疗卫生"),
     (re.compile(r"(医疗|医学|临床|医技|药剂|药学|卫生|防疫)"), "医疗卫生"),

@@ -9,9 +9,11 @@ export default defineConfig({
     tailwindcss(),
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       manifest: false, // 复用 public/manifest.webmanifest
       workbox: {
+        clientsClaim: true,
+        skipWaiting: true,
         importScripts: ['push-sw.js'],
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
         navigateFallback: '/index.html',

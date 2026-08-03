@@ -18,7 +18,7 @@ export function ShareLandingBanner({ jobKey, onBrowseAll }: { jobKey: string; on
       <span className="text-muted-foreground">来自分享 · 本站汇集体制内 / 校招 / 编制岗位，每日更新</span>
       <button
         type="button"
-        className="min-h-11 cursor-pointer font-medium text-primary underline-offset-2 hover:underline sm:min-h-0"
+        className="min-h-11 cursor-pointer rounded font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 sm:min-h-0"
         onClick={() => {
           clearShareLanding()
           onBrowseAll()

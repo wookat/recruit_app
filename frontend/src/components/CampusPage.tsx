@@ -1446,9 +1446,9 @@ export function CampusPage({
             { label: '专业要求', value: detail.major_requirement },
           ]}
           schedule={[
-            { label: '开始时间', value: detail.start_date },
-            { label: '截止时间', value: detail.deadline_text },
-            { label: '更新时间', value: detail.updated_at_src },
+            { label: '开始时间', value: normalizeDateStr(detail.start_date) },
+            { label: '截止时间', value: normalizeDateStr(detail.deadline_text) },
+            { label: '更新时间', value: normalizeDateStr(detail.updated_at_src) },
           ]}
           links={[
             { label: '投递入口', url: detail.apply_url },

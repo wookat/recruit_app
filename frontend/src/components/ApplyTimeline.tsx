@@ -3,7 +3,7 @@ import { daysUntil } from '@/lib/deadline'
 import { cn } from '@/lib/utils'
 
 function fmt(d: Date): string {
-  return `${d.getMonth() + 1}/${d.getDate()}`
+  return `${d.getMonth() + 1}月${d.getDate()}日`
 }
 
 /** 网申窗口时间线：开始→截止进度条 + 今天位置与状态（未开始/进行中/已截止）。 */
@@ -40,7 +40,10 @@ export function ApplyTimeline({ start, end }: { start: Date; end: Date }) {
       </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="网申进度">
         <div
-          className={cn('h-full rounded-full transition-[width]', toEnd < 0 ? 'bg-muted-foreground/40' : 'bg-primary')}
+          className={cn(
+            'h-full rounded-full transition-[width]',
+            toEnd < 0 ? 'bg-muted-foreground/40' : toEnd <= 3 ? 'bg-red-500' : 'bg-primary',
+          )}
           style={{ width: `${pct}%` }}
         />
       </div>

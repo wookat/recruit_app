@@ -5,7 +5,7 @@ import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { addViewHistory } from '@/lib/viewHistory'
 import { derivePositionTags } from '@/lib/jobTags'
-import { parseSignupDeadline } from '@/lib/deadline'
+import { daysUntil, parseSignupDeadline } from '@/lib/deadline'
 import { PrepResources } from './PrepResources'
 import { ExtLinkAnchor } from './ExtLinkAnchor'
 import { CompetitionRef } from './CompetitionRef'
@@ -232,7 +232,7 @@ export function PositionSheet({
           <ShareLandingBanner key={item.id} jobKey={`positions:${item.id}`} onBrowseAll={onClose} />
           {(() => {
             const d = parseSignupDeadline(item)
-            return d && d.getTime() < Date.now() ? (
+            return d && daysUntil(d) < 0 ? (
               <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-foreground/80 dark:text-muted-foreground">
                 <TimerOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 该岗位报名已截止，信息仅供参考；可查看下方相似岗位

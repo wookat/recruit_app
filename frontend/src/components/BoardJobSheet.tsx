@@ -20,6 +20,7 @@ import { addViewHistory } from '@/lib/viewHistory'
 import { PrepResources } from '@/components/PrepResources'
 import { ExtLinkAnchor } from '@/components/ExtLinkAnchor'
 import { SheetDragHandle } from '@/components/SheetDragHandle'
+import { ApplyTimeline } from '@/components/ApplyTimeline'
 
 export interface SheetField {
   label: string
@@ -75,6 +76,8 @@ interface Props {
     items: { key: string; label: string; sub?: string | null }[]
     onSelect: (key: string) => void
   }
+  /** 网申窗口（开始/截止日期都可解析时传入），展示时间线进度条。 */
+  applyWindow?: { start: Date; end: Date } | null
   /** 传入时展示「备考资源」区块（攻略锚点 + 省人社官网 + 日历提醒）。 */
   prep?: {
     examType: string | null | undefined
@@ -156,6 +159,7 @@ export function BoardJobSheet({
   expiredNotice,
   related,
   similar,
+  applyWindow,
   prep,
 }: Props) {
   const validLinks = (links ?? []).filter((l) => safeUrl(l.url))
@@ -292,6 +296,7 @@ export function BoardJobSheet({
               <Section icon={GraduationCap} title="要求" fields={requirements} />
             )}
             {schedule && <Section icon={CalendarClock} title="时间" fields={schedule} />}
+            {applyWindow && <ApplyTimeline start={applyWindow.start} end={applyWindow.end} />}
 
             {validLinks.length > 0 && (
               <>

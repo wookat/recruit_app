@@ -276,10 +276,8 @@ export function ListPage({
 
   useEffect(() => {
     const kw = (params.keyword || '').trim()
-    if (!crossFetchTotal || kw.length < 2) {
-      setCrossTotal(0)
-      return
-    }
+    setCrossTotal(0)
+    if (!crossFetchTotal || kw.length < 2) return
     let cancelled = false
     const t = setTimeout(() => {
       crossFetchTotal(kw)

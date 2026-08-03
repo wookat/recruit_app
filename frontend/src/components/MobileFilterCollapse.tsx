@@ -7,11 +7,13 @@ interface Props {
   /** 当前生效的筛选数量，显示在按钮上 */
   count: number
   title?: string
+  /** 清空全部筛选；提供时抽屉底部显示「重置/完成」操作行 */
+  onReset?: () => void
   children: ReactNode
 }
 
 /** 移动端（<768px）筛选区：内容超过约两行时自动折叠为「筛选 (N)」按钮，点击弹出底部 Sheet。 */
-export function MobileFilterCollapse({ count, title = '全部筛选', children }: Props) {
+export function MobileFilterCollapse({ count, title = '全部筛选', onReset, children }: Props) {
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const measureRef = useRef<HTMLDivElement>(null)
@@ -61,6 +63,21 @@ export function MobileFilterCollapse({ count, title = '全部筛选', children }
                 <SheetTitle>{title}</SheetTitle>
               </SheetHeader>
               <div className="space-y-3">{children}</div>
+              {onReset && (
+                <div className="mt-4 flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="h-11 flex-1"
+                    disabled={count === 0}
+                    onClick={onReset}
+                  >
+                    重置
+                  </Button>
+                  <Button className="h-11 flex-1" onClick={() => setOpen(false)}>
+                    完成
+                  </Button>
+                </div>
+              )}
             </SheetContent>
           </Sheet>
         </>

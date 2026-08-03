@@ -1454,6 +1454,15 @@ export function CampusPage({
             { label: '投递入口', url: detail.apply_url },
             { label: '公告链接', url: detail.announce_url },
           ]}
+          applyWindow={(() => {
+            const s = normalizeDateStr(detail.start_date)
+            if (!s || !detail.deadline_date) return null
+            const start = new Date(`${s}T00:00:00`)
+            const end = new Date(`${detail.deadline_date}T00:00:00`)
+            return !isNaN(start.getTime()) && !isNaN(end.getTime()) && start.getTime() <= end.getTime()
+              ? { start, end }
+              : null
+          })()}
           prep={{
             examType: [detail.company_type, detail.batch, '校招'].filter(Boolean).join(' '),
             province: detail.locations?.split(/[、,，;；/\s]/)[0] || null,

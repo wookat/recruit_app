@@ -135,6 +135,22 @@ class Feedback(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
 
+class PushSubscription(Base):
+    """Web Push 订阅：收藏截止日快照随订阅上报，每日定时推送临近截止提醒。"""
+
+    __tablename__ = "push_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    endpoint = Column(Text, nullable=False, unique=True)
+    p256dh = Column(String(200), nullable=False)
+    auth = Column(String(100), nullable=False)
+    remind_days = Column(Integer, nullable=False, default=3)
+    items_json = Column(Text, nullable=False, default="[]")  # [{"t": 标题, "d": "YYYY-MM-DD"}]
+    failures = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 class PageViewDaily(Base):
     """自建轻量访问统计：日聚合 PV（无 cookie、无个人数据、IP 不落库）。"""
 

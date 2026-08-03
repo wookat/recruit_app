@@ -12,6 +12,7 @@ export default defineConfig({
       registerType: 'prompt',
       manifest: false, // 复用 public/manifest.webmanifest
       workbox: {
+        importScripts: ['push-sw.js'],
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],

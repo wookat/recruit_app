@@ -4,6 +4,7 @@ import os
 import re
 import time
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import requests
 import pandas as pd
@@ -22,7 +23,8 @@ import bianzhi as bianzhi_api
 import campus as campus_api
 import csv_export
 import quality
-from models import BianzhiJob, CampusJob
+from models import BianzhiJob, CampusJob, PushSubscription
+from pywebpush import webpush, WebPushException
 import refresh_feishu
 import import_guopin_2027
 from cache import get_redis
@@ -351,6 +353,79 @@ def cleanup_exports():
         except OSError:
             continue
     return {"removed": removed}
+
+
+@celery_app.task
+def push_due_reminders():
+    """每日向 Web Push 订阅者推送临近截止的收藏提醒（每订阅至多一条聚合通知）。"""
+    private_key = os.getenv("VAPID_PRIVATE_KEY", "")
+    sub_claim = os.getenv("VAPID_SUB", "mailto:admin@zalize.com")
+    if not private_key:
+        return {"status": "skipped", "reason": "VAPID_PRIVATE_KEY not set"}
+
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
+    db = SessionLocal()
+    sent = removed = failed = 0
+    try:
+        subs = db.query(PushSubscription).all()
+        for sub in subs:
+            try:
+                items = json.loads(sub.items_json or "[]")
+            except ValueError:
+                items = []
+            due = []
+            for it in items:
+                try:
+                    d = datetime.strptime(it.get("d", ""), "%Y-%m-%d").date()
+                except ValueError:
+                    continue
+                n = (d - today).days
+                if 0 <= n <= (sub.remind_days or 3):
+                    due.append((n, it.get("t", "")))
+            if not due:
+                continue
+            due.sort()
+            first = due[0]
+            body = f"最近的一条：{first[1]}（{'今天截止' if first[0] == 0 else f'剩 {first[0]} 天'}）"
+            payload = json.dumps(
+                {
+                    "title": f"上岸罗盘：{len(due)} 条收藏即将截止报名",
+                    "body": body,
+                    "url": "/?fav=1",
+                },
+                ensure_ascii=False,
+            )
+            try:
+                webpush(
+                    subscription_info={
+                        "endpoint": sub.endpoint,
+                        "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
+                    },
+                    data=payload,
+                    vapid_private_key=private_key,
+                    vapid_claims={"sub": sub_claim},
+                    ttl=3600 * 12,
+                )
+                sent += 1
+            except Exception as exc:  # noqa: BLE001  单个坏订阅不阻断其余推送
+                status = (
+                    exc.response.status_code
+                    if isinstance(exc, WebPushException) and exc.response is not None
+                    else None
+                )
+                if status in (404, 410):
+                    db.delete(sub)
+                    removed += 1
+                else:
+                    sub.failures = (sub.failures or 0) + 1
+                    if sub.failures >= 5:
+                        db.delete(sub)
+                        removed += 1
+                    failed += 1
+        db.commit()
+    finally:
+        db.close()
+    return {"status": "ok", "sent": sent, "removed": removed, "failed": failed}
 
 
 @celery_app.task

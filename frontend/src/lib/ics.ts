@@ -42,8 +42,7 @@ function foldLine(line: string): string[] {
 }
 
 export function buildIcs(events: IcsEvent[]): string {
-  const now = new Date()
-  const dtstamp = `${fmtDate(now)}T${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+  const dtstamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',

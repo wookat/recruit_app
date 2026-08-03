@@ -53,6 +53,7 @@ import {
   setNewsNotifyEnabled,
   useNewsNotifyEnabled,
 } from '@/lib/savedNews'
+import { buildPushItems, disablePush, enablePush, isPushSupported, usePushEnabled } from '@/lib/push'
 import { dismissFollowUp, followUpInfo, useFollowUpDismissed } from '@/lib/followup'
 import { cn } from '@/lib/utils'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
@@ -1279,6 +1280,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
               <span className="hidden sm:inline">顶栏红点与横幅按此计算</span>
             </div>
             <NotifyToggleRow />
+            <PushToggleRow />
             <NewsNotifyToggleRow />
             <ExtLinkConfirmToggleRow />
             <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5">
@@ -1876,6 +1878,71 @@ function ExtLinkConfirmToggleRow() {
       <span className="hidden sm:inline">
         {enabled ? '点击详情外链时先确认目标网站' : '默认直接跳转，详情内已显示链接域名'}
       </span>
+    </div>
+  )
+}
+
+/** 「关站推送提醒」开关（默认关）：Web Push 订阅，即使没打开站点也能收到每日临近截止聚合推送。 */
+function PushToggleRow() {
+  const enabled = usePushEnabled()
+  const favorites = useFavorites()
+  const campusFavs = useCampusFavorites()
+  const bianzhiFavs = useBianzhiFavorites()
+  const remindDays = useRemindDays()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  if (!isPushSupported()) return null
+
+  const toggle = async () => {
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      if (enabled) {
+        await disablePush()
+        return
+      }
+      const items = buildPushItems(favorites, campusFavs, bianzhiFavs)
+      const result = await enablePush(remindDays, items)
+      if (result === 'denied') setError('浏览器已拒绝通知权限（可在地址栏站点设置中重新允许）')
+      else if (result === 'unconfigured') setError('推送服务暂未配置，请稍后再试')
+      else if (result !== 'granted') setError('开启失败，请稍后再试')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+      <MonitorSmartphone className="h-3.5 w-3.5 shrink-0" />
+      关站推送提醒
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        aria-label="关站推送提醒"
+        aria-busy={busy}
+        onClick={toggle}
+        className="relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:h-6 sm:w-10"
+      >
+        <span
+          className={cn(
+            'inline-flex h-5 w-9 items-center rounded-full border px-0.5 transition-colors',
+            enabled ? 'border-primary bg-primary' : 'border-border bg-muted',
+          )}
+        >
+          <span
+            className={cn(
+              'h-4 w-4 rounded-full bg-background shadow transition-transform',
+              enabled ? 'translate-x-4' : 'translate-x-0',
+            )}
+          />
+        </span>
+      </button>
+      <span className="hidden sm:inline">
+        {enabled ? '不打开站点也会在每天早上推送临近截止的收藏' : '默认关闭，开启后关站也能收到截止推送'}
+      </span>
+      {error && <span className="w-full text-amber-700 dark:text-amber-300">{error}</span>}
     </div>
   )
 }

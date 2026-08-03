@@ -9,6 +9,7 @@ import { daysUntil, parseSignupDeadline } from '@/lib/deadline'
 import { PrepResources } from './PrepResources'
 import { ExtLinkAnchor } from './ExtLinkAnchor'
 import { CompetitionRef } from './CompetitionRef'
+import { EmployerHistory } from './EmployerHistory'
 import { SheetDragHandle } from './SheetDragHandle'
 import { Building2, Filter, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles, TimerOff } from 'lucide-react'
 import {
@@ -367,6 +368,7 @@ export function PositionSheet({
                 examType={item.exam_type_norm}
                 year={item.year}
               />
+              <EmployerHistory employer={item.employer} currentYear={item.year} />
               <div className="flex items-start gap-1.5">
                 <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <div>

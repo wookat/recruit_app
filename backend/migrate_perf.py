@@ -25,6 +25,10 @@ STATEMENTS = [
     """CREATE INDEX IF NOT EXISTS idx_pos_clean_prov_year_id
        ON positions (province, year DESC, id DESC)
        WHERE dup_of_id IS NULL AND invalid_reason IS NULL""",
+    # 同单位历年招录聚合（employer 精确匹配 + 按年份分组）
+    """CREATE INDEX IF NOT EXISTS idx_pos_clean_employer_year
+       ON positions (employer, year)
+       WHERE dup_of_id IS NULL AND invalid_reason IS NULL""",
 ]
 
 

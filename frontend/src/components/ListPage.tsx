@@ -860,7 +860,9 @@ export function ListPage({
             <label className="text-xs font-medium text-muted-foreground">排序</label>
             <Select value={params.sort || 'year_desc'} onValueChange={(v) => updateParam('sort', v || undefined)}>
               <SelectTrigger className="h-9" aria-label="排序方式">
-                <SelectValue placeholder="排序方式" />
+                <SelectValue placeholder="排序方式">
+                  {{ year_desc: '最新优先（默认）', year_asc: '年份从旧到新', id_desc: '最新收录优先' }[params.sort || 'year_desc']}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="year_desc">最新优先（默认）</SelectItem>

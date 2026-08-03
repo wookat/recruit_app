@@ -331,6 +331,19 @@ export default function App() {
     },
     [clearBoardParams],
   )
+  /** 带省份直达编制板（prov 入 URL，供 0 结果跨板块导流） */
+  const goBianzhiProv = useCallback(
+    (province: string, preset?: string) => {
+      clearBoardParams()
+      const q = new URLSearchParams(window.location.search)
+      q.set('prov', province)
+      window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
+      setBoardQuickNonce((n) => n + 1)
+      setSection({ mode: 'bianzhi', preset: preset && preset !== 'all' ? preset : undefined })
+      window.scrollTo({ top: 0 })
+    },
+    [clearBoardParams],
+  )
   const campusTotal = useCallback(
     (kw: string) => fetchCampusJobs({ keyword: kw, page: 1, page_size: 1 }).then((r) => r.total),
     [],
@@ -597,7 +610,13 @@ export default function App() {
               initialProvince={posQuick?.province ? [posQuick.province] : undefined}
               initialLocation={posQuick?.city ? [posQuick.city] : undefined}
               crossPresets={CAMPUS_CROSS}
-              onCrossPreset={(k) => (k.startsWith('bz:') ? goBianzhi(k.slice(3)) : goCampus(k))}
+              onCrossPreset={(k) => {
+                if (k.startsWith('bzp:')) {
+                  const [, preset, prov] = k.split(':')
+                  goBianzhiProv(prov, preset)
+                } else if (k.startsWith('bz:')) goBianzhi(k.slice(3))
+                else goCampus(k)
+              }}
               crossLabel="校招信息"
               crossFetchTotal={campusTotal}
               onCrossOpen={(kw) => goCampus('all', kw)}

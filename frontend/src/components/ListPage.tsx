@@ -226,6 +226,7 @@ export function ListPage({
   const [filters, setFilters] = useState<FilterOptions | null>(null)
   const [data, setData] = useState<PositionList | null>(null)
   const [loading, setLoading] = useState(false)
+  const [slowLoading, setSlowLoading] = useState(false)
   const [view, setView] = useState<ViewMode>(defaultView)
   const [filterOpen, setFilterOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -319,6 +320,15 @@ export function ListPage({
       if (exportTimerRef.current) clearInterval(exportTimerRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!loading) {
+      setSlowLoading(false)
+      return
+    }
+    const t = setTimeout(() => setSlowLoading(true), 6000)
+    return () => clearTimeout(t)
+  }, [loading])
 
   useEffect(() => {
     fetchFilters().then(setFilters).catch(console.error)
@@ -701,7 +711,17 @@ export function ListPage({
 
   const defaultFilterName =
     [
-      params.location?.[0] ?? params.province?.[0] ?? params.work_location?.[0],
+      (() => {
+        const locs = params.location?.length
+          ? params.location
+          : params.province?.length
+            ? params.province
+            : params.work_location ?? []
+        if (locs.length === 0) return null
+        return locs.length <= 3 ? locs.join('+') : `${locs.slice(0, 3).join('+')}等${locs.length}地`
+      })(),
+      params.job_type?.[0],
+      params.exam_type_norm?.[0],
       params.category?.[0],
       params.edu_level?.[0],
       params.year?.[0],
@@ -723,8 +743,12 @@ export function ListPage({
     setSaved(list)
     setSaveName('')
     setSaveOpen(false)
-    setSaveHint(dropped ? `已达 10 组上限，删除了最旧的「${dropped}」` : null)
-    if (dropped) setTimeout(() => setSaveHint(null), 4000)
+    setSaveHint(
+      dropped
+        ? `已达 10 组上限，删除了最旧的「${dropped}」`
+        : '已保存并订阅：有匹配新岗位会在 chip 上显示「+N 新」，今日速览同步提示',
+    )
+    setTimeout(() => setSaveHint(null), 6000)
   }
 
   function applySavedFilter(f: SavedFilter) {
@@ -1115,6 +1139,10 @@ export function ListPage({
               <span className="inline-flex items-center gap-1">
                 <Input
                   autoFocus
+                  onFocus={(e) => {
+                    e.currentTarget.setSelectionRange(0, 0)
+                    e.currentTarget.scrollLeft = 0
+                  }}
                   value={saveName}
                   onChange={(e) => setSaveName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveFilter()}
@@ -1414,6 +1442,26 @@ export function ListPage({
             >
               清除地域筛选
             </Button>
+            {onCrossPreset &&
+              (() => {
+                const provs = new Set(filters?.provinces ?? [])
+                const prov = [...(params.province ?? []), ...(params.location ?? [])].find((v) =>
+                  provs.has(v),
+                )
+                const jt = [...(params.job_type ?? []), ...(params.exam_type_norm ?? [])].join('')
+                const preset = /教师|教育/.test(jt) ? 'edu' : /医疗|医院|卫生/.test(jt) ? 'med' : 'all'
+                if (!prov) return null
+                return (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => onCrossPreset(`bzp:${preset}:${prov}`)}
+                  >
+                    去编制板找{prov}{preset === 'edu' ? '教师' : preset === 'med' ? '医疗' : ''}岗位
+                  </Button>
+                )
+              })()}
           </div>
         )}
       <div className="flex items-center justify-between">
@@ -1463,6 +1511,14 @@ export function ListPage({
         <CrossBoardZeroHint from="positions" keyword={params.keyword || ''} onOpen={onOpenBoardKw} />
       )}
 
+      {loading && slowLoading && (
+        <div
+          role="status"
+          className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-200"
+        >
+          结果较多，正在统计中，请稍候…如长时间无响应可减少筛选条件后重试
+        </div>
+      )}
       {data?.timed_out && (
         <div
           role="status"

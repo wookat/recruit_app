@@ -47,8 +47,12 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
     setSaved(list)
     setSaveOpen(false)
     setSaveName('')
-    setHint(dropped ? `已达 10 组上限，删除了最旧的「${dropped}」` : null)
-    if (dropped) setTimeout(() => setHint(null), 4000)
+    setHint(
+      dropped
+        ? `已达 10 组上限，删除了最旧的「${dropped}」`
+        : '已保存并订阅：有匹配新岗位会在 chip 上显示「+N 新」，今日速览同步提示',
+    )
+    setTimeout(() => setHint(null), 6000)
   }
 
   return (
@@ -82,6 +86,10 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
         <span className="inline-flex max-w-full items-center gap-1">
           <Input
             autoFocus
+            onFocus={(e) => {
+              e.currentTarget.setSelectionRange(0, 0)
+              e.currentTarget.scrollLeft = 0
+            }}
             value={saveName}
             onChange={(e) => setSaveName(e.target.value)}
             onKeyDown={(e) => {

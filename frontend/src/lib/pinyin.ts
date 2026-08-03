@@ -13,6 +13,11 @@ function ensurePinyin() {
   })
 }
 
+/** 提前加载拼音词典（如选择器展开时），避免首次拉丁查询因词典未就绪而无匹配。 */
+export function preloadPinyin() {
+  ensurePinyin()
+}
+
 const cache = new Map<string, { full: string; initials: string }>()
 
 function keysOf(text: string, py: PinyinFn) {

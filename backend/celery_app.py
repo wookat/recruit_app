@@ -45,7 +45,11 @@ celery_app.conf.update(
         },
         "check-dead-links": {
             "task": "tasks.check_dead_links",
-            "schedule": crontab(hour=4, minute=0, day_of_week=1),  # 每周一扫描校招投递链接死链
+            "schedule": crontab(hour=4, minute=0, day_of_week=1),  # 每周一全量扫描校招/编制链接死链
+        },
+        "check-dead-links-new": {
+            "task": "tasks.check_dead_links_new",
+            "schedule": crontab(hour=7, minute=30),  # 每日同步后增量补扫新入库链接
         },
         "cleanup-exports": {
             "task": "tasks.cleanup_exports",

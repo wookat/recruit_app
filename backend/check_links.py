@@ -45,8 +45,10 @@ def _probe(url: str) -> tuple[int, "int | None", str]:
         return 0, None, type(exc).__name__[:200]
 
 
-def run_check(db: Session, limit: "int | None" = None) -> dict:
-    """扫描未截止岗位的去重链接（校招 apply_url + 编制 apply_url/announce_url），upsert link_checks。"""
+def run_check(db: Session, limit: "int | None" = None, only_new: bool = False) -> dict:
+    """扫描未截止岗位的去重链接（校招 apply_url + 编制 apply_url/announce_url），upsert link_checks。
+
+    only_new=True 时只扫描 link_checks 尚无记录的链接（每日同步后的增量补扫）。"""
     Base.metadata.create_all(bind=engine, tables=[LinkCheck.__table__])
     rows = db.execute(text(
         "SELECT DISTINCT apply_url AS u FROM campus_jobs"
@@ -63,6 +65,9 @@ def run_check(db: Session, limit: "int | None" = None) -> dict:
         " ORDER BY u"
     )).fetchall()
     urls = [r[0] for r in rows]
+    if only_new:
+        known = {r[0] for r in db.execute(text("SELECT url FROM link_checks")).fetchall()}
+        urls = [u for u in urls if u not in known]
     if limit:
         urls = urls[:limit]
     with ThreadPoolExecutor(max_workers=WORKERS) as ex:

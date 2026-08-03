@@ -476,10 +476,20 @@ def _backfill_signup_deadlines(db, max_rows: int = DQ_BACKFILL_MAX) -> dict:
 
 @celery_app.task
 def check_dead_links():
-    """每周校招投递链接死链扫描（结果入 link_checks，质量卡展示失效计数）。"""
+    """每周链接死链全量扫描（校招+编制，结果入 link_checks，质量卡展示失效计数）。"""
     db = SessionLocal()
     try:
         return check_links.run_check(db)
+    finally:
+        db.close()
+
+
+@celery_app.task
+def check_dead_links_new():
+    """每日增量死链扫描：只探测同步新入库、link_checks 尚无记录的链接。"""
+    db = SessionLocal()
+    try:
+        return check_links.run_check(db, only_new=True)
     finally:
         db.close()
 

@@ -68,6 +68,12 @@ def row_hash(source_table: str, d: dict) -> str:
 
 
 _SQUASH_RE = re.compile(r"[\s|,，、;；/]+")
+_GRAD_SHORT_RE = re.compile(r"(?<!\d)(2\d)(届)")
+
+
+def _norm_grad(v: str) -> str:
+    """届次写法归一：26届 → 2026届，与四位年写法同键。"""
+    return _GRAD_SHORT_RE.sub(r"20\1\2", v or "")
 
 
 def cross_hash(company: str, positions: str, batch: str, grad_years: str,
@@ -77,7 +83,7 @@ def cross_hash(company: str, positions: str, batch: str, grad_years: str,
         _SQUASH_RE.sub("", company or ""),
         _SQUASH_RE.sub("", positions or ""),
         _SQUASH_RE.sub("", batch or ""),
-        _SQUASH_RE.sub("", grad_years or ""),
+        _SQUASH_RE.sub("", _norm_grad(grad_years)),
         (apply_url or "").strip(),
         (announce_url or "").strip(),
     ])

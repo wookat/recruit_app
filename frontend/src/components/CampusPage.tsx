@@ -234,8 +234,12 @@ export function CampusPage({
   const [preset, setPreset] = useState(
     initialPreset === 'recent7' ? 'all' : initialPreset ?? 'all',
   )
-  const [keyword, setKeyword] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
-  const [searchInput, setSearchInput] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
+  const [keyword, setKeyword] = useState(
+    initialKeyword ?? urlQuery.get('bkw') ?? urlQuery.get('kw') ?? '',
+  )
+  const [searchInput, setSearchInput] = useState(
+    initialKeyword ?? urlQuery.get('bkw') ?? urlQuery.get('kw') ?? '',
+  )
   const [crossTotal, setCrossTotal] = useState(0)
   const [synOff, setSynOff] = useState(false)
   const [companyTypes, setCompanyTypes] = useState<string[]>(() => {
@@ -365,6 +369,7 @@ export function CampusPage({
     else q.delete('ctype')
     if (keyword.trim()) q.set('bkw', keyword.trim())
     else q.delete('bkw')
+    q.delete('kw')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('campus', urlPreset)
   }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, city, companyTypes, keyword])

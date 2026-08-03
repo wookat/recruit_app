@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import or_, func
+from sqlalchemy import and_, case, or_, func
 from sqlalchemy.orm import Session
 
 import cache
@@ -112,11 +112,15 @@ def apply_campus_filters(q, f: dict):
 
 
 def campus_export_order(due_within_days, keyword=None):
-    base = (
-        (CampusJob.deadline_date.asc(), CampusJob.id.desc())
-        if due_within_days is not None
-        else (CampusJob.updated_at_src.desc().nullslast(), CampusJob.id.desc())
-    )
+    if due_within_days is not None:
+        base = (CampusJob.deadline_date.asc(), CampusJob.id.desc())
+    else:
+        # 默认视图：已截止（deadline_date 早于今天）沉底，无日期视为未截止
+        expired_rank = case(
+            (and_(CampusJob.deadline_date != None, CampusJob.deadline_date < date.today()), 1),  # noqa: E711
+            else_=0,
+        )
+        base = (expired_rank.asc(), CampusJob.updated_at_src.desc().nullslast(), CampusJob.id.desc())
     if keyword:
         # 关键词搜索时标题（公司名）命中优先，其次岗位命中
         return (

@@ -57,6 +57,7 @@ import { fetchSimilarBianzhi } from '@/lib/similarJobs'
 
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { DueBadge } from '@/components/DueBadge'
+import { ExpiredDividerBlock, ExpiredDividerRow, isExpiredDate } from '@/components/ExpiredDivider'
 import { FreshnessNote } from '@/components/FreshnessNote'
 import { SortableHead } from '@/components/SortableHead'
 import { cmpNullableStr, nextSort, normalizeDateStr, type SortState } from '@/lib/tableSort'
@@ -990,6 +991,15 @@ export function BianzhiPage({
                   {formatDueDayLabel(job.deadline_date)}
                 </div>
               )}
+              {!dueOnly && !hideExpired && !sort && !kwTrim && !isLiankaoPreset && i > 0 &&
+                isExpiredDate(job.deadline_date) && !isExpiredDate(arr[i - 1].deadline_date) && (
+                  <ExpiredDividerBlock
+                    onHide={() => {
+                      setHideExpired(true)
+                      setPage(1)
+                    }}
+                  />
+                )}
             <div
               className="cursor-pointer rounded-xl border bg-background p-4 transition-colors hover:border-primary/20 hover:shadow-md"
               onClick={() => setDetail(job)}
@@ -1182,6 +1192,15 @@ export function BianzhiPage({
                       </TableCell>
                     </TableRow>
                   )}
+                  {!dueOnly && !hideExpired && !sort && !kwTrim && !isLiankaoPreset && i > 0 &&
+                    isExpiredDate(job.deadline_date) && !isExpiredDate(arr[i - 1].deadline_date) && (
+                      <ExpiredDividerRow
+                        onHide={() => {
+                          setHideExpired(true)
+                          setPage(1)
+                        }}
+                      />
+                    )}
                 <TableRow className="cursor-pointer" onClick={() => setDetail(job)}>
                   <TableCell className="p-1">
                     <div className="flex items-center">
@@ -1370,6 +1389,7 @@ export function BianzhiPage({
           favActive={bianzhiFavorites.some((f) => f.id === detail.id)}
           onFavToggle={() => toggleBianzhiFavorite(detail)}
           jobKey={`bianzhi:${detail.id}`}
+          expiredNotice={detail.category !== '大型联考' && isExpiredDate(detail.deadline_date)}
           prep={{
             examType: detail.category || detail.job_type,
             province: detail.province,

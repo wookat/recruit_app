@@ -743,8 +743,12 @@ export function ListPage({
     setSaved(list)
     setSaveName('')
     setSaveOpen(false)
-    setSaveHint(dropped ? `已达 10 组上限，删除了最旧的「${dropped}」` : null)
-    if (dropped) setTimeout(() => setSaveHint(null), 4000)
+    setSaveHint(
+      dropped
+        ? `已达 10 组上限，删除了最旧的「${dropped}」`
+        : '已保存并订阅：有匹配新岗位会在 chip 上显示「+N 新」，今日速览同步提示',
+    )
+    setTimeout(() => setSaveHint(null), 6000)
   }
 
   function applySavedFilter(f: SavedFilter) {
@@ -1135,6 +1139,10 @@ export function ListPage({
               <span className="inline-flex items-center gap-1">
                 <Input
                   autoFocus
+                  onFocus={(e) => {
+                    e.currentTarget.setSelectionRange(0, 0)
+                    e.currentTarget.scrollLeft = 0
+                  }}
                   value={saveName}
                   onChange={(e) => setSaveName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveFilter()}

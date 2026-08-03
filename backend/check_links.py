@@ -1,4 +1,4 @@
-"""校招投递链接死链扫描：检测未截止岗位的 apply_url 是否仍可访问。
+"""校招/编制链接死链扫描：检测未截止岗位的投递/报名/公告链接是否仍可访问。
 
 只判定「硬失效」（DNS/连接失败、4xx/5xx）；上游 302 到别站错误页等
 软失效不误判。结果写入 link_checks 表，供质量卡展示。
@@ -34,13 +34,21 @@ def _probe(url: str) -> tuple[int, "int | None", str]:
 
 
 def run_check(db: Session, limit: "int | None" = None) -> dict:
-    """扫描未截止校招岗位的 apply_url（去重后并发探测），upsert link_checks。"""
+    """扫描未截止岗位的去重链接（校招 apply_url + 编制 apply_url/announce_url），upsert link_checks。"""
     Base.metadata.create_all(bind=engine, tables=[LinkCheck.__table__])
     rows = db.execute(text(
-        "SELECT DISTINCT apply_url FROM campus_jobs"
+        "SELECT DISTINCT apply_url AS u FROM campus_jobs"
         " WHERE apply_url ~ '^https?://'"
         " AND (deadline_date IS NULL OR deadline_date >= CURRENT_DATE)"
-        " ORDER BY apply_url"
+        " UNION"
+        " SELECT DISTINCT apply_url FROM bianzhi_jobs"
+        " WHERE apply_url ~ '^https?://'"
+        " AND (deadline_date IS NULL OR deadline_date >= CURRENT_DATE)"
+        " UNION"
+        " SELECT DISTINCT announce_url FROM bianzhi_jobs"
+        " WHERE announce_url ~ '^https?://'"
+        " AND (deadline_date IS NULL OR deadline_date >= CURRENT_DATE)"
+        " ORDER BY u"
     )).fetchall()
     urls = [r[0] for r in rows]
     if limit:

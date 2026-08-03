@@ -124,6 +124,17 @@ def compute_quality_issues(db: Session) -> dict:
             note="每周一 check_dead_links 扫描；仅硬失效（DNS/连接失败、4xx/5xx），软跳转不误判",
         ),
         _issue(
+            db, "bianzhi", "bz_dead_link", "编制：报名/公告链接已失效（未截止岗位）",
+            BianzhiJob,
+            ((BianzhiJob.deadline_date.is_(None)) | (BianzhiJob.deadline_date >= func.current_date()))
+            & (
+                BianzhiJob.apply_url.in_(select(LinkCheck.url).where(LinkCheck.ok == 0))
+                | BianzhiJob.announce_url.in_(select(LinkCheck.url).where(LinkCheck.ok == 0))
+            ),
+            BianzhiJob.announce_url,
+            note="每周一 check_dead_links 扫描；仅硬失效（DNS/连接失败、4xx/5xx），软跳转不误判",
+        ),
+        _issue(
             db, "bianzhi", "bz_empty_employer", "编制：招考单位全空",
             BianzhiJob, _blank(BianzhiJob.employer), bz_desc,
             note="源数据缺失（飞书表未填单位），前端显示「—」，保持不伪造",

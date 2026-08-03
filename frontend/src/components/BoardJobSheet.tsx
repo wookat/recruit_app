@@ -169,25 +169,25 @@ export function BoardJobSheet({
   const [deadUrls, setDeadUrls] = useState<Record<string, boolean>>({})
   const queriedUrls = useRef(new Set<string>())
 
+  const checkKey = validLinks
+    .filter((l) => l.checkDead && l.url)
+    .map((l) => l.url)
+    .join('|')
+
   useEffect(() => {
-    if (!open) return
-    let cancelled = false
-    for (const l of validLinks) {
-      const u = l.url
-      if (!l.checkDead || !u || queriedUrls.current.has(u)) continue
+    if (!open || !checkKey) return
+    for (const u of checkKey.split('|')) {
+      if (queriedUrls.current.has(u)) continue
       queriedUrls.current.add(u)
       fetchLinkStatus(u)
         .then((s) => {
-          if (!cancelled && s.checked && s.ok === false) {
+          if (s.checked && s.ok === false) {
             setDeadUrls((m) => ({ ...m, [u]: true }))
           }
         })
         .catch(() => queriedUrls.current.delete(u))
     }
-    return () => {
-      cancelled = true
-    }
-  }, [open, validLinks])
+  }, [open, checkKey])
 
   useEffect(() => {
     if (!open || !jobKey) return

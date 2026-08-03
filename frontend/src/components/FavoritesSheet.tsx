@@ -38,6 +38,7 @@ import {
   type BoardMeta,
 } from '@/lib/boardFavorites'
 import { APP_CHANNELS, channelClass, PILL_BASE, type AppChannel } from '@/lib/badgeColors'
+import { normalizeDateStr } from '@/lib/tableSort'
 import { downloadBackup, restoreBackup } from '@/lib/backup'
 import { setConfirmExtLink, useConfirmExtLink } from '@/lib/extLink'
 import { downloadIcs, type IcsEvent } from '@/lib/ics'
@@ -712,7 +713,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
               {j.positions && <span className="line-clamp-1">{j.positions}</span>}
             </div>
             <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-              {j.deadline_text && <span>截止：{j.deadline_text}</span>}
+              {j.deadline_text && <span>截止：{normalizeDateStr(j.deadline_text)}</span>}
               {j.apply_url && j.apply_url.startsWith('http') && (
                 <a
                   href={j.apply_url}
@@ -785,7 +786,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   {j.province}
                 </span>
               )}
-              {j.deadline_text && <span>截止：{j.deadline_text}</span>}
+              {j.deadline_text && <span>截止：{normalizeDateStr(j.deadline_text)}</span>}
               {j.announce_url && j.announce_url.startsWith('http') && (
                 <a
                   href={j.announce_url}
@@ -1794,9 +1795,9 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             { label: '专业要求', value: campusDetail.major_requirement },
           ]}
           schedule={[
-            { label: '开始时间', value: campusDetail.start_date },
-            { label: '截止时间', value: campusDetail.deadline_text },
-            { label: '更新时间', value: campusDetail.updated_at_src },
+            { label: '开始时间', value: normalizeDateStr(campusDetail.start_date) },
+            { label: '截止时间', value: normalizeDateStr(campusDetail.deadline_text) },
+            { label: '更新时间', value: normalizeDateStr(campusDetail.updated_at_src) },
           ]}
           links={[
             { label: '投递入口', url: campusDetail.apply_url, checkDead: true },
@@ -1847,13 +1848,13 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           ]}
           schedule={[
             { label: '报名开始', value: bianzhiDetail.signup_start },
-            { label: '报名截止', value: bianzhiDetail.deadline_text },
+            { label: '报名截止', value: normalizeDateStr(bianzhiDetail.deadline_text) },
             { label: '考试时间', value: bianzhiDetail.exam_time },
-            { label: '更新时间', value: bianzhiDetail.updated_at_src },
+            { label: '更新时间', value: normalizeDateStr(bianzhiDetail.updated_at_src) },
           ]}
           links={[
-            { label: '公告链接', url: bianzhiDetail.announce_url },
-            { label: '报名入口', url: bianzhiDetail.apply_url },
+            { label: '公告链接', url: bianzhiDetail.announce_url, checkDead: true },
+            { label: '报名入口', url: bianzhiDetail.apply_url, checkDead: true },
           ]}
         />
       )}

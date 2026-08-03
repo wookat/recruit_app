@@ -1426,6 +1426,7 @@ export function CampusPage({
           favActive={campusFavorites.some((f) => f.id === detail.id)}
           onFavToggle={() => toggleCampusFavorite(detail)}
           jobKey={`campus:${detail.id}`}
+          expiredNotice={isExpiredDate(detail.deadline_date)}
           {...sheetNavProps(visibleItems, detail, setDetail)}
           basics={[
             { label: '公司', value: detail.company },

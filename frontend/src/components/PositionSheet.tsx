@@ -10,7 +10,7 @@ import { PrepResources } from './PrepResources'
 import { ExtLinkAnchor } from './ExtLinkAnchor'
 import { CompetitionRef } from './CompetitionRef'
 import { SheetDragHandle } from './SheetDragHandle'
-import { Building2, Filter, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles } from 'lucide-react'
+import { Building2, Filter, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles, TimerOff } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -230,6 +230,15 @@ export function PositionSheet({
         <SheetDragHandle onDismiss={onClose} />
         <SheetHeader className="space-y-2 px-4 pt-1 sm:px-6 sm:pt-6">
           <ShareLandingBanner key={item.id} jobKey={`positions:${item.id}`} onBrowseAll={onClose} />
+          {(() => {
+            const d = parseSignupDeadline(item)
+            return d && d.getTime() < Date.now() ? (
+              <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-foreground/80 dark:text-muted-foreground">
+                <TimerOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                该岗位报名已截止，信息仅供参考；可查看下方相似岗位
+              </div>
+            ) : null
+          })()}
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             岗位详情
             <Badge variant="secondary">{item.year}</Badge>

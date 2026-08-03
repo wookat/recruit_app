@@ -1389,6 +1389,7 @@ export function BianzhiPage({
           favActive={bianzhiFavorites.some((f) => f.id === detail.id)}
           onFavToggle={() => toggleBianzhiFavorite(detail)}
           jobKey={`bianzhi:${detail.id}`}
+          expiredNotice={detail.category !== '大型联考' && isExpiredDate(detail.deadline_date)}
           prep={{
             examType: detail.category || detail.job_type,
             province: detail.province,

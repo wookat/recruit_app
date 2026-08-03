@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Building2, CalendarClock, ChevronLeft, ChevronRight, Filter, GraduationCap, Info, Link2, Sparkles } from 'lucide-react'
+import { Building2, CalendarClock, ChevronLeft, ChevronRight, Filter, GraduationCap, Info, Link2, Sparkles, TimerOff } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -61,6 +61,8 @@ interface Props {
   nextDisabled?: boolean
   /** 收藏面板打开时标注数据为收藏时快照。 */
   snapshotNote?: boolean
+  /** 岗位报名已截止时显示提示条。 */
+  expiredNotice?: boolean
   /** 相关条目区块（如同单位其他公告），点击切换详情。 */
   related?: {
     title: string
@@ -151,6 +153,7 @@ export function BoardJobSheet({
   prevDisabled,
   nextDisabled,
   snapshotNote,
+  expiredNotice,
   related,
   similar,
   prep,
@@ -187,6 +190,12 @@ export function BoardJobSheet({
         <SheetDragHandle onDismiss={onClose} />
         <SheetHeader className="space-y-2 px-4 pt-1 sm:px-6 sm:pt-6">
           {jobKey && <ShareLandingBanner key={jobKey} jobKey={jobKey} onBrowseAll={onClose} />}
+          {expiredNotice && (
+            <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-foreground/80 dark:text-muted-foreground">
+              <TimerOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              该岗位报名已截止，信息仅供参考{similar && similar.items.length > 0 ? '；可查看下方相似岗位' : ''}
+            </div>
+          )}
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             <span className="break-all">{title}</span>
             {(badges ?? []).filter(Boolean).map((b) => (

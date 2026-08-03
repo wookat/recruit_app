@@ -1036,7 +1036,7 @@ export function BianzhiPage({
                   </Badge>
                 )}
                 {job.updated_at_src && (
-                  <span className="ml-auto text-xs text-muted-foreground">更新：{job.updated_at_src}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">更新：{normalizeDateStr(job.updated_at_src)}</span>
                 )}
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
@@ -1064,7 +1064,7 @@ export function BianzhiPage({
                       <span className="text-muted-foreground">报名：{normalizeDateStr(job.signup_start)}</span>
                     )}
                     {job.exam_time && (
-                      <span className="text-muted-foreground">考试：{job.exam_time}</span>
+                      <span className="text-muted-foreground">考试：{normalizeDateStr(job.exam_time)}</span>
                     )}
                   </>
                 ) : (
@@ -1295,7 +1295,7 @@ export function BianzhiPage({
                         {normalizeDateStr(job.signup_start) || '-'}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {job.exam_time || '-'}
+                        {normalizeDateStr(job.exam_time) || '-'}
                       </TableCell>
                     </>
                   ) : (
@@ -1418,8 +1418,8 @@ export function BianzhiPage({
           schedule={[
             { label: '报名开始', value: normalizeDateStr(detail.signup_start) },
             { label: '报名截止', value: normalizeDateStr(detail.deadline_text) },
-            { label: '考试时间', value: detail.exam_time },
-            { label: '更新时间', value: detail.updated_at_src },
+            { label: '考试时间', value: normalizeDateStr(detail.exam_time) },
+            { label: '更新时间', value: normalizeDateStr(detail.updated_at_src) },
           ]}
           links={[
             { label: '公告链接', url: detail.announce_url, checkDead: true },

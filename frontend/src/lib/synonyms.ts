@@ -44,6 +44,20 @@ export const HOT_SEARCHES = [
   '三支一扶',
 ]
 
+/** 校招板块专用热门搜索词（央国企/银行/管培生等校招高频方向）。 */
+export const HOT_SEARCHES_CAMPUS = [
+  '央国企',
+  '银行',
+  '管培生',
+  '国家电网',
+  '中国烟草',
+  '研发',
+  '26届',
+  '提前批',
+  '证券',
+  '运营商',
+]
+
 /** 编制板块专用热门搜索词（教师/医护/高校等编制高频方向）。 */
 export const HOT_SEARCHES_BIANZHI = [
   '教师',

@@ -48,7 +48,7 @@ export function ViewHistorySheet({ open, onClose, onOpenJob }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full max-w-2xl p-0 sm:max-w-md">
+      <SheetContent side="right" className="w-full max-w-2xl p-0 data-[side=right]:w-full sm:max-w-md">
         <SheetHeader className="space-y-1.5 px-4 pt-6 sm:px-6">
           <SheetTitle className="flex items-center gap-2 pr-8 text-lg">
             <History className="h-5 w-5 text-primary" />

@@ -43,7 +43,7 @@ import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { SubscribeFilterHint } from '@/components/SubscribeFilterHint'
 import { SynonymHint } from '@/components/SynonymHint'
 import { HotSearchPills } from '@/components/HotSearchPills'
-import { expandKeyword } from '@/lib/synonyms'
+import { expandKeyword, HOT_SEARCHES_CAMPUS } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
@@ -257,6 +257,11 @@ export function CampusPage({
   })
   const seenSet = useSeenSet()
   const [page, setPage] = useState(1)
+  const listTopRef = useRef<HTMLDivElement | null>(null)
+  const gotoPage = useCallback((delta: number) => {
+    setPage((p) => Math.max(1, p + delta))
+    listTopRef.current?.scrollIntoView({ block: 'start' })
+  }, [])
   const [refreshNonce, setRefreshNonce] = useState(0)
   const refreshResolveRef = useRef<(() => void) | null>(null)
   const [typeCounts, setTypeCounts] = useState<Record<string, number> | null>(null)
@@ -370,10 +375,8 @@ export function CampusPage({
 
   useEffect(() => {
     const kw = keyword.trim()
-    if (!crossFetchTotal || kw.length < 2) {
-      setCrossTotal(0)
-      return
-    }
+    setCrossTotal(0)
+    if (!crossFetchTotal || kw.length < 2) return
     let cancelled = false
     const t = setTimeout(() => {
       crossFetchTotal(kw)
@@ -614,7 +617,8 @@ export function CampusPage({
   }, [])
 
   const typeChips = filters ? (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="mr-0.5 shrink-0 text-xs text-muted-foreground md:hidden">企业类型</span>
       {filters.company_types.slice(0, 6).map((t) => (
         <button
           key={t}
@@ -640,28 +644,39 @@ export function CampusPage({
   ) : null
 
   const cityFilterRow = (
-    <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
-      <div className="flex w-max items-center gap-1.5">
-        <span className="mr-0.5 shrink-0 text-xs text-muted-foreground">城市</span>
-        {CITY_CHIPS.map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => {
-              setCity((prev) => (prev === c ? null : c))
-              setPage(1)
-            }}
-            className={cn(
-              'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
-              city === c
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border bg-background text-foreground hover:bg-muted',
-            )}
-          >
-            {c}
-          </button>
-        ))}
-        <span className="mx-1 h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+    <div className="relative">
+      <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
+        <div className="flex w-max items-center gap-1.5">
+          <span className="mr-0.5 shrink-0 text-xs text-muted-foreground">城市</span>
+          {CITY_CHIPS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => {
+                setCity((prev) => (prev === c ? null : c))
+                setPage(1)
+              }}
+              className={cn(
+                'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+                city === c
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border bg-background text-foreground hover:bg-muted',
+              )}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div
+        className="pointer-events-none absolute inset-y-0 -right-4 w-8 bg-gradient-to-l from-popover to-transparent md:hidden"
+        aria-hidden
+      />
+    </div>
+  )
+
+  const quickToggleRow = (
+    <div className="flex flex-wrap items-center gap-1.5">
         <button
           type="button"
           onClick={() => {
@@ -719,7 +734,6 @@ export function CampusPage({
         >
           隐藏已看过
         </button>
-      </div>
     </div>
   )
 
@@ -866,6 +880,26 @@ export function CampusPage({
           >
             <Table2 className="h-4 w-4" />
           </button>
+          {view === 'card' && (
+            <select
+              aria-label="排序"
+              value={sort ? `${sort.key}:${sort.dir}` : ''}
+              onChange={(e) => {
+                const v = e.target.value
+                if (!v) setSort(null)
+                else {
+                  const [key, dir] = v.split(':')
+                  setSort({ key, dir: dir as 'asc' | 'desc' })
+                }
+              }}
+              className="ml-1 h-10 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+            >
+              <option value="">默认排序</option>
+              <option value="updated:desc">更新最新</option>
+              <option value="deadline:asc">截止最近</option>
+              <option value="start:desc">开始最新</option>
+            </select>
+          )}
         </div>
         {typeChips && <div className="hidden md:block">{typeChips}</div>}
       </div>
@@ -873,17 +907,21 @@ export function CampusPage({
       {synAdded.length > 0 && <SynonymHint added={synAdded} onClose={() => setSynOff(true)} />}
 
       {/* 城市筛选 + 近7天更新（桌面） */}
-      <div className="hidden md:block">{cityFilterRow}</div>
+      <div className="hidden space-y-2 md:block">
+        {cityFilterRow}
+        {quickToggleRow}
+      </div>
 
       {/* 移动端筛选：超两行自动折叠 */}
-      <MobileFilterCollapse count={mobileFilterCount} title="校招筛选">
+      <MobileFilterCollapse count={mobileFilterCount} title="校招筛选" onReset={clearAllFilters}>
         {typeChips}
         {cityFilterRow}
+        {quickToggleRow}
       </MobileFilterCollapse>
 
       {/* 计数 + 导出 */}
       {data && (
-        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <div ref={listTopRef} className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span>
             共 <span className="font-medium text-foreground">{data.total.toLocaleString()}</span> 条
           </span>
@@ -960,6 +998,7 @@ export function CampusPage({
                   }
                 />
                 <HotSearchPills
+                  words={HOT_SEARCHES_CAMPUS}
                   onPick={(w) => {
                     setSearchInput(w)
                     setKeyword(w)
@@ -992,7 +1031,7 @@ export function CampusPage({
                   sortKey="company"
                   sort={sort}
                   onToggle={toggleSort}
-                  className="min-w-[140px]"
+                  className="min-w-[140px] max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:border-r max-sm:bg-card max-sm:shadow-[8px_0_12px_-6px_rgba(0,0,0,0.18)]"
                 />
                 <TableHead>企业类型</TableHead>
                 <TableHead className="min-w-[220px]">招聘岗位</TableHead>
@@ -1006,7 +1045,7 @@ export function CampusPage({
                 <SortableHead label="截止时间" sortKey="deadline" sort={sort} onToggle={toggleSort} />
                 <SortableHead label="更新日期" sortKey="updated" sort={sort} onToggle={toggleSort} />
                 <TableHead>内推码</TableHead>
-                <TableHead className="sticky right-0 z-10 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
+                <TableHead className="sm:sticky sm:right-0 sm:z-10 sm:border-l sm:bg-card sm:shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
                   投递/公告
                 </TableHead>
               </TableRow>
@@ -1044,7 +1083,10 @@ export function CampusPage({
                       <ShareTextButton text={campusShareText(job)} />
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium" title={job.company ?? ''}>
+                  <TableCell
+                    className="font-medium max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:max-w-[150px] max-sm:truncate max-sm:border-r max-sm:bg-card max-sm:shadow-[8px_0_12px_-6px_rgba(0,0,0,0.18)]"
+                    title={job.company ?? ''}
+                  >
                     <Highlight text={job.company} query={keyword} />
                     <NewDot board="campus" id={job.id} createdAt={job.created_at} className="ml-1.5" />
                     <SeenBadge board="campus" id={job.id} className="ml-1.5" />
@@ -1156,7 +1198,7 @@ export function CampusPage({
                     </span>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {job.updated_at_src || '-'}
+                    {normalizeDateStr(job.updated_at_src) || '-'}
                   </TableCell>
                   <TableCell title={job.referral_code ?? ''}>
                     {job.referral_code ? (
@@ -1170,7 +1212,7 @@ export function CampusPage({
                       '-'
                     )}
                   </TableCell>
-                  <TableCell className="sticky right-0 z-10 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
+                  <TableCell className="sm:sticky sm:right-0 sm:z-10 sm:border-l sm:bg-card sm:shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
                     <div className="flex gap-1.5">
                       {job.apply_url && job.apply_url.startsWith('http') && (
                         <a
@@ -1219,7 +1261,10 @@ export function CampusPage({
                   />
                 )}
             <div
-              className="cursor-pointer rounded-xl border bg-background p-4 transition-colors hover:border-primary/20 hover:shadow-md"
+              className={cn(
+                'cursor-pointer rounded-xl border bg-background p-4 transition-colors hover:border-primary/20 hover:shadow-md',
+                !dueOnly && isExpiredDate(job.deadline_date) && 'opacity-60',
+              )}
               onClick={() => setDetail(job)}
             >
               <div className="flex flex-wrap items-center gap-2">
@@ -1277,7 +1322,7 @@ export function CampusPage({
                   </Badge>
                 )}
                 {job.updated_at_src && (
-                  <span className="ml-auto text-xs text-muted-foreground">更新：{job.updated_at_src}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">更新：{normalizeDateStr(job.updated_at_src)}</span>
                 )}
               </div>
               {job.positions && (
@@ -1391,14 +1436,14 @@ export function CampusPage({
             第 {page} / {totalPages} 页
           </span>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => setPage((p) => p - 1)}>
+            <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => gotoPage(-1)}>
               上一页
             </Button>
             <Button
               variant="outline"
               size="sm"
               disabled={page >= totalPages || loading}
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => gotoPage(1)}
             >
               下一页
             </Button>

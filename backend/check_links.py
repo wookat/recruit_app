@@ -4,6 +4,7 @@
 软失效不误判。结果写入 link_checks 表，供质量卡展示。
 可 CLI 单独运行：python check_links.py [limit]
 """
+import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
@@ -16,7 +17,7 @@ from models import LinkCheck
 
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 TIMEOUT = 8
-WORKERS = 24
+WORKERS = int(os.getenv("LINK_CHECK_WORKERS", "8"))
 
 
 def _probe(url: str) -> tuple[int, "int | None", str]:

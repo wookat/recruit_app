@@ -48,22 +48,26 @@ const IOS_STEPS = [
   { icon: MonitorDown, text: '点击右上角「添加」，桌面即出现上岸罗盘图标，像 App 一样打开' },
 ]
 
-/** 「安装到桌面」入口：安卓 beforeinstallprompt 直接调起，iOS 显示分步引导弹层。 */
+/** 「安装到桌面」入口：安卓 beforeinstallprompt 直接调起，iOS 显示分步引导弹层，
+ * 其余无原生 prompt 场景弹层兜底文案，点击必有反馈。 */
 export function InstallAppEntry() {
-  const canPrompt = useSyncExternalStore(subscribe, () => deferredPrompt !== null)
-  const [iosOpen, setIosOpen] = useState(false)
+  useSyncExternalStore(subscribe, () => deferredPrompt !== null)
+  const [guideOpen, setGuideOpen] = useState(false)
 
   if (isStandalone()) return null
 
+  const ios = isIos()
+
   const handleClick = () => {
-    if (deferredPrompt) {
+    // iOS 永远不会有 beforeinstallprompt，优先判 UA 直接进引导弹层
+    if (!ios && deferredPrompt) {
       void deferredPrompt.prompt()
       void deferredPrompt.userChoice.then(() => {
         deferredPrompt = null
         listeners.forEach((l) => l())
       })
     } else {
-      setIosOpen(true)
+      setGuideOpen(true)
     }
   }
 
@@ -76,7 +80,7 @@ export function InstallAppEntry() {
           安装到桌面
         </Button>
       </div>
-      <Dialog open={iosOpen} onOpenChange={setIosOpen}>
+      <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
         <DialogContent className="max-w-xs sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
@@ -84,25 +88,29 @@ export function InstallAppEntry() {
               安装到主屏幕
             </DialogTitle>
           </DialogHeader>
-          <p className="text-xs text-muted-foreground">
-            {isIos() && !canPrompt
-              ? 'iPhone / iPad 上按以下步骤添加：'
-              : '当前浏览器未提供一键安装，可按以下步骤手动添加（iOS Safari 示例）：'}
-          </p>
-          <ol className="space-y-3">
-            {IOS_STEPS.map((s, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                  {i + 1}
-                </span>
-                <span className="flex min-w-0 items-start gap-1.5 leading-relaxed">
-                  <s.icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                  {s.text}
-                </span>
-              </li>
-            ))}
-          </ol>
-          <Button variant="outline" className="min-h-11 w-full sm:min-h-9" onClick={() => setIosOpen(false)}>
+          {ios ? (
+            <>
+              <p className="text-xs text-muted-foreground">iPhone / iPad 上按以下步骤添加：</p>
+              <ol className="space-y-3">
+                {IOS_STEPS.map((s, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-sm">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                      {i + 1}
+                    </span>
+                    <span className="flex min-w-0 items-start gap-1.5 leading-relaxed">
+                      <s.icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                      {s.text}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : (
+            <p className="text-sm leading-relaxed">
+              当前浏览器未提供一键安装。请用手机浏览器打开本站，通过浏览器菜单选择「添加到主屏幕 / 安装应用」即可。
+            </p>
+          )}
+          <Button variant="outline" className="min-h-11 w-full sm:min-h-9" onClick={() => setGuideOpen(false)}>
             <X className="h-4 w-4" />
             知道了
           </Button>

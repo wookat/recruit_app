@@ -37,6 +37,7 @@ class CampusJobOut(BaseModel):
     referral_code: Optional[str] = None
     notes: Optional[str] = None
     updated_at_src: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

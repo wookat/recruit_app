@@ -22,6 +22,7 @@ import {
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { pinyinMatch } from '@/lib/pinyin'
 import { expandKeyword, getSynonyms, HOT_SEARCHES } from '@/lib/synonyms'
+import { PINYIN_WORDS } from '@/lib/pinyinDict'
 import {
   addRecentSearch,
   clearRecentSearches,
@@ -177,7 +178,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
   const pinyinSuggestions = useMemo(() => {
     void pyTick
     if (!/^[a-zA-Z]{2,}$/.test(kw) || !places) return []
-    const pool = [...new Set([...places.provinces, ...places.cities, ...HOT_SEARCHES])]
+    const pool = [...new Set([...PINYIN_WORDS, ...places.provinces, ...places.cities])]
     return pool.filter((t) => pinyinMatch(t, kw)).slice(0, 8)
   }, [kw, places, pyTick])
 
@@ -310,55 +311,6 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
         )}
         {kw && loading && !hits && (
           <div className="px-3 py-6 text-center text-sm text-muted-foreground">搜索中…</div>
-        )}
-        {empty && (
-          <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-            三个板块均无「{kw}」的相关结果
-            <span className="mt-1 block text-xs">
-              建议：换更短的关键词（如只搜单位名或岗位名）；若在板块列表页有筛选，可清除筛选后再试
-            </span>
-            {/\s/.test(kw) && (
-              <button
-                type="button"
-                className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
-                onClick={() => setQ(kw.replace(/\s+/g, ''))}
-              >
-                试试去掉空格：「{kw.replace(/\s+/g, '')}」
-              </button>
-            )}
-            {getSynonyms(kw).map((syn) => (
-              <button
-                key={syn}
-                type="button"
-                className="ml-1.5 mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
-                onClick={() => setQ(syn)}
-              >
-                试试同义词：「{syn}」
-              </button>
-            ))}
-            {synOff && expandKeyword(kw).added.length > 0 && (
-              <button
-                type="button"
-                className="ml-1.5 mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
-                onClick={() => setSynOff(false)}
-              >
-                重新开启同义匹配（{expandKeyword(kw).added.join('、')}）
-              </button>
-            )}
-            <span className="mt-3 block text-xs font-medium text-foreground/70">热门搜索</span>
-            <span className="mt-1.5 flex flex-wrap justify-center gap-1.5">
-              {HOT_SEARCHES.map((w) => (
-                <button
-                  key={w}
-                  type="button"
-                  className="min-h-11 cursor-pointer rounded-full border bg-muted/50 px-3 py-1 text-xs text-foreground/80 transition-colors hover:bg-muted hover:text-foreground sm:min-h-7"
-                  onClick={() => setQ(w)}
-                >
-                  {w}
-                </button>
-              ))}
-            </span>
-          </div>
         )}
         <CommandList className="sm:max-h-96 max-sm:max-h-[calc(100dvh-64px)]">
           {kw && pinyinSuggestions.length > 0 && (
@@ -493,6 +445,55 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
             </>
           )}
         </CommandList>
+        {empty && (
+          <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+            三个板块均无「{kw}」的相关结果
+            <span className="mt-1 block text-xs">
+              建议：换更短的关键词（如只搜单位名或岗位名）；若在板块列表页有筛选，可清除筛选后再试
+            </span>
+            {/\s/.test(kw) && (
+              <button
+                type="button"
+                className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
+                onClick={() => setQ(kw.replace(/\s+/g, ''))}
+              >
+                试试去掉空格：「{kw.replace(/\s+/g, '')}」
+              </button>
+            )}
+            {getSynonyms(kw).map((syn) => (
+              <button
+                key={syn}
+                type="button"
+                className="ml-1.5 mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
+                onClick={() => setQ(syn)}
+              >
+                试试同义词：「{syn}」
+              </button>
+            ))}
+            {synOff && expandKeyword(kw).added.length > 0 && (
+              <button
+                type="button"
+                className="ml-1.5 mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
+                onClick={() => setSynOff(false)}
+              >
+                重新开启同义匹配（{expandKeyword(kw).added.join('、')}）
+              </button>
+            )}
+            <span className="mt-3 block text-xs font-medium text-foreground/70">热门搜索</span>
+            <span className="mt-1.5 flex flex-wrap justify-center gap-1.5">
+              {HOT_SEARCHES.map((w) => (
+                <button
+                  key={w}
+                  type="button"
+                  className="min-h-11 cursor-pointer rounded-full border bg-muted/50 px-3 py-1 text-xs text-foreground/80 transition-colors hover:bg-muted hover:text-foreground sm:min-h-7"
+                  onClick={() => setQ(w)}
+                >
+                  {w}
+                </button>
+              ))}
+            </span>
+          </div>
+        )}
       </Command>
     </CommandDialog>
   )

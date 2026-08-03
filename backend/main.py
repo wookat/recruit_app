@@ -305,6 +305,32 @@ def get_positions(
     }
 
 
+@app.get("/api/positions/competition")
+@cache.cached("pos_comp", ttl=3600)
+def position_competition(
+    province: str = Query(..., max_length=30),
+    exam_type: str = Query(..., max_length=50),
+    year: int = Query(..., ge=2000, le=2100),
+    db: Session = Depends(get_db),
+):
+    """同岗位组横向参考：同省+同考试类型+同年份岗位数及不限专业占比（1h 缓存）。"""
+    row = db.execute(
+        text("""
+            SELECT count(*) AS total,
+                   count(*) FILTER (
+                       WHERE raw_major ILIKE '%不限%'
+                          OR undergrad_major ILIKE '%不限%'
+                          OR grad_major ILIKE '%不限%'
+                   ) AS unlimited
+            FROM positions
+            WHERE dup_of_id IS NULL AND invalid_reason IS NULL
+              AND province = :p AND exam_type_norm = :e AND year = :y
+        """),
+        {"p": province, "e": exam_type, "y": year},
+    ).one()
+    return {"total": row.total, "unlimited_major": row.unlimited}
+
+
 @app.get("/api/positions/{position_id}", response_model=schemas.PositionOut)
 def get_position(position_id: int, db: Session = Depends(get_db)):
     item = crud.get_position(db, position_id)

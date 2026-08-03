@@ -52,6 +52,12 @@ class LocationNode(BaseModel):
     cities: List[str]
 
 
+class DistrictNode(BaseModel):
+    province: str
+    city: str
+    districts: List[str]
+
+
 class FilterOptions(BaseModel):
     years: List[int]
     job_types: List[str]
@@ -64,6 +70,8 @@ class FilterOptions(BaseModel):
     location_tree: List[LocationNode]
     hot_locations: List[str]
     districts: List[str]
+    exam_type_norms: List[str] = []
+    district_tree: List[DistrictNode] = []
 
 
 class SuggestItem(BaseModel):

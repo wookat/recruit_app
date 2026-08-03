@@ -578,6 +578,39 @@ def get_filter_options(db: Session, limit: int = 120):
                 district_counter[tag] += 1
     districts = [k for k, _ in district_counter.most_common(200)]
 
+    # 区县层级树：省→市→区县（来自结构化 province/city/district 列）
+    dist_rows = (
+        db.query(Position.province, Position.city, Position.district)
+        .filter(*clean, Position.district != None, Position.district != "",  # noqa: E711
+                Position.province != None, Position.city != None)  # noqa: E711
+        .distinct()
+        .all()
+    )
+    def _norm_district(prov: str, city: str, dist: str):
+        d = dist.strip()
+        for pre in (f"{prov}省", f"{prov}市", f"{prov}自治区", prov):
+            if d.startswith(pre):
+                d = d[len(pre):]
+                break
+        for pre in (f"{city}市", f"{city}州", city):
+            if d.startswith(pre):
+                d = d[len(pre):]
+                break
+        d = d.strip()
+        if len(d) < 2 or d == "辖区" or "省" in d:
+            return None
+        return d
+
+    dt_map: dict = {}
+    for prov, city, dist in dist_rows:
+        d = _norm_district(prov, city, dist)
+        if d:
+            dt_map.setdefault((prov, city), set()).add(d)
+    district_tree = [
+        {"province": p, "city": c, "districts": sorted(ds)}
+        for (p, c), ds in sorted(dt_map.items())
+    ]
+
     return {
         "years": years,
         "job_types": distinct_values(Position.job_type),
@@ -590,6 +623,8 @@ def get_filter_options(db: Session, limit: int = 120):
         "location_tree": location_tree(),
         "hot_locations": hot_locations,
         "districts": districts,
+        "exam_type_norms": distinct_values(Position.exam_type_norm),
+        "district_tree": district_tree,
     }
 
 

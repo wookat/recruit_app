@@ -31,6 +31,20 @@ export function LocationFilter({ filters, value, onChange }: LocationFilterProps
       .map((node) => ({ label: node.province, options: node.cities }))
   }, [locationTree, selectedProvinces])
 
+  const districtGroups: OptionGroup[] | null = useMemo(() => {
+    const tree = filters?.district_tree
+    if (!tree || tree.length === 0) return null
+    const provSet = new Set(selectedProvinces)
+    const citySel = new Set(selectedCities)
+    const nodes = tree.filter(
+      (n) =>
+        (provSet.size === 0 || provSet.has(n.province)) &&
+        (citySel.size === 0 || citySel.has(n.city)),
+    )
+    return nodes.map((n) => ({ label: `${n.province} · ${n.city}`, options: n.districts }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters?.district_tree, value])
+
   if (!filters) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -81,10 +95,11 @@ export function LocationFilter({ filters, value, onChange }: LocationFilterProps
       />
       <MultiSelect
         label="区县"
-        options={f.districts}
+        options={districtGroups ? undefined : f.districts}
+        groups={districtGroups || undefined}
         selected={selectedDistricts}
         onChange={handleDistrictChange}
-        placeholder="选择区县"
+        placeholder={selectedProvinces.length === 0 && selectedCities.length === 0 ? '可先选省份/城市' : '选择区县'}
       />
     </div>
   )

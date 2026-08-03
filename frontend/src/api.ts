@@ -126,6 +126,7 @@ export interface CampusJob {
 
 export interface CampusList {
   total: number
+  total_capped?: boolean
   page: number
   page_size: number
   items: CampusJob[]
@@ -201,6 +202,7 @@ export interface BianzhiJob {
 
 export interface BianzhiList {
   total: number
+  total_capped?: boolean
   page: number
   page_size: number
   items: BianzhiJob[]

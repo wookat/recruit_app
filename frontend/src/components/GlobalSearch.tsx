@@ -5,6 +5,7 @@ import {
   fetchCampusJobs,
   fetchFilters,
   fetchPositions,
+  formatTotal,
   type BianzhiJob,
   type CampusJob,
   type FilterOptions,
@@ -33,9 +34,9 @@ import {
 export type SearchBoard = 'positions' | 'campus' | 'bianzhi'
 
 interface BoardHits {
-  positions: { total: number; items: Position[] }
-  campus: { total: number; items: CampusJob[] }
-  bianzhi: { total: number; items: BianzhiJob[] }
+  positions: { total: number; capped: boolean; items: Position[] }
+  campus: { total: number; capped: boolean; items: CampusJob[] }
+  bianzhi: { total: number; capped: boolean; items: BianzhiJob[] }
 }
 
 /** 快捷筛选跳转：省份或城市 + 剩余关键词 */
@@ -154,16 +155,16 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
         setHits({
           positions:
             p.status === 'fulfilled'
-              ? { total: p.value.total, items: p.value.items }
-              : { total: 0, items: [] },
+              ? { total: p.value.total, capped: !!p.value.total_capped, items: p.value.items }
+              : { total: 0, capped: false, items: [] },
           campus:
             c.status === 'fulfilled'
-              ? { total: c.value.total, items: c.value.items }
-              : { total: 0, items: [] },
+              ? { total: c.value.total, capped: !!c.value.total_capped, items: c.value.items }
+              : { total: 0, capped: false, items: [] },
           bianzhi:
             b.status === 'fulfilled'
-              ? { total: b.value.total, items: b.value.items }
-              : { total: 0, items: [] },
+              ? { total: b.value.total, capped: !!b.value.total_capped, items: b.value.items }
+              : { total: 0, capped: false, items: [] },
         })
         setLoading(false)
       })
@@ -360,7 +361,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           {kw && hits && hits.positions.total > 0 && (
             <>
             {(quickSuggestions.length > 0 || pinyinSuggestions.length > 0) && <CommandSeparator />}
-            <CommandGroup heading={`体制内岗位 · ${hits.positions.total.toLocaleString()} 条`}>
+            <CommandGroup heading={`体制内岗位 · ${formatTotal(hits.positions.total, hits.positions.capped)} 条`}>
               {hits.positions.items.map((p) => (
                 <CommandItem
                   key={`positions-${p.id}`}
@@ -384,7 +385,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                 <CommandItem value="positions-all" className="max-sm:min-h-11" onSelect={() => pickAll('positions')}>
                   <ArrowRight className="text-muted-foreground" />
                   <span className="text-muted-foreground group-data-selected/command-item:text-foreground/75">
-                    查看全部 {hits.positions.total.toLocaleString()} 条体制内结果
+                    查看全部 {formatTotal(hits.positions.total, hits.positions.capped)} 条体制内结果
                   </span>
                 </CommandItem>
               )}
@@ -394,7 +395,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           {kw && hits && hits.campus.total > 0 && (
             <>
               <CommandSeparator />
-              <CommandGroup heading={`校招信息 · ${hits.campus.total.toLocaleString()} 条`}>
+              <CommandGroup heading={`校招信息 · ${formatTotal(hits.campus.total, hits.campus.capped)} 条`}>
                 {hits.campus.items.map((j) => (
                   <CommandItem
                     key={`campus-${j.id}`}
@@ -414,7 +415,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                   <CommandItem value="campus-all" className="max-sm:min-h-11" onSelect={() => pickAll('campus')}>
                     <ArrowRight className="text-muted-foreground" />
                     <span className="text-muted-foreground group-data-selected/command-item:text-foreground/75">
-                      查看全部 {hits.campus.total.toLocaleString()} 条校招结果
+                      查看全部 {formatTotal(hits.campus.total, hits.campus.capped)} 条校招结果
                     </span>
                   </CommandItem>
                 )}
@@ -424,7 +425,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           {kw && hits && hits.bianzhi.total > 0 && (
             <>
               <CommandSeparator />
-              <CommandGroup heading={`编制公告 · ${hits.bianzhi.total.toLocaleString()} 条`}>
+              <CommandGroup heading={`编制公告 · ${formatTotal(hits.bianzhi.total, hits.bianzhi.capped)} 条`}>
                 {hits.bianzhi.items.map((j) => (
                   <CommandItem
                     key={`bianzhi-${j.id}`}
@@ -444,7 +445,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                   <CommandItem value="bianzhi-all" className="max-sm:min-h-11" onSelect={() => pickAll('bianzhi')}>
                     <ArrowRight className="text-muted-foreground" />
                     <span className="text-muted-foreground group-data-selected/command-item:text-foreground/75">
-                      查看全部 {hits.bianzhi.total.toLocaleString()} 条编制结果
+                      查看全部 {formatTotal(hits.bianzhi.total, hits.bianzhi.capped)} 条编制结果
                     </span>
                   </CommandItem>
                 )}
@@ -462,7 +463,8 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                     <LayoutList className="text-primary" />
                     <span>
                       查看全部结果（三板块聚合 ·{' '}
-                      {(hits.positions.total + hits.campus.total + hits.bianzhi.total).toLocaleString()} 条）
+                      {(hits.positions.total + hits.campus.total + hits.bianzhi.total).toLocaleString()}
+                      {hits.positions.capped || hits.campus.capped || hits.bianzhi.capped ? '+' : ''} 条）
                     </span>
                     <ArrowRight className="ml-auto text-muted-foreground" />
                   </CommandItem>

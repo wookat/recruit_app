@@ -621,6 +621,7 @@ export default function App() {
               <SearchResultsPage
                 key={section.keyword ?? ''}
                 keyword={section.keyword ?? ''}
+                onSearch={openSearchAll}
                 onOpenBoard={openSearchBoard}
                 onOpenJob={openSearchJob}
               />

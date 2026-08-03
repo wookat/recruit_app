@@ -29,7 +29,7 @@ def _probe(url: str) -> tuple[int, "int | None", str]:
                              headers={"User-Agent": UA})
             r.close()
         return (1 if r.status_code < 400 else 0), r.status_code, ""
-    except requests.RequestException as exc:
+    except Exception as exc:  # noqa: BLE001  畸形 URL（如含中文 userinfo）同样视为失效
         return 0, None, type(exc).__name__[:200]
 
 

@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Check, ChevronDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { pinyinCommandFilter } from '@/lib/pinyin'
+import { pinyinCommandFilter, preloadPinyin } from '@/lib/pinyin'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -85,7 +85,13 @@ export function MultiSelect({
   return (
     <div className="flex flex-col gap-1.5">
       {label && <label className="text-xs font-medium text-muted-foreground">{label}</label>}
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover
+        open={open}
+        onOpenChange={(v) => {
+          if (v) preloadPinyin()
+          setOpen(v)
+        }}
+      >
         <PopoverTrigger
           render={
             <Button

@@ -226,6 +226,7 @@ export function ListPage({
   const [filters, setFilters] = useState<FilterOptions | null>(null)
   const [data, setData] = useState<PositionList | null>(null)
   const [loading, setLoading] = useState(false)
+  const [slowLoading, setSlowLoading] = useState(false)
   const [view, setView] = useState<ViewMode>(defaultView)
   const [filterOpen, setFilterOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -319,6 +320,15 @@ export function ListPage({
       if (exportTimerRef.current) clearInterval(exportTimerRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!loading) {
+      setSlowLoading(false)
+      return
+    }
+    const t = setTimeout(() => setSlowLoading(true), 6000)
+    return () => clearTimeout(t)
+  }, [loading])
 
   useEffect(() => {
     fetchFilters().then(setFilters).catch(console.error)
@@ -1414,6 +1424,26 @@ export function ListPage({
             >
               清除地域筛选
             </Button>
+            {onCrossPreset &&
+              (() => {
+                const provs = new Set(filters?.provinces ?? [])
+                const prov = [...(params.province ?? []), ...(params.location ?? [])].find((v) =>
+                  provs.has(v),
+                )
+                const jt = [...(params.job_type ?? []), ...(params.exam_type_norm ?? [])].join('')
+                const preset = /教师|教育/.test(jt) ? 'edu' : /医疗|医院|卫生/.test(jt) ? 'med' : 'all'
+                if (!prov) return null
+                return (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => onCrossPreset(`bzp:${preset}:${prov}`)}
+                  >
+                    去编制板找{prov}{preset === 'edu' ? '教师' : preset === 'med' ? '医疗' : ''}岗位
+                  </Button>
+                )
+              })()}
           </div>
         )}
       <div className="flex items-center justify-between">
@@ -1463,6 +1493,14 @@ export function ListPage({
         <CrossBoardZeroHint from="positions" keyword={params.keyword || ''} onOpen={onOpenBoardKw} />
       )}
 
+      {loading && slowLoading && (
+        <div
+          role="status"
+          className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-200"
+        >
+          结果较多，正在统计中，请稍候…如长时间无响应可减少筛选条件后重试
+        </div>
+      )}
       {data?.timed_out && (
         <div
           role="status"

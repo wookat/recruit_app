@@ -54,6 +54,7 @@ import { parseSignupDeadline } from '@/lib/deadline'
 import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
 
 const columns: ColumnDef<Position>[] = [
+  { accessorKey: 'employer', header: '用人单位/系统', size: 220 },
   { accessorKey: 'year', header: '年份', size: 70 },
   { accessorKey: 'job_type', header: '岗位类型', size: 100 },
   {
@@ -62,7 +63,6 @@ const columns: ColumnDef<Position>[] = [
     header: '考试/招聘类型',
     size: 160,
   },
-  { accessorKey: 'employer', header: '用人单位/系统', size: 220 },
   { accessorKey: 'position_example', header: '岗位示例', size: 260 },
   {
     id: 'edu_level_norm',
@@ -194,6 +194,8 @@ export const PositionTable = memo(function PositionTable({
                         className={cn(
                           'whitespace-nowrap',
                           h.column.id === 'created_at' && 'hidden 2xl:table-cell',
+                          h.column.id === 'employer' &&
+                            'max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:border-r max-sm:bg-card max-sm:shadow-[8px_0_12px_-6px_rgba(0,0,0,0.18)]',
                         )}
                       />
                     ) : (
@@ -216,7 +218,7 @@ export const PositionTable = memo(function PositionTable({
                     </TableHead>
                     ),
                   )}
-                  <TableHead className="sticky right-0 w-32 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
+                  <TableHead className="w-32 sm:sticky sm:right-0 sm:border-l sm:bg-card sm:shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
                     操作
                   </TableHead>
                 </TableRow>
@@ -258,6 +260,8 @@ export const PositionTable = memo(function PositionTable({
                           'max-w-xs truncate text-sm',
                           (cell.column.id === 'exam_time' || cell.column.id === 'created_at') &&
                             'hidden 2xl:table-cell',
+                          cell.column.id === 'employer' &&
+                            'max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:max-w-[150px] max-sm:border-r max-sm:bg-card max-sm:shadow-[8px_0_12px_-6px_rgba(0,0,0,0.18)] group-hover:max-sm:bg-muted',
                         )}
                         title={String(cell.getValue() || '')}
                       >
@@ -321,7 +325,7 @@ export const PositionTable = memo(function PositionTable({
                         )}
                       </TableCell>
                     ))}
-                    <TableCell className="sticky right-0 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)] group-hover:bg-muted">
+                    <TableCell className="group-hover:bg-muted sm:sticky sm:right-0 sm:border-l sm:bg-card sm:shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
                       <div className="flex items-center gap-0.5">
                         <FavoriteButton item={row.original} />
                         <CompareButton item={row.original} />

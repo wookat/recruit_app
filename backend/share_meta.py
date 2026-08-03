@@ -105,6 +105,19 @@ def get_share_meta(db, job_key: str) -> dict | None:
     return result if result and result.get("title") else None
 
 
+def get_search_meta(query_params) -> dict | None:
+    """聚合搜索深链（?board=search&q=）的分享 meta；非搜索深链返回 None。"""
+    if query_params.get("board") != "search":
+        return None
+    kw = (query_params.get("q") or "").strip()[:30]
+    if not kw:
+        return None
+    return {
+        "title": f"「{kw}」相关岗位 - 三板块聚合搜索 | 上岸罗盘",
+        "desc": f"在体制内、校招、编制三大板块中搜索「{kw}」相关岗位与公告，关键词高亮、可直达岗位详情与官方公告。",
+    }
+
+
 _TITLE_RE = re.compile(r"<title>.*?</title>", re.S)
 _META_RES = [
     (re.compile(r'(<meta\s+property="og:title"\s+content=")[^"]*(")'), "title"),

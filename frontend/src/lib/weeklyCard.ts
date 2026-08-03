@@ -107,8 +107,8 @@ export function renderWeeklyCard(data: WeeklyCardData): HTMLCanvasElement {
   ctx.font = 'bold 30px "PingFang SC","Microsoft YaHei",sans-serif'
   ctx.fillStyle = '#ffffff'
   ctx.fillText('jobs.zalize.com', W / 2, 880)
-  ctx.font = '24px "PingFang SC","Microsoft YaHei",sans-serif'
-  ctx.fillStyle = 'rgba(255,255,255,0.7)'
+  ctx.font = '26px "PingFang SC","Microsoft YaHei",sans-serif'
+  ctx.fillStyle = 'rgba(255,255,255,0.8)'
   ctx.fillText('体制内 · 校招 · 编制岗位一站检索', W / 2, 916)
   ctx.textAlign = 'left'
 

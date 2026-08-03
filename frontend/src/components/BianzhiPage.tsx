@@ -618,6 +618,7 @@ export function BianzhiPage({
   return (
     <div className="space-y-4">
       {/* 分类 chips */}
+      <div className="relative">
       <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
         <div className="flex w-max gap-2">
           {PRESETS.map((v) => (
@@ -716,6 +717,11 @@ export function BianzhiPage({
             </>
           )}
         </div>
+      </div>
+      <div
+        className="pointer-events-none absolute inset-y-0 -right-4 w-8 bg-gradient-to-l from-background to-transparent sm:hidden"
+        aria-hidden
+      />
       </div>
 
       {crossTotal > 0 && onCrossOpen && (

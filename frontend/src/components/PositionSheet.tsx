@@ -5,7 +5,7 @@ import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { addViewHistory } from '@/lib/viewHistory'
 import { derivePositionTags } from '@/lib/jobTags'
-import { daysUntil, parseSignupDeadline } from '@/lib/deadline'
+import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
 import { PrepResources } from './PrepResources'
 import { ExtLinkAnchor } from './ExtLinkAnchor'
 import { CompetitionRef } from './CompetitionRef'
@@ -509,6 +509,12 @@ export function PositionSheet({
               deadline={parseSignupDeadline(item)}
               icsUid={`pos-${item.id}`}
               icsSummary={`报名截止：${item.employer?.trim() || stripOrgPrefix(item.position_example ?? '', item.employer) || item.job_type || '岗位'}`}
+              examDate={(() => {
+                const d = parseDeadlineText(item.exam_time, item.year || undefined)
+                const dl = parseSignupDeadline(item)
+                return d && (!dl || d.getTime() >= dl.getTime()) ? d : null
+              })()}
+              examSummary={`笔试/考试：${item.employer?.trim() || item.job_type || '岗位'}`}
             />
           </div>
         </ScrollArea>

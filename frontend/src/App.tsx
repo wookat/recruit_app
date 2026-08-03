@@ -21,6 +21,7 @@ import { POSITION_URL_KEYS } from '@/lib/urlFilters'
 import { daysUntil, getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import { useRemindDays } from '@/lib/reminderPref'
 import { maybeNotifyDue } from '@/lib/dueNotification'
+import { buildPushItems, syncPushItems } from '@/lib/push'
 import {
   maybeNotifySavedNews,
   openSubscriptionsPanel,
@@ -261,6 +262,25 @@ export default function App() {
   useEffect(() => {
     maybeNotifyDue(dueSoon, remindDays, () => setFavOpen(true))
   }, [dueSoon, remindDays])
+
+  // 已开启关站推送时，收藏/提醒天数变化后同步最新截止快照到服务端
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      void syncPushItems(remindDays, buildPushItems(favorites, campusFavorites, bianzhiFavorites))
+    }, 3000)
+    return () => window.clearTimeout(t)
+  }, [favorites, campusFavorites, bianzhiFavorites, remindDays])
+
+  // 推送通知点击落地 /?fav=1 → 直接打开收藏面板
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('fav') === '1') {
+      setFavOpen(true)
+      q.delete('fav')
+      const rest = q.toString()
+      window.history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}${window.location.hash}`)
+    }
+  }, [])
 
   const savedNews = useSavedNews()
   useEffect(() => {

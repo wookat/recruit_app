@@ -39,6 +39,10 @@ celery_app.conf.update(
             "task": "tasks.data_quality_audit",
             "schedule": crontab(hour=7, minute=0),  # 采集入库后做数据质量审计+deadline 回填
         },
+        "push-due-reminders": {
+            "task": "tasks.push_due_reminders",
+            "schedule": crontab(hour=8, minute=30),  # 每天向 Web Push 订阅者发临近截止聚合提醒
+        },
         "cleanup-exports": {
             "task": "tasks.cleanup_exports",
             "schedule": crontab(hour=5, minute=30),  # 清理超过 24h 的导出文件

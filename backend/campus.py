@@ -11,7 +11,7 @@ import cache
 import csv_export
 from crud import keyword_variants, title_hit_rank
 from database import get_db
-from models import CampusJob
+from models import CampusJob, LinkCheck
 
 router = APIRouter(prefix="/api/campus", tags=["campus"])
 
@@ -258,6 +258,20 @@ def campus_filter_options(db: Session = Depends(get_db)):
         "industries": distinct(CampusJob.industry, 60),
         "batches": distinct(CampusJob.batch, 30),
         "grad_years": distinct(CampusJob.grad_years, 30),
+    }
+
+
+@router.get("/link-status")
+def link_status(url: str, db: Session = Depends(get_db)):
+    """查询死链扫描结果（link_checks，每周更新；未扫描过返回 checked=False）。"""
+    row = db.query(LinkCheck).filter(LinkCheck.url == url).first()
+    if row is None:
+        return {"checked": False}
+    return {
+        "checked": True,
+        "ok": bool(row.ok),
+        "status_code": row.status_code,
+        "checked_at": row.checked_at,
     }
 
 

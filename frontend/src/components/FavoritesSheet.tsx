@@ -1799,7 +1799,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             { label: '更新时间', value: campusDetail.updated_at_src },
           ]}
           links={[
-            { label: '投递入口', url: campusDetail.apply_url },
+            { label: '投递入口', url: campusDetail.apply_url, checkDead: true },
             { label: '公告链接', url: campusDetail.announce_url },
           ]}
         />

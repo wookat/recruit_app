@@ -175,6 +175,19 @@ export async function fetchCampusJob(id: number): Promise<CampusJob> {
   return res.data
 }
 
+export interface LinkStatus {
+  checked: boolean
+  ok?: boolean
+  status_code?: number | null
+  checked_at?: string
+}
+
+/** 查询链接死链扫描结果（校招投递链接，每周扫描）。 */
+export async function fetchLinkStatus(url: string): Promise<LinkStatus> {
+  const res = await axios.get(`${API_BASE}/api/campus/link-status`, { params: { url } })
+  return res.data
+}
+
 export async function fetchCampusFilters(): Promise<CampusFilterOptions> {
   const res = await axios.get(`${API_BASE}/api/campus/filters`)
   return res.data

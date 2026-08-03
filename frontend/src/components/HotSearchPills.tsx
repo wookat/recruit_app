@@ -1,12 +1,12 @@
 import { HOT_SEARCHES } from '@/lib/synonyms'
 
 /** 空结果时的热门搜索词 pills，点击填入当前板块搜索框直搜。 */
-export function HotSearchPills({ onPick }: { onPick: (word: string) => void }) {
+export function HotSearchPills({ onPick, words }: { onPick: (word: string) => void; words?: string[] }) {
   return (
     <div className="flex flex-col items-center gap-1.5">
       <div className="text-xs text-muted-foreground">热门搜索</div>
       <div className="flex max-w-md flex-wrap justify-center gap-1.5">
-        {HOT_SEARCHES.map((w) => (
+        {(words ?? HOT_SEARCHES).map((w) => (
           <button
             key={w}
             type="button"

@@ -741,6 +741,9 @@ export default function App() {
         {favOpen && (
           <FavoritesSheet
             open={favOpen}
+            initialBoard={
+              section.mode === 'campus' || section.mode === 'bianzhi' ? section.mode : 'positions'
+            }
             onClose={() => setFavOpen(false)}
             onOpenHistory={() => {
               setFavOpen(false)

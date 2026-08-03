@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Building2, CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Filter, GraduationCap, Info, Link2, Sparkles } from 'lucide-react'
+import { Building2, CalendarClock, ChevronLeft, ChevronRight, Filter, GraduationCap, Info, Link2, Sparkles } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -18,6 +18,7 @@ import { jobShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { addViewHistory } from '@/lib/viewHistory'
 import { PrepResources } from '@/components/PrepResources'
+import { ExtLinkAnchor } from '@/components/ExtLinkAnchor'
 import { SheetDragHandle } from '@/components/SheetDragHandle'
 
 export interface SheetField {
@@ -295,15 +296,7 @@ export function BoardJobSheet({
                     {validLinks.map((l) => (
                       <div key={l.label}>
                         <div className="text-xs font-medium text-muted-foreground">{l.label}</div>
-                        <a
-                          href={safeUrl(l.url)!}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-1 inline-flex items-center break-all text-sm text-primary hover:underline"
-                        >
-                          {l.url}
-                          <ExternalLink className="ml-1 h-3 w-3 shrink-0" />
-                        </a>
+                        <ExtLinkAnchor url={safeUrl(l.url)!} />
                       </div>
                     ))}
                   </div>

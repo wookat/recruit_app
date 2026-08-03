@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, Briefcase, Clock, Filter, GraduationCap, Landmark, X } from 'lucide-react'
+import { ArrowRight, Briefcase, Clock, Filter, GraduationCap, Landmark, LayoutList, X } from 'lucide-react'
 import {
   fetchBianzhiJobs,
   fetchCampusJobs,
@@ -50,6 +50,8 @@ interface Props {
   onOpenBoard: (board: SearchBoard, keyword: string) => void
   onOpenJob: (board: SearchBoard, id: number, keyword: string) => void
   onQuickFilter?: (board: SearchBoard, filter: QuickFilter, keyword: string) => void
+  /** 打开聚合搜索结果视图（?board=search&q=）。 */
+  onOpenAll?: (keyword: string) => void
 }
 
 const SHOW = 5
@@ -101,7 +103,7 @@ interface QuickSuggestion {
   rest: string
 }
 
-export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFilter }: Props) {
+export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFilter, onOpenAll }: Props) {
   const [q, setQ] = useState('')
   const [hits, setHits] = useState<BoardHits | null>(null)
   const [loading, setLoading] = useState(false)
@@ -233,6 +235,11 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
     if (kw) setRecent(addRecentSearch(kw))
     onClose()
     onOpenBoard(board, kw)
+  }
+  const pickAggregate = () => {
+    if (kw) setRecent(addRecentSearch(kw))
+    onClose()
+    onOpenAll?.(kw)
   }
 
   return (
@@ -444,6 +451,24 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
               </CommandGroup>
             </>
           )}
+          {kw &&
+            hits &&
+            onOpenAll &&
+            hits.positions.total + hits.campus.total + hits.bianzhi.total > 0 && (
+              <>
+                <CommandSeparator />
+                <CommandGroup>
+                  <CommandItem value="aggregate-all" className="max-sm:min-h-11" onSelect={pickAggregate}>
+                    <LayoutList className="text-primary" />
+                    <span>
+                      查看全部结果（三板块聚合 ·{' '}
+                      {(hits.positions.total + hits.campus.total + hits.bianzhi.total).toLocaleString()} 条）
+                    </span>
+                    <ArrowRight className="ml-auto text-muted-foreground" />
+                  </CommandItem>
+                </CommandGroup>
+              </>
+            )}
         </CommandList>
         {empty && (
           <div className="px-3 py-6 text-center text-sm text-muted-foreground">

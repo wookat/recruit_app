@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
+import { Building2, ExternalLink, FlaskConical, GraduationCap, Landmark, LayoutGrid, LayoutList, Library, PenLine, School, Search, Stethoscope, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SeenBadge } from '@/components/SeenBadge'
 import { NewDot } from '@/components/NewDot'
@@ -101,17 +101,18 @@ interface PresetView {
   key: string
   label: string
   category?: string
+  icon: typeof Landmark
 }
 
 const PRESETS: PresetView[] = [
-  { key: 'all', label: '全部' },
-  { key: 'gwy', label: '公务员事业单位', category: '公务员事业单位' },
-  { key: 'edu', label: '教育系统', category: '教育系统' },
-  { key: 'med', label: '医疗系统', category: '医疗系统' },
-  { key: 'univ', label: '高校高职大专', category: '高校高职大专' },
-  { key: 'sci', label: '科研院所', category: '科研院所' },
-  { key: 'soe', label: '央国企社招', category: '央国企社招' },
-  { key: 'lk', label: '大型联考', category: '大型联考' },
+  { key: 'all', label: '全部', icon: LayoutList },
+  { key: 'gwy', label: '公务员事业单位', category: '公务员事业单位', icon: Landmark },
+  { key: 'edu', label: '教育系统', category: '教育系统', icon: School },
+  { key: 'med', label: '医疗系统', category: '医疗系统', icon: Stethoscope },
+  { key: 'univ', label: '高校高职大专', category: '高校高职大专', icon: Library },
+  { key: 'sci', label: '科研院所', category: '科研院所', icon: FlaskConical },
+  { key: 'soe', label: '央国企社招', category: '央国企社招', icon: Building2 },
+  { key: 'lk', label: '大型联考', category: '大型联考', icon: PenLine },
 ]
 
 const PAGE_SIZE = 20
@@ -624,12 +625,16 @@ export function BianzhiPage({
               key={v.key}
               onClick={() => selectPreset(v.key)}
               className={cn(
-                'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+                'inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
                 preset === v.key
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-background text-foreground hover:bg-muted',
               )}
             >
+              <v.icon
+                className={cn('h-3.5 w-3.5 shrink-0', preset === v.key ? '' : 'text-muted-foreground')}
+                aria-hidden
+              />
               {v.label}
               {filters && v.category && (
                 <span className="ml-1 text-xs">

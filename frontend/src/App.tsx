@@ -61,6 +61,9 @@ const CalendarPage = lazy(() =>
 const RecentUpdatesPage = lazy(() =>
   lazyRetry(() => import('@/components/RecentUpdatesPage').then((m) => ({ default: m.RecentUpdatesPage }))),
 )
+const SearchResultsPage = lazy(() =>
+  lazyRetry(() => import('@/components/SearchResultsPage').then((m) => ({ default: m.SearchResultsPage }))),
+)
 
 const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
 
@@ -95,7 +98,7 @@ const BIANZHI_CROSS = [
 ]
 
 interface Section {
-  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar' | 'updates'
+  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar' | 'updates' | 'search'
   preset?: string
   keyword?: string
 }
@@ -108,12 +111,22 @@ function initialSection(): Section {
   }
   if (board === 'calendar') return { mode: 'calendar' }
   if (board === 'updates') return { mode: 'updates' }
+  if (board === 'search') {
+    const kw = (q.get('q') || '').trim()
+    if (kw) return { mode: 'search', keyword: kw }
+  }
   return { mode: 'positions' }
 }
 
 function syncSectionUrl(section: Section) {
   const q = new URLSearchParams(window.location.search)
-  if (section.mode === 'positions') {
+  if (section.mode !== 'search') q.delete('q')
+  if (section.mode === 'search') {
+    q.set('board', 'search')
+    q.set('q', section.keyword || '')
+    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bkw', 'hexp', 'cview', 'ub', 'cboard']) q.delete(k)
+    for (const k of POSITION_URL_KEYS) q.delete(k)
+  } else if (section.mode === 'positions') {
     if (q.get('board')) q.delete('hexp')
     q.delete('board')
     q.delete('bpreset')
@@ -357,6 +370,11 @@ export default function App() {
     [clearBoardParams],
   )
 
+  const openSearchAll = useCallback((kw: string) => {
+    setSection({ mode: 'search', keyword: kw })
+    window.scrollTo({ top: 0 })
+  }, [])
+
   const openSearchJob = useCallback(
     (board: SearchBoard, id: number, kw: string) => {
       if (board === 'positions') {
@@ -599,6 +617,14 @@ export default function App() {
                 onOpenBoardKw={openBoardKw}
               />
             )}
+            {tab !== 'admin' && section.mode === 'search' && (
+              <SearchResultsPage
+                key={section.keyword ?? ''}
+                keyword={section.keyword ?? ''}
+                onOpenBoard={openSearchBoard}
+                onOpenJob={openSearchJob}
+              />
+            )}
             {tab !== 'admin' && section.mode === 'calendar' && <CalendarPage />}
             {tab !== 'admin' && section.mode === 'updates' && (
               <RecentUpdatesPage
@@ -688,6 +714,7 @@ export default function App() {
             onClose={() => setSearchOpen(false)}
             onOpenBoard={openSearchBoard}
             onOpenJob={openSearchJob}
+            onOpenAll={openSearchAll}
           />
         )}
         {favOpen && (

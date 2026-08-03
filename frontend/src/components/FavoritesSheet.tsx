@@ -39,6 +39,7 @@ import {
 } from '@/lib/boardFavorites'
 import { APP_CHANNELS, channelClass, PILL_BASE, type AppChannel } from '@/lib/badgeColors'
 import { downloadBackup, restoreBackup } from '@/lib/backup'
+import { setConfirmExtLink, useConfirmExtLink } from '@/lib/extLink'
 import { downloadIcs, type IcsEvent } from '@/lib/ics'
 import { REMIND_OPTIONS, setRemindDays, useRemindDays } from '@/lib/reminderPref'
 import {
@@ -71,7 +72,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, ArrowRight, Bookmark, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, MonitorSmartphone, Scale, Sparkles, Square, SquareCheck } from 'lucide-react'
+import { AlarmClock, ArrowRight, Bookmark, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, MonitorSmartphone, Scale, ShieldCheck, Sparkles, Square, SquareCheck } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1279,6 +1280,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
             </div>
             <NotifyToggleRow />
             <NewsNotifyToggleRow />
+            <ExtLinkConfirmToggleRow />
             <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5">
               {BOARD_TABS.map((t) => (
                 <button
@@ -1839,6 +1841,42 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
         />
       )}
     </>
+  )
+}
+
+/** 「外链打开前确认」开关（默认关：直接跳转）：开启后详情内外链点击先弹安全确认层。 */
+function ExtLinkConfirmToggleRow() {
+  const enabled = useConfirmExtLink()
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+      <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+      外链打开前确认
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        aria-label="外链打开前确认"
+        onClick={() => setConfirmExtLink(!enabled)}
+        className="relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:h-6 sm:w-10"
+      >
+        <span
+          className={cn(
+            'inline-flex h-5 w-9 items-center rounded-full border px-0.5 transition-colors',
+            enabled ? 'border-primary bg-primary' : 'border-border bg-muted',
+          )}
+        >
+          <span
+            className={cn(
+              'h-4 w-4 rounded-full bg-background shadow transition-transform',
+              enabled ? 'translate-x-4' : 'translate-x-0',
+            )}
+          />
+        </span>
+      </button>
+      <span className="hidden sm:inline">
+        {enabled ? '点击详情外链时先确认目标网站' : '默认直接跳转，详情内已显示链接域名'}
+      </span>
+    </div>
   )
 }
 

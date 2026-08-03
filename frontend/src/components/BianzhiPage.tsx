@@ -1423,8 +1423,8 @@ export function BianzhiPage({
             { label: '更新时间', value: detail.updated_at_src },
           ]}
           links={[
-            { label: '公告链接', url: detail.announce_url },
-            { label: '报名入口', url: detail.apply_url },
+            { label: '公告链接', url: detail.announce_url, checkDead: true },
+            { label: '报名入口', url: detail.apply_url, checkDead: true },
           ]}
           related={
             relatedJobs.length > 0

@@ -1853,8 +1853,8 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             { label: '更新时间', value: normalizeDateStr(bianzhiDetail.updated_at_src) },
           ]}
           links={[
-            { label: '公告链接', url: bianzhiDetail.announce_url },
-            { label: '报名入口', url: bianzhiDetail.apply_url },
+            { label: '公告链接', url: bianzhiDetail.announce_url, checkDead: true },
+            { label: '报名入口', url: bianzhiDetail.apply_url, checkDead: true },
           ]}
         />
       )}

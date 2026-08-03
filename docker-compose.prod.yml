@@ -55,7 +55,10 @@ services:
     image: recruit-app:latest
     container_name: recruit-worker
     restart: unless-stopped
-    command: ["celery", "-A", "celery_app", "worker", "-B", "--loglevel=info", "--concurrency=1"]
+    # 2 核小机上每日同步（北京 6:00–7:30）曾把在线查询拖到 10–73s：
+    # 降低 worker CPU 权重 + nice，让 app/postgres 在争抢时优先
+    cpu_shares: 256
+    command: ["nice", "-n", "10", "celery", "-A", "celery_app", "worker", "-B", "--loglevel=info", "--concurrency=1"]
     volumes:
       - ./exports:/app/exports
     environment:

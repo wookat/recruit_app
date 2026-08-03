@@ -711,7 +711,17 @@ export function ListPage({
 
   const defaultFilterName =
     [
-      params.location?.[0] ?? params.province?.[0] ?? params.work_location?.[0],
+      (() => {
+        const locs = params.location?.length
+          ? params.location
+          : params.province?.length
+            ? params.province
+            : params.work_location ?? []
+        if (locs.length === 0) return null
+        return locs.length <= 3 ? locs.join('+') : `${locs.slice(0, 3).join('+')}等${locs.length}地`
+      })(),
+      params.job_type?.[0],
+      params.exam_type_norm?.[0],
       params.category?.[0],
       params.edu_level?.[0],
       params.year?.[0],

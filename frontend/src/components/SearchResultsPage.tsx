@@ -61,7 +61,7 @@ function SectionBlock({
 }) {
   if (total === 0) return null
   return (
-    <section className="rounded-xl border bg-background p-4">
+    <section className="rounded-xl border bg-background p-4 dark:border-white/15">
       <div className="mb-3 flex items-center gap-2">
         <Icon className="h-4 w-4 text-primary" />
         <h2 className="text-sm font-semibold">{title}</h2>
@@ -175,11 +175,11 @@ export function SearchResultsPage({ keyword, onSearch, onOpenBoard, onOpenJob }:
           }}
           placeholder="换个关键词再搜…"
           aria-label="聚合搜索关键词"
-          className="h-11 w-full rounded-lg border bg-background pl-9 pr-16 text-sm outline-none focus:ring-2 focus:ring-primary/40 sm:h-9"
+          className="h-11 w-full rounded-lg border bg-background pl-9 pr-16 text-sm outline-none focus:ring-2 focus:ring-primary/40 sm:h-10"
         />
         <Button
           size="sm"
-          className="absolute right-1 top-1/2 h-9 -translate-y-1/2 px-3 text-xs sm:h-7"
+          className="absolute right-1 top-1/2 h-9 -translate-y-1/2 px-3 text-xs sm:h-8"
           disabled={!input.trim() || input.trim() === kw}
           onClick={submit}
         >

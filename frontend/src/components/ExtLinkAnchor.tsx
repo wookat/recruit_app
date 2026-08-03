@@ -44,11 +44,12 @@ export function ExtLinkAnchor({ url }: { url: string }) {
       )}
       {confirmOn && (
         <Dialog open={pending} onOpenChange={(o) => !o && setPending(false)}>
-          <DialogContent className="max-w-xs sm:max-w-sm">
+          <DialogContent className="max-w-xs shadow-lg sm:max-w-sm">
             <DialogHeader>
               <DialogTitle>即将打开外部链接</DialogTitle>
-              <DialogDescription className="break-all">
+              <DialogDescription>
                 目标网站：<span className="font-medium text-foreground">{domain || url}</span>
+                {domain && <span className="mt-1 block truncate text-xs opacity-70">{url}</span>}
                 <span className="mt-1 block">外部网站内容与本站无关，请注意甄别信息与保护个人信息安全。</span>
               </DialogDescription>
             </DialogHeader>

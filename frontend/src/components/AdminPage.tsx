@@ -1000,7 +1000,22 @@ function SyncTodaySection({ token }: { token: string }) {
   )
 }
 
-function VisitsSection({ visits }: { visits: HealthVisitDay[] }) {
+/** 补齐近 14 天日槽（无数据日用零值占位），保证等宽列不因稀疏数据拉伸 */
+function padDays<T extends { date: string }>(rows: T[], makeEmpty: (date: string) => T): T[] {
+  const byDate = new Map(rows.map((r) => [r.date, r]))
+  const out: T[] = []
+  const now = new Date()
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now)
+    d.setDate(now.getDate() - i)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    out.push(byDate.get(key) ?? makeEmpty(key))
+  }
+  return out
+}
+
+function VisitsSection({ visits: rawVisits }: { visits: HealthVisitDay[] }) {
+  const visits = padDays(rawVisits, (date) => ({ date, pv: 0, sessions: 0 }))
   const maxPv = Math.max(1, ...visits.map((d) => d.pv))
   return (
     <div>
@@ -1046,7 +1061,14 @@ function VisitsSection({ visits }: { visits: HealthVisitDay[] }) {
   )
 }
 
-function TrendSection({ trend }: { trend: HealthTrendDay[] }) {
+function TrendSection({ trend: rawTrend }: { trend: HealthTrendDay[] }) {
+  const trend = padDays(rawTrend, (date) => ({
+    date,
+    crawl_success: 0,
+    crawl_fail: 0,
+    campus_added: 0,
+    bianzhi_added: 0,
+  }))
   const [selected, setSelected] = useState<number | null>(null)
   const maxCrawl = Math.max(1, ...trend.map((d) => d.crawl_success + d.crawl_fail))
   const maxAdded = Math.max(1, ...trend.map((d) => d.campus_added + d.bianzhi_added))

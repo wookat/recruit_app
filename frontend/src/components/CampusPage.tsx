@@ -1501,7 +1501,7 @@ export function CampusPage({
             { label: '更新时间', value: normalizeDateStr(detail.updated_at_src) },
           ]}
           links={[
-            { label: '投递入口', url: detail.apply_url },
+            { label: '投递入口', url: detail.apply_url, checkDead: true },
             { label: '公告链接', url: detail.announce_url },
           ]}
           applyWindow={(() => {

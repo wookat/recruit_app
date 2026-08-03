@@ -2,12 +2,12 @@
 import json
 from datetime import datetime, timezone
 
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from cache import get_redis
 from data_clean import BIANZHI_JUNK_PATTERN, MAJOR_PLACEHOLDER_PATTERN
-from models import BianzhiJob, CampusJob, Position
+from models import BianzhiJob, CampusJob, LinkCheck, Position
 
 QUALITY_ISSUES_KEY = "admin:quality_issues"
 QUALITY_ISSUES_TTL = 3600
@@ -114,6 +114,14 @@ def compute_quality_issues(db: Session) -> dict:
             CampusJob, CampusJob.major_requirement.op("~")(MAJOR_PLACEHOLDER_PATTERN),
             CampusJob.major_requirement,
             note="入库层已清洗；存量可运行 backend/cleanup_junk_rows.py 置空",
+        ),
+        _issue(
+            db, "campus", "campus_dead_apply_url", "校招：投递链接已失效（未截止岗位）",
+            CampusJob,
+            ((CampusJob.deadline_date.is_(None)) | (CampusJob.deadline_date >= func.current_date()))
+            & CampusJob.apply_url.in_(select(LinkCheck.url).where(LinkCheck.ok == 0)),
+            CampusJob.apply_url,
+            note="每周一 check_dead_links 扫描；仅硬失效（DNS/连接失败、4xx/5xx），软跳转不误判",
         ),
         _issue(
             db, "bianzhi", "bz_empty_employer", "编制：招考单位全空",

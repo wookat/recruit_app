@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { Building2, CalendarClock, ChevronLeft, ChevronRight, Filter, GraduationCap, Info, Link2, Sparkles, TimerOff } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { AlertTriangle, Building2, CalendarClock, ChevronLeft, ChevronRight, Filter, GraduationCap, Info, Link2, Sparkles, TimerOff } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -21,6 +21,7 @@ import { PrepResources } from '@/components/PrepResources'
 import { ExtLinkAnchor } from '@/components/ExtLinkAnchor'
 import { SheetDragHandle } from '@/components/SheetDragHandle'
 import { ApplyTimeline } from '@/components/ApplyTimeline'
+import { fetchLinkStatus } from '@/api'
 
 export interface SheetField {
   label: string
@@ -31,6 +32,8 @@ export interface SheetLink {
   label: string
   url: string | null | undefined
   primary?: boolean
+  /** 传入时查询死链扫描结果，已失效链接显示提示。 */
+  checkDead?: boolean
 }
 
 export interface SheetTag {
@@ -163,6 +166,28 @@ export function BoardJobSheet({
   prep,
 }: Props) {
   const validLinks = (links ?? []).filter((l) => safeUrl(l.url))
+  const [deadUrls, setDeadUrls] = useState<Record<string, boolean>>({})
+  const queriedUrls = useRef(new Set<string>())
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    for (const l of validLinks) {
+      const u = l.url
+      if (!l.checkDead || !u || queriedUrls.current.has(u)) continue
+      queriedUrls.current.add(u)
+      fetchLinkStatus(u)
+        .then((s) => {
+          if (!cancelled && s.checked && s.ok === false) {
+            setDeadUrls((m) => ({ ...m, [u]: true }))
+          }
+        })
+        .catch(() => queriedUrls.current.delete(u))
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [open, validLinks])
 
   useEffect(() => {
     if (!open || !jobKey) return
@@ -311,6 +336,12 @@ export function BoardJobSheet({
                       <div key={l.label}>
                         <div className="text-xs font-medium text-muted-foreground">{l.label}</div>
                         <ExtLinkAnchor url={safeUrl(l.url)!} />
+                        {l.url && deadUrls[l.url] && (
+                          <p className="mt-1 flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                            <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden="true" />
+                            检测到该链接可能已失效，建议前往公司官方招聘渠道核实
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>

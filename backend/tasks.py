@@ -14,6 +14,7 @@ from celery_app import celery_app
 from database import SessionLocal
 from ingest import ingest_positions_df
 from models import CrawlRun
+import check_links
 import collector
 import crud
 import pipeline
@@ -471,6 +472,16 @@ def _backfill_signup_deadlines(db, max_rows: int = DQ_BACKFILL_MAX) -> dict:
         scanned += len(rows)
         last_id = rows[-1]["id"]
     return {"scanned": scanned, "filled": filled}
+
+
+@celery_app.task
+def check_dead_links():
+    """每周校招投递链接死链扫描（结果入 link_checks，质量卡展示失效计数）。"""
+    db = SessionLocal()
+    try:
+        return check_links.run_check(db)
+    finally:
+        db.close()
 
 
 @celery_app.task

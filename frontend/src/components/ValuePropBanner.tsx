@@ -38,6 +38,13 @@ function hasProfile(): boolean {
   return p.eduLevel.length > 0 || p.major.trim() !== '' || p.location.length > 0
 }
 
+/** 价值主张条是否待展示（首屏同时只留一张卡，引导卡据此避让）。 */
+export function valuePropPending(): boolean {
+  return !hasSeen() && !hasAnyFavorite() && !hasProfile()
+}
+
+export const VALUE_PROP_DISMISSED_EVENT = 'recruit:valuePropDismissed'
+
 /** 新访客一次性价值主张条：无收藏、无画像、未关闭过才显示。 */
 export function ValuePropBanner({
   onMatch,
@@ -52,6 +59,7 @@ export function ValuePropBanner({
   const dismiss = () => {
     markSeen()
     setVisible(false)
+    window.dispatchEvent(new Event(VALUE_PROP_DISMISSED_EVENT))
   }
 
   return (

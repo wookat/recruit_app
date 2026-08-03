@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CalendarDays, ClipboardList, LayoutGrid, SlidersHorizontal, Star, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { VALUE_PROP_DISMISSED_EVENT, valuePropPending } from '@/components/ValuePropBanner'
 
 const SEEN_KEY = 'recruit.onboarded'
 
@@ -41,9 +42,18 @@ const STEPS = [
   },
 ]
 
-/** 首次访问的一次性轻量引导卡（非阻断）。 */
+/** 首次访问的一次性轻量引导卡（非阻断）；价值主张条展示期间避让，关闭/消费后才出现。 */
 export function OnboardingCard({ onOpenTips }: { onOpenTips: () => void }) {
-  const [visible, setVisible] = useState(() => !hasSeen())
+  const [visible, setVisible] = useState(() => !hasSeen() && !valuePropPending())
+
+  useEffect(() => {
+    const onDismiss = () => {
+      if (!hasSeen()) setVisible(true)
+    }
+    window.addEventListener(VALUE_PROP_DISMISSED_EVENT, onDismiss)
+    return () => window.removeEventListener(VALUE_PROP_DISMISSED_EVENT, onDismiss)
+  }, [])
+
   if (!visible) return null
 
   const dismiss = () => {

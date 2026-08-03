@@ -1036,7 +1036,7 @@ export function CampusPage({
                   </TableCell>
                   <TableCell className="font-medium" title={job.company ?? ''}>
                     <Highlight text={job.company} query={keyword} />
-                    <NewDot board="campus" createdAt={job.created_at} className="ml-1.5" />
+                    <NewDot board="campus" id={job.id} createdAt={job.created_at} className="ml-1.5" />
                     <SeenBadge board="campus" id={job.id} className="ml-1.5" />
                     {job.source_table && (
                       <span className="mt-0.5 block text-[11px] text-muted-foreground">
@@ -1211,7 +1211,7 @@ export function CampusPage({
                 <span className="text-base font-semibold">
                   <Highlight text={job.company} query={keyword} />
                 </span>
-                <NewDot board="campus" createdAt={job.created_at} />
+                <NewDot board="campus" id={job.id} createdAt={job.created_at} />
                 <SeenBadge board="campus" id={job.id} />
                 {job.company_type && (
                   <Badge variant="secondary" className={cn('border-0', toneClass(COMPANY_TYPE_TONES, job.company_type))}>

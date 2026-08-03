@@ -1002,7 +1002,7 @@ export function BianzhiPage({
                     query={keyword}
                   />
                 </span>
-                <NewDot board="bianzhi" createdAt={job.created_at} />
+                <NewDot board="bianzhi" id={job.id} createdAt={job.created_at} />
                 <SeenBadge board="bianzhi" id={job.id} />
                 {job.category && (
                   <Badge variant="secondary" className={cn('border-0', toneClass(CATEGORY_TONES, job.category))}>
@@ -1193,7 +1193,7 @@ export function BianzhiPage({
                         }
                         query={keyword}
                       />
-                      <NewDot board="bianzhi" createdAt={job.created_at} className="ml-1.5" />
+                      <NewDot board="bianzhi" id={job.id} createdAt={job.created_at} className="ml-1.5" />
                       <SeenBadge board="bianzhi" id={job.id} className="ml-1.5" />
                     </span>
                     {job.notes && job.notes.trim() !== '/' && (

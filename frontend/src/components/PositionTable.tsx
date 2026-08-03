@@ -300,6 +300,7 @@ export const PositionTable = memo(function PositionTable({
                               <>
                                 <NewDot
                                   board="positions"
+                                  id={row.original.id}
                                   createdAt={row.original.created_at}
                                   className="ml-1.5"
                                 />

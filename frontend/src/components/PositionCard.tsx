@@ -56,7 +56,7 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
                   {t.label}
                 </span>
               ))}
-            <NewDot board="positions" createdAt={item.created_at} />
+            <NewDot board="positions" id={item.id} createdAt={item.created_at} />
             <SeenBadge board="positions" id={item.id} />
           </div>
           <div className="flex shrink-0 items-center">

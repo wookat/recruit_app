@@ -9,11 +9,14 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
+import urllib3
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from database import Base, SessionLocal, engine
 from models import LinkCheck
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 TIMEOUT = 8
@@ -21,7 +24,8 @@ WORKERS = int(os.getenv("LINK_CHECK_WORKERS", "8"))
 
 
 def _probe(url: str) -> tuple[int, "int | None", str]:
-    """返回 (ok, status_code, error)。HEAD 被拒（405 等）时回退 GET。"""
+    """返回 (ok, status_code, error)。HEAD 被拒（405 等）时回退 GET；
+    SSLError 降级跳过证书校验重试、超时加倍重试一次，减少证书链不全/慢站误报。"""
     try:
         r = requests.head(url, timeout=TIMEOUT, allow_redirects=True, headers={"User-Agent": UA})
         if r.status_code in (403, 405, 501) or r.status_code >= 500:
@@ -29,6 +33,14 @@ def _probe(url: str) -> tuple[int, "int | None", str]:
                              headers={"User-Agent": UA})
             r.close()
         return (1 if r.status_code < 400 else 0), r.status_code, ""
+    except (requests.exceptions.SSLError, requests.exceptions.Timeout) as exc:
+        try:
+            r = requests.get(url, timeout=TIMEOUT * 2, allow_redirects=True, stream=True,
+                             verify=False, headers={"User-Agent": UA})
+            r.close()
+            return (1 if r.status_code < 400 else 0), r.status_code, ""
+        except Exception:  # noqa: BLE001
+            return 0, None, type(exc).__name__[:200]
     except Exception as exc:  # noqa: BLE001  畸形 URL（如含中文 userinfo）同样视为失效
         return 0, None, type(exc).__name__[:200]
 

@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+export const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export interface Position {
   id: number
@@ -268,6 +268,8 @@ export interface Freshness {
   positions: { last_success: string | null; total?: number | null }
   campus: { last_success: string | null; total?: number | null }
   bianzhi: { last_success: string | null; total?: number | null }
+  /** 各采集源最近一次成功同步时间（源名 → ISO 时间） */
+  sources?: Record<string, string>
 }
 
 let freshnessPromise: Promise<Freshness> | null = null
@@ -676,6 +678,21 @@ export interface HealthSummary {
     deadline_parse_rate: number | null
   } | null
   trend?: HealthTrendDay[] | null
+  visits?: HealthVisitDay[] | null
+  stale_sources?: StaleSource[] | null
+}
+
+export interface HealthVisitDay {
+  date: string
+  pv: number
+  sessions: number
+}
+
+export interface StaleSource {
+  name: string
+  last_success_at: string | null
+  last_ingest_at: string | null
+  hist_avg_added: number
 }
 
 export interface HealthTrendDay {

@@ -26,6 +26,10 @@ _DATE_RE = re.compile(
     r"(?:(\d{4})[年./\-](\d{1,2})[月./\-](\d{1,2})日?)|(?:(?<!\d)(\d{1,2})月(\d{1,2})日)"
 )
 
+# 全串纯数字短格式（保守：整串匹配才解析，避免误伤正文中的小数/编号）
+_SHORT_YMD_RE = re.compile(r"^(\d{2})[./](\d{1,2})[./](\d{1,2})$")  # 26.6.30 → 2026-06-30
+_SHORT_MD_RE = re.compile(r"^(\d{1,2})[./](\d{1,2})$")  # 10.31 → 无年份 M.D，已过则视为明年
+
 
 def _today_cn() -> date:
     return datetime.now(timezone(timedelta(hours=8))).date()
@@ -36,6 +40,24 @@ def parse_deadline_date(s: str, today: date = None) -> date:
     if not s:
         return None
     today = today or _today_cn()
+    stripped = s.strip()
+    m = _SHORT_YMD_RE.match(stripped)
+    if m:
+        y, mo, d = 2000 + int(m.group(1)), int(m.group(2)), int(m.group(3))
+        try:
+            return date(y, mo, d)
+        except ValueError:
+            return None
+    m = _SHORT_MD_RE.match(stripped)
+    if m:
+        mo, d = int(m.group(1)), int(m.group(2))
+        if not (1 <= mo <= 12):
+            return None
+        try:
+            result = date(today.year, mo, d)
+        except ValueError:
+            return None
+        return date(today.year + 1, mo, d) if result < today else result
     result = None
     last_year = None
     for m in _DATE_RE.finditer(s):

@@ -24,6 +24,7 @@ import {
   type CrawlRunList,
   type HealthSummary,
   type HealthTrendDay,
+  type HealthVisitDay,
   type QualityIssues,
   type SyncTodayItem,
   type WatchSource,
@@ -808,7 +809,26 @@ function HealthCard({ health, updatedAt, token }: { health: HealthSummary; updat
           </div>
         )}
 
+        {health.stale_sources && health.stale_sources.length > 0 && (
+          <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-950/30">
+            <div className="mb-1 text-xs font-medium text-yellow-800 dark:text-yellow-300">
+              源可能失效（连续 2 天同步 0 新增，历史均值 &gt;0）
+            </div>
+            <ul className="space-y-0.5 text-xs text-yellow-800 dark:text-yellow-300">
+              {health.stale_sources.map((s) => (
+                <li key={s.name}>
+                  {s.name} · 历史日均 +{s.hist_avg_added} · 最近成功：
+                  {s.last_success_at ? s.last_success_at.slice(0, 16).replace('T', ' ') : '—'}
+                  {s.last_ingest_at && ` · 最近有新增：${s.last_ingest_at.slice(0, 10)}`}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <SyncTodaySection token={token} />
+
+        {health.visits && health.visits.length > 0 && <VisitsSection visits={health.visits} />}
 
         {health.trend && health.trend.length > 0 && <TrendSection trend={health.trend} />}
 
@@ -976,6 +996,52 @@ function SyncTodaySection({ token }: { token: string }) {
           </table>
         </div>
       )}
+    </div>
+  )
+}
+
+function VisitsSection({ visits }: { visits: HealthVisitDay[] }) {
+  const maxPv = Math.max(1, ...visits.map((d) => d.pv))
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-3 text-xs text-muted-foreground">
+        近 14 天访问趋势（自建统计 · 无第三方跟踪）
+        <span className="inline-flex items-center gap-1">
+          <span className="h-2 w-2 rounded-sm bg-sky-500" /> PV
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="h-2 w-2 rounded-sm bg-emerald-500" /> 独立会话（估算）
+        </span>
+      </div>
+      <div className="overflow-x-auto pb-1">
+        <div className="flex min-w-[420px] items-end gap-1">
+          {visits.map((d) => {
+            const ph = Math.round((d.pv / maxPv) * 48)
+            const sh = Math.round((d.sessions / maxPv) * 48)
+            return (
+              <div
+                key={d.date}
+                title={`${d.date}：PV ${d.pv}，独立会话 ${d.sessions}`}
+                className="flex flex-1 flex-col items-center gap-1 rounded-md px-0.5 pb-1 pt-1"
+              >
+                <span className="flex h-12 w-full max-w-6 items-end justify-center gap-px">
+                  <span
+                    className="w-1/2 rounded-sm bg-sky-500 dark:bg-sky-600"
+                    style={{ height: `${d.pv > 0 ? Math.max(ph, 2) : 0}px` }}
+                  />
+                  <span
+                    className="w-1/2 rounded-sm bg-emerald-500 dark:bg-emerald-600"
+                    style={{ height: `${d.sessions > 0 ? Math.max(sh, 2) : 0}px` }}
+                  />
+                </span>
+                <span className="text-[10px] tabular-nums text-muted-foreground">
+                  {d.date.slice(5).replace('-', '/')}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }

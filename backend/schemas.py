@@ -161,6 +161,13 @@ class ExportRequest(BaseModel):
     fname: Optional[str] = None
 
 
+class PvIn(BaseModel):
+    """轻量访问统计上报体（无 cookie、无个人数据）。"""
+    board: str  # positions / campus / bianzhi / updates / calendar ...
+    page: Optional[str] = None
+    sid: Optional[str] = None  # sessionStorage 随机 id（不跨天），用于独立会话估算
+
+
 class FeedbackIn(BaseModel):
     """用户「举报数据有误」提交体。"""
     board: str  # positions / campus / bianzhi

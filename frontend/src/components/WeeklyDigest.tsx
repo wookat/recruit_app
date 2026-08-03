@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
-import { CalendarClock, Check, ClipboardCopy, Send, Sparkles, Star, TrendingUp, X } from 'lucide-react'
+import { CalendarClock, Check, ClipboardCopy, Download, ImageIcon, Send, Sparkles, Star, TrendingUp, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { copyText } from '@/lib/clipboard'
+import { canvasToBlob, renderWeeklyCard } from '@/lib/weeklyCard'
 import { daysUntil, getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import { getFavAddedMap } from '@/lib/favTimes'
 import { useCampusFavorites, useBianzhiFavorites, useCampusMeta, useBianzhiMeta } from '@/lib/boardFavorites'
@@ -33,6 +35,9 @@ export function WeeklyDigest({ onClose }: { onClose: () => void }) {
   const campusMeta = useCampusMeta()
   const bianzhiMeta = useBianzhiMeta()
   const [copied, setCopied] = useState(false)
+  const [cardUrl, setCardUrl] = useState<string | null>(null)
+  const [imgCopied, setImgCopied] = useState(false)
+  const [imgCopyFail, setImgCopyFail] = useState(false)
 
   const digest = useMemo(() => {
     const now = Date.now()
@@ -147,6 +152,87 @@ export function WeeklyDigest({ onClose }: { onClose: () => void }) {
             {copied ? <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" /> : <ClipboardCopy className="h-3.5 w-3.5" />}
             {copied ? '已复制，去微信粘贴吧' : '复制小结文本'}
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-1.5 h-auto min-h-11 w-full gap-1.5 text-xs sm:min-h-8"
+            onClick={() => {
+              const canvas = renderWeeklyCard({
+                rangeText,
+                stats: stats.map((s) => ({ label: s.label, value: s.value })),
+                cheer,
+              })
+              setCardUrl(canvas.toDataURL('image/png'))
+              setImgCopied(false)
+              setImgCopyFail(false)
+            }}
+          >
+            <ImageIcon className="h-3.5 w-3.5" />
+            生成分享图片
+          </Button>
+          <Dialog open={!!cardUrl} onOpenChange={(o) => !o && setCardUrl(null)}>
+            <DialogContent className="max-w-xs sm:max-w-sm">
+              <DialogHeader>
+                <DialogTitle>本周小结分享卡</DialogTitle>
+                <DialogDescription>长按图片保存，或用下方按钮保存/复制后发微信。</DialogDescription>
+              </DialogHeader>
+              {cardUrl && (
+                <img src={cardUrl} alt="本周求职小结分享卡" className="w-full rounded-lg border" />
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 gap-1.5 text-xs sm:min-h-9"
+                  onClick={() => {
+                    if (!cardUrl) return
+                    const a = document.createElement('a')
+                    a.href = cardUrl
+                    a.download = `求职周报_${rangeText.replace(/[.-]/g, '')}.png`
+                    a.click()
+                  }}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  保存图片
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 gap-1.5 text-xs sm:min-h-9"
+                  onClick={async () => {
+                    try {
+                      const blob = await canvasToBlob(
+                        renderWeeklyCard({
+                          rangeText,
+                          stats: stats.map((s) => ({ label: s.label, value: s.value })),
+                          cheer,
+                        }),
+                      )
+                      if (!blob) throw new Error('no blob')
+                      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+                      setImgCopied(true)
+                      setImgCopyFail(false)
+                      setTimeout(() => setImgCopied(false), 2000)
+                    } catch {
+                      setImgCopyFail(true)
+                    }
+                  }}
+                >
+                  {imgCopied ? (
+                    <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <ClipboardCopy className="h-3.5 w-3.5" />
+                  )}
+                  {imgCopied ? '已复制' : '复制图片'}
+                </Button>
+              </div>
+              {imgCopyFail && (
+                <p className="text-xs text-muted-foreground">
+                  当前浏览器不支持复制图片，请长按图片保存或点「保存图片」。
+                </p>
+              )}
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

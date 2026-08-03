@@ -23,6 +23,8 @@ export function guideLinksFor(examOrCategory: string | null | undefined): GuideL
   const t = examOrCategory || ''
   const pick = (...keys: string[]) => keys.map((k) => GUIDE_LINKS[k])
   if (/国企|央企/.test(t)) return pick('timeline', 'company', 'resume')
+  if (/实习/.test(t)) return pick('timeline', 'resume', 'tips')
+  if (/秋招|春招|校招|民企|外企|互联网/.test(t)) return pick('timeline', 'resume', 'interview')
   if (/教师|教育/.test(t)) return pick('biancal', 'resume', 'interview')
   if (/医疗|医院|卫生/.test(t)) return pick('biancal', 'resume', 'interview')
   if (/军队文职/.test(t)) return pick('biancal', 'interview', 'tips')

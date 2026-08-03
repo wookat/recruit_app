@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Date, Integer, String, Text, DateTime, Index, func
+from sqlalchemy import Column, Date, Integer, String, Text, DateTime, Index, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import ARRAY
 from database import Base
 
@@ -133,6 +133,30 @@ class Feedback(Base):
     ua = Column(String(300))
     handled = Column(Integer, default=0, index=True)  # 1=已处理 0=待处理
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class PageViewDaily(Base):
+    """自建轻量访问统计：日聚合 PV（无 cookie、无个人数据、IP 不落库）。"""
+
+    __tablename__ = "metrics_pv_daily"
+    __table_args__ = (UniqueConstraint("day", "board", "page", name="uq_pv_day_board_page"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    day = Column(Date, nullable=False, index=True)
+    board = Column(String(30), nullable=False)
+    page = Column(String(50), nullable=False, default="")
+    pv = Column(Integer, nullable=False, default=0)
+
+
+class SessionDaily(Base):
+    """独立会话估算：sessionStorage 随机 id（不跨天），每天去重计数。"""
+
+    __tablename__ = "metrics_sessions_daily"
+    __table_args__ = (UniqueConstraint("day", "sid", name="uq_sess_day_sid"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    day = Column(Date, nullable=False, index=True)
+    sid = Column(String(40), nullable=False)
 
 
 class Announcement(Base):

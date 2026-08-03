@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchFreshness } from '@/api'
+import { Skeleton } from '@/components/ui/skeleton'
 
 function formatFreshness(iso: string | null): string | null {
   if (!iso) return null
@@ -58,19 +59,33 @@ const SOURCE_LABELS: Record<string, string> = {
 /** 数据说明用：各采集源最近一次成功同步时间（取不到不渲染，不伪造）。 */
 export function SourceFreshness() {
   const [sources, setSources] = useState<Record<string, string> | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
     fetchFreshness()
       .then((f) => {
-        if (!cancelled && f.sources && Object.keys(f.sources).length > 0) setSources(f.sources)
+        if (cancelled) return
+        if (f.sources && Object.keys(f.sources).length > 0) setSources(f.sources)
+        setLoading(false)
       })
-      .catch(() => undefined)
+      .catch(() => {
+        if (!cancelled) setLoading(false)
+      })
     return () => {
       cancelled = true
     }
   }, [])
 
+  if (loading) {
+    return (
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border bg-muted/40 px-3 py-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-4 w-40" />
+      </div>
+    )
+  }
   if (!sources) return null
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border bg-muted/40 px-3 py-2">

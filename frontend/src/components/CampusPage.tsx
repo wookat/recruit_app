@@ -20,7 +20,7 @@ import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from '@/com
 import { Highlight } from '@/components/Highlight'
 import { TONE_CLASSES, TONE_TEXT_STRONG, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
-import { formatDueDayLabel } from '@/lib/deadline'
+import { formatDueDayLabel, getEffectiveDeadline } from '@/lib/deadline'
 import {
   Table,
   TableBody,
@@ -1137,8 +1137,11 @@ export function CampusPage({
                     {job.start_date || '-'}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
-                    <span className="inline-flex items-center gap-1.5">
-                      {job.deadline_text || '-'}
+                    <span
+                      className="inline-flex items-center gap-1.5"
+                      title={job.deadline_date ? job.deadline_text ?? undefined : undefined}
+                    >
+                      {job.deadline_date || job.deadline_text || '-'}
                       <DueBadge date={job.deadline_date} />
                     </span>
                   </TableCell>
@@ -1431,6 +1434,13 @@ export function CampusPage({
             { label: '投递入口', url: detail.apply_url },
             { label: '公告链接', url: detail.announce_url },
           ]}
+          prep={{
+            examType: [detail.company_type, detail.batch, '校招'].filter(Boolean).join(' '),
+            province: detail.locations?.split(/[、,，;；/\s]/)[0] || null,
+            deadline: getEffectiveDeadline(detail),
+            icsUid: `campus-${detail.id}`,
+            icsSummary: `报名截止：${detail.company?.trim() || '校招岗位'}${detail.positions ? ` ${detail.positions.slice(0, 20)}` : ''}`,
+          }}
           related={
             relatedJobs.length > 0
               ? {

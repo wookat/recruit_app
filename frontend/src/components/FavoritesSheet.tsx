@@ -1847,7 +1847,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             { label: '专业要求', value: bianzhiDetail.major_requirement },
           ]}
           schedule={[
-            { label: '报名开始', value: bianzhiDetail.signup_start },
+            { label: '报名开始', value: normalizeDateStr(bianzhiDetail.signup_start) },
             { label: '报名截止', value: normalizeDateStr(bianzhiDetail.deadline_text) },
             { label: '考试时间', value: bianzhiDetail.exam_time },
             { label: '更新时间', value: normalizeDateStr(bianzhiDetail.updated_at_src) },

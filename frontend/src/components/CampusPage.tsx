@@ -1191,7 +1191,7 @@ export function CampusPage({
                       : '-'}
                   </TableCell>
                   <TableCell className="hidden whitespace-nowrap text-muted-foreground 2xl:table-cell">
-                    {job.start_date || '-'}
+                    {normalizeDateStr(job.start_date) || '-'}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">
                     <span
@@ -1369,7 +1369,7 @@ export function CampusPage({
                 {job.locations && <span className="text-muted-foreground">{job.locations}</span>}
                 {job.start_date && (
                   <span className={cn('text-muted-foreground', cardMore.has(job.id) ? 'inline' : 'hidden sm:inline')}>
-                    开始：{job.start_date}
+                    开始：{normalizeDateStr(job.start_date)}
                   </span>
                 )}
                 {job.deadline_text && (

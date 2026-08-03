@@ -17,7 +17,7 @@ import { useSeenSet } from '@/lib/viewHistory'
 import { markBoardVisit } from '@/lib/lastVisit'
 import { expandKeyword } from '@/lib/synonyms'
 import { MultiSelect } from './MultiSelect'
-import { QuickMatch, type QuickMatchValues } from './QuickMatch'
+import { getProfile, saveProfile, clearProfile } from '@/lib/profile'
 import { ValuePropBanner } from './ValuePropBanner'
 import type { RecommendQuery } from './RecommendPanel'
 import { buildExportUrl, createExport, exportDownloadUrl, fetchExportStatus } from '@/api'
@@ -53,6 +53,8 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Sparkles,
+  Wand2,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -228,9 +230,8 @@ export function ListPage({
   const [filterOpen, setFilterOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [deadlineView, setDeadlineView] = useState(false)
-  const [quickMatchKey, setQuickMatchKey] = useState(0)
-  const [qmOpenSignal, setQmOpenSignal] = useState(0)
-  const quickMatchRef = useRef<HTMLDivElement | null>(null)
+  const [majorInput, setMajorInput] = useState(() => getProfile().major || '')
+  const quickMatchRef = useRef<HTMLInputElement | null>(null)
   const [params, setParams] = useState<SearchParams>(() => {
     const fromUrl = syncUrl && !new URLSearchParams(window.location.search).get('board')
     const base = fromUrl
@@ -466,25 +467,22 @@ export function ListPage({
     [],
   )
 
-  function applyQuickMatch(values: QuickMatchValues) {
+  /** 画像匹配：专业写入统一筛选参数，学历/地点/年份直接复用面板已选值 */
+  function applyQuickMatch() {
+    const major = majorInput.trim()
+    const edu = params.edu_level || []
     const majorType: SearchParams['major_type'] =
-      values.major && values.eduLevel.length === 1 && values.eduLevel[0] === '本科'
+      major && edu.length === 1 && edu[0] === '本科'
         ? 'undergrad'
-        : values.major &&
-          values.eduLevel.some((e) => e.startsWith('硕士') || e.startsWith('博士')) &&
-          !values.eduLevel.includes('本科')
+        : major && edu.some((e) => e.startsWith('硕士') || e.startsWith('博士')) && !edu.includes('本科')
         ? 'grad'
         : 'any'
-
+    saveProfile({ eduLevel: edu, major, location: params.location || [] })
     setParams((p) => ({
       ...p,
       page: 1,
-      edu_level: values.eduLevel,
-      major: values.major || undefined,
+      major: major || undefined,
       major_type: majorType,
-      location: values.location,
-      category: values.category,
-      year: values.year.map(Number).filter((n) => !isNaN(n)),
       keyword: '',
       province: undefined,
       work_location: undefined,
@@ -610,16 +608,20 @@ export function ListPage({
     setParams({ ...DEFAULT_PARAMS })
     setHideSeen(false)
     setRecommendQuery(null)
-    setQuickMatchKey((k) => k + 1)
+    setMajorInput('')
+    clearProfile()
   }
 
-  function applyRecommend(values: QuickMatchValues) {
+  function applyRecommend() {
+    const major = majorInput.trim()
+    if (!major) return
+    saveProfile({ eduLevel: params.edu_level || [], major, location: params.location || [] })
     setRecommendQuery({
-      major: values.major,
-      edu_level: values.eduLevel.length ? values.eduLevel : undefined,
-      location: values.location.length ? values.location : undefined,
-      category: values.category.length ? values.category : undefined,
-      year: values.year.map(Number).filter((n) => !isNaN(n)),
+      major,
+      edu_level: params.edu_level?.length ? params.edu_level : undefined,
+      location: params.location?.length ? params.location : undefined,
+      category: params.job_type?.length ? params.job_type : undefined,
+      year: params.year?.length ? params.year : undefined,
     })
   }
 
@@ -902,12 +904,15 @@ export function ListPage({
   for (const v of params.work_location || []) activeChips.push({ label: `精确地点：${v}`, onRemove: () => updateParam('work_location', (params.work_location || []).filter((x) => x !== v)) })
 
   return (
-    <div className="space-y-5">
+    <div className={showStats ? 'xl:grid xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start xl:gap-5' : undefined}>
+    <div className="min-w-0 space-y-5">
       {onOpenUpdates && (
         <ValuePropBanner
           onMatch={() => {
-            setQmOpenSignal((s) => s + 1)
-            setTimeout(() => quickMatchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
+            setTimeout(() => {
+              quickMatchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              quickMatchRef.current?.focus({ preventScroll: true })
+            }, 60)
           }}
           onOpenUpdates={onOpenUpdates}
         />
@@ -1005,6 +1010,35 @@ export function ListPage({
           {synAdded.length > 0 && <SynonymHint added={synAdded} onClose={() => setSynOff(true)} />}
 
           {keyFilterRow}
+
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-muted/30 px-3 py-2">
+            <div className="flex items-center gap-1.5 text-sm font-medium">
+              <Sparkles className="h-4 w-4 text-primary" />
+              一键匹配
+            </div>
+            <Input
+              ref={quickMatchRef}
+              value={majorInput}
+              onChange={(e) => setMajorInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') applyQuickMatch()
+              }}
+              placeholder="你的专业，如：计算机科学与技术"
+              className="h-9 w-full min-w-0 flex-1 sm:w-auto sm:min-w-[200px] sm:max-w-[280px]"
+              aria-label="专业"
+            />
+            <div className="flex items-center gap-2">
+              <Button size="sm" className="h-9" onClick={applyQuickMatch}>
+                <Search className="mr-1 h-3.5 w-3.5" />
+                匹配筛选
+              </Button>
+              <Button size="sm" variant="outline" className="h-9" onClick={applyRecommend} disabled={!majorInput.trim()}>
+                <Wand2 className="mr-1 h-3.5 w-3.5" />
+                为我推荐
+              </Button>
+            </div>
+            <span className="text-xs text-muted-foreground">学历/地区/岗位类型直接用上方筛选，不再单独选</span>
+          </div>
 
           {advancedOpen && <div className="hidden lg:block">{advancedFilterPanel}</div>}
 
@@ -1244,17 +1278,6 @@ export function ListPage({
           )}
         </CardContent>
       </Card>
-
-      <div ref={quickMatchRef}>
-        <QuickMatch
-          key={quickMatchKey}
-          filters={filters}
-          onSearch={applyQuickMatch}
-          onReset={clearFilters}
-          onRecommend={applyRecommend}
-          openSignal={qmOpenSignal}
-        />
-      </div>
 
       {recommendQuery && (
         <Suspense fallback={null}>
@@ -1519,14 +1542,6 @@ export function ListPage({
       </>
       )}
 
-      {showStats && (
-        <StatsDashboard
-          onSelectYear={(y) => updateParam('year', [y])}
-          onSelectExamType={(t) => updateParam('exam_type_norm', [t])}
-          onSelectProvince={(p) => updateParam('province', [p])}
-        />
-      )}
-
       {exportTask && (
         <div className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg border bg-popover px-4 py-2 text-sm shadow-lg">
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -1538,6 +1553,17 @@ export function ListPage({
           {exportError}
         </div>
       )}
+    </div>
+    {showStats && (
+      <aside className="mt-5 xl:sticky xl:top-16 xl:mt-0 xl:max-h-[calc(100dvh-5rem)] xl:overflow-y-auto">
+        <StatsDashboard
+          variant="sidebar"
+          onSelectYear={(y) => updateParam('year', [y])}
+          onSelectExamType={(t) => updateParam('exam_type_norm', [t])}
+          onSelectProvince={(p) => updateParam('location', [...new Set([...(params.location || []), p])])}
+        />
+      </aside>
+    )}
     </div>
   )
 }

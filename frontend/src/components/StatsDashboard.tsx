@@ -9,6 +9,52 @@ interface StatsDashboardProps {
   onSelectYear?: (year: number) => void
   onSelectExamType?: (examType: string) => void
   onSelectProvince?: (province: string) => void
+  /** sidebar：右侧栏列表形态；card：页内卡片（默认） */
+  variant?: 'card' | 'sidebar'
+}
+
+function StatList({
+  title,
+  entries,
+  onSelect,
+  max,
+}: {
+  title: string
+  entries: { name: string; count: number }[]
+  onSelect?: (name: string) => void
+  max?: number
+}) {
+  const [showAll, setShowAll] = useState(false)
+  if (entries.length === 0) return null
+  const shown = showAll || !max ? entries : entries.slice(0, max)
+  return (
+    <div className="space-y-1">
+      <div className="text-xs font-medium text-muted-foreground">{title}</div>
+      <ul className="divide-y divide-border/60">
+        {shown.map((e) => (
+          <li key={e.name}>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-2 rounded px-1 py-1.5 text-left text-xs hover:bg-muted"
+              onClick={() => onSelect?.(e.name)}
+            >
+              <span className="truncate">{e.name}</span>
+              <span className="shrink-0 tabular-nums text-muted-foreground">{e.count.toLocaleString()}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {max && entries.length > max && (
+        <button
+          type="button"
+          className="w-full rounded px-1 py-1 text-left text-xs text-primary hover:bg-muted"
+          onClick={() => setShowAll((v) => !v)}
+        >
+          {showAll ? '收起' : `展开全部 ${entries.length} 项`}
+        </button>
+      )}
+    </div>
+  )
 }
 
 function StatGroup({
@@ -41,7 +87,7 @@ function StatGroup({
   )
 }
 
-export function StatsDashboard({ onSelectYear, onSelectExamType, onSelectProvince }: StatsDashboardProps) {
+export function StatsDashboard({ onSelectYear, onSelectExamType, onSelectProvince, variant = 'card' }: StatsDashboardProps) {
   const [stats, setStats] = useState<Stats | null>(null)
   const [failed, setFailed] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -53,6 +99,33 @@ export function StatsDashboard({ onSelectYear, onSelectExamType, onSelectProvinc
   }, [])
 
   if (failed || !stats) return null
+
+  if (variant === 'sidebar') {
+    return (
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            数据看板
+            <Badge variant="secondary" className="font-normal">
+              {stats.total.toLocaleString()} 条
+            </Badge>
+          </div>
+          <StatList
+            title="按年份（点击筛选）"
+            entries={stats.by_year}
+            max={6}
+            onSelect={(name) => {
+              const y = Number(name)
+              if (!isNaN(y)) onSelectYear?.(y)
+            }}
+          />
+          <StatList title="按考试类型（点击筛选）" entries={stats.by_exam_type} max={8} onSelect={onSelectExamType} />
+          <StatList title="按省份（点击筛选）" entries={stats.by_province} max={8} onSelect={onSelectProvince} />
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>

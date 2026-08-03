@@ -362,7 +362,7 @@ export function PositionSheet({
                     : item.position_example
                 }
               />
-              <Field label="考试/招聘类型" value={item.exam_type} />
+              <Field label="考试/招聘类型" value={item.exam_type_norm || item.exam_type} />
               <CompetitionRef
                 province={item.province}
                 examType={item.exam_type_norm}

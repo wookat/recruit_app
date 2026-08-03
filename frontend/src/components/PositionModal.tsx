@@ -9,6 +9,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { stripOrgPrefix } from '@/lib/orgPrefix'
 
 interface Props {
   item: Position | null
@@ -20,10 +21,13 @@ export function PositionModal({ item, onClose }: Props) {
 
   const fields = [
     { label: '年份', value: item.year },
-    { label: '工作类型', value: item.job_type },
-    { label: '考试/招聘类型', value: item.exam_type },
+    { label: '岗位类型', value: item.job_type },
+    { label: '考试/招聘类型', value: item.exam_type_norm || item.exam_type },
     { label: '用人单位/系统', value: item.employer },
-    { label: '岗位示例', value: item.position_example },
+    {
+      label: '岗位示例',
+      value: item.position_example ? stripOrgPrefix(item.position_example, item.employer) : item.position_example,
+    },
     { label: '学历要求', value: item.edu_requirement },
     { label: '本科生专业要求', value: item.undergrad_major },
     { label: '研究生专业要求', value: item.grad_major },

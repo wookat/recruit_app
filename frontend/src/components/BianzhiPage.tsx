@@ -43,7 +43,7 @@ import { SavedFilterBar } from '@/components/SavedFilterBar'
 import { SubscribeFilterHint } from '@/components/SubscribeFilterHint'
 import { SynonymHint } from '@/components/SynonymHint'
 import { HotSearchPills } from '@/components/HotSearchPills'
-import { expandKeyword } from '@/lib/synonyms'
+import { expandKeyword, HOT_SEARCHES_BIANZHI } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
@@ -591,6 +591,7 @@ export function BianzhiPage({
 
   const provinceRow =
     filters && filters.provinces.length > 0 ? (
+      <div className="relative">
       <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
         <div className="flex w-max gap-1.5">
           {filters.provinces.slice(0, 32).map((p) => (
@@ -613,6 +614,11 @@ export function BianzhiPage({
             </button>
           ))}
         </div>
+      </div>
+      <div
+        className="pointer-events-none absolute inset-y-0 -right-4 w-8 bg-gradient-to-l from-background to-transparent md:hidden"
+        aria-hidden
+      />
       </div>
     ) : null
 
@@ -969,6 +975,7 @@ export function BianzhiPage({
                   }
                 />
                 <HotSearchPills
+                  words={HOT_SEARCHES_BIANZHI}
                   onPick={(w) => {
                     setSearchInput(w)
                     setKeyword(w)
@@ -1036,7 +1043,7 @@ export function BianzhiPage({
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
                 {job.province && <span className="text-muted-foreground">{job.province}</span>}
-                {job.work_location && (
+                {job.work_location && job.work_location !== job.province && (
                   <span className="text-muted-foreground">{job.work_location}</span>
                 )}
                 {job.job_type && <span className="text-muted-foreground">{job.job_type}</span>}
@@ -1213,7 +1220,7 @@ export function BianzhiPage({
                     </div>
                   </TableCell>
                   <TableCell className="font-medium" title={job.employer ?? ''}>
-                    <span className="line-clamp-2 max-w-[380px] whitespace-normal">
+                    <span className="line-clamp-2 max-w-[380px] whitespace-normal max-sm:max-w-[60vw]">
                       <Highlight
                         text={
                           job.employer ||
@@ -1227,7 +1234,7 @@ export function BianzhiPage({
                       <SeenBadge board="bianzhi" id={job.id} className="ml-1.5" />
                     </span>
                     {job.notes && job.notes.trim() !== '/' && (
-                      <span className="mt-0.5 block max-w-[380px] truncate text-[11px] text-muted-foreground" title={job.notes}>
+                      <span className="mt-0.5 block max-w-[380px] truncate text-[11px] text-muted-foreground max-sm:max-w-[60vw]" title={job.notes}>
                         {job.notes}
                       </span>
                     )}
@@ -1400,7 +1407,6 @@ export function BianzhiPage({
           }}
           {...sheetNavProps(pageItems, detail, setDetail)}
           basics={[
-            { label: '招聘单位', value: detail.employer },
             { label: '分类', value: detail.category },
             { label: '省份', value: detail.province },
             { label: '岗位类型', value: detail.job_type },

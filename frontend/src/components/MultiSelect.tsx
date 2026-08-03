@@ -100,8 +100,8 @@ export function MultiSelect({
                   ? triggerLabel || '全部'
                   : selected.length <= 2
                   ? selected.join('、')
-                  : triggerLabel
-                  ? `${triggerLabel} · ${selected.length}`
+                  : triggerLabel || label
+                  ? `${triggerLabel || label} · ${selected.length}`
                   : `已选 ${selected.length} 项`}
               </span>
               <div className="flex items-center gap-1">

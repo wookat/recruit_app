@@ -39,7 +39,7 @@ export function SheetDragHandle({ onDismiss }: { onDismiss: () => void }) {
   return (
     <div
       ref={barRef}
-      className="flex shrink-0 cursor-grab touch-none justify-center pb-1 pt-3 sm:hidden"
+      className="flex min-h-11 shrink-0 cursor-grab touch-none items-center justify-center sm:hidden"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}

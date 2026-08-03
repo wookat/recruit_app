@@ -10,12 +10,16 @@ import re
 BIANZHI_JUNK_PATTERN = r"https?://|更多[^，。;；]{0,40}信息|直接在[^，。;；]{0,40}查看"
 _BIANZHI_JUNK_RE = re.compile(BIANZHI_JUNK_PATTERN)
 
+# 源表测试占位行：飞书多维表默认占位值「文本 N」
+PLACEHOLDER_PATTERN = r"^文本\s*\d*$"
+_PLACEHOLDER_RE = re.compile(PLACEHOLDER_PATTERN)
+
 
 def is_bianzhi_junk_row(d: dict) -> bool:
-    """判定编制导流/说明行：employer 或 job_type 命中导流句式即不入库。"""
+    """判定编制导流/说明/占位行：employer 或 job_type 命中即不入库。"""
     for field in ("employer", "job_type"):
         v = (d.get(field) or "").strip()
-        if v and _BIANZHI_JUNK_RE.search(v):
+        if v and (_BIANZHI_JUNK_RE.search(v) or _PLACEHOLDER_RE.match(v)):
             return True
     return False
 

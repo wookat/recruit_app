@@ -1,4 +1,5 @@
-import { BookOpen, CalendarPlus, ExternalLink } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { BookOpen, CalendarPlus, Check, ExternalLink } from 'lucide-react'
 import hrSites from '@/data/hrSites.json'
 import { downloadIcs } from '@/lib/ics'
 
@@ -58,6 +59,8 @@ interface Props {
 /** 详情面板「备考资源」区块：站内攻略锚点 + 省人社官网 + 日历提醒。 */
 export function PrepResources({ examType, province, deadline, icsUid, icsSummary, examDate, examSummary }: Props) {
   const links = guideLinksFor(examType)
+  const [icsDone, setIcsDone] = useState(false)
+  const icsTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const site = hrSiteFor(province)
   return (
     <section className="space-y-3">
@@ -103,7 +106,7 @@ export function PrepResources({ examType, province, deadline, icsUid, icsSummary
             <button
               type="button"
               className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border bg-background px-3 text-sm transition-colors hover:bg-muted sm:min-h-9"
-              onClick={() =>
+              onClick={() => {
                 downloadIcs(
                   [
                     { uid: icsUid, date: deadline, summary: icsSummary },
@@ -113,11 +116,23 @@ export function PrepResources({ examType, province, deadline, icsUid, icsSummary
                   ],
                   `报名截止提醒_${icsUid}.ics`,
                 )
-              }
+                setIcsDone(true)
+                if (icsTimer.current) clearTimeout(icsTimer.current)
+                icsTimer.current = setTimeout(() => setIcsDone(false), 2500)
+              }}
             >
-              <CalendarPlus className="h-4 w-4" />
-              加入日历提醒（{deadline.getMonth() + 1}/{deadline.getDate()} 截止
-              {examDate ? `，${examDate.getMonth() + 1}/${examDate.getDate()} 考试` : ''}）
+              {icsDone ? (
+                <>
+                  <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  已生成日历文件，打开即可添加提醒
+                </>
+              ) : (
+                <>
+                  <CalendarPlus className="h-4 w-4" />
+                  加入日历提醒（{deadline.getMonth() + 1}/{deadline.getDate()} 截止
+                  {examDate ? `，${examDate.getMonth() + 1}/${examDate.getDate()} 考试` : ''}）
+                </>
+              )}
             </button>
           </div>
         )}

@@ -73,7 +73,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, ArrowRight, Bookmark, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, MonitorSmartphone, Scale, ShieldCheck, Sparkles, Square, SquareCheck } from 'lucide-react'
+import { AlarmClock, ArrowRight, Bookmark, ChevronDown, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, MonitorSmartphone, Scale, ShieldCheck, Sparkles, Square, SquareCheck } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -90,6 +90,8 @@ interface Props {
   onClose: () => void
   /** 打开「最近浏览」面板 */
   onOpenHistory?: () => void
+  /** 打开时预选的板块 tab（跟随当前浏览板块） */
+  initialBoard?: Board
 }
 
 type Board = 'positions' | 'campus' | 'bianzhi'
@@ -102,7 +104,7 @@ interface CalendarEntry {
   bianzhi?: BianzhiJob
 }
 
-export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
+export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: Props) {
   const favorites = useFavorites()
   const campusFavs = useCampusFavorites()
   const bianzhiFavs = useBianzhiFavorites()
@@ -122,7 +124,8 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
   const [listCopied, setListCopied] = useState(false)
   const [digestOpen, setDigestOpen] = useState(false)
   const [syncOpen, setSyncOpen] = useState(false)
-  const [board, setBoard] = useState<Board>('positions')
+  const [board, setBoard] = useState<Board>(initialBoard ?? 'positions')
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [view, setView] = useState<'track' | 'calendar'>('track')
   const [statusFilter, setStatusFilter] = useState<AppStatus | null>(null)
   const [stageFilter, setStageFilter] = useState<AppStatus[] | null>(null)
@@ -1258,6 +1261,17 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
                 {dueAlert.count} 条收藏{dueAlert.level === 'red' ? ' 3 天内截止' : `将于 ${remindDays} 天内截止`}，点击查看
               </button>
             )}
+            <button
+              type="button"
+              aria-expanded={settingsOpen}
+              onClick={() => setSettingsOpen((v) => !v)}
+              className="flex min-h-11 w-full cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground sm:hidden"
+            >
+              <AlarmClock className="h-3.5 w-3.5 shrink-0" />
+              提醒与通知设置
+              <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', settingsOpen && 'rotate-180')} />
+            </button>
+            <div className={cn('space-y-2', !settingsOpen && 'hidden sm:block sm:space-y-2')}>
             <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
               <AlarmClock className="h-3.5 w-3.5 shrink-0" />
               提前提醒
@@ -1283,6 +1297,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
             <PushToggleRow />
             <NewsNotifyToggleRow />
             <ExtLinkConfirmToggleRow />
+            </div>
             <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5">
               {BOARD_TABS.map((t) => (
                 <button

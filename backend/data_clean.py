@@ -42,8 +42,9 @@ def clean_major_requirement(v: str) -> str:
     return _MAJOR_TAIL_RE.sub("", s).strip()
 
 
-# 校招岗位文本尾部第三方声明（如「；本信息由 | www.offerleida.com | 整理发布」）
-POSITIONS_ATTRIBUTION_PATTERN = r"[；;，,]?\s*本信息由[\s|,，]*[\w.]*offerleida\.com[\s|,，]*整理发布\s*$"
+# 校招岗位文本尾部第三方声明（如「；本信息由 | www.offerleida.com | 整理发布，其他渠道均为盗版」
+# 「版权声明：本信息由…整理发布，其他渠道均为盗版搬运；」等变体，一律从声明起截断到句尾）
+POSITIONS_ATTRIBUTION_PATTERN = r"[；;，,]?\s*(?:版权声明[:：])?\s*本?信息由.*offerleida\.com.*$"
 _POSITIONS_ATTRIBUTION_RE = re.compile(POSITIONS_ATTRIBUTION_PATTERN)
 
 

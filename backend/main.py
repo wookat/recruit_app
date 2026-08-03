@@ -702,15 +702,18 @@ if os.path.isdir(dist_dir):
     def index_html_route(request: Request, db: Session = Depends(get_db)):
         """带 ?job=board:id 时注入岗位 meta（分享卡片），否则原样返回 index.html。"""
         job_key = request.query_params.get("job")
+        meta = None
         if job_key:
             try:
                 meta = share_meta.get_share_meta(db, job_key)
             except Exception:
                 meta = None
-            if meta:
-                with open(index_path, encoding="utf-8") as f:
-                    raw = f.read()
-                return HTMLResponse(share_meta.inject_meta(raw, meta["title"], meta["desc"]))
+        if not meta:
+            meta = share_meta.get_search_meta(request.query_params)
+        if meta:
+            with open(index_path, encoding="utf-8") as f:
+                raw = f.read()
+            return HTMLResponse(share_meta.inject_meta(raw, meta["title"], meta["desc"]))
         return FileResponse(index_path, media_type="text/html")
 
     app.mount("/", StaticFiles(directory=dist_dir, html=True), name="static")

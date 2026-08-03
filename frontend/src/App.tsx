@@ -246,7 +246,7 @@ export default function App() {
 
   useEffect(() => {
     syncSectionUrl(section)
-    applySeo(section.mode, section.preset)
+    applySeo(section.mode, section.preset, section.keyword)
   }, [section])
 
   useEffect(() => {

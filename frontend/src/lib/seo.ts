@@ -20,6 +20,7 @@ const BIANZHI_PRESET_LABELS: Record<string, string> = {
 export function applySeo(
   mode: 'positions' | 'campus' | 'bianzhi' | 'calendar' | 'updates' | 'search',
   preset?: string,
+  keyword?: string,
 ) {
   let title = DEFAULT_TITLE
   let desc = DEFAULT_DESC
@@ -27,8 +28,11 @@ export function applySeo(
     title = `截止日历 - ${SITE}`
     desc = '未来 60 天校招与编制公告报名截止汇总日历，按日期查看当日截止岗位，不错过每一个报名窗口。'
   } else if (mode === 'search') {
-    title = `聚合搜索 - ${SITE}`
-    desc = '体制内、校招、编制三板块聚合搜索，一次搜索同时命中岗位、公告与校招信息。'
+    const kw = (keyword || '').trim().slice(0, 30)
+    title = kw ? `「${kw}」相关岗位 - 三板块聚合搜索 | ${SITE}` : `聚合搜索 - ${SITE}`
+    desc = kw
+      ? `在体制内、校招、编制三大板块中搜索「${kw}」相关岗位与公告，关键词高亮、可直达岗位详情与官方公告。`
+      : '体制内、校招、编制三板块聚合搜索，一次搜索同时命中岗位、公告与校招信息。'
   } else if (mode === 'updates') {
     title = `近 7 天更新 - ${SITE}`
     desc = '体制内、校招、编制三板块近 7 天新增岗位按日聚合，每日自动同步，新机会一目了然。'

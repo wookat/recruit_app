@@ -11,7 +11,7 @@ import sys
 
 from sqlalchemy import text
 
-from data_clean import clean_major_requirement
+from data_clean import clean_major_requirement, clean_positions
 from database import Base, SessionLocal, engine
 from models import CampusJob
 
@@ -76,16 +76,28 @@ def _norm_grad(v: str) -> str:
     return _GRAD_SHORT_RE.sub(r"20\1\2", v or "")
 
 
+_URL_START_RE = re.compile(r"(https?://|mailto:)")
+
+
+def _norm_url(v: str) -> str:
+    """链接归一：去掉「投递邮箱:」类前缀标签，去尾斜杠。"""
+    s = (v or "").strip()
+    m = _URL_START_RE.search(s)
+    if m:
+        s = s[m.start():]
+    return s.rstrip("/")
+
+
 def cross_hash(company: str, positions: str, batch: str, grad_years: str,
                apply_url: str, announce_url: str) -> str:
     """跨来源去重键：忽略分隔符/空白差异，同一公司+岗位+批次+届次+链接视为同一条。"""
     key = "|".join([
         _SQUASH_RE.sub("", company or ""),
-        _SQUASH_RE.sub("", positions or ""),
+        _SQUASH_RE.sub("", clean_positions(positions)),
         _SQUASH_RE.sub("", batch or ""),
         _SQUASH_RE.sub("", _norm_grad(grad_years)),
-        (apply_url or "").strip(),
-        (announce_url or "").strip(),
+        _norm_url(apply_url),
+        _norm_url(announce_url),
     ])
     return hashlib.md5(key.encode("utf-8")).hexdigest()
 
@@ -114,6 +126,8 @@ def import_file(db, path: str, source_table: str, colmap: dict) -> tuple[int, in
                 continue
             if "major_requirement" in d:
                 d["major_requirement"] = clean_major_requirement(d["major_requirement"])
+            if "positions" in d:
+                d["positions"] = clean_positions(d["positions"])
             h = row_hash(source_table, d)
             xh = cross_hash_of(d)
             if h in existing or xh in existing_cross:

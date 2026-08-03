@@ -40,3 +40,16 @@ def clean_major_requirement(v: str) -> str:
     if _MAJOR_PLACEHOLDER_RE.search(s):
         return ""
     return _MAJOR_TAIL_RE.sub("", s).strip()
+
+
+# 校招岗位文本尾部第三方声明（如「；本信息由 | www.offerleida.com | 整理发布」）
+POSITIONS_ATTRIBUTION_PATTERN = r"[；;，,]?\s*本信息由[\s|,，]*[\w.]*offerleida\.com[\s|,，]*整理发布\s*$"
+_POSITIONS_ATTRIBUTION_RE = re.compile(POSITIONS_ATTRIBUTION_PATTERN)
+
+
+def clean_positions(v: str) -> str:
+    """校招 positions 清洗：剥离尾部第三方来源声明，只留岗位本体。"""
+    s = (v or "").strip()
+    if not s:
+        return s
+    return _POSITIONS_ATTRIBUTION_RE.sub("", s).strip()

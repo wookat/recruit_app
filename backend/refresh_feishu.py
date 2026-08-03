@@ -26,7 +26,7 @@ from sqlalchemy import text
 from database import Base, SessionLocal, engine
 from models import BianzhiJob, CampusJob, CrawlRun, WatchSource
 import import_bianzhi
-from data_clean import clean_major_requirement, is_bianzhi_junk_row
+from data_clean import clean_major_requirement, clean_positions, is_bianzhi_junk_row
 import import_campus
 
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
@@ -301,6 +301,8 @@ def _refresh_campus(client: FeishuShareClient, db, dry_run: bool) -> dict:
                 continue
             if "major_requirement" in d:
                 d["major_requirement"] = clean_major_requirement(d["major_requirement"])
+            if "positions" in d:
+                d["positions"] = clean_positions(d["positions"])
             h = import_campus.row_hash(source_table, d)
             xh = import_campus.cross_hash_of(d)
             if h in existing or xh in existing_cross:
@@ -378,6 +380,8 @@ def _refresh_bianzhi(client: FeishuShareClient, db, dry_run: bool) -> dict:
                     continue
                 if "major_requirement" in d:
                     d["major_requirement"] = clean_major_requirement(d["major_requirement"])
+                if "positions" in d:
+                    d["positions"] = clean_positions(d["positions"])
                 h = import_campus.row_hash(source_table, d)
                 xh = import_campus.cross_hash_of(d)
                 if h in campus_existing or xh in campus_existing_cross:

@@ -21,12 +21,12 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            // 列表数据：stale-while-revalidate，缓存不超过 1 小时
+            // 列表数据：stale-while-revalidate，缓存不超过 10 分钟
             urlPattern: /\/api\/(positions|campus|bianzhi)(\/|\?|$)/,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'api-lists',
-              expiration: { maxEntries: 120, maxAgeSeconds: 3600 },
+              expiration: { maxEntries: 120, maxAgeSeconds: 600 },
               cacheableResponse: { statuses: [200] },
             },
           },

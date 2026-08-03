@@ -135,6 +135,19 @@ class Feedback(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
 
+class LinkCheck(Base):
+    """外链存活检测结果（校招投递/公告链接死链扫描，每周任务写入）。"""
+
+    __tablename__ = "link_checks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    url = Column(Text, nullable=False, unique=True)
+    ok = Column(Integer, nullable=False, index=True)  # 1=可访问 0=失效
+    status_code = Column(Integer)  # 最终 HTTP 状态码（连接失败为 NULL）
+    error = Column(String(200))
+    checked_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 class PushSubscription(Base):
     """Web Push 订阅：收藏截止日快照随订阅上报，每日定时推送临近截止提醒。"""
 

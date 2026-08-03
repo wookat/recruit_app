@@ -43,6 +43,10 @@ celery_app.conf.update(
             "task": "tasks.push_due_reminders",
             "schedule": crontab(hour=8, minute=30),  # 每天向 Web Push 订阅者发临近截止聚合提醒
         },
+        "check-dead-links": {
+            "task": "tasks.check_dead_links",
+            "schedule": crontab(hour=4, minute=0, day_of_week=1),  # 每周一扫描校招投递链接死链
+        },
         "cleanup-exports": {
             "task": "tasks.cleanup_exports",
             "schedule": crontab(hour=5, minute=30),  # 清理超过 24h 的导出文件

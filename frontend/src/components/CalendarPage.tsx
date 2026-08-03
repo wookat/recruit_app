@@ -26,6 +26,7 @@ import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { downloadIcs, type IcsEvent } from '@/lib/ics'
 import { CalendarDays, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { jobShareUrl } from '@/lib/clipboard'
+import { normalizeDateStr } from '@/lib/tableSort'
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
 
@@ -678,9 +679,9 @@ export function CalendarPage() {
             { label: '专业要求', value: campusDetail.major_requirement },
           ]}
           schedule={[
-            { label: '开始时间', value: campusDetail.start_date },
-            { label: '截止时间', value: campusDetail.deadline_text },
-            { label: '更新时间', value: campusDetail.updated_at_src },
+            { label: '开始时间', value: normalizeDateStr(campusDetail.start_date) },
+            { label: '截止时间', value: normalizeDateStr(campusDetail.deadline_text) },
+            { label: '更新时间', value: normalizeDateStr(campusDetail.updated_at_src) },
           ]}
           links={[
             { label: '投递入口', url: campusDetail.apply_url, checkDead: true },

@@ -7,6 +7,7 @@ import { addViewHistory } from '@/lib/viewHistory'
 import { derivePositionTags } from '@/lib/jobTags'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { PrepResources } from './PrepResources'
+import { CompetitionRef } from './CompetitionRef'
 import { SheetDragHandle } from './SheetDragHandle'
 import { Building2, ExternalLink, Filter, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles } from 'lucide-react'
 import {
@@ -351,6 +352,11 @@ export function PositionSheet({
                 }
               />
               <Field label="考试/招聘类型" value={item.exam_type} />
+              <CompetitionRef
+                province={item.province}
+                examType={item.exam_type_norm}
+                year={item.year}
+              />
               <div className="flex items-start gap-1.5">
                 <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <div>

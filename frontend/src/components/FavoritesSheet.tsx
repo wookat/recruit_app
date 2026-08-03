@@ -542,6 +542,17 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
     return evts
   }, [favorites, campusFavs, bianzhiFavs])
 
+  // 即将截止：7 天内截止的收藏聚合（与日历红点同一数据源 calendarDays）
+  const dueSoon = useMemo(() => {
+    const out: { entry: CalendarEntry; daysLeft: number }[] = []
+    for (const d of calendarDays) {
+      const n = daysUntil(d.date)
+      if (n < 0 || n > 7) continue
+      for (const e of d.entries) out.push({ entry: e, daysLeft: n })
+    }
+    return out.sort((a, b) => a.daysLeft - b.daysLeft)
+  }, [calendarDays])
+
   const remindDays = useRemindDays()
   const dueAlert = useMemo(() => {
     let red = 0
@@ -1475,7 +1486,58 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
           </div>
           <ScrollArea className="min-h-0 flex-1">
             {view === 'track' ? (
-              boardCount === 0 ? (
+              <div>
+                {dueSoon.length > 0 && (
+                  <div>
+                    <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-popover px-4 py-1.5 sm:px-6">
+                      <AlarmClock className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
+                      <span className="text-xs font-semibold">即将截止（7 天内）</span>
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
+                        {dueSoon.length} 条
+                      </span>
+                    </div>
+                    <div className="divide-y">
+                      {dueSoon.map(({ entry: e, daysLeft }) => {
+                        const item = (e.position ?? e.campus ?? e.bianzhi)!
+                        const title =
+                          e.kind === 'positions'
+                            ? e.position!.employer?.trim() || e.position!.position_example || '体制内岗位'
+                            : e.kind === 'campus'
+                              ? [e.campus!.company, e.campus!.positions].filter(Boolean).join(' · ') || '校招岗位'
+                              : e.bianzhi!.employer || e.bianzhi!.job_type || '编制公告'
+                        return (
+                          <button
+                            key={`due-${e.kind}-${item.id}`}
+                            type="button"
+                            className="flex min-h-11 w-full cursor-pointer items-center gap-2 px-4 py-2 text-left text-sm transition-colors hover:bg-muted/60 sm:px-6"
+                            onClick={() => {
+                              if (e.kind === 'positions') setSelected(e.position!)
+                              else if (e.kind === 'campus') setCampusDetail(e.campus!)
+                              else setBianzhiDetail(e.bianzhi!)
+                            }}
+                          >
+                            <span className={cn(PILL_BASE, 'shrink-0 bg-muted/60 text-muted-foreground')}>
+                              {e.kind === 'positions' ? '体制内' : e.kind === 'campus' ? '校招' : '编制'}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate font-medium">{title}</span>
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                                daysLeft <= 1
+                                  ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+                                  : daysLeft <= 3
+                                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
+                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                              }`}
+                            >
+                              {daysLeft === 0 ? '今日截止' : `剩 ${daysLeft} 天`}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                {boardCount === 0 ? (
                 <EmptyState
                   icon={Star}
                   className="m-4 sm:m-6"
@@ -1509,7 +1571,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
                   }
                 />
               ) : (
-                <div>
+                <>
                   {groups.map((g) => (
                     <div key={g.status}>
                       <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-popover px-4 py-1.5 sm:px-6">
@@ -1538,8 +1600,9 @@ export function FavoritesSheet({ open, onClose, onOpenHistory }: Props) {
                       }
                     />
                   )}
-                </div>
-              )
+                </>
+              )}
+              </div>
             ) : (
               <div className="space-y-1 pb-4">
                 <div className="flex items-center justify-end px-4 pt-2 sm:px-6">

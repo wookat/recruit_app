@@ -33,7 +33,9 @@ import {
 import { ExternalLink, GraduationCap, Landmark, LayoutGrid, Search, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SeenBadge } from '@/components/SeenBadge'
+import { NewDot } from '@/components/NewDot'
 import { useSeenSet } from '@/lib/viewHistory'
+import { markBoardVisit } from '@/lib/lastVisit'
 import { BoardCompareButton } from '@/components/BoardCompareButton'
 import { CrossBoardZeroHint } from '@/components/CrossBoardZeroHint'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
@@ -256,6 +258,10 @@ export function BianzhiPage({
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('bianzhi', preset)
   }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, provinces, keyword, eduFilter])
+
+  useEffect(() => {
+    markBoardVisit('bianzhi')
+  }, [])
 
   const isLiankaoPreset = preset === 'lk'
   const fetchPage = isLiankaoPreset ? 1 : page
@@ -996,6 +1002,7 @@ export function BianzhiPage({
                     query={keyword}
                   />
                 </span>
+                <NewDot board="bianzhi" createdAt={job.created_at} />
                 <SeenBadge board="bianzhi" id={job.id} />
                 {job.category && (
                   <Badge variant="secondary" className={cn('border-0', toneClass(CATEGORY_TONES, job.category))}>
@@ -1186,6 +1193,7 @@ export function BianzhiPage({
                         }
                         query={keyword}
                       />
+                      <NewDot board="bianzhi" createdAt={job.created_at} className="ml-1.5" />
                       <SeenBadge board="bianzhi" id={job.id} className="ml-1.5" />
                     </span>
                     {job.notes && job.notes.trim() !== '/' && (

@@ -49,6 +49,18 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
     const v = new URLSearchParams(window.location.search).get('ub')
     return v === 'positions' || v === 'campus' || v === 'bianzhi' ? v : 'all'
   })
+  const [dateFilter, setDateFilter] = useState<string | 'all'>(() => {
+    const v = new URLSearchParams(window.location.search).get('ud')
+    return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : 'all'
+  })
+
+  const selectDate = (v: string | 'all') => {
+    setDateFilter(v)
+    const q = new URLSearchParams(window.location.search)
+    if (v === 'all') q.delete('ud')
+    else q.set('ud', v)
+    window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
+  }
 
   const selectBoard = (v: Board | 'all') => {
     setBoardFilter(v)
@@ -59,9 +71,23 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
   }
 
   const visibleBoards: Board[] = boardFilter === 'all' ? BOARD_ORDER : [boardFilter]
-  const visibleDays = (days ?? []).filter((day) =>
-    visibleBoards.some((b) => (day.boards[b]?.count ?? 0) > 0),
+  const visibleDays = (days ?? []).filter(
+    (day) =>
+      (dateFilter === 'all' || day.date === dateFilter) &&
+      visibleBoards.some((b) => (day.boards[b]?.count ?? 0) > 0),
   )
+
+  // 近 7 天日期候选（含今天），无数据日禁用
+  const dayOptions = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const hit = (days ?? []).find((day) => day.date === iso)
+    const count = hit
+      ? BOARD_ORDER.reduce((s, b) => s + (hit.boards[b]?.count ?? 0), 0)
+      : 0
+    return { iso, label: i === 0 ? '今天' : i === 1 ? '昨天' : `${d.getMonth() + 1}/${d.getDate()}`, count }
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -87,6 +113,41 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
           </p>
         </div>
         <FreshnessNote board="positions" />
+      </div>
+
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="按日期切换">
+        <button
+          type="button"
+          aria-pressed={dateFilter === 'all'}
+          onClick={() => selectDate('all')}
+          className={cn(
+            'min-h-11 rounded-full border px-3 py-1 text-xs transition-colors sm:min-h-0',
+            dateFilter === 'all'
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-background text-foreground hover:bg-muted',
+          )}
+        >
+          近 7 天
+        </button>
+        {dayOptions.map((opt) => (
+          <button
+            key={opt.iso}
+            type="button"
+            disabled={days !== null && opt.count === 0}
+            aria-pressed={dateFilter === opt.iso}
+            title={opt.count === 0 ? '当日无新增' : undefined}
+            onClick={() => selectDate(opt.iso)}
+            className={cn(
+              'min-h-11 rounded-full border px-3 py-1 text-xs transition-colors sm:min-h-0',
+              dateFilter === opt.iso
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-background text-foreground hover:bg-muted',
+              days !== null && opt.count === 0 && 'cursor-not-allowed opacity-40 hover:bg-background',
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="按板块过滤">
@@ -118,7 +179,13 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
       {failed && <EmptyState title="加载失败" description="请稍后刷新重试" />}
       {days !== null && visibleDays.length === 0 && (
         <EmptyState
-          title={boardFilter === 'all' ? '近 7 天暂无新增' : `${BOARD_META[boardFilter].label}近 7 天暂无新增`}
+          title={
+            dateFilter !== 'all'
+              ? '当日暂无新增'
+              : boardFilter === 'all'
+                ? '近 7 天暂无新增'
+                : `${BOARD_META[boardFilter].label}近 7 天暂无新增`
+          }
           description="数据每日自动同步，欢迎明天再来看看"
         />
       )}
@@ -139,10 +206,14 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
                       <Icon className="h-3 w-3" />
                       {meta.label}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      新增 {b.count.toLocaleString()} 条
-                      {b.bulk && ' · 数据全量同步日，不逐条展示'}
+                    <span className="text-xs font-semibold text-primary">
+                      +{b.count.toLocaleString()} 条
                     </span>
+                    {b.bulk && (
+                      <span className="text-xs text-muted-foreground">
+                        数据全量同步日，不逐条展示
+                      </span>
+                    )}
                   </div>
                   {b.items.length > 0 && (
                     <ul className="divide-y rounded-lg border">

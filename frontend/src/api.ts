@@ -22,6 +22,8 @@ export interface Position {
   source_url: string
   notes: string
   raw_major: string
+  province?: string | null
+  exam_type_norm?: string | null
   signup_deadline?: string | null
   created_at: string
 }
@@ -119,6 +121,7 @@ export interface CampusJob {
   notes: string | null
   updated_at_src: string | null
   deadline_date: string | null
+  created_at?: string | null
 }
 
 export interface CampusList {
@@ -193,6 +196,7 @@ export interface BianzhiJob {
   apply_url: string | null
   updated_at_src: string | null
   deadline_date: string | null
+  created_at?: string | null
 }
 
 export interface BianzhiList {
@@ -420,6 +424,23 @@ export async function fetchSuggestions(q: string, limit = 8): Promise<Suggestion
     })
     .filter((s): s is Suggestion => s !== null)
     .slice(0, limit)
+}
+
+export interface PositionCompetition {
+  total: number
+  unlimited_major: number
+}
+
+/** 同岗位组横向参考：同省+同考试类型+同年份岗位数与不限专业数。 */
+export async function fetchPositionCompetition(
+  province: string,
+  examType: string,
+  year: number,
+): Promise<PositionCompetition> {
+  const res = await axios.get(`${API_BASE}/api/positions/competition`, {
+    params: { province, exam_type: examType, year },
+  })
+  return res.data
 }
 
 export async function fetchSimilarPositions(id: number): Promise<Position[]> {

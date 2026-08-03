@@ -14,6 +14,7 @@ import { DeadlinesCard } from './DeadlinesCard'
 import { TodayGlance } from './TodayGlance'
 import { buildShareUrl, paramsFromQueryString, paramsToQueryString, POSITION_URL_KEYS } from '@/lib/urlFilters'
 import { useSeenSet } from '@/lib/viewHistory'
+import { markBoardVisit } from '@/lib/lastVisit'
 import { expandKeyword } from '@/lib/synonyms'
 import { MultiSelect } from './MultiSelect'
 import { QuickMatch, type QuickMatchValues } from './QuickMatch'
@@ -251,6 +252,10 @@ export function ListPage({
     () => new URLSearchParams(window.location.search).get('hseen') === '1',
   )
   const seenSet = useSeenSet()
+
+  useEffect(() => {
+    markBoardVisit('positions')
+  }, [])
 
   useEffect(() => {
     if (!syncUrl) return

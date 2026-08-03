@@ -15,6 +15,7 @@ import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { derivePositionTags } from '@/lib/jobTags'
 import { DueBadge } from './DueBadge'
 import { SeenBadge } from './SeenBadge'
+import { NewDot } from './NewDot'
 
 interface Props {
   item: Position
@@ -55,6 +56,7 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
                   {t.label}
                 </span>
               ))}
+            <NewDot board="positions" createdAt={item.created_at} />
             <SeenBadge board="positions" id={item.id} />
           </div>
           <div className="flex shrink-0 items-center">

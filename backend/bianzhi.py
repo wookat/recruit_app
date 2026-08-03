@@ -34,6 +34,7 @@ class BianzhiJobOut(BaseModel):
     announce_url: Optional[str] = None
     apply_url: Optional[str] = None
     updated_at_src: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

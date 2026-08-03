@@ -13,6 +13,7 @@ import { LazyPositionSheet } from './LazyPositionSheet'
 import { sheetNavProps } from '@/lib/sheetNav'
 import { DueBadge } from './DueBadge'
 import { SeenBadge } from './SeenBadge'
+import { NewDot } from './NewDot'
 import { EmptyState } from './EmptyState'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
@@ -296,7 +297,14 @@ export const PositionTable = memo(function PositionTable({
                               query={highlight}
                             />
                             {cell.column.id === 'employer' && (
-                              <SeenBadge board="positions" id={row.original.id} className="ml-1.5" />
+                              <>
+                                <NewDot
+                                  board="positions"
+                                  createdAt={row.original.created_at}
+                                  className="ml-1.5"
+                                />
+                                <SeenBadge board="positions" id={row.original.id} className="ml-1.5" />
+                              </>
                             )}
                           </>
                         ) : (

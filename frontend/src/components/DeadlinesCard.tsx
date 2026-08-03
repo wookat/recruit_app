@@ -5,14 +5,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AlarmClock, ChevronDown, ChevronUp } from 'lucide-react'
+import { daysUntil } from '@/lib/deadline'
 
 const COLLAPSED_COUNT = 3
 
-function daysLeft(e: DeadlineEntry): number | null {
-  if (e.daysLeft !== null) return e.daysLeft
+function entryDaysLeft(e: DeadlineEntry): number | null {
   const d = new Date(e.deadline)
-  if (isNaN(d.getTime())) return null
-  return Math.ceil((d.getTime() - Date.now()) / 86400000)
+  if (isNaN(d.getTime())) return e.daysLeft
+  return daysUntil(d)
 }
 
 function daysLeftLabel(n: number | null, fallback: string): string {
@@ -89,7 +89,7 @@ export function DeadlinesCard({ days = 7, limit = 20, defaultExpanded = false }:
         </div>
         <div className="divide-y">
           {visible.map((e, i) => {
-            const n = daysLeft(e)
+            const n = entryDaysLeft(e)
             const row = (
               <div className="flex min-h-11 items-center gap-2 py-2 text-sm sm:min-h-0">
                 <Badge variant="outline" className={`shrink-0 text-[11px] ${urgencyClass(n)}`}>

@@ -5,10 +5,11 @@ import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { addViewHistory } from '@/lib/viewHistory'
 import { derivePositionTags } from '@/lib/jobTags'
-import { parseSignupDeadline } from '@/lib/deadline'
+import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
 import { PrepResources } from './PrepResources'
 import { ExtLinkAnchor } from './ExtLinkAnchor'
 import { CompetitionRef } from './CompetitionRef'
+import { EmployerHistory } from './EmployerHistory'
 import { SheetDragHandle } from './SheetDragHandle'
 import { Building2, Filter, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles, TimerOff } from 'lucide-react'
 import {
@@ -232,7 +233,7 @@ export function PositionSheet({
           <ShareLandingBanner key={item.id} jobKey={`positions:${item.id}`} onBrowseAll={onClose} />
           {(() => {
             const d = parseSignupDeadline(item)
-            return d && d.getTime() < Date.now() ? (
+            return d && daysUntil(d) < 0 ? (
               <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-foreground/80 dark:text-muted-foreground">
                 <TimerOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 该岗位报名已截止，信息仅供参考；可查看下方相似岗位
@@ -367,6 +368,7 @@ export function PositionSheet({
                 examType={item.exam_type_norm}
                 year={item.year}
               />
+              <EmployerHistory employer={item.employer} currentYear={item.year} />
               <div className="flex items-start gap-1.5">
                 <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <div>
@@ -507,6 +509,12 @@ export function PositionSheet({
               deadline={parseSignupDeadline(item)}
               icsUid={`pos-${item.id}`}
               icsSummary={`报名截止：${item.employer?.trim() || stripOrgPrefix(item.position_example ?? '', item.employer) || item.job_type || '岗位'}`}
+              examDate={(() => {
+                const d = parseDeadlineText(item.exam_time, item.year || undefined)
+                const dl = parseSignupDeadline(item)
+                return d && (!dl || d.getTime() >= dl.getTime()) ? d : null
+              })()}
+              examSummary={`笔试/考试：${item.employer?.trim() || item.job_type || '岗位'}`}
             />
           </div>
         </ScrollArea>

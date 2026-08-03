@@ -447,6 +447,19 @@ export async function fetchPositionCompetition(
   return res.data
 }
 
+export interface EmployerHistoryYear {
+  year: number
+  total: number
+}
+
+/** 同单位历年岗位数（按年份聚合）。 */
+export async function fetchEmployerHistory(employer: string): Promise<EmployerHistoryYear[]> {
+  const res = await axios.get(`${API_BASE}/api/positions/employer-history`, {
+    params: { employer },
+  })
+  return res.data.years ?? []
+}
+
 export async function fetchSimilarPositions(id: number): Promise<Position[]> {
   const res = await axios.get(`${API_BASE}/api/positions/${id}/similar`)
   return res.data

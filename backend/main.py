@@ -341,6 +341,28 @@ def position_competition(
     return {"total": row.total, "unlimited_major": row.unlimited}
 
 
+@app.get("/api/positions/employer-history")
+@cache.cached("pos_emp_hist", ttl=3600)
+def position_employer_history(
+    employer: str = Query(..., min_length=2, max_length=300),
+    db: Session = Depends(get_db),
+):
+    """同单位历年岗位数：按年份聚合该单位的清洗后岗位条数（1h 缓存）。"""
+    rows = db.execute(
+        text("""
+            SELECT year, count(*) AS total
+            FROM positions
+            WHERE dup_of_id IS NULL AND invalid_reason IS NULL
+              AND employer = :emp
+            GROUP BY year
+            ORDER BY year DESC
+            LIMIT 10
+        """),
+        {"emp": employer},
+    ).all()
+    return {"years": [{"year": r.year, "total": r.total} for r in rows]}
+
+
 @app.get("/api/positions/{position_id}", response_model=schemas.PositionOut)
 def get_position(position_id: int, db: Session = Depends(get_db)):
     item = crud.get_position(db, position_id)

@@ -50,10 +50,13 @@ interface Props {
   deadline: Date | null
   icsUid: string
   icsSummary: string
+  /** 笔试/考试日期；有值时一并写入 .ics。 */
+  examDate?: Date | null
+  examSummary?: string
 }
 
 /** 详情面板「备考资源」区块：站内攻略锚点 + 省人社官网 + 日历提醒。 */
-export function PrepResources({ examType, province, deadline, icsUid, icsSummary }: Props) {
+export function PrepResources({ examType, province, deadline, icsUid, icsSummary, examDate, examSummary }: Props) {
   const links = guideLinksFor(examType)
   const site = hrSiteFor(province)
   return (
@@ -102,13 +105,19 @@ export function PrepResources({ examType, province, deadline, icsUid, icsSummary
               className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border bg-background px-3 text-sm transition-colors hover:bg-muted sm:min-h-9"
               onClick={() =>
                 downloadIcs(
-                  [{ uid: icsUid, date: deadline, summary: icsSummary }],
+                  [
+                    { uid: icsUid, date: deadline, summary: icsSummary },
+                    ...(examDate
+                      ? [{ uid: `${icsUid}-exam`, date: examDate, summary: examSummary || '笔试/考试' }]
+                      : []),
+                  ],
                   `报名截止提醒_${icsUid}.ics`,
                 )
               }
             >
               <CalendarPlus className="h-4 w-4" />
-              加入日历提醒（{deadline.getMonth() + 1}/{deadline.getDate()} 截止）
+              加入日历提醒（{deadline.getMonth() + 1}/{deadline.getDate()} 截止
+              {examDate ? `，${examDate.getMonth() + 1}/${examDate.getDate()} 考试` : ''}）
             </button>
           </div>
         )}

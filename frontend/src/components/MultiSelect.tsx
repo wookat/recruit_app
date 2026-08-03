@@ -98,6 +98,8 @@ export function MultiSelect({
               <span className="truncate">
                 {selected.length === 0
                   ? triggerLabel || '全部'
+                  : selected.length <= 2
+                  ? selected.join('、')
                   : triggerLabel
                   ? `${triggerLabel} · ${selected.length}`
                   : `已选 ${selected.length} 项`}

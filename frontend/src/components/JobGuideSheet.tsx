@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Highlight } from '@/components/Highlight'
 import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/EmptyState'
-import { FreshnessNote } from '@/components/FreshnessNote'
+import { FreshnessNote, SourceFreshness } from '@/components/FreshnessNote'
 import { InstallAppEntry } from '@/components/InstallAppEntry'
 import {
   Sheet,
@@ -760,14 +760,17 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
           ) : (
           <div className="space-y-4 pb-6">
             {active === 'about' && (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border bg-muted/40 px-3 py-2">
-                {(['positions', 'campus', 'bianzhi'] as const).map((b) => (
-                  <span key={b} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    {{ positions: '体制内', campus: '校招', bianzhi: '编制' }[b]}：
-                    <FreshnessNote board={b} showTotal />
-                  </span>
-                ))}
-              </div>
+              <>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border bg-muted/40 px-3 py-2">
+                  {(['positions', 'campus', 'bianzhi'] as const).map((b) => (
+                    <span key={b} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      {{ positions: '体制内', campus: '校招', bianzhi: '编制' }[b]}：
+                      <FreshnessNote board={b} showTotal />
+                    </span>
+                  ))}
+                </div>
+                <SourceFreshness />
+              </>
             )}
             {active === 'faq' && <InstallAppEntry />}
             {active === 'timeline' ? (

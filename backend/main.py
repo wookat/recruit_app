@@ -1,5 +1,6 @@
 import io
 import logging
+import re
 import os
 import threading
 from urllib.parse import quote
@@ -143,10 +144,19 @@ def data_freshness(db: Session = Depends(get_db)):
         except Exception:  # noqa: BLE001  计数失败时前端显示「—」
             db.rollback()
             counts[grp] = None
-    return {
+    src_rows = db.execute(text("""
+        SELECT ws.name, max(cr.finished_at) AS last_success
+        FROM crawl_runs cr
+        JOIN watch_sources ws ON ws.id = cr.source_id
+        WHERE cr.status = 'success' AND cr.finished_at IS NOT NULL
+        GROUP BY ws.name
+    """)).all()
+    out = {
         k: {"last_success": by_grp.get(k), "total": counts.get(k)}
         for k in ("positions", "campus", "bianzhi")
     }
+    out["sources"] = {r.name: r.last_success.isoformat() for r in src_rows}
+    return out
 
 
 RECENT_BULK_THRESHOLD = 2000  # 单日入库超过该值视为全量同步导入，不逐条展示
@@ -620,6 +630,32 @@ def export_download(task_id: str):
 
 FEEDBACK_BOARDS = {"positions", "campus", "bianzhi"}
 FEEDBACK_ISSUE_TYPES = {"link_broken", "wrong_info", "expired", "other"}
+
+
+PV_BOARD_RE = re.compile(r"^[a-z][a-z0-9_-]{0,29}$")
+
+
+@app.post("/api/metrics/pv")
+def report_pv(request: Request, body: schemas.PvIn, db: Session = Depends(get_db)):
+    """自建轻量访问统计：日聚合 PV + 独立会话估算（无 cookie，IP 不落库）。"""
+    _rate_limit(request, "pv", limit=60, window=60)
+    board = (body.board or "").strip()
+    if not PV_BOARD_RE.match(board):
+        raise HTTPException(status_code=422, detail="board 无效")
+    page = (body.page or "").strip()[:50]
+    db.execute(text("""
+        INSERT INTO metrics_pv_daily (day, board, page, pv)
+        VALUES (CURRENT_DATE, :b, :p, 1)
+        ON CONFLICT (day, board, page) DO UPDATE SET pv = metrics_pv_daily.pv + 1
+    """), {"b": board, "p": page})
+    sid = (body.sid or "").strip()[:40]
+    if sid:
+        db.execute(text("""
+            INSERT INTO metrics_sessions_daily (day, sid)
+            VALUES (CURRENT_DATE, :s) ON CONFLICT (day, sid) DO NOTHING
+        """), {"s": sid})
+    db.commit()
+    return {"ok": True}
 
 
 @app.post("/api/feedback")

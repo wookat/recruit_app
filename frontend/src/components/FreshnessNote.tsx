@@ -49,3 +49,37 @@ export function FreshnessNote({
   if (!text) return null
   return <span className="whitespace-nowrap text-xs text-muted-foreground">{text}</span>
 }
+
+const SOURCE_LABELS: Record<string, string> = {
+  feishu_campus: '校招飞书表',
+  feishu_bianzhi: '编制飞书表',
+}
+
+/** 数据说明用：各采集源最近一次成功同步时间（取不到不渲染，不伪造）。 */
+export function SourceFreshness() {
+  const [sources, setSources] = useState<Record<string, string> | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchFreshness()
+      .then((f) => {
+        if (!cancelled && f.sources && Object.keys(f.sources).length > 0) setSources(f.sources)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (!sources) return null
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border bg-muted/40 px-3 py-2">
+      <span className="text-xs font-medium text-foreground/70">各源最近成功同步</span>
+      {Object.entries(sources).map(([name, iso]) => (
+        <span key={name} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          {SOURCE_LABELS[name] || name}：{iso.slice(0, 16).replace('T', ' ')}
+        </span>
+      ))}
+    </div>
+  )
+}

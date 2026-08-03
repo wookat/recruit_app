@@ -374,8 +374,51 @@ def health_summary(db: Session = Depends(get_db)):
         """)).all()
     ]
 
+    # 近 14 天访问趋势（自建 PV 统计，表可能尚未建，出错忽略）
+    visits = []
+    try:
+        visits = [
+            {"date": str(row.d), "pv": int(row.pv), "sessions": int(row.sessions)}
+            for row in db.execute(text("""
+                SELECT p.day AS d, sum(p.pv) AS pv,
+                       coalesce((SELECT count(*) FROM metrics_sessions_daily s WHERE s.day = p.day), 0) AS sessions
+                FROM metrics_pv_daily p
+                WHERE p.day >= CURRENT_DATE - interval '13 days'
+                GROUP BY 1 ORDER BY 1
+            """)).all()
+        ]
+    except Exception:  # noqa: BLE001
+        db.rollback()
+
+    # 飞书源失效嫌疑：连续 2 天同步 0 新增且历史平均 >0
+    stale_sources = []
+    try:
+        for row in db.execute(text("""
+            SELECT ws.name,
+                   count(*) FILTER (WHERE cr.started_at >= CURRENT_DATE - 1) AS recent_runs,
+                   coalesce(sum(cr.rows_ingested) FILTER (WHERE cr.started_at >= CURRENT_DATE - 1), 0) AS recent_added,
+                   avg(cr.rows_ingested) FILTER (WHERE cr.started_at < CURRENT_DATE - 1) AS hist_avg,
+                   max(cr.finished_at) FILTER (WHERE cr.rows_ingested > 0) AS last_ingest_at,
+                   max(cr.finished_at) FILTER (WHERE cr.status = 'success') AS last_success_at
+            FROM crawl_runs cr
+            JOIN watch_sources ws ON ws.id = cr.source_id
+            WHERE ws.category = '飞书表格'
+            GROUP BY ws.name
+        """)).all():
+            if row.recent_runs >= 2 and row.recent_added == 0 and (row.hist_avg or 0) > 0:
+                stale_sources.append({
+                    "name": row.name,
+                    "last_success_at": row.last_success_at.isoformat() if row.last_success_at else None,
+                    "last_ingest_at": row.last_ingest_at.isoformat() if row.last_ingest_at else None,
+                    "hist_avg_added": round(float(row.hist_avg), 1),
+                })
+    except Exception:  # noqa: BLE001
+        db.rollback()
+
     return {
         "trend": trend,
+        "visits": visits,
+        "stale_sources": stale_sources,
         "crawl_24h": {
             "success": success,
             "failed": failed,

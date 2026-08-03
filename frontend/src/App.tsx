@@ -29,6 +29,7 @@ import {
 } from '@/lib/savedNews'
 import { SubscriptionsSheet } from '@/components/SubscriptionsSheet'
 import { lazyRetry } from '@/lib/lazyRetry'
+import { reportPv } from '@/lib/metrics'
 
 const JobGuideSheet = lazy(() =>
   lazyRetry(() => import('@/components/JobGuideSheet').then((m) => ({ default: m.JobGuideSheet }))),
@@ -234,6 +235,10 @@ export default function App() {
     syncSectionUrl(section)
     applySeo(section.mode, section.preset)
   }, [section])
+
+  useEffect(() => {
+    reportPv(tab === 'admin' ? 'admin' : section.mode)
+  }, [tab, section.mode])
 
   useEffect(() => {
     const h = window.location.hash.slice(1)

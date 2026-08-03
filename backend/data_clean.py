@@ -40,3 +40,30 @@ def clean_major_requirement(v: str) -> str:
     if _MAJOR_PLACEHOLDER_RE.search(s):
         return ""
     return _MAJOR_TAIL_RE.sub("", s).strip()
+
+
+# 校招岗位文本尾部第三方声明（如「；本信息由 | www.offerleida.com | 整理发布，其他渠道均为盗版」
+# 「版权声明：本信息由…整理发布，其他渠道均为盗版搬运；」等变体，一律从声明起截断到句尾）
+POSITIONS_ATTRIBUTION_PATTERN = r"[；;，,]*\s*(?:版权声明[:：])?\s*本?信息(?:由|来自).*offerleida\.com.*$"
+_POSITIONS_ATTRIBUTION_RE = re.compile(POSITIONS_ATTRIBUTION_PATTERN, re.IGNORECASE)
+
+
+def clean_positions(v: str) -> str:
+    """校招 positions 清洗：剥离尾部第三方来源声明，只留岗位本体。"""
+    s = (v or "").strip()
+    if not s:
+        return s
+    return _POSITIONS_ATTRIBUTION_RE.sub("", s).strip()
+
+
+# 第三方聚合站公告链接（offerleida 详情页）：有官方投递链接时不保留，保证信息链唯一
+THIRD_PARTY_ANNOUNCE_PATTERN = r"^https?://(?:www\.)?offerleida\.com(?:/|$)"
+_THIRD_PARTY_ANNOUNCE_RE = re.compile(THIRD_PARTY_ANNOUNCE_PATTERN, re.IGNORECASE)
+
+
+def clean_announce_url(announce_url: str, apply_url: str) -> str:
+    """校招 announce_url 清洗：第三方聚合站详情页且已有投递链接时置空。"""
+    a = (announce_url or "").strip()
+    if a and (apply_url or "").strip() and _THIRD_PARTY_ANNOUNCE_RE.match(a):
+        return ""
+    return a

@@ -26,7 +26,7 @@ from sqlalchemy import text
 from database import Base, SessionLocal, engine
 from models import BianzhiJob, CampusJob, CrawlRun, WatchSource
 import import_bianzhi
-from data_clean import clean_major_requirement, is_bianzhi_junk_row
+from data_clean import clean_announce_url, clean_major_requirement, clean_positions, is_bianzhi_junk_row
 import import_campus
 
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
@@ -286,6 +286,7 @@ CAMPUS_LIMITS = {"company": 300, "company_type": 50, "industry": 200, "batch": 1
 
 def _refresh_campus(client: FeishuShareClient, db, dry_run: bool) -> dict:
     existing = {h for (h,) in db.execute(text("SELECT content_hash FROM campus_jobs"))}
+    existing_cross = import_campus.existing_cross_hashes(db)
     counts = {"fetched": 0, "added": 0, "skipped": 0, "failed": 0, "tables": {}}
     matched = [(tbl, spec) for tbl in client.list_tables()
                if (spec := _match_spec(tbl["name"], import_campus.TABLE_SPECS))]
@@ -300,11 +301,17 @@ def _refresh_campus(client: FeishuShareClient, db, dry_run: bool) -> dict:
                 continue
             if "major_requirement" in d:
                 d["major_requirement"] = clean_major_requirement(d["major_requirement"])
+            if "positions" in d:
+                d["positions"] = clean_positions(d["positions"])
+            if "announce_url" in d:
+                d["announce_url"] = clean_announce_url(d["announce_url"], d.get("apply_url", ""))
             h = import_campus.row_hash(source_table, d)
-            if h in existing:
+            xhs = import_campus.cross_hashes_of(d)
+            if h in existing or (xhs & existing_cross):
                 skipped += 1
                 continue
             existing.add(h)
+            existing_cross |= xhs
             added += 1
             if dry_run:
                 continue
@@ -364,6 +371,7 @@ def _refresh_bianzhi(client: FeishuShareClient, db, dry_run: bool) -> dict:
         counts["tables"][tbl["name"]] = {"fetched": len(rows), "added": added, "skipped": skipped}
     if campus_extra:
         campus_existing = {h for (h,) in db.execute(text("SELECT content_hash FROM campus_jobs"))}
+        campus_existing_cross = import_campus.existing_cross_hashes(db)
         for tbl, (source_table, colmap) in campus_extra:
             added = skipped = 0
             rows = _extract_rows(client, tbl["id"], payloads[tbl["id"]], colmap)
@@ -374,11 +382,17 @@ def _refresh_bianzhi(client: FeishuShareClient, db, dry_run: bool) -> dict:
                     continue
                 if "major_requirement" in d:
                     d["major_requirement"] = clean_major_requirement(d["major_requirement"])
+                if "positions" in d:
+                    d["positions"] = clean_positions(d["positions"])
+                if "announce_url" in d:
+                    d["announce_url"] = clean_announce_url(d["announce_url"], d.get("apply_url", ""))
                 h = import_campus.row_hash(source_table, d)
-                if h in campus_existing:
+                xhs = import_campus.cross_hashes_of(d)
+                if h in campus_existing or (xhs & campus_existing_cross):
                     skipped += 1
                     continue
                 campus_existing.add(h)
+                campus_existing_cross |= xhs
                 added += 1
                 if dry_run:
                     continue

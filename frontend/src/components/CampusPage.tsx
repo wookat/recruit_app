@@ -234,8 +234,12 @@ export function CampusPage({
   const [preset, setPreset] = useState(
     initialPreset === 'recent7' ? 'all' : initialPreset ?? 'all',
   )
-  const [keyword, setKeyword] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
-  const [searchInput, setSearchInput] = useState(initialKeyword ?? urlQuery.get('bkw') ?? '')
+  const [keyword, setKeyword] = useState(
+    initialKeyword ?? urlQuery.get('bkw') ?? urlQuery.get('kw') ?? '',
+  )
+  const [searchInput, setSearchInput] = useState(
+    initialKeyword ?? urlQuery.get('bkw') ?? urlQuery.get('kw') ?? '',
+  )
   const [crossTotal, setCrossTotal] = useState(0)
   const [synOff, setSynOff] = useState(false)
   const [companyTypes, setCompanyTypes] = useState<string[]>(() => {
@@ -365,6 +369,7 @@ export function CampusPage({
     else q.delete('ctype')
     if (keyword.trim()) q.set('bkw', keyword.trim())
     else q.delete('bkw')
+    q.delete('kw')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('campus', urlPreset)
   }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, city, companyTypes, keyword])
@@ -1368,7 +1373,7 @@ export function CampusPage({
                   </span>
                 )}
                 {job.deadline_text && (
-                  <span className="text-muted-foreground">截止：{job.deadline_text}</span>
+                  <span className="text-muted-foreground">截止：{normalizeDateStr(job.deadline_text)}</span>
                 )}
                 <DueBadge date={job.deadline_date} />
               </div>
@@ -1522,7 +1527,7 @@ export function CampusPage({
                   items: relatedJobs.map((j) => ({
                     key: String(j.id),
                     label: j.positions || j.batch || j.company || '-',
-                    sub: [j.locations, j.deadline_text ? `截止：${j.deadline_text}` : null]
+                    sub: [j.locations, j.deadline_text ? `截止：${normalizeDateStr(j.deadline_text)}` : null]
                       .filter(Boolean)
                       .join(' · '),
                   })),
@@ -1540,7 +1545,7 @@ export function CampusPage({
                   items: similarJobs.map((j) => ({
                     key: String(j.id),
                     label: [j.company, j.positions].filter(Boolean).join(' · ') || '-',
-                    sub: [j.locations, j.deadline_text ? `截止：${j.deadline_text}` : null]
+                    sub: [j.locations, j.deadline_text ? `截止：${normalizeDateStr(j.deadline_text)}` : null]
                       .filter(Boolean)
                       .join(' · '),
                   })),

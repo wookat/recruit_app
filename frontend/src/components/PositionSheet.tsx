@@ -7,9 +7,10 @@ import { addViewHistory } from '@/lib/viewHistory'
 import { derivePositionTags } from '@/lib/jobTags'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { PrepResources } from './PrepResources'
+import { ExtLinkAnchor } from './ExtLinkAnchor'
 import { CompetitionRef } from './CompetitionRef'
 import { SheetDragHandle } from './SheetDragHandle'
-import { Building2, ExternalLink, Filter, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles } from 'lucide-react'
+import { Building2, Filter, GraduationCap, CalendarClock, ChevronLeft, ChevronRight, Info, AlertTriangle, MapPin, Link2, Check, Sparkles } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -413,15 +414,7 @@ export function PositionSheet({
                   {safeUrl(item.source_url) && (
                     <div>
                       <div className="text-xs font-medium text-muted-foreground">信息来源</div>
-                      <a
-                        href={safeUrl(item.source_url)!}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-1 inline-flex items-center break-all text-sm text-primary hover:underline"
-                      >
-                        {item.source_url}
-                        <ExternalLink className="ml-1 h-3 w-3 shrink-0" />
-                      </a>
+                      <ExtLinkAnchor url={safeUrl(item.source_url)!} />
                     </div>
                   )}
                 </Section>

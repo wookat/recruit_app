@@ -1,0 +1,257 @@
+import { useEffect, useState } from 'react'
+import { ArrowRight, Briefcase, GraduationCap, Landmark, Search, SearchX } from 'lucide-react'
+import {
+  fetchBianzhiJobs,
+  fetchCampusJobs,
+  fetchPositions,
+  formatTotal,
+  type BianzhiJob,
+  type CampusJob,
+  type Position,
+} from '@/api'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Highlight } from '@/components/Highlight'
+import { HotSearchPills } from '@/components/HotSearchPills'
+import { stripOrgPrefix } from '@/lib/orgPrefix'
+import { expandKeyword } from '@/lib/synonyms'
+import type { SearchBoard } from '@/components/GlobalSearch'
+
+const SHOW = 10
+
+interface Hits {
+  positions: { total: number; capped: boolean; items: Position[] }
+  campus: { total: number; capped: boolean; items: CampusJob[] }
+  bianzhi: { total: number; capped: boolean; items: BianzhiJob[] }
+}
+
+interface Props {
+  keyword: string
+  onSearch: (keyword: string) => void
+  onOpenBoard: (board: SearchBoard, keyword: string) => void
+  onOpenJob: (board: SearchBoard, id: number, keyword: string) => void
+}
+
+interface RowItem {
+  key: string
+  title: string
+  sub: string
+}
+
+function SectionBlock({
+  icon: Icon,
+  title,
+  total,
+  capped,
+  boardLabel,
+  items,
+  keyword,
+  onMore,
+  onItem,
+}: {
+  icon: typeof Landmark
+  title: string
+  total: number
+  capped: boolean
+  boardLabel: string
+  items: RowItem[]
+  keyword: string
+  onMore: () => void
+  onItem: (key: string) => void
+}) {
+  if (total === 0) return null
+  return (
+    <section className="rounded-xl border bg-background p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Icon className="h-4 w-4 text-primary" />
+        <h2 className="text-sm font-semibold">{title}</h2>
+        <span className="text-xs text-muted-foreground">{formatTotal(total, capped)} 条命中</span>
+      </div>
+      <ul className="divide-y">
+        {items.map((it) => (
+          <li key={it.key}>
+            <button
+              type="button"
+              className="flex w-full min-h-11 cursor-pointer flex-col items-start gap-0.5 py-2 text-left transition-colors hover:bg-muted/50"
+              onClick={() => onItem(it.key)}
+            >
+              <span className="line-clamp-1 text-sm">
+                <Highlight text={it.title} query={keyword} />
+              </span>
+              {it.sub && (
+                <span className="line-clamp-1 text-xs text-muted-foreground">
+                  <Highlight text={it.sub} query={keyword} />
+                </span>
+              )}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {total > items.length && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-2 h-auto min-h-11 w-full gap-1.5 text-xs sm:min-h-8"
+          onClick={onMore}
+        >
+          查看全部 {formatTotal(total, capped)} 条{boardLabel}结果
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </section>
+  )
+}
+
+/** 聚合搜索结果视图（?board=search&q=）：三板块命中分节展示，URL 可分享。 */
+export function SearchResultsPage({ keyword, onSearch, onOpenBoard, onOpenJob }: Props) {
+  const [hits, setHits] = useState<Hits | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [input, setInput] = useState(keyword)
+
+  useEffect(() => {
+    const kw = keyword.trim()
+    if (!kw) {
+      setHits(null)
+      setLoading(false)
+      return
+    }
+    const sendKw = expandKeyword(kw).expanded
+    let cancelled = false
+    setLoading(true)
+    Promise.allSettled([
+      fetchPositions({ keyword: sendKw, page: 1, page_size: SHOW }),
+      fetchCampusJobs({ keyword: sendKw, page: 1, page_size: SHOW }),
+      fetchBianzhiJobs({ keyword: sendKw, page: 1, page_size: SHOW }),
+    ]).then(([p, c, b]) => {
+      if (cancelled) return
+      setHits({
+        positions:
+          p.status === 'fulfilled'
+            ? { total: p.value.total, capped: !!p.value.total_capped, items: p.value.items }
+            : { total: 0, capped: false, items: [] },
+        campus:
+          c.status === 'fulfilled'
+            ? { total: c.value.total, capped: !!c.value.total_capped, items: c.value.items }
+            : { total: 0, capped: false, items: [] },
+        bianzhi:
+          b.status === 'fulfilled'
+            ? { total: b.value.total, capped: !!b.value.total_capped, items: b.value.items }
+            : { total: 0, capped: false, items: [] },
+      })
+      setLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [keyword])
+
+  const kw = keyword.trim()
+  const grandTotal = hits ? hits.positions.total + hits.campus.total + hits.bianzhi.total : 0
+  const anyCapped = !!hits && (hits.positions.capped || hits.campus.capped || hits.bianzhi.capped)
+
+  const submit = () => {
+    const next = input.trim()
+    if (next && next !== kw) onSearch(next)
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-lg font-bold">「{kw}」的搜索结果</h1>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {loading
+            ? '正在搜索三个板块…'
+            : `三板块共命中 ${anyCapped ? `${grandTotal.toLocaleString()}+` : grandTotal.toLocaleString()} 条 · 链接可直接分享`}
+        </p>
+      </div>
+      <div className="relative max-w-md">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="search"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submit()
+          }}
+          placeholder="换个关键词再搜…"
+          aria-label="聚合搜索关键词"
+          className="h-11 w-full rounded-lg border bg-background pl-9 pr-16 text-sm outline-none focus:ring-2 focus:ring-primary/40 sm:h-9"
+        />
+        <Button
+          size="sm"
+          className="absolute right-1 top-1/2 h-9 -translate-y-1/2 px-3 text-xs sm:h-7"
+          disabled={!input.trim() || input.trim() === kw}
+          onClick={submit}
+        >
+          搜索
+        </Button>
+      </div>
+      {loading && (
+        <div className="space-y-4">
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+        </div>
+      )}
+      {!loading && hits && grandTotal === 0 && (
+        <div className="rounded-xl border bg-background px-4 py-10 text-center text-sm text-muted-foreground">
+          <SearchX className="mx-auto mb-2 h-8 w-8 opacity-50" />
+          三个板块均无「{kw}」的相关结果
+          <span className="mt-1 block text-xs">建议：换更短的关键词（如只搜单位名或岗位名），或试试同义词</span>
+          <div className="mt-4">
+            <HotSearchPills onPick={(w) => onSearch(w)} />
+          </div>
+        </div>
+      )}
+      {!loading && hits && (
+        <>
+          <SectionBlock
+            icon={Landmark}
+            title="体制内岗位"
+            boardLabel="体制内"
+            total={hits.positions.total}
+            capped={hits.positions.capped}
+            keyword={kw}
+            items={hits.positions.items.map((p) => ({
+              key: String(p.id),
+              title: p.position_example ? stripOrgPrefix(p.position_example, p.employer) : p.exam_type || '-',
+              sub: [p.employer, p.work_location].filter(Boolean).join(' · '),
+            }))}
+            onMore={() => onOpenBoard('positions', kw)}
+            onItem={(key) => onOpenJob('positions', Number(key), kw)}
+          />
+          <SectionBlock
+            icon={GraduationCap}
+            title="校招信息"
+            boardLabel="校招"
+            total={hits.campus.total}
+            capped={hits.campus.capped}
+            keyword={kw}
+            items={hits.campus.items.map((j) => ({
+              key: String(j.id),
+              title: j.company || '-',
+              sub: [j.positions, j.locations].filter(Boolean).join(' · '),
+            }))}
+            onMore={() => onOpenBoard('campus', kw)}
+            onItem={(key) => onOpenJob('campus', Number(key), kw)}
+          />
+          <SectionBlock
+            icon={Briefcase}
+            title="编制公告"
+            boardLabel="编制"
+            total={hits.bianzhi.total}
+            capped={hits.bianzhi.capped}
+            keyword={kw}
+            items={hits.bianzhi.items.map((j) => ({
+              key: String(j.id),
+              title: j.employer || j.job_type || '-',
+              sub: [j.category, j.province, j.job_type].filter(Boolean).join(' · '),
+            }))}
+            onMore={() => onOpenBoard('bianzhi', kw)}
+            onItem={(key) => onOpenJob('bianzhi', Number(key), kw)}
+          />
+        </>
+      )}
+    </div>
+  )
+}

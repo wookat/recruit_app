@@ -713,7 +713,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
               {j.positions && <span className="line-clamp-1">{j.positions}</span>}
             </div>
             <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-              {j.deadline_text && <span>截止：{j.deadline_text}</span>}
+              {j.deadline_text && <span>截止：{normalizeDateStr(j.deadline_text)}</span>}
               {j.apply_url && j.apply_url.startsWith('http') && (
                 <a
                   href={j.apply_url}
@@ -786,7 +786,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   {j.province}
                 </span>
               )}
-              {j.deadline_text && <span>截止：{j.deadline_text}</span>}
+              {j.deadline_text && <span>截止：{normalizeDateStr(j.deadline_text)}</span>}
               {j.announce_url && j.announce_url.startsWith('http') && (
                 <a
                   href={j.announce_url}

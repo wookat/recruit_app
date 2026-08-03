@@ -26,7 +26,7 @@ from sqlalchemy import text
 from database import Base, SessionLocal, engine
 from models import BianzhiJob, CampusJob, CrawlRun, WatchSource
 import import_bianzhi
-from data_clean import clean_major_requirement, clean_positions, is_bianzhi_junk_row
+from data_clean import clean_announce_url, clean_major_requirement, clean_positions, is_bianzhi_junk_row
 import import_campus
 
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
@@ -303,13 +303,15 @@ def _refresh_campus(client: FeishuShareClient, db, dry_run: bool) -> dict:
                 d["major_requirement"] = clean_major_requirement(d["major_requirement"])
             if "positions" in d:
                 d["positions"] = clean_positions(d["positions"])
+            if "announce_url" in d:
+                d["announce_url"] = clean_announce_url(d["announce_url"], d.get("apply_url", ""))
             h = import_campus.row_hash(source_table, d)
-            xh = import_campus.cross_hash_of(d)
-            if h in existing or xh in existing_cross:
+            xhs = import_campus.cross_hashes_of(d)
+            if h in existing or (xhs & existing_cross):
                 skipped += 1
                 continue
             existing.add(h)
-            existing_cross.add(xh)
+            existing_cross |= xhs
             added += 1
             if dry_run:
                 continue
@@ -382,13 +384,15 @@ def _refresh_bianzhi(client: FeishuShareClient, db, dry_run: bool) -> dict:
                     d["major_requirement"] = clean_major_requirement(d["major_requirement"])
                 if "positions" in d:
                     d["positions"] = clean_positions(d["positions"])
+                if "announce_url" in d:
+                    d["announce_url"] = clean_announce_url(d["announce_url"], d.get("apply_url", ""))
                 h = import_campus.row_hash(source_table, d)
-                xh = import_campus.cross_hash_of(d)
-                if h in campus_existing or xh in campus_existing_cross:
+                xhs = import_campus.cross_hashes_of(d)
+                if h in campus_existing or (xhs & campus_existing_cross):
                     skipped += 1
                     continue
                 campus_existing.add(h)
-                campus_existing_cross.add(xh)
+                campus_existing_cross |= xhs
                 added += 1
                 if dry_run:
                     continue

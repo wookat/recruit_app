@@ -11,7 +11,7 @@ import sys
 
 from sqlalchemy import text
 
-from data_clean import clean_major_requirement, clean_positions
+from data_clean import clean_announce_url, clean_major_requirement, clean_positions
 from database import Base, SessionLocal, engine
 from models import CampusJob
 
@@ -102,16 +102,41 @@ def cross_hash(company: str, positions: str, batch: str, grad_years: str,
     return hashlib.md5(key.encode("utf-8")).hexdigest()
 
 
-def cross_hash_of(d: dict) -> str:
-    return cross_hash(d.get("company", ""), d.get("positions", ""), d.get("batch", ""),
-                      d.get("grad_years", ""), d.get("apply_url", ""), d.get("announce_url", ""))
+_HOST_RE = re.compile(r"^(?:https?://|mailto:)([^/?#]+)", re.IGNORECASE)
+
+
+def _url_host(v: str) -> str:
+    m = _HOST_RE.match(_norm_url(v))
+    return m.group(1).lower() if m else ""
+
+
+def loose_hash(company: str, positions: str, batch: str, grad_years: str, apply_url: str) -> str:
+    """宽松去重键：同公司+岗位+批次+届次+同投递域名视为同一条（公告链接来源差异不计）。"""
+    key = "|".join([
+        _SQUASH_RE.sub("", company or ""),
+        _SQUASH_RE.sub("", clean_positions(positions)),
+        _SQUASH_RE.sub("", batch or ""),
+        _SQUASH_RE.sub("", _norm_grad(grad_years)),
+        _url_host(apply_url),
+    ])
+    return hashlib.md5(key.encode("utf-8")).hexdigest()
+
+
+def cross_hashes_of(d: dict) -> set[str]:
+    args = (d.get("company", ""), d.get("positions", ""), d.get("batch", ""),
+            d.get("grad_years", ""), d.get("apply_url", ""))
+    return {cross_hash(*args, d.get("announce_url", "")), loose_hash(*args)}
 
 
 def existing_cross_hashes(db) -> set[str]:
     rows = db.execute(text(
         "SELECT company, positions, batch, grad_years, apply_url, announce_url FROM campus_jobs"
     ))
-    return {cross_hash(*r) for r in rows}
+    out: set[str] = set()
+    for r in rows:
+        out.add(cross_hash(*r))
+        out.add(loose_hash(*r[:5]))
+    return out
 
 
 def import_file(db, path: str, source_table: str, colmap: dict) -> tuple[int, int]:
@@ -128,13 +153,15 @@ def import_file(db, path: str, source_table: str, colmap: dict) -> tuple[int, in
                 d["major_requirement"] = clean_major_requirement(d["major_requirement"])
             if "positions" in d:
                 d["positions"] = clean_positions(d["positions"])
+            if "announce_url" in d:
+                d["announce_url"] = clean_announce_url(d["announce_url"], d.get("apply_url", ""))
             h = row_hash(source_table, d)
-            xh = cross_hash_of(d)
-            if h in existing or xh in existing_cross:
+            xhs = cross_hashes_of(d)
+            if h in existing or (xhs & existing_cross):
                 skipped += 1
                 continue
             existing.add(h)
-            existing_cross.add(xh)
+            existing_cross |= xhs
             # 截断超长字段避免插入失败
             limits = {"company": 300, "company_type": 50, "industry": 200, "batch": 100,
                       "grad_years": 100, "no_exam": 50, "edu_requirement": 200,

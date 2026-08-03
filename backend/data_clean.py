@@ -54,3 +54,16 @@ def clean_positions(v: str) -> str:
     if not s:
         return s
     return _POSITIONS_ATTRIBUTION_RE.sub("", s).strip()
+
+
+# 第三方聚合站公告链接（offerleida 详情页）：有官方投递链接时不保留，保证信息链唯一
+THIRD_PARTY_ANNOUNCE_PATTERN = r"^https?://(?:www\.)?offerleida\.com(?:/|$)"
+_THIRD_PARTY_ANNOUNCE_RE = re.compile(THIRD_PARTY_ANNOUNCE_PATTERN, re.IGNORECASE)
+
+
+def clean_announce_url(announce_url: str, apply_url: str) -> str:
+    """校招 announce_url 清洗：第三方聚合站详情页且已有投递链接时置空。"""
+    a = (announce_url or "").strip()
+    if a and (apply_url or "").strip() and _THIRD_PARTY_ANNOUNCE_RE.match(a):
+        return ""
+    return a

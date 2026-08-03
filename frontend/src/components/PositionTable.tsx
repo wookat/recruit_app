@@ -49,13 +49,19 @@ import { Highlight } from '@/components/Highlight'
 import { ShareTextButton, buildShareText } from '@/components/ShareTextButton'
 import { jobShareUrl } from '@/lib/clipboard'
 import { SortableHead } from '@/components/SortableHead'
+import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
 
 const columns: ColumnDef<Position>[] = [
   { accessorKey: 'year', header: '年份', size: 70 },
-  { accessorKey: 'job_type', header: '工作类型', size: 100 },
-  { accessorKey: 'exam_type', header: '考试/招聘类型', size: 200 },
+  { accessorKey: 'job_type', header: '岗位类型', size: 100 },
+  {
+    id: 'exam_type',
+    accessorFn: (row) => row.exam_type_norm || row.exam_type,
+    header: '考试/招聘类型',
+    size: 160,
+  },
   { accessorKey: 'employer', header: '用人单位/系统', size: 220 },
   { accessorKey: 'position_example', header: '岗位示例', size: 260 },
   {
@@ -289,10 +295,12 @@ export const PositionTable = memo(function PositionTable({
                           <>
                             <Highlight
                               text={truncate(
-                                String(
-                                  cell.getValue() ||
-                                    (cell.column.id === 'employer' ? '—' : '-'),
-                                ),
+                                cell.column.id === 'position_example'
+                                  ? stripOrgPrefix(
+                                      String(cell.getValue() || '-'),
+                                      row.original.employer,
+                                    )
+                                  : String(cell.getValue() || '—'),
                               )}
                               query={highlight}
                             />

@@ -160,7 +160,7 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
                           text={
                             item.position_example
                               ? stripOrgPrefix(item.position_example, item.employer)
-                              : item.exam_type || '-'
+                              : item.exam_type_norm || item.exam_type || '-'
                           }
                           query={params.keyword}
                         />

@@ -337,8 +337,8 @@ export function BoardJobSheet({
                         <div className="text-xs font-medium text-muted-foreground">{l.label}</div>
                         <ExtLinkAnchor url={safeUrl(l.url)!} />
                         {l.url && deadUrls[l.url] && (
-                          <p className="mt-1 flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                            <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden="true" />
+                          <p className="mt-1 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-400">
+                            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
                             检测到该链接可能已失效，建议前往公司官方招聘渠道核实
                           </p>
                         )}

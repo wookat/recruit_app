@@ -1061,7 +1061,7 @@ export function BianzhiPage({
                 {isLiankao ? (
                   <>
                     {job.signup_start && (
-                      <span className="text-muted-foreground">报名：{job.signup_start}</span>
+                      <span className="text-muted-foreground">报名：{normalizeDateStr(job.signup_start)}</span>
                     )}
                     {job.exam_time && (
                       <span className="text-muted-foreground">考试：{job.exam_time}</span>
@@ -1069,7 +1069,7 @@ export function BianzhiPage({
                   </>
                 ) : (
                   job.deadline_text && (
-                    <span className="text-muted-foreground">截止：{job.deadline_text}</span>
+                    <span className="text-muted-foreground">截止：{normalizeDateStr(job.deadline_text)}</span>
                   )
                 )}
                 {!isLiankao && <DueBadge date={job.deadline_date} />}
@@ -1292,7 +1292,7 @@ export function BianzhiPage({
                   {isLiankao ? (
                     <>
                       <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {job.signup_start || '-'}
+                        {normalizeDateStr(job.signup_start) || '-'}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground">
                         {job.exam_time || '-'}
@@ -1301,11 +1301,10 @@ export function BianzhiPage({
                   ) : (
                     <TableCell className="text-muted-foreground" title={job.deadline_text ?? ''}>
                       <span className="inline-flex items-center gap-1.5">
-                        {job.deadline_text
-                          ? job.deadline_text.length > 14
-                            ? job.deadline_text.slice(0, 14) + '…'
-                            : job.deadline_text
-                          : '-'}
+                        {(() => {
+                          const d = normalizeDateStr(job.deadline_text)
+                          return d ? (d.length > 14 ? d.slice(0, 14) + '…' : d) : '-'
+                        })()}
                         <DueBadge date={job.deadline_date} />
                       </span>
                     </TableCell>
@@ -1417,8 +1416,8 @@ export function BianzhiPage({
             { label: '专业要求', value: detail.major_requirement },
           ]}
           schedule={[
-            { label: '报名开始', value: detail.signup_start },
-            { label: '报名截止', value: detail.deadline_text },
+            { label: '报名开始', value: normalizeDateStr(detail.signup_start) },
+            { label: '报名截止', value: normalizeDateStr(detail.deadline_text) },
             { label: '考试时间', value: detail.exam_time },
             { label: '更新时间', value: detail.updated_at_src },
           ]}
@@ -1433,7 +1432,7 @@ export function BianzhiPage({
                   items: relatedJobs.map((j) => ({
                     key: String(j.id),
                     label: [j.job_type, j.category].filter(Boolean).join(' · ') || j.employer || '-',
-                    sub: [j.work_location || j.province, j.deadline_text ? `截止：${j.deadline_text}` : null]
+                    sub: [j.work_location || j.province, j.deadline_text ? `截止：${normalizeDateStr(j.deadline_text)}` : null]
                       .filter(Boolean)
                       .join(' · '),
                   })),
@@ -1451,7 +1450,7 @@ export function BianzhiPage({
                   items: similarJobs.map((j) => ({
                     key: String(j.id),
                     label: [j.employer, j.job_type].filter(Boolean).join(' · ') || '-',
-                    sub: [j.work_location || j.province, j.deadline_text ? `截止：${j.deadline_text}` : null]
+                    sub: [j.work_location || j.province, j.deadline_text ? `截止：${normalizeDateStr(j.deadline_text)}` : null]
                       .filter(Boolean)
                       .join(' · '),
                   })),

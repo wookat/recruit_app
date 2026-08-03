@@ -716,10 +716,10 @@ export function CalendarPage() {
             { label: '专业要求', value: bianzhiDetail.major_requirement },
           ]}
           schedule={[
-            { label: '报名开始', value: bianzhiDetail.signup_start },
-            { label: '报名截止', value: bianzhiDetail.deadline_text },
+            { label: '报名开始', value: normalizeDateStr(bianzhiDetail.signup_start) },
+            { label: '报名截止', value: normalizeDateStr(bianzhiDetail.deadline_text) },
             { label: '考试时间', value: bianzhiDetail.exam_time },
-            { label: '更新时间', value: bianzhiDetail.updated_at_src },
+            { label: '更新时间', value: normalizeDateStr(bianzhiDetail.updated_at_src) },
           ]}
           links={[
             { label: '公告链接', url: bianzhiDetail.announce_url, checkDead: true },

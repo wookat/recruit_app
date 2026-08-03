@@ -44,6 +44,12 @@ export function formatTotal(total: number, capped?: boolean): string {
   return capped ? '10,000+' : total.toLocaleString()
 }
 
+export interface DistrictNode {
+  province: string
+  city: string
+  districts: string[]
+}
+
 export interface LocationNode {
   province: string
   cities: string[]
@@ -61,6 +67,8 @@ export interface FilterOptions {
   location_tree: LocationNode[]
   hot_locations: string[]
   districts: string[]
+  exam_type_norms?: string[]
+  district_tree?: DistrictNode[]
 }
 
 export interface SearchParams {

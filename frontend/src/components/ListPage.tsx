@@ -789,16 +789,19 @@ export function ListPage({
           <MultiSelect
             label=""
             triggerLabel="岗位类型"
-            options={filters.categories}
-            selected={params.category || []}
-            onChange={(v) => updateParam('category', v)}
+            options={filters.job_types}
+            selected={params.job_type || []}
+            onChange={(v) => updateParam('job_type', v)}
           />
           <MultiSelect
             label=""
             triggerLabel="省份"
             options={filters.provinces}
-            selected={params.province || []}
-            onChange={(v) => updateParam('province', v)}
+            selected={(params.location || []).filter((v) => filters.provinces.includes(v))}
+            onChange={(v) => {
+              const nonProvince = (params.location || []).filter((x) => !filters.provinces.includes(x))
+              updateParam('location', [...new Set([...v, ...nonProvince])])
+            }}
           />
           <MultiSelect
             label=""
@@ -829,29 +832,22 @@ export function ListPage({
             onChange={(v) => updateParam('year', v.map(Number).filter((n) => !isNaN(n)))}
           />
           <MultiSelect
-            label="工作类型"
+            label="岗位类型"
             options={filters.job_types}
             selected={params.job_type || []}
             onChange={(v) => updateParam('job_type', v)}
           />
           <MultiSelect
-            label="目标类型"
-            options={filters.categories}
-            selected={params.category || []}
-            onChange={(v) => updateParam('category', v)}
-          />
-          <MultiSelect
-            label="学历层级"
+            label="学历"
             options={filters.edu_levels}
             selected={params.edu_level || []}
             onChange={(v) => updateParam('edu_level', v)}
           />
-
           <MultiSelect
             label="考试/招聘类型"
-            options={filters.exam_types}
-            selected={params.exam_type || []}
-            onChange={(v) => updateParam('exam_type', v)}
+            options={filters.exam_type_norms || []}
+            selected={params.exam_type_norm || []}
+            onChange={(v) => updateParam('exam_type_norm', v)}
           />
           <div className="sm:col-span-2 lg:col-span-3 xl:col-span-4">
             <LocationFilter
@@ -860,12 +856,6 @@ export function ListPage({
               onChange={(v) => updateParam('location', v)}
             />
           </div>
-          <MultiSelect
-            label="工作地点（精确原文）"
-            options={filters.work_locations}
-            selected={params.work_location || []}
-            onChange={(v) => updateParam('work_location', v)}
-          />
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-muted-foreground">排序</label>
             <Select value={params.sort || 'year_desc'} onValueChange={(v) => updateParam('sort', v || undefined)}>
@@ -873,9 +863,9 @@ export function ListPage({
                 <SelectValue placeholder="排序方式" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="year_desc">年份从新到旧</SelectItem>
+                <SelectItem value="year_desc">最新优先（默认）</SelectItem>
                 <SelectItem value="year_asc">年份从旧到新</SelectItem>
-                <SelectItem value="id_desc">录入时间倒序</SelectItem>
+                <SelectItem value="id_desc">最新收录优先</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -905,7 +895,7 @@ export function ListPage({
   for (const v of params.edu_level || []) activeChips.push({ label: `学历层级：${v}`, onRemove: () => updateParam('edu_level', (params.edu_level || []).filter((x) => x !== v)) })
   for (const v of params.location || []) activeChips.push({ label: `地点：${v}`, onRemove: () => updateParam('location', (params.location || []).filter((x) => x !== v)) })
   for (const v of params.category || []) activeChips.push({ label: `类型：${v}`, onRemove: () => updateParam('category', (params.category || []).filter((x) => x !== v)) })
-  for (const v of params.job_type || []) activeChips.push({ label: `工作类型：${v}`, onRemove: () => updateParam('job_type', (params.job_type || []).filter((x) => x !== v)) })
+  for (const v of params.job_type || []) activeChips.push({ label: `岗位类型：${v}`, onRemove: () => updateParam('job_type', (params.job_type || []).filter((x) => x !== v)) })
   for (const v of params.exam_type || []) activeChips.push({ label: `考试类型：${v}`, onRemove: () => updateParam('exam_type', (params.exam_type || []).filter((x) => x !== v)) })
   for (const v of params.work_location || []) activeChips.push({ label: `精确地点：${v}`, onRemove: () => updateParam('work_location', (params.work_location || []).filter((x) => x !== v)) })
 

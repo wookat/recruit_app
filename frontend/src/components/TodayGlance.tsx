@@ -164,15 +164,21 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
   if (items.length === 0) return null
 
   return (
-    <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5">
-      <span
-        className={cn(
-          'shrink-0 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground',
-        )}
-      >
-        今日速览
-      </span>
-      {items}
+    <div className="relative">
+      <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5">
+        <span
+          className={cn(
+            'shrink-0 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground',
+          )}
+        >
+          今日速览
+        </span>
+        {items}
+      </div>
+      <div
+        className="pointer-events-none absolute inset-y-0 -right-1 w-8 bg-gradient-to-l from-background to-transparent sm:hidden"
+        aria-hidden
+      />
     </div>
   )
 }

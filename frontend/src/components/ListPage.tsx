@@ -233,7 +233,8 @@ export function ListPage({
   const [majorInput, setMajorInput] = useState(() => getProfile().major || '')
   const quickMatchRef = useRef<HTMLInputElement | null>(null)
   const [params, setParams] = useState<SearchParams>(() => {
-    const fromUrl = syncUrl && !new URLSearchParams(window.location.search).get('board')
+    const urlBoard = new URLSearchParams(window.location.search).get('board')
+    const fromUrl = syncUrl && (!urlBoard || urlBoard === 'positions')
     const base = fromUrl
       ? { ...DEFAULT_PARAMS, ...paramsFromQueryString(window.location.search) }
       : { ...DEFAULT_PARAMS }
@@ -261,7 +262,8 @@ export function ListPage({
   useEffect(() => {
     if (!syncUrl) return
     const q = new URLSearchParams(window.location.search)
-    if (q.get('board')) return
+    const b = q.get('board')
+    if (b && b !== 'positions') return
     if (hideSeen) q.set('hseen', '1')
     else q.delete('hseen')
     const qs = q.toString()
@@ -327,7 +329,8 @@ export function ListPage({
   useEffect(() => {
     if (!syncUrl) return
     const cur = new URLSearchParams(window.location.search)
-    if (cur.get('board')) return
+    const curBoard = cur.get('board')
+    if (curBoard && curBoard !== 'positions') return
     const q = new URLSearchParams(paramsToQueryString(params))
     for (const [k, v] of cur) {
       if (!POSITION_URL_KEYS.includes(k)) q.append(k, v)
@@ -1140,7 +1143,7 @@ export function ListPage({
               <Button
                 variant="link"
                 size="sm"
-                className="h-auto min-h-11 p-0 text-xs sm:min-h-0"
+                className="h-auto min-h-11 p-0 text-xs disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0"
                 disabled={activeFilters.length === 0 && !deadlineView}
                 onClick={() => {
                   setSaveName(defaultFilterName)
@@ -1287,6 +1290,7 @@ export function ListPage({
 
       {showStats && !deadlineView && <DeadlinesCard />}
 
+      <div className="relative">
       <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5">
         {PRESET_VIEWS.map((preset) => {
           const active = isPresetActive(preset)
@@ -1345,6 +1349,11 @@ export function ListPage({
             ))}
           </>
         )}
+      </div>
+      <div
+        className="pointer-events-none absolute inset-y-0 -right-1 w-8 bg-gradient-to-l from-background to-transparent sm:hidden"
+        aria-hidden
+      />
       </div>
 
       {showStats && onCrossPreset && (
@@ -1431,7 +1440,7 @@ export function ListPage({
                 <span className="hidden sm:inline">（已达统计上限）</span>
               )}
             </Badge>
-            {data.total_partial && (
+            {data.total_partial && !loading && (
               <button
                 type="button"
                 onClick={() => load()}

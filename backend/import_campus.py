@@ -6,6 +6,7 @@
 import csv
 import hashlib
 import os
+import re
 import sys
 
 from sqlalchemy import text
@@ -66,9 +67,39 @@ def row_hash(source_table: str, d: dict) -> str:
     return hashlib.md5(key.encode("utf-8")).hexdigest()
 
 
+_SQUASH_RE = re.compile(r"[\s|,，、;；/]+")
+
+
+def cross_hash(company: str, positions: str, batch: str, grad_years: str,
+               apply_url: str, announce_url: str) -> str:
+    """跨来源去重键：忽略分隔符/空白差异，同一公司+岗位+批次+届次+链接视为同一条。"""
+    key = "|".join([
+        _SQUASH_RE.sub("", company or ""),
+        _SQUASH_RE.sub("", positions or ""),
+        _SQUASH_RE.sub("", batch or ""),
+        _SQUASH_RE.sub("", grad_years or ""),
+        (apply_url or "").strip(),
+        (announce_url or "").strip(),
+    ])
+    return hashlib.md5(key.encode("utf-8")).hexdigest()
+
+
+def cross_hash_of(d: dict) -> str:
+    return cross_hash(d.get("company", ""), d.get("positions", ""), d.get("batch", ""),
+                      d.get("grad_years", ""), d.get("apply_url", ""), d.get("announce_url", ""))
+
+
+def existing_cross_hashes(db) -> set[str]:
+    rows = db.execute(text(
+        "SELECT company, positions, batch, grad_years, apply_url, announce_url FROM campus_jobs"
+    ))
+    return {cross_hash(*r) for r in rows}
+
+
 def import_file(db, path: str, source_table: str, colmap: dict) -> tuple[int, int]:
     added, skipped = 0, 0
     existing = {h for (h,) in db.execute(text("SELECT content_hash FROM campus_jobs"))}
+    existing_cross = existing_cross_hashes(db)
     with open(path, newline="", encoding="utf-8") as fp:
         for row in csv.DictReader(fp):
             d = {field: norm(row.get(col, "")) for field, col in colmap.items()}
@@ -78,10 +109,12 @@ def import_file(db, path: str, source_table: str, colmap: dict) -> tuple[int, in
             if "major_requirement" in d:
                 d["major_requirement"] = clean_major_requirement(d["major_requirement"])
             h = row_hash(source_table, d)
-            if h in existing:
+            xh = cross_hash_of(d)
+            if h in existing or xh in existing_cross:
                 skipped += 1
                 continue
             existing.add(h)
+            existing_cross.add(xh)
             # 截断超长字段避免插入失败
             limits = {"company": 300, "company_type": 50, "industry": 200, "batch": 100,
                       "grad_years": 100, "no_exam": 50, "edu_requirement": 200,

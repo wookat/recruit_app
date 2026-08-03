@@ -1368,7 +1368,7 @@ export function CampusPage({
                   </span>
                 )}
                 {job.deadline_text && (
-                  <span className="text-muted-foreground">截止：{job.deadline_text}</span>
+                  <span className="text-muted-foreground">截止：{normalizeDateStr(job.deadline_text)}</span>
                 )}
                 <DueBadge date={job.deadline_date} />
               </div>
@@ -1522,7 +1522,7 @@ export function CampusPage({
                   items: relatedJobs.map((j) => ({
                     key: String(j.id),
                     label: j.positions || j.batch || j.company || '-',
-                    sub: [j.locations, j.deadline_text ? `截止：${j.deadline_text}` : null]
+                    sub: [j.locations, j.deadline_text ? `截止：${normalizeDateStr(j.deadline_text)}` : null]
                       .filter(Boolean)
                       .join(' · '),
                   })),
@@ -1540,7 +1540,7 @@ export function CampusPage({
                   items: similarJobs.map((j) => ({
                     key: String(j.id),
                     label: [j.company, j.positions].filter(Boolean).join(' · ') || '-',
-                    sub: [j.locations, j.deadline_text ? `截止：${j.deadline_text}` : null]
+                    sub: [j.locations, j.deadline_text ? `截止：${normalizeDateStr(j.deadline_text)}` : null]
                       .filter(Boolean)
                       .join(' · '),
                   })),

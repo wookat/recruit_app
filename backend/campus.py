@@ -90,6 +90,8 @@ def apply_campus_filters(q, f: dict):
         q = q.filter(or_(CampusJob.no_exam.ilike("%免笔试%"), CampusJob.no_exam == "/"))
     if f.get("referral_only"):
         q = q.filter(CampusJob.referral_code != None, CampusJob.referral_code != "")  # noqa: E711
+    if f.get("edu"):
+        q = q.filter(CampusJob.edu_requirement.ilike(f"%{f['edu']}%"))
     if f.get("location"):
         terms = [t.strip() for t in f["location"].split(",") if t.strip()]
         if terms:
@@ -144,6 +146,7 @@ def list_campus_jobs(
     grad_year: Optional[str] = None,
     no_exam_only: bool = False,
     referral_only: bool = False,
+    edu: Optional[str] = None,
     location: Optional[str] = None,
     updated_after: Optional[str] = None,
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
@@ -161,6 +164,7 @@ def list_campus_jobs(
         "grad_year": grad_year,
         "no_exam_only": no_exam_only,
         "referral_only": referral_only,
+        "edu": edu,
         "location": location,
         "updated_after": updated_after,
         "due_within_days": due_within_days,
@@ -186,6 +190,7 @@ def export_campus_jobs(
     grad_year: Optional[str] = None,
     no_exam_only: bool = False,
     referral_only: bool = False,
+    edu: Optional[str] = None,
     location: Optional[str] = None,
     updated_after: Optional[str] = None,
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
@@ -204,6 +209,7 @@ def export_campus_jobs(
         "grad_year": grad_year,
         "no_exam_only": no_exam_only,
         "referral_only": referral_only,
+        "edu": edu,
         "location": location,
         "updated_after": updated_after,
         "due_within_days": due_within_days,

@@ -149,6 +149,7 @@ export interface CampusParams {
   grad_year?: string
   no_exam_only?: boolean
   referral_only?: boolean
+  edu?: string
   location?: string
   updated_after?: string
   due_within_days?: number

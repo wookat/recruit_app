@@ -251,6 +251,9 @@ export function CampusPage({
     const v = urlQuery.get('city')
     return v ? v.split(',').filter(Boolean) : []
   })
+  const [eduFilter, setEduFilter] = useState(
+    urlQuery.get('board') === 'campus' ? urlQuery.get('cedu') ?? '' : '',
+  )
   const [recentOnly, setRecentOnly] = useState(initialPreset === 'recent7')
   const [dueOnly, setDueOnly] = useState(
     () => new URLSearchParams(window.location.search).get('due') === '7',
@@ -372,6 +375,8 @@ export function CampusPage({
     else q.delete('hseen')
     if (cities.length) q.set('city', cities.join(','))
     else q.delete('city')
+    if (eduFilter) q.set('cedu', eduFilter)
+    else q.delete('cedu')
     if (companyTypes.length) q.set('ctype', companyTypes.join(','))
     else q.delete('ctype')
     if (keyword.trim()) q.set('bkw', keyword.trim())
@@ -379,7 +384,7 @@ export function CampusPage({
     q.delete('kw')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('campus', urlPreset)
-  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, cities, companyTypes, keyword])
+  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, cities, eduFilter, companyTypes, keyword])
 
   useEffect(() => {
     markBoardVisit('campus')
@@ -418,6 +423,7 @@ export function CampusPage({
       ...p,
       keyword: kwTrim ? (synAdded.length ? expandKeyword(kwTrim).expanded : kwTrim) : undefined,
       company_type: companyTypes.length ? companyTypes : p.company_type,
+      edu: eduFilter || undefined,
       location: cities.length ? cities.join(',') : undefined,
       updated_after: recentOnly ? daysAgoStr(7) : undefined,
       due_within_days: dueOnly ? 7 : undefined,
@@ -425,7 +431,7 @@ export function CampusPage({
       page,
       page_size: PAGE_SIZE,
     }
-  }, [preset, kwTrim, synAdded, companyTypes, cities, recentOnly, dueOnly, hideExpired, page])
+  }, [preset, kwTrim, synAdded, companyTypes, cities, eduFilter, recentOnly, dueOnly, hideExpired, page])
 
   useEffect(() => {
     let cancelled = false
@@ -485,6 +491,7 @@ export function CampusPage({
       preset !== 'all' ? presetLabel : undefined,
       ...companyTypes,
       ...cities,
+      eduFilter || undefined,
       keyword || undefined,
       recentOnly ? '近7天' : undefined,
       dueOnly ? '7天内截止' : undefined,
@@ -492,7 +499,7 @@ export function CampusPage({
       new Date().toISOString().slice(0, 10).replace(/-/g, ''),
     ]
     return parts.filter(Boolean).join('-')
-  }, [preset, companyTypes, cities, keyword, recentOnly, dueOnly, hideExpired])
+  }, [preset, companyTypes, cities, eduFilter, keyword, recentOnly, dueOnly, hideExpired])
 
   const filterSnapshot = (() => {
     const s: Record<string, string> = {}
@@ -501,6 +508,7 @@ export function CampusPage({
     if (dueOnly) s.due = '7'
     if (cities.length) s.city = cities.join(',')
     if (companyTypes.length) s.ctype = companyTypes.join(',')
+    if (eduFilter) s.cedu = eduFilter
     if (keyword.trim()) s.bkw = keyword.trim()
     return s
   })()
@@ -516,6 +524,7 @@ export function CampusPage({
         : companyTypes.length <= 3
           ? companyTypes.join('+')
           : `${companyTypes.slice(0, 3).join('+')}等${companyTypes.length}类`,
+      eduFilter || null,
       preset !== 'all' ? PRESETS.find((p) => p.key === preset)?.label : null,
       recentOnly ? '近7天更新' : null,
       dueOnly ? '即将截止' : null,
@@ -524,7 +533,13 @@ export function CampusPage({
       .filter(Boolean)
       .join('·') || '校招筛选'
   const filterCanSave =
-    preset !== 'all' || recentOnly || dueOnly || cities.length > 0 || companyTypes.length > 0 || !!keyword.trim()
+    preset !== 'all' ||
+    recentOnly ||
+    dueOnly ||
+    cities.length > 0 ||
+    companyTypes.length > 0 ||
+    !!eduFilter ||
+    !!keyword.trim()
 
   const activeFilters: RemovableFilter[] = []
   if (keyword)
@@ -546,6 +561,14 @@ export function CampusPage({
     })
   for (const t of companyTypes)
     activeFilters.push({ label: `类型：${t}`, onRemove: () => toggleCompanyType(t) })
+  if (eduFilter)
+    activeFilters.push({
+      label: `学历：${eduFilter}`,
+      onRemove: () => {
+        setEduFilter('')
+        setPage(1)
+      },
+    })
   if (preset !== 'all') {
     const presetLabel = PRESETS.find((v) => v.key === preset)?.label
     if (presetLabel)
@@ -599,6 +622,7 @@ export function CampusPage({
     setHideExpired(false)
     setHideSeen(false)
     setCities([])
+    setEduFilter('')
     setCompanyTypes([])
     setSearchInput('')
     setKeyword('')
@@ -712,6 +736,30 @@ export function CampusPage({
     </div>
   )
 
+  const eduRow = (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-xs text-muted-foreground">学历：</span>
+      {['本科', '硕士', '博士', '大专'].map((e) => (
+        <button
+          key={e}
+          type="button"
+          onClick={() => {
+            setEduFilter((v) => (v === e ? '' : e))
+            setPage(1)
+          }}
+          className={cn(
+            'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            eduFilter === e
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
+          )}
+        >
+          {e}
+        </button>
+      ))}
+    </div>
+  )
+
   const quickToggleRow = (
     <div className="flex flex-wrap items-center gap-1.5">
         <button
@@ -777,6 +825,7 @@ export function CampusPage({
   const mobileFilterCount =
     companyTypes.length +
     cities.length +
+    (eduFilter ? 1 : 0) +
     (recentOnly ? 1 : 0) +
     (dueOnly ? 1 : 0) +
     (hideExpired ? 1 : 0) +
@@ -946,6 +995,7 @@ export function CampusPage({
       {/* 城市筛选 + 近7天更新（桌面） */}
       <div className="hidden space-y-2 md:block">
         {cityFilterRow}
+        {eduRow}
         {quickToggleRow}
       </div>
 
@@ -953,6 +1003,7 @@ export function CampusPage({
       <MobileFilterCollapse count={mobileFilterCount} title="校招筛选" onReset={clearAllFilters}>
         {typeChips}
         {cityFilterRow}
+        {eduRow}
         {quickToggleRow}
       </MobileFilterCollapse>
 

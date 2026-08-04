@@ -1535,6 +1535,18 @@ export function ListPage({
         </div>
       )}
 
+      <div className="relative">
+      {loading && view !== 'list' && (data?.items.length ?? 0) > 0 && (
+        <div className="pointer-events-none absolute inset-x-0 top-2 z-10 flex justify-center">
+          <span
+            role="status"
+            className="flex items-center gap-1.5 rounded-full border bg-background/95 px-3 py-1 text-xs text-muted-foreground shadow-sm"
+          >
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            正在更新结果…
+          </span>
+        </div>
+      )}
       <PullToRefresh onRefresh={load} refreshing={loading} disabled={view === 'list'}>
       <Suspense
         fallback={
@@ -1574,6 +1586,7 @@ export function ListPage({
       {view === 'list' && <VirtualPositionList fetcher={fetcher} params={effParams} />}
       </Suspense>
       </PullToRefresh>
+      </div>
 
       {view === 'card' && data && data.total > 0 && (
         <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-3">

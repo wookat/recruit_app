@@ -125,7 +125,17 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
   const [listCopied, setListCopied] = useState(false)
   const [digestOpen, setDigestOpen] = useState(false)
   const [syncOpen, setSyncOpen] = useState(false)
-  const [board, setBoard] = useState<Board>(initialBoard ?? 'positions')
+  const [board, setBoard] = useState<Board>(() => {
+    const pref = initialBoard ?? 'positions'
+    const counts: Record<Board, number> = {
+      positions: favorites.length,
+      campus: campusFavs.length,
+      bianzhi: bianzhiFavs.length,
+    }
+    if (counts[pref] > 0) return pref
+    const nonEmpty = (['positions', 'campus', 'bianzhi'] as Board[]).find((b) => counts[b] > 0)
+    return nonEmpty ?? pref
+  })
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [view, setView] = useState<'track' | 'calendar'>('track')
   const [statusFilter, setStatusFilter] = useState<AppStatus | null>(null)

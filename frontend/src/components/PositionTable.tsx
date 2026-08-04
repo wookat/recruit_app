@@ -59,21 +59,21 @@ function dedupExamType(title: string, examType: string | null | undefined): stri
 }
 
 const columns: ColumnDef<Position>[] = [
-  { accessorKey: 'employer', header: '用人单位/系统', size: 200 },
+  { accessorKey: 'employer', header: '用人单位/系统', size: 180 },
   { accessorKey: 'year', header: '年份', size: 70 },
-  { accessorKey: 'job_type', header: '岗位类型', size: 100 },
+  { accessorKey: 'job_type', header: '岗位类型', size: 90 },
   {
     id: 'exam_type',
     accessorFn: (row) => row.exam_type_norm || row.exam_type,
     header: '考试/招聘类型',
     size: 130,
   },
-  { accessorKey: 'position_example', header: '岗位示例', size: 220 },
+  { accessorKey: 'position_example', header: '岗位示例', size: 200 },
   {
     id: 'edu_level_norm',
     accessorFn: (row) => row.edu_level_norm || row.edu_requirement,
     header: '学历要求',
-    size: 130,
+    size: 110,
   },
   { accessorKey: 'work_location', header: '工作地点', size: 150 },
   { accessorKey: 'signup_time', header: '报名时间', size: 150 },
@@ -208,7 +208,8 @@ export const PositionTable = memo(function PositionTable({
                       key={h.id}
                       className={cn(
                         'whitespace-nowrap',
-                        h.column.id === 'exam_time' && 'hidden 2xl:table-cell',
+                        (h.column.id === 'exam_time' || h.column.id === 'exam_type') &&
+                          'hidden 2xl:table-cell',
                       )}
                       style={{ width: h.column.getSize(), minWidth: h.column.getSize() }}
                     >
@@ -263,7 +264,9 @@ export const PositionTable = memo(function PositionTable({
                         key={cell.id}
                         className={cn(
                           'max-w-xs truncate text-sm',
-                          (cell.column.id === 'exam_time' || cell.column.id === 'created_at') &&
+                          (cell.column.id === 'exam_time' ||
+                            cell.column.id === 'created_at' ||
+                            cell.column.id === 'exam_type') &&
                             'hidden 2xl:table-cell',
                           cell.column.id === 'employer' &&
                             'max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:max-w-[150px] max-sm:border-r max-sm:bg-card max-sm:shadow-[8px_0_12px_-6px_rgba(0,0,0,0.18)] group-hover:max-sm:bg-muted',

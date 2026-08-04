@@ -3,136 +3,221 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>设计令牌与组件规范 · 上岸罗盘 原型</title>
+<title>设计规范 · 上岸罗盘 原型</title>
+<link rel="stylesheet" href="assets/tokens.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="assets/tokens.js"></script>
 <script src="assets/ui.js"></script>
 </head>
-<body data-page="" data-mobile="jobs" class="s-page t1 min-h-screen">
+<body data-page="" data-mobile="guide" class="s-page t1 min-h-screen">
 
-<main class="max-w-[1100px] mx-auto px-4 py-6 space-y-8">
-  <div>
-    <h1 class="text-xxl font-semibold tracking-tight">设计令牌与组件规范</h1>
-    <p class="text-body t2 mt-1">Tailwind 令牌定义见 <code class="text-xs1 bg-surface-sunken dark:bg-surface-sunken-d px-1.5 py-0.5 rounded">assets/tokens.js</code> · 右上角可切换暗色模式预览</p>
-  </div>
+<main class="max-w-[1100px] mx-auto px-4 py-6 space-y-10">
+  <header>
+    <h1 class="text-xxl font-semibold tracking-tight">设计规范 <span class="tag-blue align-middle">R177</span></h1>
+    <p class="text-body t2 mt-2 max-w-2xl">基于 shadcn/ui + Radix 语义令牌体系。唯一色值来源 <code class="text-xs1 bg-muted px-1.5 py-0.5 rounded">assets/tokens.css</code>（CSS variables，亮/暗自动切换），Tailwind 配置仅做别名映射，禁止页面内写死色值。右上角 🌙 可实时切换暗色验证。</p>
+  </header>
 
+  <!-- ===== 色板 ===== -->
   <section>
-    <h2 class="text-lg1 font-semibold mb-3">1. 品牌与语义色</h2>
-    <div class="grid grid-cols-5 sm:grid-cols-11 gap-1.5">
-      <div class="text-center"><div class="h-12 rounded-md2 bg-brand-50"></div><div class="text-xs2 t3 mt-1">50</div></div>
-      <div class="text-center"><div class="h-12 rounded-md2 bg-brand-100"></div><div class="text-xs2 t3 mt-1">100</div></div>
-      <div class="text-center"><div class="h-12 rounded-md2 bg-brand-200"></div><div class="text-xs2 t3 mt-1">200</div></div>
-      <div class="text-center"><div class="h-12 rounded-md2 bg-brand-300"></div><div class="text-xs2 t3 mt-1">300</div></div>
-      <div class="text-center"><div class="h-12 rounded-md2 bg-brand-400"></div><div class="text-xs2 t3 mt-1">400</div></div>
-      <div class="text-center"><div class="h-12 rounded-md2 bg-brand-500"></div><div class="text-xs2 t3 mt-1">500</div></div>
-      <div class="text-center"><div class="h-12 rounded-md2 bg-brand-600 ring-2 ring-offset-2 ring-brand-600 dark:ring-offset-surface-page-d"></div><div class="text-xs2 t3 mt-1">600 主</div></div>
-      <div class="text-center"><div class="h-12 rounded-md2 bg-brand-700"></div><div class="text-xs2 t3 mt-1">700</div></div>
-      <div class="text-center"><div class="h-12 rounded-md2 bg-brand-800"></div><div class="text-xs2 t3 mt-1">800</div></div>
-      <div class="text-center"><div class="h-12 rounded-md2 bg-brand-900"></div><div class="text-xs2 t3 mt-1">900</div></div>
-      <div class="text-center"><div class="h-12 rounded-md2 bg-brand-950"></div><div class="text-xs2 t3 mt-1">950</div></div>
+    <h2 class="text-xl1 font-semibold">1 · 色板</h2>
+    <h3 class="text-body font-medium mt-4 mb-2">品牌色 Brand（HSL 变量 --brand-50…950）</h3>
+    <div class="grid grid-cols-6 sm:grid-cols-11 gap-1.5" id="brand-scale"></div>
+    <h3 class="text-body font-medium mt-5 mb-2">语义令牌 Semantic（亮/暗自动切换，切主题观察）</h3>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="semantic-scale"></div>
+    <h3 class="text-body font-medium mt-5 mb-2">板块色 & 状态色</h3>
+    <div class="flex flex-wrap gap-2">
+      <div class="s-card px-3 py-2 flex items-center gap-2"><span class="w-5 h-5 rounded" style="background:hsl(var(--board-tizhi))"></span><span class="text-xs1">体制内 --board-tizhi</span></div>
+      <div class="s-card px-3 py-2 flex items-center gap-2"><span class="w-5 h-5 rounded" style="background:hsl(var(--board-campus))"></span><span class="text-xs1">校招 --board-campus</span></div>
+      <div class="s-card px-3 py-2 flex items-center gap-2"><span class="w-5 h-5 rounded" style="background:hsl(var(--board-bianzhi))"></span><span class="text-xs1">编制 --board-bianzhi</span></div>
+      <div class="s-card px-3 py-2 flex items-center gap-2"><span class="w-5 h-5 rounded" style="background:hsl(var(--danger))"></span><span class="text-xs1">危险 --danger</span></div>
+      <div class="s-card px-3 py-2 flex items-center gap-2"><span class="w-5 h-5 rounded" style="background:hsl(var(--warn))"></span><span class="text-xs1">警示 --warn</span></div>
+      <div class="s-card px-3 py-2 flex items-center gap-2"><span class="w-5 h-5 rounded" style="background:hsl(var(--ok))"></span><span class="text-xs1">成功 --ok</span></div>
     </div>
-    <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 mt-4">
-      <div class="s-card p-3"><div class="w-full h-8 rounded-md2 bg-tizhi"></div><div class="text-xs1 mt-1.5 font-medium">体制内</div><div class="text-xs2 t3">tizhi #1a66f5</div></div>
-      <div class="s-card p-3"><div class="w-full h-8 rounded-md2 bg-campus"></div><div class="text-xs1 mt-1.5 font-medium">校招</div><div class="text-xs2 t3">campus #0ea5a4</div></div>
-      <div class="s-card p-3"><div class="w-full h-8 rounded-md2 bg-bianzhi"></div><div class="text-xs1 mt-1.5 font-medium">编制</div><div class="text-xs2 t3">bianzhi #8b5cf6</div></div>
-      <div class="s-card p-3"><div class="w-full h-8 rounded-md2 bg-danger"></div><div class="text-xs1 mt-1.5 font-medium">截止/危险</div><div class="text-xs2 t3">danger #e11d48</div></div>
-      <div class="s-card p-3"><div class="w-full h-8 rounded-md2 bg-warn"></div><div class="text-xs1 mt-1.5 font-medium">临期/警示</div><div class="text-xs2 t3">warn #d97706</div></div>
-      <div class="s-card p-3"><div class="w-full h-8 rounded-md2 bg-ok"></div><div class="text-xs1 mt-1.5 font-medium">官方/成功</div><div class="text-xs2 t3">ok #059669</div></div>
-    </div>
-    <p class="text-xs1 t2 mt-3">三板块各有识别色，用于板块标识条、结果 Tab 圆点、收藏列表左侧色条；页面主操作统一用 brand-600。</p>
-  </section>
-
-  <section>
-    <h2 class="text-lg1 font-semibold mb-3">2. 表面分层（亮/暗对应）</h2>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-      <div class="p-4 rounded-lg2 bg-surface-page dark:bg-surface-page-d border border-line dark:border-line-d"><div class="text-xs1 font-medium">page</div><div class="text-xs2 t3">页面底</div></div>
-      <div class="p-4 s-card"><div class="text-xs1 font-medium">card</div><div class="text-xs2 t3">卡片 + 1px 线 + shadow-card</div></div>
-      <div class="p-4 rounded-lg2 bg-surface-raised dark:bg-surface-raised-d shadow-raised"><div class="text-xs1 font-medium">raised</div><div class="text-xs2 t3">悬浮层 shadow-raised</div></div>
-      <div class="p-4 rounded-lg2 bg-surface-sunken dark:bg-surface-sunken-d"><div class="text-xs1 font-medium">sunken</div><div class="text-xs2 t3">内嵌区域</div></div>
-    </div>
-  </section>
-
-  <section>
-    <h2 class="text-lg1 font-semibold mb-3">3. 字阶（12–28）</h2>
-    <div class="s-card p-5 space-y-2.5">
-      <div class="flex items-baseline gap-4"><span class="text-xs2 t3 w-24 shrink-0">xxl 28/36</span><span class="text-xxl font-semibold">页面大标题 H1</span></div>
-      <div class="flex items-baseline gap-4"><span class="text-xs2 t3 w-24 shrink-0">xl1 22/30</span><span class="text-xl1 font-semibold">区块标题 H2</span></div>
-      <div class="flex items-baseline gap-4"><span class="text-xs2 t3 w-24 shrink-0">lg1 18/26</span><span class="text-lg1 font-semibold">卡片/抽屉标题 H3</span></div>
-      <div class="flex items-baseline gap-4"><span class="text-xs2 t3 w-24 shrink-0">md1 16/24</span><span class="text-md1 font-medium">小节标题 H4</span></div>
-      <div class="flex items-baseline gap-4"><span class="text-xs2 t3 w-24 shrink-0">body 14/22</span><span class="text-body">正文与列表主字号</span></div>
-      <div class="flex items-baseline gap-4"><span class="text-xs2 t3 w-24 shrink-0">xs1 13/18</span><span class="text-xs1 t2">辅助说明</span></div>
-      <div class="flex items-baseline gap-4"><span class="text-xs2 t3 w-24 shrink-0">xs2 12/16</span><span class="text-xs2 t3">标签、时间戳</span></div>
-    </div>
-  </section>
-
-  <section>
-    <h2 class="text-lg1 font-semibold mb-3">4. 圆角 / 间距 / 阴影</h2>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-      <div class="s-card p-3 text-center"><div class="mx-auto w-14 h-14 bg-brand-100 dark:bg-brand-950 rounded-sm2"></div><div class="text-xs2 t3 mt-1.5">sm2 6px · 标签</div></div>
-      <div class="s-card p-3 text-center"><div class="mx-auto w-14 h-14 bg-brand-100 dark:bg-brand-950 rounded-md2"></div><div class="text-xs2 t3 mt-1.5">md2 10px · 按钮/输入</div></div>
-      <div class="s-card p-3 text-center"><div class="mx-auto w-14 h-14 bg-brand-100 dark:bg-brand-950 rounded-lg2"></div><div class="text-xs2 t3 mt-1.5">lg2 14px · 卡片</div></div>
-      <div class="s-card p-3 text-center"><div class="mx-auto w-14 h-14 bg-brand-100 dark:bg-brand-950 rounded-xl2"></div><div class="text-xs2 t3 mt-1.5">xl2 20px · 移动 Sheet</div></div>
-    </div>
-    <p class="text-xs1 t2 mt-3">间距走 4px 网格（Tailwind 默认刻度）：卡片内边距 16px，区块间距 16–20px，页面左右 16px（移动）/ 自适应留白（桌面 max-w-1280）。阴影三级：card / raised / overlay。</p>
-  </section>
-
-  <section>
-    <h2 class="text-lg1 font-semibold mb-3">5. 核心组件</h2>
-    <div class="s-card p-5 space-y-5">
-      <div>
-        <div class="text-xs2 t3 mb-2">按钮 btn-pri / btn-sec / btn-ghost（h-36，btn-sm h-32）</div>
-        <div class="flex flex-wrap gap-2">
-          <button class="btn-pri">主要操作</button>
-          <button class="btn-sec">次要操作</button>
-          <button class="btn-ghost">幽灵按钮</button>
-          <button class="btn-pri btn-sm">小号</button>
-        </div>
-      </div>
-      <div>
-        <div class="text-xs2 t3 mb-2">筛选芯片 chip / chip-on（h-28 全圆角）</div>
-        <div class="flex flex-wrap gap-1.5">
-          <span class="chip-on">选中态</span><span class="chip">默认态</span><span class="chip">公务员</span><span class="chip text-rose-600 border-rose-200">⏰ 即将截止</span>
-        </div>
-      </div>
-      <div>
-        <div class="text-xs2 t3 mb-2">状态标签 tag-*（h-20 圆角 6px，浅底深字，暗色自动映射）</div>
-        <div class="flex flex-wrap gap-1.5">
-          <span class="tag-blue">2026</span><span class="tag-teal">秋招</span><span class="tag-purple">编制</span>
-          <span class="tag-red">今日截止</span><span class="tag-amber">3 天后</span><span class="tag-green">官方来源</span><span class="tag-gray">未投递</span>
-        </div>
-      </div>
-      <div>
-        <div class="text-xs2 t3 mb-2">输入框 input（h-36，focus ring brand/40）</div>
-        <div class="max-w-sm"><input class="input" placeholder="搜索岗位、单位、专业、地点…"/></div>
-      </div>
-      <div>
-        <div class="text-xs2 t3 mb-2">表格 tbl（表头 sunken 底，行 hover brand-50/50）</div>
-        <div class="border border-line dark:border-line-d rounded-md2 overflow-hidden max-w-lg">
-          <table class="tbl w-full"><thead><tr><th>岗位</th><th>地点</th><th>截止</th></tr></thead>
-          <tbody><tr><td>高中语文教师</td><td class="t2">海口</td><td><span class="tag-red">今日截止</span></td></tr>
-          <tr><td>综合管理类岗位</td><td class="t2">长沙</td><td class="t2">08-22</td></tr></tbody></table>
-        </div>
-      </div>
-      <div>
-        <div class="text-xs2 t3 mb-2">浮层：桌面右侧抽屉 drawer（w-540）/ 移动底部 sheet-m（rounded-t-20，max-h-86vh）+ overlay-mask（黑 40% + 2px blur）</div>
-        <div class="flex gap-2">
-          <a class="btn-sec btn-sm" href="positions.html">在列表页体验抽屉 →</a>
-        </div>
+    <div class="mt-4 s-card p-4 border-l-4 !border-l-brand-600">
+      <div class="text-body font-medium">WCAG AA 对比度修正（R177）</div>
+      <p class="text-xs1 t2 mt-1">主操作色由 R176 的 #1a66f5（白字对比约 3.9:1，不达 AA）调深为 <b>--brand-600 = hsl(224 76% 48%) ≈ #1d4ed8</b>，白字对比约 <b>6.3:1 ≥ 4.5:1</b>。选中 chips、主按钮、表头激活态均使用该值；暗色下主色改用 --brand-400 亮蓝 + 深色前景，同样满足 AA。</p>
+      <div class="flex gap-2 mt-2">
+        <span class="chip-on">选中 chip（AA）</span>
+        <span class="inline-flex items-center h-7 px-2.5 rounded-full text-xs1 text-white" style="background:#1a66f5">R176 旧值（不达标）✗</span>
       </div>
     </div>
   </section>
 
+  <!-- ===== 字阶 ===== -->
   <section>
-    <h2 class="text-lg1 font-semibold mb-3">6. 布局规范</h2>
-    <ul class="s-card p-5 space-y-2 text-body t2 list-disc pl-8">
-      <li>桌面容器 max-w-1280px；列表页为 <b class="t1">主列表 + 290px 右侧看板</b> 双栏，≥1024px 显示侧栏。</li>
-      <li>平板 768–1023px：单栏 + 卡片两列；看板折叠为列表上方统计条。</li>
-      <li>移动 &lt;640px：顶栏精简为 logo+搜索+主题，底部 5 Tab（岗位/日历/搜索/收藏/攻略）；列表用两行紧凑卡；筛选/详情走底部 Sheet。</li>
-      <li>触控目标 ≥40×40px；表格仅在 ≥768px 出现，禁用横向滚动表格。</li>
-      <li>暗色模式：class 策略，所有令牌一一映射（page↔page-d 等），标签浅底转 900/50 深底。</li>
-    </ul>
+    <h2 class="text-xl1 font-semibold">2 · 字阶（12 / 14 / 16 / 18 / 20 / 24 / 30）</h2>
+    <div class="s-card mt-3 divide-y divide-line dark:divide-line-d">
+      <div class="p-4 flex items-baseline gap-4"><span class="text-xs2 t3 w-28 shrink-0">30 / xxxl</span><span class="text-xxxl font-semibold">页面大标题 上岸罗盘</span></div>
+      <div class="p-4 flex items-baseline gap-4"><span class="text-xs2 t3 w-28 shrink-0">24 / xxl</span><span class="text-xxl font-semibold">区块标题 报考日历</span></div>
+      <div class="p-4 flex items-baseline gap-4"><span class="text-xs2 t3 w-28 shrink-0">20 / xl1</span><span class="text-xl1 font-semibold">卡片大标题 / 关键数字</span></div>
+      <div class="p-4 flex items-baseline gap-4"><span class="text-xs2 t3 w-28 shrink-0">18 / lg1</span><span class="text-lg1 font-semibold">抽屉标题 高中语文教师</span></div>
+      <div class="p-4 flex items-baseline gap-4"><span class="text-xs2 t3 w-28 shrink-0">16 / md1</span><span class="text-md1 font-medium">弹层标题 / 导航</span></div>
+      <div class="p-4 flex items-baseline gap-4"><span class="text-xs2 t3 w-28 shrink-0">14 / body</span><span class="text-body">正文与列表主字号：中国水利水电第八工程局有限公司</span></div>
+      <div class="p-4 flex items-baseline gap-4"><span class="text-xs2 t3 w-28 shrink-0">12 / xs1·xs2</span><span class="text-xs1 t2">辅助信息、标签、时间戳（xs1 行高 18 / xs2 行高 16）</span></div>
+    </div>
+  </section>
+
+  <!-- ===== 间距 / 圆角 / 阴影 / 边框 ===== -->
+  <section>
+    <h2 class="text-xl1 font-semibold">3 · 间距（4pt 网格）· 圆角 · 阴影 · 边框</h2>
+    <div class="grid sm:grid-cols-2 gap-3 mt-3">
+      <div class="s-card p-4">
+        <div class="text-body font-medium mb-3">间距：仅用 4 的倍数（4/8/12/16/20/24/32/40…）</div>
+        <div class="space-y-2">
+          <div class="flex items-center gap-3"><span class="text-xs2 t3 w-14">4px</span><span class="h-3 bg-brand-500 rounded-sm" style="width:4px"></span><span class="text-xs2 t3">图标与文字间距</span></div>
+          <div class="flex items-center gap-3"><span class="text-xs2 t3 w-14">8px</span><span class="h-3 bg-brand-500 rounded-sm" style="width:8px"></span><span class="text-xs2 t3">chips 组间距</span></div>
+          <div class="flex items-center gap-3"><span class="text-xs2 t3 w-14">12px</span><span class="h-3 bg-brand-500 rounded-sm" style="width:12px"></span><span class="text-xs2 t3">卡片网格 gap</span></div>
+          <div class="flex items-center gap-3"><span class="text-xs2 t3 w-14">16px</span><span class="h-3 bg-brand-500 rounded-sm" style="width:16px"></span><span class="text-xs2 t3">卡片内边距 / 页面留白</span></div>
+          <div class="flex items-center gap-3"><span class="text-xs2 t3 w-14">24px</span><span class="h-3 bg-brand-500 rounded-sm" style="width:24px"></span><span class="text-xs2 t3">区块间距</span></div>
+          <div class="flex items-center gap-3"><span class="text-xs2 t3 w-14">44px</span><span class="h-3 bg-amber-500 rounded-sm" style="width:44px"></span><span class="text-xs2 t3">移动端最小触控热区</span></div>
+        </div>
+      </div>
+      <div class="s-card p-4">
+        <div class="text-body font-medium mb-3">圆角 & 阴影 & 边框</div>
+        <div class="flex flex-wrap gap-3">
+          <div class="w-20 h-14 bg-muted border border-border flex items-center justify-center text-xs2 t3" style="border-radius:var(--radius-sm)">sm 6</div>
+          <div class="w-20 h-14 bg-muted border border-border flex items-center justify-center text-xs2 t3" style="border-radius:var(--radius)">md 10</div>
+          <div class="w-20 h-14 bg-muted border border-border flex items-center justify-center text-xs2 t3" style="border-radius:var(--radius-lg)">lg 14</div>
+          <div class="w-20 h-14 bg-muted border border-border flex items-center justify-center text-xs2 t3" style="border-radius:var(--radius-xl)">xl 20</div>
+        </div>
+        <div class="flex flex-wrap gap-3 mt-4">
+          <div class="w-24 h-14 bg-card rounded-md2 flex items-center justify-center text-xs2 t3" style="box-shadow:var(--shadow-card)">card</div>
+          <div class="w-24 h-14 bg-card rounded-md2 flex items-center justify-center text-xs2 t3" style="box-shadow:var(--shadow-raised)">raised</div>
+          <div class="w-24 h-14 bg-card rounded-md2 flex items-center justify-center text-xs2 t3" style="box-shadow:var(--shadow-overlay)">overlay</div>
+        </div>
+        <p class="text-xs2 t3 mt-3">边框统一 1px --border；输入框 --input；焦点环 2px --ring + 2px offset。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 组件清单与状态 ===== -->
+  <section>
+    <h2 class="text-xl1 font-semibold">4 · 组件清单与状态</h2>
+
+    <div class="s-card p-4 mt-3">
+      <div class="text-body font-medium mb-3">按钮 Button（Tab 键可见 focus ring）</div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button class="btn-pri">主按钮</button>
+        <button class="btn-pri" style="background:hsl(var(--brand-700))">悬停</button>
+        <button class="btn-pri ring-2 ring-ring ring-offset-2 ring-offset-background">Focus</button>
+        <button class="btn-pri" disabled>禁用</button>
+        <button class="btn-sec">次按钮</button>
+        <button class="btn-sec" disabled>禁用</button>
+        <button class="btn-ghost">幽灵按钮</button>
+        <button class="btn-danger">危险操作</button>
+        <button class="btn-pri btn-sm">小号 sm</button>
+      </div>
+    </div>
+
+    <div class="s-card p-4 mt-3">
+      <div class="text-body font-medium mb-3">筛选芯片 Chip / 标签 Badge</div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button class="chip">未选中</button>
+        <button class="chip border-brand-400 text-brand-600">悬停</button>
+        <button class="chip-on">选中（AA 白字）</button>
+        <button class="chip ring-2 ring-ring ring-offset-1 ring-offset-background">Focus</button>
+        <button class="chip" disabled>禁用</button>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 mt-3">
+        <span class="tag-blue">2026</span><span class="tag-teal">校招</span><span class="tag-purple">编制</span>
+        <span class="tag-red">今日截止</span><span class="tag-amber">3 天后</span><span class="tag-green">应届可报</span><span class="tag-gray">详见公告</span>
+      </div>
+    </div>
+
+    <div class="s-card p-4 mt-3">
+      <div class="text-body font-medium mb-3">输入框 Input</div>
+      <div class="grid sm:grid-cols-2 gap-3 max-w-2xl">
+        <input class="input" placeholder="默认 placeholder"/>
+        <input class="input ring-2 ring-ring/50 border-brand-500" value="Focus 态"/>
+        <div>
+          <input class="input !border-destructive" value="错误内容" aria-invalid="true"/>
+          <p class="text-xs2 text-danger mt-1">请输入正确的同步码（格式 XXXX-XXXX）</p>
+        </div>
+        <input class="input" disabled value="禁用态"/>
+      </div>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-3 mt-3">
+      <div class="s-card p-4">
+        <div class="text-body font-medium mb-3">加载骨架 Skeleton</div>
+        <div class="space-y-3">
+          <div class="flex items-center gap-3"><div class="skel w-8 h-8 !rounded-full"></div><div class="flex-1 space-y-1.5"><div class="skel h-4 w-3/5"></div><div class="skel h-3 w-2/5"></div></div></div>
+          <div class="skel h-3 w-full"></div><div class="skel h-3 w-4/5"></div>
+        </div>
+      </div>
+      <div class="s-card p-4">
+        <div class="text-body font-medium mb-3">开关 / 视图切换 / 分页</div>
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="w-9 h-5 rounded-full bg-brand-600 relative cursor-pointer"><span class="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white"></span></span>
+          <span class="w-9 h-5 rounded-full bg-muted border border-border relative cursor-pointer"><span class="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-card shadow-card"></span></span>
+          <span class="flex items-center rounded-md2 border border-border overflow-hidden text-xs1"><button class="h-8 px-3 bg-brand-600 text-white">月</button><button class="h-8 px-3 t2">周</button></span>
+          <button class="btn-sec btn-sm">上一页</button><button class="btn-sec btn-sm" disabled>下一页</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-card p-4 mt-3">
+      <div class="text-body font-medium mb-3">空态 / 错误态 / 0 结果导流（列表页右下角「状态演示」可实机切换）</div>
+      <div class="grid md:grid-cols-3 gap-3 text-center">
+        <div class="border border-dashed border-border rounded-md2 py-6 px-3">
+          <div class="mx-auto w-10 h-10 rounded-full bg-muted flex items-center justify-center t3">📭</div>
+          <div class="text-body font-medium mt-2">还没有任何数据</div><div class="text-xs2 t3 mt-0.5">数据源同步中</div>
+        </div>
+        <div class="border border-dashed border-border rounded-md2 py-6 px-3">
+          <div class="mx-auto w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-900/40 flex items-center justify-center">⚠️</div>
+          <div class="text-body font-medium mt-2">加载失败，请重试</div><button class="btn-sec btn-sm mt-2">重新加载</button>
+        </div>
+        <div class="border border-dashed border-border rounded-md2 py-6 px-3">
+          <div class="mx-auto w-10 h-10 rounded-full bg-muted flex items-center justify-center t3">🔍</div>
+          <div class="text-body font-medium mt-2">0 结果 · 导流其他板块</div>
+          <div class="flex justify-center gap-1.5 mt-2"><span class="btn-sec btn-sm">校招 2,113</span><span class="btn-sec btn-sm">编制 4,096</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-card p-4 mt-3">
+      <div class="text-body font-medium mb-3">抽屉 Drawer / 底部 Sheet / 对话框 Dialog</div>
+      <ul class="text-xs1 t2 space-y-1.5 list-disc pl-4">
+        <li>桌面：右侧抽屉 540px（详情）/ 420px（筛选），overlay-mask 黑 40% + 2px 模糊。</li>
+        <li>移动：底部 Sheet（max 86–92vh，rounded-t-xl 20px），顶部居中 40×5px 手势把手 <span class="sheet-handle !inline-block !m-0 align-middle"></span>，所有触控目标 ≥44px。</li>
+        <li>对话框（保存筛选）：居中 480px，Esc / 点击遮罩关闭。</li>
+      </ul>
+      <div class="flex gap-2 mt-3">
+        <button class="btn-sec btn-sm" onclick="openEl('demo-mask');openEl('demo-drawer')">打开示例抽屉</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 布局与断点 ===== -->
+  <section>
+    <h2 class="text-xl1 font-semibold">5 · 布局与断点</h2>
+    <div class="s-card p-4 mt-3 text-xs1 t2 space-y-1.5">
+      <div>· 内容最大宽 1280px；列表 + 290px 看板侧栏（≥1024）；768–1023 看板折叠为横向统计条；&lt;768 单列 + 底部 5 项导航。</div>
+      <div>· 卡片网格：≥1280 三列 / ≥640 两列 / 移动一列。</div>
+      <div>· 顶栏 56px 常驻毛玻璃；移动端底部导航 56px + safe-area。</div>
+      <div>· 暗色模式：class 策略 + localStorage 记忆，全部语义色由 tokens.css 变量翻转。</div>
+    </div>
   </section>
 </main>
 
+<!-- 示例抽屉 -->
+<div id="demo-mask" class="overlay-mask hidden" onclick="closeEl('demo-mask');closeEl('demo-drawer')"></div>
+<div id="demo-drawer" class="hidden drawer max-sm:!top-auto max-sm:!bottom-0 max-sm:!h-[70vh] max-sm:rounded-t-xl2 sm:!w-[420px]">
+  <div class="sheet-handle sm:hidden"></div>
+  <div class="p-5">
+    <div class="flex items-center justify-between"><h3 class="text-md1 font-semibold">示例抽屉</h3><button class="btn-ghost btn-sm" onclick="closeEl('demo-mask');closeEl('demo-drawer')">✕</button></div>
+    <p class="text-body t2 mt-3">桌面右侧滑出 / 移动端变为带手势把手的底部 Sheet（缩窄窗口到 &lt;640px 验证）。</p>
+    <button class="btn-pri mt-4 w-full" onclick="closeEl('demo-mask');closeEl('demo-drawer')">知道了</button>
+  </div>
+</div>
+
+<script>
+const BRANDS = [50,100,200,300,400,500,600,700,800,900,950];
+document.getElementById('brand-scale').innerHTML = BRANDS.map(n =>
+  `<div><div class="h-12 rounded-md2 border border-border" style="background:hsl(var(--brand-${n}))"></div><div class="text-xs2 t3 mt-1 text-center">${n}</div></div>`).join('');
+const SEMANTIC = ['background','foreground','card','popover','primary','secondary','muted','muted-foreground','accent','accent-foreground','destructive','border','input','ring'];
+document.getElementById('semantic-scale').innerHTML = SEMANTIC.map(n =>
+  `<div class="s-card p-2.5 flex items-center gap-2"><span class="w-7 h-7 rounded-md2 border border-border shrink-0" style="background:hsl(var(--${n}))"></span><code class="text-xs2 t2 truncate">--${n}</code></div>`).join('');
+</script>
 </body>
 </html>

@@ -62,3 +62,43 @@
 1. 令牌可直接搬进 `frontend/src/index.css` 的 Tailwind v4 `@theme`；组件类对应 shadcn/ui 的 Button/Badge/Sheet/Dialog 变体。
 2. 建议分四步实施：① 令牌+顶栏/底栏 → ② 列表页首屏重排 → ③ 统一筛选面板 → ④ 收藏/日历/更新页改版，每步可独立上线回归。
 3. 表格虚拟滚动（TanStack Virtual）与现有数据层不受影响，本次仅重排展示层。
+
+---
+
+# R177 高保真升级记录（2026-08-04）
+
+## 1. 严格设计系统：tokens.css 单一事实来源
+
+- 新增 **`assets/tokens.css`**：以 shadcn/ui + Radix 语义令牌为基准的完整 CSS variables 色板（`--background/--foreground/--card/--popover/--primary/--secondary/--muted/--accent/--destructive/--border/--input/--ring` + brand 50–950 + 板块色 + 状态色），亮/暗两套由 `.dark` 类翻转；圆角（6/10/14/20）、三级阴影、骨架动画、Sheet 手势把手也定义于此。
+- **`assets/tokens.js` 重写为纯别名映射**：所有 Tailwind 颜色都指向 `hsl(var(--x))`，页面内不再写死任何色值，杜绝令牌漂移；R176 的 `surface-*/ink-*/line` 类名保留兼容（亮暗同变量，自动切换）。
+- 全部 11 个页面 `<head>` 统一引用同一份 `tokens.css`（ui.js 内含兜底注入）。
+- **WCAG AA 对比度修正**：主操作色由 #1a66f5（白字 ≈3.9:1，不达标）调深为 `--brand-600 = hsl(224 76% 48%)`（≈#1d4ed8，白字 ≈6.3:1）；暗色主色改用 --brand-400 亮蓝 + 深色前景。选中 chips、主按钮、视图切换激活态全部受益。
+- 字阶收敛为 **12/14/16/18/20/24/30**；间距严格 4pt 网格（44px 移动触控热区单列规范）。
+
+## 2. 真实数据密度（assets/data.js）
+
+- 2026-08-04 从 jobs.zalize.com 公开 API 抓取真实数据：**体制内 20 条 / 校招 18 条 / 编制 18 条**（`window.DATA_POSITIONS/DATA_CAMPUS/DATA_BIANZHI`）。
+- `positions.html`（表格+移动卡）、`positions-cards.html`、`campus.html`、`bianzhi.html` 全部改为 **JS 数据渲染**，截止标签（今日截止/N 天后/日期/详见公告）按真实 deadline 计算。
+
+## 3. 完整状态覆盖
+
+- 列表页右下角新增「状态演示」开关，可实机切换 **正常 / 加载骨架 / 空态 / 错误态 / 0 结果导流**（0 结果附放宽建议 + 其他板块结果导流）。首次进入自动演示 600ms 骨架。
+- ui.js 组件类全面补齐 **focus-visible ring（2px --ring + offset）与 disabled 态**（btn/chip/input/表格行/导航），表格行支持键盘 Tab + Enter 打开详情、选中行高亮（aria-selected）。
+- 每页右上角 🌙 暗色切换（localStorage 记忆）。
+
+## 4. 真 JS 交互（原生 JS）
+
+- **省→市级联多选**（筛选面板）：左省份列表带已选计数、右城市 chips 多选、底部已选城市可单个移除、顶部实时计数。
+- **保存筛选命名流**：输入名称 → 保存 → 列表头部插入新条目（高亮边框）→ 可删除。
+- **日历月/周/议程切换**：三视图真实切换 + 标题联动 + ‹/› 翻页。
+- 详情抽屉 / 筛选抽屉：桌面右侧滑出，**移动端变为带手势把手的底部 Sheet**；Ctrl/Cmd+K 全局搜索、Esc 关闭。
+
+## 5. 三端逐页自测（Playwright，1440 / 768 / 375）
+
+- 11 个页面 × 3 视口共 33 张截图逐页检查，**0 console 错误、0 资源加载失败**；平板 768 看板折叠为横向统计条（非简单堆叠），移动端底部 5 项导航 + 44px 热区。
+- 交互冒烟：20 行真实数据渲染 ✓、级联多选（已选 4 城市）✓、保存筛选命名 ✓、详情抽屉 ✓、Ctrl+K ✓、日历周视图 ✓、暗色 ✓。
+- 截图存于 `assets/screenshots/r177/`（d1440/t768/m375 前缀 + x- 交互态）。
+
+## 6. tokens.html 升级为完整规范文档页
+
+色板（brand 全阶 + 语义令牌实时渲染）、AA 修正对照、字阶 7 档实例、4pt 间距尺、圆角/阴影/边框、按钮/chips/badge/输入框各状态、骨架、空/错/0 结果三态、抽屉与 Sheet 规范（含可打开的示例抽屉）、布局断点规则。

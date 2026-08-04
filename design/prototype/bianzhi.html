@@ -4,9 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>编制公告 · 上岸罗盘 原型</title>
+<link rel="stylesheet" href="assets/tokens.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="assets/tokens.js"></script>
 <script src="assets/ui.js"></script>
+<script src="assets/data.js"></script>
 </head>
 <body data-page="bianzhi" data-mobile="jobs" class="s-page t1 min-h-screen">
 
@@ -55,62 +57,13 @@
     <button class="text-xs2 t3 hover:text-brand-600 underline underline-offset-2">清空</button>
   </div>
 
-  <!-- 桌面：公告列表（表格） -->
+  <div id="list-alt" class="mt-4 s-card overflow-hidden hidden"></div>
+  <div id="list-normal">
+  <!-- 桌面：公告列表（表格，行由 assets/data.js 真实数据渲染） -->
   <div class="mt-4 s-card overflow-hidden hidden md:block">
     <table class="tbl w-full">
       <thead><tr><th class="w-8"></th><th>招聘单位 / 公告</th><th>分类</th><th>工作地</th><th>学历要求</th><th>专业/学科</th><th>截止</th><th class="w-20"></th></tr></thead>
-      <tbody>
-        <tr>
-          <td><button class="t3 hover:text-amber-500">☆</button></td>
-          <td><div class="font-medium max-w-md">中国水利水电第八工程局有限公司（湖南）2026 年社会招聘公告</div></td>
-          <td><span class="tag-amber">央国企社招</span></td>
-          <td class="t2">长沙、西宁、其他</td>
-          <td><span class="tag-blue">本科及以上</span></td>
-          <td class="t2 max-w-[220px] truncate">水利工程、土木工程与土木水利、能源动力…</td>
-          <td class="t2">—</td>
-          <td><span class="text-brand-600 text-xs1 font-medium">报名 ↗</span></td>
-        </tr>
-        <tr>
-          <td><button class="t3 hover:text-amber-500">☆</button></td>
-          <td><div class="font-medium max-w-md">山东电力设备有限公司 2026 年招才引才简章</div></td>
-          <td><span class="tag-amber">央国企社招</span></td>
-          <td class="t2">济南、大洋洲、广州</td>
-          <td><span class="tag-blue">本科及以上</span></td>
-          <td class="t2 max-w-[220px] truncate">电气工程、机械工程、控制科学与工程…</td>
-          <td class="t2">—</td>
-          <td><span class="text-brand-600 text-xs1 font-medium">报名 ↗</span></td>
-        </tr>
-        <tr>
-          <td><button class="text-amber-400">★</button></td>
-          <td><div class="font-medium max-w-md">西安建筑科技大学公共管理学院 2026 年招聘教师（师资博士后）公告</div></td>
-          <td><span class="tag-purple">高校高职大专</span></td>
-          <td class="t2">西安</td>
-          <td><span class="tag-blue">博士研究生</span></td>
-          <td class="t2 max-w-[220px] truncate">公共管理学 | 数字经济</td>
-          <td class="t2">详见正文</td>
-          <td><span class="text-brand-600 text-xs1 font-medium">公告 ↗</span></td>
-        </tr>
-        <tr>
-          <td><button class="t3 hover:text-amber-500">☆</button></td>
-          <td><div class="font-medium max-w-md">重庆交通大学 2026 年招收全职博士后简章</div></td>
-          <td><span class="tag-purple">高校高职大专</span></td>
-          <td class="t2">重庆</td>
-          <td><span class="tag-blue">博士研究生</span></td>
-          <td class="t2 max-w-[220px] truncate">土木工程与土木水利 | 水利工程 | 交通运输…</td>
-          <td class="t2">详见正文</td>
-          <td><span class="text-brand-600 text-xs1 font-medium">公告 ↗</span></td>
-        </tr>
-        <tr>
-          <td><button class="t3 hover:text-amber-500">☆</button></td>
-          <td><div class="font-medium max-w-md">浙江大学医学遗传与发育研究院薛东春团队 2026 年公开招聘 4 名工作人员</div></td>
-          <td><span class="tag-purple">高校高职大专</span></td>
-          <td class="t2">杭州</td>
-          <td><span class="tag-blue">本科及以上</span></td>
-          <td class="t2 max-w-[220px] truncate">生物学 | 药学</td>
-          <td class="t2">详见正文</td>
-          <td><span class="text-brand-600 text-xs1 font-medium">公告 ↗</span></td>
-        </tr>
-      </tbody>
+      <tbody id="rows-desktop"></tbody>
     </table>
     <div class="flex items-center justify-between px-4 h-12 text-xs1 t3">
       <span>第 1–50 条 / 37,833</span>
@@ -118,39 +71,9 @@
     </div>
   </div>
 
-  <!-- 移动：紧凑公告卡 -->
-  <div class="md:hidden mt-4 s-card divide-y divide-line dark:divide-line-d overflow-hidden">
-    <div class="p-3.5">
-      <div class="flex items-start gap-2">
-        <div class="font-medium flex-1">中国水利水电第八工程局有限公司（湖南）2026 年社会招聘公告</div>
-        <button class="t3 text-lg leading-none">☆</button>
-      </div>
-      <div class="flex items-center gap-1.5 mt-2 flex-wrap">
-        <span class="tag-amber">央国企社招</span><span class="tag-blue">本科及以上</span>
-        <span class="text-xs2 t3">长沙、西宁 · 水利工程等</span>
-      </div>
-    </div>
-    <div class="p-3.5">
-      <div class="flex items-start gap-2">
-        <div class="font-medium flex-1">西安建筑科技大学公共管理学院 2026 年招聘教师（师资博士后）公告</div>
-        <button class="text-amber-400 text-lg leading-none">★</button>
-      </div>
-      <div class="flex items-center gap-1.5 mt-2 flex-wrap">
-        <span class="tag-purple">高校高职大专</span><span class="tag-blue">博士</span>
-        <span class="text-xs2 t3">西安 · 公共管理学</span>
-      </div>
-    </div>
-    <div class="p-3.5">
-      <div class="flex items-start gap-2">
-        <div class="font-medium flex-1">重庆交通大学 2026 年招收全职博士后简章</div>
-        <button class="t3 text-lg leading-none">☆</button>
-      </div>
-      <div class="flex items-center gap-1.5 mt-2 flex-wrap">
-        <span class="tag-purple">高校高职大专</span><span class="tag-blue">博士</span>
-        <span class="text-xs2 t3">重庆 · 土木/水利/交通</span>
-      </div>
-    </div>
-  </div>
+  <!-- 移动：紧凑公告卡（数据渲染） -->
+  <div id="rows-mobile" class="md:hidden mt-4 s-card divide-y divide-line dark:divide-line-d overflow-hidden"></div>
+  </div><!-- /#list-normal -->
 
   <!-- 省份分布（图形化，替代旧版 pill 计数墙） -->
   <div class="mt-4 s-card p-4 max-w-3xl">
@@ -169,5 +92,42 @@
   </div>
 </main>
 
+<script>
+const TODAY = new Date('2026-08-04');
+function catTag(c){ return /高校|高职|大专/.test(c) ? `<span class="tag-purple">${c}</span>` : /国企|央企/.test(c) ? `<span class="tag-amber">${c}</span>` : `<span class="tag-teal">${c||'公告'}</span>`; }
+function dl(d){ if(!d) return '<span class="t2">详见正文</span>';
+  const days = Math.round((new Date(d)-TODAY)/86400000);
+  if(days<=0) return '<span class="tag-red">今日截止</span>';
+  if(days<=3) return `<span class="tag-amber">${days} 天后</span>`;
+  return `<span class="t2">${d.slice(5)}</span>`; }
+function render(){
+  const data = window.DATA_BIANZHI || [];
+  document.getElementById('rows-desktop').innerHTML = data.map((b,i)=>`
+    <tr tabindex="0">
+      <td><button class="${i===2?'text-amber-400':'t3 hover:text-amber-500'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded" onclick="event.stopPropagation();this.textContent=this.textContent==='☆'?'★':'☆';this.classList.toggle('text-amber-400')">${i===2?'★':'☆'}</button></td>
+      <td><div class="font-medium max-w-md">${b.title}</div></td>
+      <td>${catTag(b.cat)}</td>
+      <td class="t2">${b.loc||b.prov||'—'}</td>
+      <td>${b.edu?`<span class="tag-blue">${b.edu}</span>`:'<span class="tag-gray">详见公告</span>'}</td>
+      <td class="t2 max-w-[220px] truncate">${b.major||'—'}</td>
+      <td>${dl(b.deadline)}</td>
+      <td><span class="text-brand-600 text-xs1 font-medium">公告 ↗</span></td>
+    </tr>`).join('');
+  document.getElementById('rows-mobile').innerHTML = data.map((b,i)=>`
+    <div class="p-3.5 min-h-[44px]">
+      <div class="flex items-start gap-2">
+        <div class="font-medium flex-1">${b.title}</div>
+        <button class="${i===2?'text-amber-400':'t3'} text-lg leading-none min-w-[44px] min-h-[44px] -m-2" onclick="this.textContent=this.textContent.trim()==='☆'?'★':'☆';this.classList.toggle('text-amber-400')">${i===2?'★':'☆'}</button>
+      </div>
+      <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+        ${catTag(b.cat)}${b.edu?`<span class="tag-blue">${b.edu}</span>`:''}
+        <span class="text-xs2 t3">${b.loc||b.prov||''}${b.major?' · '+b.major.slice(0,14)+'…':''}</span>
+        <span class="ml-auto text-xs2">${dl(b.deadline)}</span>
+      </div>
+    </div>`).join('');
+}
+document.addEventListener('DOMContentLoaded', ()=>{ render(); initListStates({boards:[
+  {label:'体制内',count:'10,000+ 条',href:'positions.html'},{label:'校招',count:'2,113 条',href:'campus.html'}]}); });
+</script>
 </body>
 </html>

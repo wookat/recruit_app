@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>报考日历 · 上岸罗盘 原型</title>
+<link rel="stylesheet" href="assets/tokens.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="assets/tokens.js"></script>
 <script src="assets/ui.js"></script>
@@ -15,18 +16,18 @@
     <h1 class="text-lg1 font-semibold">报考日历</h1>
     <span class="text-xs1 t3">未来 60 天校招 / 编制截止汇总</span>
     <span class="flex-1"></span>
-    <div class="flex items-center rounded-md2 border border-line dark:border-line-d overflow-hidden text-xs1">
-      <button class="h-8 px-3 bg-brand-600 text-white">月</button>
-      <button class="h-8 px-3 t2">周</button>
-      <button class="h-8 px-3 t2">议程</button>
+    <div id="cal-tabs" class="flex items-center rounded-md2 border border-line dark:border-line-d overflow-hidden text-xs1" role="tablist">
+      <button data-view="month" onclick="calView('month')" aria-selected="true" class="h-8 px-3 min-h-[36px] bg-brand-600 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" role="tab">月</button>
+      <button data-view="week" onclick="calView('week')" aria-selected="false" class="h-8 px-3 min-h-[36px] t2 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" role="tab">周</button>
+      <button data-view="agenda" onclick="calView('agenda')" aria-selected="false" class="h-8 px-3 min-h-[36px] t2 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" role="tab">议程</button>
     </div>
     <button class="btn-sec btn-sm">↓ 导出本月 .ics</button>
   </div>
 
   <div class="mt-3 flex items-center gap-2 flex-wrap">
-    <button class="btn-ghost btn-sm">‹</button>
-    <span class="text-body font-medium">2026 年 8 月</span>
-    <button class="btn-ghost btn-sm">›</button>
+    <button class="btn-ghost btn-sm" onclick="calNav(-1)" aria-label="上一页">‹</button>
+    <span class="text-body font-medium" id="cal-title">2026 年 8 月</span>
+    <button class="btn-ghost btn-sm" onclick="calNav(1)" aria-label="下一页">›</button>
     <span class="w-px h-5 bg-line dark:bg-line-d mx-1"></span>
     <span class="chip-on !h-6 !text-xs2">全部 182</span>
     <span class="chip !h-6 !text-xs2"><span class="w-2 h-2 rounded-full bg-campus mr-0.5"></span>校招</span>
@@ -36,7 +37,7 @@
 
   <div class="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 items-start">
     <!-- 月视图：格内直接预览事件（旧版只有数字角标） -->
-    <div class="s-card overflow-hidden">
+    <div id="cal-month" class="s-card overflow-hidden">
       <div class="grid grid-cols-7 text-center text-xs1 t3 border-b border-line dark:border-line-d">
         <div class="py-2">一</div><div class="py-2">二</div><div class="py-2">三</div><div class="py-2">四</div><div class="py-2">五</div><div class="py-2">六</div><div class="py-2">日</div>
       </div>
@@ -88,6 +89,35 @@
       </div>
     </div>
 
+    <!-- 周视图（JS 切换） -->
+    <div id="cal-week" class="s-card overflow-hidden hidden">
+      <div class="grid grid-cols-7 text-center text-xs1 t3 border-b border-line dark:border-line-d">
+        <div class="py-2">一 3</div><div class="py-2 text-brand-600 font-medium">二 4</div><div class="py-2">三 5</div><div class="py-2">四 6</div><div class="py-2">五 7</div><div class="py-2">六 8</div><div class="py-2">日 9</div>
+      </div>
+      <div class="grid grid-cols-7 text-xs2 [&>div]:min-h-[300px] [&>div]:p-1.5 [&>div]:border-r [&>div]:border-line/60 dark:[&>div]:border-line-d/60">
+        <div><span class="block truncate rounded px-1 py-0.5 mb-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">福建医科大学附属协和医院</span><span class="block truncate rounded px-1 py-0.5 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">宁波市锸州区水利局</span></div>
+        <div class="bg-brand-50/60 dark:bg-brand-950/40"><span class="block truncate rounded px-1 py-0.5 mb-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">★ 高中语文教师 18:00</span><span class="block truncate rounded px-1 py-0.5 mb-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">传音控股 AI 提前批</span><span class="block truncate rounded px-1 py-0.5 mb-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">文物保护修复中心</span><span class="block truncate rounded px-1 py-0.5 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">龙江化工操作岗</span></div>
+        <div><span class="block truncate rounded px-1 py-0.5 mb-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">德勤数字科技秋招</span><span class="block truncate rounded px-1 py-0.5 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">小米整车提前批</span></div>
+        <div><span class="block truncate rounded px-1 py-0.5 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">中国发展出版社</span></div>
+        <div><span class="block truncate rounded px-1 py-0.5 mb-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">★ OC&C 咨询</span><span class="block truncate rounded px-1 py-0.5 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">神农集团管培生</span></div>
+        <div><span class="block truncate rounded px-1 py-0.5 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">西安建筑科技大学师资博后</span></div>
+        <div><span class="block truncate rounded px-1 py-0.5 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">重庆交通大学博士后</span></div>
+      </div>
+    </div>
+
+    <!-- 议程视图（JS 切换） -->
+    <div id="cal-agenda" class="s-card overflow-hidden hidden divide-y divide-line dark:divide-line-d">
+      <div class="px-4 py-2.5 bg-muted/60 text-xs1 font-medium t2">8 月 4 日 · 今天 · 7 条截止</div>
+      <div class="px-4 py-3 flex items-center gap-2 min-h-[44px]"><span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span><span class="font-medium">★ 高中语文教师（应届生）</span><span class="text-xs1 t3">海口 · 18:00 截止</span><button class="ml-auto btn-pri btn-sm">去报名 ↗</button></div>
+      <div class="px-4 py-3 flex items-center gap-2 min-h-[44px]"><span class="w-2 h-2 rounded-full bg-bianzhi shrink-0"></span><span class="font-medium">文物保护 · 山东省文物保护修复与鉴定中心</span><button class="ml-auto btn-ghost btn-sm text-brand-600">公告 →</button></div>
+      <div class="px-4 py-3 flex items-center gap-2 min-h-[44px]"><span class="w-2 h-2 rounded-full bg-bianzhi shrink-0"></span><span class="font-medium">化工装置操作岗 · 黑龙江省龙江化工</span><button class="ml-auto btn-ghost btn-sm text-brand-600">公告 →</button></div>
+      <div class="px-4 py-3 flex items-center gap-2 min-h-[44px]"><span class="w-2 h-2 rounded-full bg-campus shrink-0"></span><span class="font-medium">传音控股 AI 顶尖人才计划（提前批）</span><button class="ml-auto btn-ghost btn-sm text-brand-600">详情 →</button></div>
+      <div class="px-4 py-2.5 bg-muted/60 text-xs1 font-medium t2">8 月 5 日 · 明天 · 6 条截止</div>
+      <div class="px-4 py-3 flex items-center gap-2 min-h-[44px]"><span class="w-2 h-2 rounded-full bg-campus shrink-0"></span><span class="font-medium">德勤数字科技 2026 秋招</span><button class="ml-auto btn-ghost btn-sm text-brand-600">详情 →</button></div>
+      <div class="px-4 py-3 flex items-center gap-2 min-h-[44px]"><span class="w-2 h-2 rounded-full bg-campus shrink-0"></span><span class="font-medium">小米整车提前批（智能驾驶）</span><button class="ml-auto btn-ghost btn-sm text-brand-600">详情 →</button></div>
+      <div class="px-4 py-3"><button class="w-full btn-ghost btn-sm">加载更多…</button></div>
+    </div>
+
     <!-- 当日事件面板（点击日期查看，替代旧版无预览） -->
     <aside class="s-card p-4 lg:sticky lg:top-[72px]">
       <div class="flex items-baseline justify-between">
@@ -122,5 +152,32 @@
   </div>
 </main>
 
+<script>
+let curView = 'month';
+const TITLES = { month: '2026 年 8 月', week: '2026 年 8 月 第 2 周（8.3 – 8.9）', agenda: '未来 60 天议程' };
+function calView(v) {
+  curView = v;
+  ['month', 'week', 'agenda'].forEach(k => {
+    document.getElementById('cal-' + k).classList.toggle('hidden', k !== v);
+  });
+  document.querySelectorAll('#cal-tabs [data-view]').forEach(b => {
+    const on = b.dataset.view === v;
+    b.setAttribute('aria-selected', on);
+    b.className = `h-8 px-3 min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${on ? 'bg-brand-600 text-white' : 't2 hover:bg-muted'}`;
+  });
+  document.getElementById('cal-title').textContent = TITLES[v];
+}
+function calNav(dir) {
+  const el = document.getElementById('cal-title');
+  if (curView === 'month') {
+    const m = 8 + dir;
+    el.textContent = `2026 年 ${m} 月`;
+    TITLES.month = el.textContent;
+  } else if (curView === 'week') {
+    el.textContent = dir > 0 ? '2026 年 8 月 第 3 周（8.10 – 8.16）' : '2026 年 8 月 第 1 周（7.27 – 8.2）';
+    TITLES.week = el.textContent;
+  }
+}
+</script>
 </body>
 </html>

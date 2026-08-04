@@ -621,6 +621,10 @@ def get_filter_options(db: Session, limit: int = 120):
         base = d[:-1] if len(d) > 2 and d.endswith("市") else d
         if base != city and base in _prefecture_cities:
             return None
+        for ln in (2, 3, 4):
+            head = d[:ln]
+            if head != city and head in _prefecture_cities and d[ln:].startswith("市"):
+                return None
         return d
 
     dt_map: dict = {}

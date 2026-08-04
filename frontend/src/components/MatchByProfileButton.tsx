@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Sparkles, X } from 'lucide-react'
+import { Pencil, Sparkles, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -70,6 +70,22 @@ export function MatchByProfileButton({ note, active, onApply, onClear }: Props) 
           按我的条件匹配
         </Button>
         <span className="text-xs text-muted-foreground">{note}</span>
+        {profileUsable(profile) && !editing && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-11 gap-1 text-xs text-muted-foreground sm:min-h-8"
+            onClick={() => {
+              setEduLevel(profile.eduLevel)
+              setMajor(profile.major)
+              setLocationText(profile.location.join('、'))
+              setEditing(true)
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            修改条件
+          </Button>
+        )}
         {active && (
           <Button
             variant="ghost"

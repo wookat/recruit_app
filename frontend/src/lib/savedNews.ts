@@ -3,6 +3,7 @@ import {
   fetchBianzhiJobs,
   fetchCampusJobs,
   fetchPositions,
+  toQuery,
   type BianzhiParams,
   type CampusParams,
 } from '@/api'
@@ -176,6 +177,33 @@ function bianzhiQueryToParams(query: string): BianzhiParams {
   if (q.get('due')) p.due_within_days = 7
   if (q.get('hexp') === '1') p.hide_expired = true
   return p
+}
+
+// ---------- 关站上新推送：保存筛选快照（随 Web Push 订阅上报） ----------
+
+export interface PushFilterSnapshot {
+  /** 筛选名称。 */
+  n: string
+  /** 列表 API 路径+参数（page_size=1 仅取总数）。 */
+  u: string
+}
+
+/** 三板块保存筛选 -> 服务端上新推送用快照（基线由服务端维护）。 */
+export function buildPushFilters(): PushFilterSnapshot[] {
+  return [
+    ...getSavedFilters().map((f) => ({
+      n: f.name,
+      u: `/api/positions?${toQuery({ ...f.params, page: 1, page_size: 1 })}`,
+    })),
+    ...getSavedQueries('campus').map((f) => ({
+      n: f.name,
+      u: `/api/campus?${toQuery({ ...campusQueryToParams(f.query), page: 1, page_size: 1 })}`,
+    })),
+    ...getSavedQueries('bianzhi').map((f) => ({
+      n: f.name,
+      u: `/api/bianzhi?${toQuery({ ...bianzhiQueryToParams(f.query), page: 1, page_size: 1 })}`,
+    })),
+  ]
 }
 
 // ---------- 上新浏览器通知（独立开关，默认关） ----------

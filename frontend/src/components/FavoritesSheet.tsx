@@ -1966,7 +1966,9 @@ function PushToggleRow() {
         </span>
       </button>
       <span className="hidden sm:inline">
-        {enabled ? '不打开站点也会在每天早上推送临近截止的收藏' : '默认关闭，开启后关站也能收到截止推送'}
+        {enabled
+          ? '不打开站点也会在每天早上推送临近截止的收藏与保存筛选的上新'
+          : '默认关闭，开启后关站也能收到截止提醒与订阅上新推送'}
       </span>
       {error && <span className="w-full text-amber-700 dark:text-amber-300">{error}</span>}
     </div>

@@ -285,12 +285,16 @@ export default function App() {
     return () => window.clearTimeout(t)
   }, [favorites, campusFavorites, bianzhiFavorites, remindDays])
 
-  // 推送通知点击落地 /?fav=1 → 直接打开收藏面板
+  // 推送通知点击落地 /?fav=1 → 收藏面板；/?subs=1 → 订阅面板
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
-    if (q.get('fav') === '1') {
-      setFavOpen(true)
+    const fav = q.get('fav') === '1'
+    const subs = q.get('subs') === '1'
+    if (fav) setFavOpen(true)
+    if (subs) openSubscriptionsPanel()
+    if (fav || subs) {
       q.delete('fav')
+      q.delete('subs')
       const rest = q.toString()
       window.history.replaceState(null, '', `${window.location.pathname}${rest ? `?${rest}` : ''}${window.location.hash}`)
     }

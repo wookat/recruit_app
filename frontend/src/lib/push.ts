@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import axios from 'axios'
 import { API_BASE, type BianzhiJob, type CampusJob, type Position } from '@/api'
 import { getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
+import { buildPushFilters } from '@/lib/savedNews'
 
 const ENABLED_KEY = 'recruit.pushEnabled'
 const EVENT = 'recruit-push-change'
@@ -99,6 +100,7 @@ function subToBody(sub: PushSubscription, remindDays: number, items: PushDueItem
     auth: json.keys?.auth ?? '',
     remind_days: remindDays,
     items,
+    filters: buildPushFilters(),
   }
 }
 

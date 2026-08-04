@@ -18,12 +18,19 @@ from database import get_db
 router = APIRouter(prefix="/api/push", tags=["push"])
 
 MAX_ITEMS = 300
+MAX_FILTERS = 30
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+FILTER_URL_PREFIXES = ("/api/positions?", "/api/campus?", "/api/bianzhi?")
 
 
 class PushItem(BaseModel):
     t: str = Field(..., max_length=120)
     d: str = Field(..., max_length=10)
+
+
+class PushFilter(BaseModel):
+    n: str = Field(..., max_length=60)
+    u: str = Field(..., max_length=1000)
 
 
 class SubscribeBody(BaseModel):
@@ -32,6 +39,7 @@ class SubscribeBody(BaseModel):
     auth: str = Field(..., max_length=100)
     remind_days: int = Field(3, ge=1, le=30)
     items: List[PushItem] = Field(default_factory=list)
+    filters: List[PushFilter] = Field(default_factory=list)
 
 
 class UnsubscribeBody(BaseModel):
@@ -67,9 +75,20 @@ def subscribe(body: SubscribeBody, db: Session = Depends(get_db)):
     row.auth = body.auth
     row.remind_days = body.remind_days
     row.items_json = json.dumps(items, ensure_ascii=False)
+    # 保存筛选快照：同 u 保留已有基线，新增的基线由每日任务首次初始化（null）
+    try:
+        old = {f.get("u"): f.get("t") for f in json.loads(row.filters_json or "[]")}
+    except ValueError:
+        old = {}
+    filters = [
+        {"n": f.n.strip()[:60], "u": f.u, "t": old.get(f.u)}
+        for f in body.filters[:MAX_FILTERS]
+        if f.n.strip() and f.u.startswith(FILTER_URL_PREFIXES)
+    ]
+    row.filters_json = json.dumps(filters, ensure_ascii=False)
     row.failures = 0
     db.commit()
-    return {"ok": True, "items": len(items)}
+    return {"ok": True, "items": len(items), "filters": len(filters)}
 
 
 @router.post("/unsubscribe")

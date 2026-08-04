@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 import cache
 import csv_export
-from crud import keyword_variants, title_hit_rank
+from crud import edu_eligible_clause, keyword_variants, title_hit_rank
 from database import get_db
 from models import CampusJob, LinkCheck
 
@@ -91,7 +91,7 @@ def apply_campus_filters(q, f: dict):
     if f.get("referral_only"):
         q = q.filter(CampusJob.referral_code != None, CampusJob.referral_code != "")  # noqa: E711
     if f.get("edu"):
-        q = q.filter(CampusJob.edu_requirement.ilike(f"%{f['edu']}%"))
+        q = q.filter(edu_eligible_clause(CampusJob.edu_requirement, f["edu"]))
     if f.get("location"):
         terms = [t.strip() for t in f["location"].split(",") if t.strip()]
         if terms:

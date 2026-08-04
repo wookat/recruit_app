@@ -68,6 +68,23 @@ def title_hit_rank(col, keyword: str):
     )
 
 
+#: 学历「可投递」匹配模式：选某学历时命中含该学历、更低学历「及以上」或「不限」的要求串
+EDU_ELIGIBLE_PATTERNS: Dict[str, List[str]] = {
+    "大专": ["%大专%", "%专科%", "%不限%"],
+    "本科": ["%本科%", "%大专%及以上%", "%专科%及以上%", "%不限%"],
+    "硕士": ["%硕士%", "%本科%及以上%", "%大专%及以上%", "%专科%及以上%", "%不限%"],
+    "博士": ["%博士%", "%硕士%及以上%", "%本科%及以上%", "%大专%及以上%", "%专科%及以上%", "%不限%"],
+}
+
+
+def edu_eligible_clause(col, edu: str):
+    """按「持有该学历者可投递」语义匹配学历要求列（未知学历回退子串匹配）。"""
+    patterns = EDU_ELIGIBLE_PATTERNS.get(edu)
+    if not patterns:
+        return col.ilike(f"%{edu}%")
+    return or_(*(col.ilike(p) for p in patterns))
+
+
 def _hit_clause(col, keyword: str):
     return or_(*(col.ilike(f"%{v}%") for v in keyword_variants(keyword)))
 

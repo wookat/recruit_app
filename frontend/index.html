@@ -64,7 +64,7 @@
               return r.json()
             })
           }
-          window.__earlyList = get('/api/positions?page=1&page_size=20&sort=year_desc')
+          window.__earlyList = get('/api/positions?page=1&page_size=20&sort=year_desc&major_type=any')
           window.__earlyFilters = get('/api/filters')
           window.__earlyList.catch(function () {})
           window.__earlyFilters.catch(function () {})

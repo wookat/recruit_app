@@ -45,12 +45,12 @@ import { SynonymHint } from '@/components/SynonymHint'
 import { HotSearchPills } from '@/components/HotSearchPills'
 import { expandKeyword, HOT_SEARCHES_BIANZHI } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
-import { getViewPref, setViewPref } from '@/lib/viewPref'
+import { getViewPref, setViewPref, useOnNarrowScreen } from '@/lib/viewPref'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { MultiSelect, type OptionGroup } from '@/components/MultiSelect'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
-import { getProfile, profileUsable } from '@/lib/profile'
+import { getProfile, profileEduToBoardOption, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { deriveBianzhiTags } from '@/lib/jobTags'
 import { readJobParam } from '@/lib/jobDeepLink'
@@ -228,6 +228,7 @@ export function BianzhiPage({
   const [showHrSites, setShowHrSites] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const [view, setView] = useState<'table' | 'card'>(() => getViewPref('bianzhi'))
+  useOnNarrowScreen(useCallback(() => setView((v) => (v === 'table' ? 'card' : v)), []))
   const selectView = useCallback((v: 'table' | 'card') => {
     setView(v)
     setViewPref('bianzhi', v)
@@ -877,8 +878,7 @@ export function BianzhiPage({
             .map((loc) => opts.find((o) => o === loc || loc.startsWith(o) || o.startsWith(loc)))
             .filter((v): v is string => !!v)
           setProvinces([...new Set(provs)])
-          const edu = p.eduLevel.find((e) => EDU_OPTIONS.includes(e))
-          setEduFilter(edu ?? '')
+          setEduFilter(profileEduToBoardOption(p.eduLevel) ?? '')
           setPage(1)
           setProfileMatched(true)
         }}

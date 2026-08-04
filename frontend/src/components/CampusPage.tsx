@@ -45,12 +45,12 @@ import { SynonymHint } from '@/components/SynonymHint'
 import { HotSearchPills } from '@/components/HotSearchPills'
 import { expandKeyword, HOT_SEARCHES_CAMPUS } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
-import { getViewPref, setViewPref } from '@/lib/viewPref'
+import { getViewPref, setViewPref, useOnNarrowScreen } from '@/lib/viewPref'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { MultiSelect, type OptionGroup } from '@/components/MultiSelect'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
-import { getProfile, profileUsable } from '@/lib/profile'
+import { getProfile, profileEduToBoardOption, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { deriveCampusTags } from '@/lib/jobTags'
 import { readJobParam } from '@/lib/jobDeepLink'
@@ -315,6 +315,7 @@ export function CampusPage({
   const [loading, setLoading] = useState(true)
   const campusFavorites = useCampusFavorites()
   const [view, setView] = useState<'table' | 'card'>(() => getViewPref('campus'))
+  useOnNarrowScreen(useCallback(() => setView((v) => (v === 'table' ? 'card' : v)), []))
   const selectView = useCallback((v: 'table' | 'card') => {
     setView(v)
     setViewPref('campus', v)
@@ -922,8 +923,7 @@ export function CampusPage({
           setSearchInput(kw)
           setKeyword(kw)
           setCities(p.location[0] ? [p.location[0]] : [])
-          const edu = p.eduLevel.find((e) => EDU_OPTIONS.includes(e))
-          setEduFilter(edu ?? '')
+          setEduFilter(profileEduToBoardOption(p.eduLevel) ?? '')
           setPage(1)
           setProfileMatched(true)
         }}

@@ -190,7 +190,7 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
         {items}
       </div>
       <div
-        className="pointer-events-none absolute inset-y-0 -right-1 w-8 bg-gradient-to-l from-background to-transparent lg:hidden"
+        className="pointer-events-none absolute inset-y-0 -right-1 w-8 bg-gradient-to-l from-background to-transparent"
         aria-hidden
       />
     </div>

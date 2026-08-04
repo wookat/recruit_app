@@ -54,9 +54,12 @@ export function BoardRecommendSection({ board, onOpenDetail }: Props) {
   const campusFavs = useCampusFavorites()
   const bianzhiFavs = useBianzhiFavorites()
   const collapsedKey = `recruit.recoCollapsed.${board}`
-  const [collapsed, setCollapsed] = useState(
-    () => localStorage.getItem(collapsedKey) === '1',
-  )
+  const [collapsed, setCollapsed] = useState(() => {
+    const v = localStorage.getItem(collapsedKey)
+    if (v === '1') return true
+    if (v === '0') return false
+    return typeof window !== 'undefined' && window.innerWidth < 768
+  })
   const [page, setPage] = useState(1)
   const [items, setItems] = useState<(CampusJob | BianzhiJob)[] | null>(null)
   const [loading, setLoading] = useState(false)

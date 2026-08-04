@@ -98,9 +98,9 @@ def apply_campus_filters(q, f: dict):
         if terms:
             q = q.filter(or_(*(CampusJob.locations.ilike(f"%{t}%") for t in terms)))
     if f.get("updated_after"):
-        q = q.filter(CampusJob.updated_at_src >= f["updated_after"])
+        q = q.filter(func.substr(func.replace(CampusJob.updated_at_src, "/", "-"), 1, 10) >= f["updated_after"])
     if f.get("updated_before"):
-        q = q.filter(CampusJob.updated_at_src <= f["updated_before"])
+        q = q.filter(func.substr(func.replace(CampusJob.updated_at_src, "/", "-"), 1, 10) <= f["updated_before"])
     if f.get("keyword"):
         q = q.filter(multi_col_hit_clause(
             [

@@ -32,6 +32,7 @@ from datetime import datetime
 import requests
 from sqlalchemy import text
 
+import cache
 import import_bianzhi
 import import_campus
 from database import Base, SessionLocal, engine
@@ -418,6 +419,10 @@ def collect(dry_run: bool = False, limit: int = 0) -> dict:
                 break
         if not dry_run:
             db.commit()
+            cache.invalidate_prefixes(
+                "campus_filters", "campus_counts", "campus_timeline",
+                "bianzhi_filters", "bianzhi_counts", "bianzhi_timeline",
+            )
         result = {"dry_run": dry_run, "fetched": fetched, **est, **ing.stats}
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return result

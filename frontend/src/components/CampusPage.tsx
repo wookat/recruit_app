@@ -246,7 +246,10 @@ export function CampusPage({
     const v = urlQuery.get('ctype')
     return v ? v.split(',').filter(Boolean) : []
   })
-  const [city, setCity] = useState<string | null>(urlQuery.get('city'))
+  const [cities, setCities] = useState<string[]>(() => {
+    const v = urlQuery.get('city')
+    return v ? v.split(',').filter(Boolean) : []
+  })
   const [recentOnly, setRecentOnly] = useState(initialPreset === 'recent7')
   const [dueOnly, setDueOnly] = useState(
     () => new URLSearchParams(window.location.search).get('due') === '7',
@@ -363,7 +366,7 @@ export function CampusPage({
     else q.delete('hexp')
     if (hideSeen) q.set('hseen', '1')
     else q.delete('hseen')
-    if (city) q.set('city', city)
+    if (cities.length) q.set('city', cities.join(','))
     else q.delete('city')
     if (companyTypes.length) q.set('ctype', companyTypes.join(','))
     else q.delete('ctype')
@@ -372,7 +375,7 @@ export function CampusPage({
     q.delete('kw')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('campus', urlPreset)
-  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, city, companyTypes, keyword])
+  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, cities, companyTypes, keyword])
 
   useEffect(() => {
     markBoardVisit('campus')
@@ -411,14 +414,14 @@ export function CampusPage({
       ...p,
       keyword: kwTrim ? (synAdded.length ? expandKeyword(kwTrim).expanded : kwTrim) : undefined,
       company_type: companyTypes.length ? companyTypes : p.company_type,
-      location: city || undefined,
+      location: cities.length ? cities.join(',') : undefined,
       updated_after: recentOnly ? daysAgoStr(7) : undefined,
       due_within_days: dueOnly ? 7 : undefined,
       hide_expired: !dueOnly && hideExpired ? true : undefined,
       page,
       page_size: PAGE_SIZE,
     }
-  }, [preset, kwTrim, synAdded, companyTypes, city, recentOnly, dueOnly, hideExpired, page])
+  }, [preset, kwTrim, synAdded, companyTypes, cities, recentOnly, dueOnly, hideExpired, page])
 
   useEffect(() => {
     let cancelled = false
@@ -477,7 +480,7 @@ export function CampusPage({
       '校招',
       preset !== 'all' ? presetLabel : undefined,
       ...companyTypes,
-      city || undefined,
+      ...cities,
       keyword || undefined,
       recentOnly ? '近7天' : undefined,
       dueOnly ? '7天内截止' : undefined,
@@ -485,21 +488,25 @@ export function CampusPage({
       new Date().toISOString().slice(0, 10).replace(/-/g, ''),
     ]
     return parts.filter(Boolean).join('-')
-  }, [preset, companyTypes, city, keyword, recentOnly, dueOnly, hideExpired])
+  }, [preset, companyTypes, cities, keyword, recentOnly, dueOnly, hideExpired])
 
   const filterSnapshot = (() => {
     const s: Record<string, string> = {}
     const urlPreset = recentOnly && preset === 'all' ? 'recent7' : preset
     if (urlPreset !== 'all') s.bpreset = urlPreset
     if (dueOnly) s.due = '7'
-    if (city) s.city = city
+    if (cities.length) s.city = cities.join(',')
     if (companyTypes.length) s.ctype = companyTypes.join(',')
     if (keyword.trim()) s.bkw = keyword.trim()
     return s
   })()
   const filterDefaultName =
     [
-      city,
+      cities.length === 0
+        ? null
+        : cities.length <= 3
+          ? cities.join('+')
+          : `${cities.slice(0, 3).join('+')}等${cities.length}地`,
       companyTypes.length === 0
         ? null
         : companyTypes.length <= 3
@@ -513,7 +520,7 @@ export function CampusPage({
       .filter(Boolean)
       .join('·') || '校招筛选'
   const filterCanSave =
-    preset !== 'all' || recentOnly || dueOnly || !!city || companyTypes.length > 0 || !!keyword.trim()
+    preset !== 'all' || recentOnly || dueOnly || cities.length > 0 || companyTypes.length > 0 || !!keyword.trim()
 
   const activeFilters: RemovableFilter[] = []
   if (keyword)
@@ -525,11 +532,11 @@ export function CampusPage({
         setPage(1)
       },
     })
-  if (city)
+  for (const c of cities)
     activeFilters.push({
-      label: `城市：${city}`,
+      label: `城市：${c}`,
       onRemove: () => {
-        setCity(null)
+        setCities((prev) => prev.filter((x) => x !== c))
         setPage(1)
       },
     })
@@ -575,7 +582,7 @@ export function CampusPage({
       onRemove: () => {
         setSearchInput('')
         setKeyword('')
-        setCity(null)
+        setCities([])
         setPage(1)
         setProfileMatched(false)
       },
@@ -587,7 +594,7 @@ export function CampusPage({
     setDueOnly(false)
     setHideExpired(false)
     setHideSeen(false)
-    setCity(null)
+    setCities([])
     setCompanyTypes([])
     setSearchInput('')
     setKeyword('')
@@ -662,12 +669,12 @@ export function CampusPage({
               key={c}
               type="button"
               onClick={() => {
-                setCity((prev) => (prev === c ? null : c))
+                setCities((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]))
                 setPage(1)
               }}
               className={cn(
                 'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
-                city === c
+                cities.includes(c)
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-background text-foreground hover:bg-muted',
               )}
@@ -748,7 +755,7 @@ export function CampusPage({
 
   const mobileFilterCount =
     companyTypes.length +
-    (city ? 1 : 0) +
+    cities.length +
     (recentOnly ? 1 : 0) +
     (dueOnly ? 1 : 0) +
     (hideExpired ? 1 : 0) +
@@ -818,14 +825,14 @@ export function CampusPage({
           const kw = p.major.trim()
           setSearchInput(kw)
           setKeyword(kw)
-          setCity(p.location[0] ?? null)
+          setCities(p.location[0] ? [p.location[0]] : [])
           setPage(1)
           setProfileMatched(true)
         }}
         onClear={() => {
           setSearchInput('')
           setKeyword('')
-          setCity(null)
+          setCities([])
           setPage(1)
           setProfileMatched(false)
         }}

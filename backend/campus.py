@@ -90,7 +90,9 @@ def apply_campus_filters(q, f: dict):
     if f.get("referral_only"):
         q = q.filter(CampusJob.referral_code != None, CampusJob.referral_code != "")  # noqa: E711
     if f.get("location"):
-        q = q.filter(CampusJob.locations.ilike(f"%{f['location']}%"))
+        terms = [t.strip() for t in f["location"].split(",") if t.strip()]
+        if terms:
+            q = q.filter(or_(*(CampusJob.locations.ilike(f"%{t}%") for t in terms)))
     if f.get("updated_after"):
         q = q.filter(CampusJob.updated_at_src >= f["updated_after"])
     if f.get("keyword"):

@@ -28,6 +28,7 @@ from models import BianzhiJob, CampusJob, PushSubscription
 from pywebpush import webpush, WebPushException
 import refresh_feishu
 import collect_iguopin
+import collect_ncss
 import import_guopin_2027
 from cache import get_redis
 from etl.normalize_v2 import parse_signup_deadline_v2
@@ -86,6 +87,16 @@ def collect_iguopin_jobs(self):
     self.update_state(state="PROGRESS", meta={"step": "collecting iguopin jobs"})
     try:
         return collect_iguopin.collect()
+    except Exception as exc:
+        raise self.retry(exc=exc)
+
+
+@celery_app.task(bind=True, max_retries=2, default_retry_delay=300)
+def collect_ncss_jobs(self):
+    """每日增量采集 NCSS 教育部大学生就业平台校招职位（幂等可重跑）。"""
+    self.update_state(state="PROGRESS", meta={"step": "collecting ncss jobs"})
+    try:
+        return collect_ncss.collect()
     except Exception as exc:
         raise self.retry(exc=exc)
 

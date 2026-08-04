@@ -7,7 +7,9 @@ import {
   fetchBianzhiFilters,
   fetchBianzhiJob,
   fetchBianzhiJobs,
+  fetchBianzhiTimeline,
   type BianzhiFilterOptions,
+  type CampusTimeline,
   type BianzhiJob,
   type BianzhiParams,
 } from '@/api'
@@ -30,7 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ArrowUpRight, Building2, ExternalLink, FlaskConical, GraduationCap, Landmark, LayoutGrid, LayoutList, Library, PenLine, School, Search, Stethoscope, Table2 } from 'lucide-react'
+import { ArrowUpRight, Building2, ChartColumn, ExternalLink, FlaskConical, GraduationCap, Landmark, LayoutGrid, LayoutList, Library, Map as MapIcon, PenLine, School, Search, Stethoscope, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SeenBadge } from '@/components/SeenBadge'
 import { NewDot } from '@/components/NewDot'
@@ -72,6 +74,8 @@ import { jobShareUrl } from '@/lib/clipboard'
 const MajorGuideSheet = lazy(() =>
   lazyRetry(() => import('@/components/MajorGuideSheet').then((m) => ({ default: m.MajorGuideSheet }))),
 )
+const CityMapPanel = lazy(() => import('@/components/CityMapPanel'))
+const TimelinePanel = lazy(() => import('@/components/TimelinePanel'))
 
 const EDU_OPTIONS = ['本科', '硕士', '博士', '大专']
 
@@ -167,7 +171,31 @@ export function BianzhiPage({
   )
   const [provinceCounts, setProvinceCounts] = useState<Record<string, number> | null>(null)
   const [cityOptions, setCityOptions] = useState<string[]>([])
+  const [cityCounts, setCityCounts] = useState<Record<string, number>>({})
   const [cityProvinces, setCityProvinces] = useState<Record<string, string>>({})
+  const [mapOpen, setMapOpen] = useState(false)
+  const [timelineOpen, setTimelineOpen] = useState(false)
+  const [timeline, setTimeline] = useState<CampusTimeline | null>(null)
+  const [timeRange, setTimeRange] = useState<{ from: string; to: string } | null>(() => {
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('board') !== 'bianzhi') return null
+    const from = q.get('bfrom')
+    const to = q.get('bto')
+    return /^\d{4}-\d{2}-\d{2}$/.test(from ?? '') && /^\d{4}-\d{2}-\d{2}$/.test(to ?? '')
+      ? { from: from as string, to: to as string }
+      : null
+  })
+
+  useEffect(() => {
+    if (!timelineOpen || timeline) return
+    let alive = true
+    fetchBianzhiTimeline().then((t) => {
+      if (alive && t) setTimeline(t)
+    })
+    return () => {
+      alive = false
+    }
+  }, [timelineOpen, timeline])
 
   useEffect(() => {
     let alive = true
@@ -181,7 +209,10 @@ export function BianzhiPage({
         }
       }
       setProvinceCounts(acc)
-      if (c.cities) setCityOptions(Object.keys(c.cities))
+      if (c.cities) {
+        setCityOptions(Object.keys(c.cities))
+        setCityCounts(c.cities)
+      }
       if (c.city_provinces) setCityProvinces(c.city_provinces)
     })
     return () => {
@@ -272,9 +303,16 @@ export function BianzhiPage({
     else q.delete('bkw')
     if (eduFilter) q.set('bedu', eduFilter)
     else q.delete('bedu')
+    if (timeRange) {
+      q.set('bfrom', timeRange.from)
+      q.set('bto', timeRange.to)
+    } else {
+      q.delete('bfrom')
+      q.delete('bto')
+    }
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('bianzhi', preset)
-  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, provinces, cities, keyword, eduFilter])
+  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, provinces, cities, keyword, eduFilter, timeRange])
 
   useEffect(() => {
     markBoardVisit('bianzhi')
@@ -300,13 +338,14 @@ export function BianzhiPage({
       city: cities.length ? cities.join(',') : undefined,
       keyword: kwTrim ? (synAdded.length ? expandKeyword(kwTrim).expanded : kwTrim) : undefined,
       edu: eduFilter || undefined,
-      updated_after: recentOnly ? daysAgoStr(7) : undefined,
+      updated_after: timeRange ? timeRange.from : recentOnly ? daysAgoStr(7) : undefined,
+      updated_before: timeRange ? timeRange.to : undefined,
       due_within_days: dueOnly ? 7 : undefined,
       hide_expired: !dueOnly && hideExpired ? true : undefined,
       page: fetchPage,
       page_size: isLiankaoPreset ? 100 : PAGE_SIZE,
     }
-  }, [preset, recentOnly, kwTrim, synAdded, provinces, cities, dueOnly, hideExpired, fetchPage, isLiankaoPreset, eduFilter])
+  }, [preset, recentOnly, timeRange, kwTrim, synAdded, provinces, cities, dueOnly, hideExpired, fetchPage, isLiankaoPreset, eduFilter])
 
   useEffect(() => {
     let cancelled = false
@@ -397,6 +436,10 @@ export function BianzhiPage({
     if (cities.length) s.bcity = cities.join(',')
     if (eduFilter) s.bedu = eduFilter
     if (keyword.trim()) s.bkw = keyword.trim()
+    if (timeRange) {
+      s.bfrom = timeRange.from
+      s.bto = timeRange.to
+    }
     return s
   })()
   const filterDefaultName =
@@ -422,6 +465,7 @@ export function BianzhiPage({
   const filterCanSave =
     preset !== 'all' ||
     recentOnly ||
+    !!timeRange ||
     dueOnly ||
     provinces.length > 0 ||
     cities.length > 0 ||
@@ -477,6 +521,14 @@ export function BianzhiPage({
         setPage(1)
       },
     })
+  if (timeRange)
+    activeFilters.push({
+      label: `更新时段：${timeRange.from}~${timeRange.to}`,
+      onRemove: () => {
+        setTimeRange(null)
+        setPage(1)
+      },
+    })
   if (hideExpired)
     activeFilters.push({
       label: '隐藏已截止',
@@ -506,6 +558,7 @@ export function BianzhiPage({
     selectPreset('all')
     setEduFilter('')
     setRecentOnly(false)
+    setTimeRange(null)
     setDueOnly(false)
     setHideExpired(false)
     setHideSeen(false)
@@ -950,6 +1003,36 @@ export function BianzhiPage({
           >
             <Table2 className="h-4 w-4" />
           </button>
+          <button
+            type="button"
+            aria-label="地图分布"
+            title="岗位城市分布地图"
+            aria-pressed={mapOpen}
+            onClick={() => setMapOpen((v) => !v)}
+            className={cn(
+              'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
+              mapOpen
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border bg-background text-muted-foreground hover:bg-muted',
+            )}
+          >
+            <MapIcon className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="时间线"
+            title="岗位更新时间线"
+            aria-pressed={timelineOpen}
+            onClick={() => setTimelineOpen((v) => !v)}
+            className={cn(
+              'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
+              timelineOpen
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border bg-background text-muted-foreground hover:bg-muted',
+            )}
+          >
+            <ChartColumn className="h-4 w-4" />
+          </button>
         </div>
         <div className="flex gap-1.5">
           <Button variant="outline" size="sm" className="h-11 gap-1.5 sm:h-10" onClick={() => setGuideOpen(true)}>
@@ -969,6 +1052,65 @@ export function BianzhiPage({
       </div>
 
       {synAdded.length > 0 && <SynonymHint added={synAdded} onClose={() => setSynOff(true)} />}
+
+      {timelineOpen && (
+        <div className="rounded-lg border border-border bg-card p-2 sm:p-3">
+          <div className="flex items-center justify-between px-1 pb-1">
+            <span className="text-sm font-medium">岗位更新时间线（每日更新岗位数，拖动下方滑块选时间段）</span>
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => setTimelineOpen(false)}
+            >
+              收起
+            </button>
+          </div>
+          <Suspense fallback={<Skeleton className="h-[280px] w-full" />}>
+            {timeline ? (
+              <TimelinePanel
+                days={timeline.days}
+                range={timeRange}
+                onApplyRange={(from, to) => {
+                  setTimeRange({ from, to })
+                  setRecentOnly(false)
+                  setPage(1)
+                }}
+                onClearRange={() => {
+                  setTimeRange(null)
+                  setPage(1)
+                }}
+              />
+            ) : (
+              <Skeleton className="h-[280px] w-full" />
+            )}
+          </Suspense>
+        </div>
+      )}
+
+      {mapOpen && (
+        <div className="rounded-lg border border-border bg-card p-2 sm:p-3">
+          <div className="flex items-center justify-between px-1 pb-1">
+            <span className="text-sm font-medium">岗位城市分布（气泡大小=岗位数，点击气泡筛选该城市，可拖拽/缩放）</span>
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => setMapOpen(false)}
+            >
+              收起
+            </button>
+          </div>
+          <Suspense fallback={<Skeleton className="h-[420px] w-full sm:h-[520px]" />}>
+            <CityMapPanel
+              cities={cityCounts}
+              selected={cities}
+              onSelectCity={(c) => {
+                setCities((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]))
+                setPage(1)
+              }}
+            />
+          </Suspense>
+        </div>
+      )}
 
       {showHrSites && (
         <div className="rounded-xl border bg-background p-3">

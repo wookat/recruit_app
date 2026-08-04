@@ -126,7 +126,7 @@ function syncSectionUrl(section: Section) {
   if (section.mode === 'search') {
     q.set('board', 'search')
     q.set('q', section.keyword || '')
-    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bcity', 'bkw', 'bedu', 'cedu', 'hexp', 'hseen', 'cview', 'ub', 'cboard']) q.delete(k)
+    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bcity', 'bkw', 'bedu', 'cedu', 'cfrom', 'cto', 'bfrom', 'bto', 'hexp', 'hseen', 'cview', 'ub', 'cboard']) q.delete(k)
     for (const k of POSITION_URL_KEYS) q.delete(k)
   } else if (section.mode === 'positions') {
     if (q.get('board')) {
@@ -143,11 +143,15 @@ function syncSectionUrl(section: Section) {
     q.delete('bkw')
     q.delete('bedu')
     q.delete('cedu')
+    q.delete('cfrom')
+    q.delete('cto')
+    q.delete('bfrom')
+    q.delete('bto')
     q.delete('cview')
     q.delete('ub')
   } else if (section.mode === 'calendar' || section.mode === 'updates') {
     q.set('board', section.mode)
-    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bcity', 'bkw', 'bedu', 'cedu', 'hexp', 'hseen']) q.delete(k)
+    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bcity', 'bkw', 'bedu', 'cedu', 'cfrom', 'cto', 'bfrom', 'bto', 'hexp', 'hseen']) q.delete(k)
     if (section.mode === 'updates') {
       q.delete('cview')
       q.delete('cboard')
@@ -172,10 +176,14 @@ function syncSectionUrl(section: Section) {
       q.delete('prov')
       q.delete('bcity')
       q.delete('bedu')
+      q.delete('bfrom')
+      q.delete('bto')
     } else {
       q.delete('city')
       q.delete('ctype')
       q.delete('cedu')
+      q.delete('cfrom')
+      q.delete('cto')
     }
   }
   const qs = q.toString()
@@ -315,7 +323,7 @@ export default function App() {
 
   const clearBoardParams = useCallback(() => {
     const q = new URLSearchParams(window.location.search)
-    for (const k of ['city', 'ctype', 'prov', 'bcity', 'bkw', 'bedu', 'cedu']) q.delete(k)
+    for (const k of ['city', 'ctype', 'prov', 'bcity', 'bkw', 'bedu', 'cedu', 'cfrom', 'cto', 'bfrom', 'bto']) q.delete(k)
     const qs = q.toString()
     window.history.replaceState(
       null,

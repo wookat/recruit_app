@@ -257,6 +257,7 @@ export interface BianzhiParams {
   job_type?: string
   edu?: string
   updated_after?: string
+  updated_before?: string
   due_within_days?: number
   hide_expired?: boolean
   page?: number
@@ -281,6 +282,19 @@ export async function fetchBianzhiJob(id: number): Promise<BianzhiJob> {
 export async function fetchBianzhiFilters(): Promise<BianzhiFilterOptions> {
   const res = await axios.get(`${API_BASE}/api/bianzhi/filters`)
   return res.data
+}
+
+let bianzhiTimelinePromise: Promise<CampusTimeline | null> | null = null
+
+/** 模块级缓存单次请求，失败静默返回 null。 */
+export function fetchBianzhiTimeline(): Promise<CampusTimeline | null> {
+  if (!bianzhiTimelinePromise) {
+    bianzhiTimelinePromise = axios
+      .get(`${API_BASE}/api/bianzhi/timeline`)
+      .then((r) => r.data)
+      .catch(() => null)
+  }
+  return bianzhiTimelinePromise
 }
 
 /** 编制列表同步导出 CSV URL（≤2000 行）。 */

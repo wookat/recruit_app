@@ -53,6 +53,11 @@ import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
 
+/** 表格里报名时间只显示日期，带时分秒的完整时间戳靠 hover title 查看 */
+function dateOnly(s: string): string {
+  return s.replace(/(\d{4}-\d{2}-\d{2})[ T]\d{2}:\d{2}(?::\d{2})?/g, '$1')
+}
+
 /** 岗位示例回退值与考试类型相同时两列逐行重复，表格里该列显示「—」 */
 function dedupExamType(title: string, examType: string | null | undefined): string {
   return examType && title.trim() === examType.trim() ? '—' : title
@@ -210,6 +215,7 @@ export const PositionTable = memo(function PositionTable({
                         'whitespace-nowrap',
                         h.column.id === 'exam_time' && 'hidden 2xl:table-cell',
                         h.column.id === 'exam_type' && 'hidden min-[1750px]:table-cell',
+                        h.column.id === 'edu_level_norm' && 'hidden min-[1100px]:table-cell',
                       )}
                       style={{ width: h.column.getSize(), minWidth: h.column.getSize() }}
                     >
@@ -267,6 +273,7 @@ export const PositionTable = memo(function PositionTable({
                           (cell.column.id === 'exam_time' || cell.column.id === 'created_at') &&
                             'hidden 2xl:table-cell',
                           cell.column.id === 'exam_type' && 'hidden min-[1750px]:table-cell',
+                          cell.column.id === 'edu_level_norm' && 'hidden min-[1100px]:table-cell',
                           cell.column.id === 'employer' &&
                             'max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:max-w-[150px] max-sm:border-r max-sm:bg-card max-sm:shadow-[8px_0_12px_-6px_rgba(0,0,0,0.18)] group-hover:max-sm:bg-muted',
                         )}
@@ -296,7 +303,9 @@ export const PositionTable = memo(function PositionTable({
                           </span>
                         ) : cell.column.id === 'signup_time' ? (
                           <span className="inline-flex max-w-full items-center gap-1.5">
-                            <span className="truncate">{truncate(String(cell.getValue() || '-'))}</span>
+                            <span className="truncate">
+                              {truncate(dateOnly(String(cell.getValue() || '-')))}
+                            </span>
                             <DueBadge date={row.original.signup_deadline?.slice(0, 10)} />
                           </span>
                         ) : cell.column.id === 'created_at' ? (

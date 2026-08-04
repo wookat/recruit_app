@@ -1529,7 +1529,7 @@ export function ListPage({
         <div
           className={cn(
             'pointer-events-none sticky inset-x-0 z-10 -mb-7 flex h-7 justify-center',
-            view === 'table' ? 'top-14' : 'top-2',
+            view === 'table' ? 'top-24 xl:top-14' : 'top-2',
           )}
         >
           <span

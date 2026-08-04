@@ -13,7 +13,7 @@ import { FreshnessNote } from './FreshnessNote'
 import { DeadlinesCard } from './DeadlinesCard'
 import { TodayGlance } from './TodayGlance'
 import { buildShareUrl, paramsFromQueryString, paramsToQueryString, POSITION_URL_KEYS } from '@/lib/urlFilters'
-import { readViewPref, setViewPref } from '@/lib/viewPref'
+import { isNarrowScreen, readViewPref, setViewPref } from '@/lib/viewPref'
 import { useSeenSet } from '@/lib/viewHistory'
 import { markBoardVisit } from '@/lib/lastVisit'
 import { expandKeyword } from '@/lib/synonyms'
@@ -200,12 +200,11 @@ const PRESET_VIEWS: PresetView[] = [
 type ViewMode = 'table' | 'card' | 'list'
 
 function defaultView(): ViewMode {
-  const saved = readViewPref('positions', ['table', 'card', 'list'] as const)
-  if (saved) return saved
-  if (typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches) {
-    return 'card'
+  if (isNarrowScreen()) {
+    const saved = readViewPref('positions', ['card', 'list'] as const)
+    return saved ?? 'card'
   }
-  return 'table'
+  return readViewPref('positions', ['table', 'card', 'list'] as const) ?? 'table'
 }
 
 export function ListPage({
@@ -860,24 +859,6 @@ export function ListPage({
       {filters ? (
         <>
           <MultiSelect
-            label="年份"
-            options={filters.years.map(String)}
-            selected={(params.year || []).map(String)}
-            onChange={(v) => updateParam('year', v.map(Number).filter((n) => !isNaN(n)))}
-          />
-          <MultiSelect
-            label="岗位类型"
-            options={filters.job_types}
-            selected={params.job_type || []}
-            onChange={(v) => updateParam('job_type', v)}
-          />
-          <MultiSelect
-            label="学历"
-            options={filters.edu_levels}
-            selected={params.edu_level || []}
-            onChange={(v) => updateParam('edu_level', v)}
-          />
-          <MultiSelect
             label="考试/招聘类型"
             options={filters.exam_type_norms || []}
             selected={params.exam_type_norm || []}
@@ -908,7 +889,7 @@ export function ListPage({
         </>
       ) : (
         <>
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-16 w-full rounded-lg" />
           ))}
         </>

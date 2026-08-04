@@ -627,6 +627,29 @@ export function BianzhiPage({
       </div>
     ) : null
 
+  const eduRow = (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-xs text-muted-foreground">学历：</span>
+      {['本科', '硕士', '博士', '大专'].map((e) => (
+        <button
+          key={e}
+          onClick={() => {
+            setEduFilter((v) => (v === e ? '' : e))
+            setPage(1)
+          }}
+          className={cn(
+            'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            eduFilter === e
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
+          )}
+        >
+          {e}
+        </button>
+      ))}
+    </div>
+  )
+
   return (
     <div className="space-y-4">
       {/* 分类 chips */}
@@ -876,13 +899,19 @@ export function BianzhiPage({
         {guideOpen && <MajorGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
       </Suspense>
 
-      {/* 省份 chips（桌面） */}
-      {provinceRow && <div className="hidden md:block">{provinceRow}</div>}
+      {/* 省份 + 学历 chips（桌面） */}
+      {provinceRow && (
+        <div className="hidden space-y-2 md:block">
+          {provinceRow}
+          {eduRow}
+        </div>
+      )}
 
       {/* 移动端筛选：超两行自动折叠 */}
       {provinceRow && (
-        <MobileFilterCollapse count={provinces.length} title="编制筛选">
+        <MobileFilterCollapse count={provinces.length + (eduFilter ? 1 : 0)} title="编制筛选">
           {provinceRow}
+          {eduRow}
         </MobileFilterCollapse>
       )}
 

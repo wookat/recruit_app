@@ -116,19 +116,21 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
           </Button>
         </span>
       ) : (
-        <Button
-          variant="link"
-          size="sm"
-          className="h-auto min-h-11 p-0 text-xs sm:min-h-0"
-          disabled={!canSave}
-          onClick={() => {
-            setSaveName(defaultName)
-            setSaveOpen(true)
-          }}
-        >
-          <BookmarkPlus className="mr-0.5 h-3.5 w-3.5" />
-          保存当前筛选
-        </Button>
+        <span title={!canSave ? '先设置筛选条件后可保存' : undefined}>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto min-h-11 p-0 text-xs sm:min-h-0"
+            disabled={!canSave}
+            onClick={() => {
+              setSaveName(defaultName)
+              setSaveOpen(true)
+            }}
+          >
+            <BookmarkPlus className="mr-0.5 h-3.5 w-3.5" />
+            保存当前筛选
+          </Button>
+        </span>
       )}
       {hint && <span className="text-muted-foreground">{hint}</span>}
     </div>

@@ -104,14 +104,14 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
           </div>
         )}
       </CardContent>
-      <CardFooter className="pt-0">
+      <CardFooter className="justify-end pt-0">
         <Button
-          variant="default"
+          variant="ghost"
           size="sm"
-          className="h-11 w-full sm:h-8"
+          className="h-11 px-2 text-primary hover:bg-primary/10 hover:text-primary sm:h-8"
           onClick={() => onDetail(item)}
         >
-          查看详情
+          查看详情 →
         </Button>
       </CardFooter>
     </Card>

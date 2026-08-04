@@ -63,7 +63,7 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, 
               <Skeleton className="h-4 w-2/3" />
             </CardContent>
             <CardFooter className="pt-0">
-              <Skeleton className="h-8 w-full rounded-lg" />
+              <Skeleton className="ml-auto h-8 w-24 rounded-lg" />
             </CardFooter>
           </Card>
         ))}

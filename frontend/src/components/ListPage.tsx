@@ -13,7 +13,7 @@ import { FreshnessNote } from './FreshnessNote'
 import { DeadlinesCard } from './DeadlinesCard'
 import { TodayGlance } from './TodayGlance'
 import { buildShareUrl, paramsFromQueryString, paramsToQueryString, POSITION_URL_KEYS } from '@/lib/urlFilters'
-import { readViewPref, setViewPref } from '@/lib/viewPref'
+import { isNarrowScreen, readViewPref, setViewPref } from '@/lib/viewPref'
 import { useSeenSet } from '@/lib/viewHistory'
 import { markBoardVisit } from '@/lib/lastVisit'
 import { expandKeyword } from '@/lib/synonyms'
@@ -200,12 +200,11 @@ const PRESET_VIEWS: PresetView[] = [
 type ViewMode = 'table' | 'card' | 'list'
 
 function defaultView(): ViewMode {
-  const saved = readViewPref('positions', ['table', 'card', 'list'] as const)
-  if (saved) return saved
-  if (typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches) {
-    return 'card'
+  if (isNarrowScreen()) {
+    const saved = readViewPref('positions', ['card', 'list'] as const)
+    return saved ?? 'card'
   }
-  return 'table'
+  return readViewPref('positions', ['table', 'card', 'list'] as const) ?? 'table'
 }
 
 export function ListPage({

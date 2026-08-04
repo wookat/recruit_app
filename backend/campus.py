@@ -236,13 +236,21 @@ def campus_counts(db: Session = Depends(get_db)):
         .group_by(CampusJob.locations)
         .all()
     )
-    _NON_CITY = {"全国", "全国多地", "多地", "其他", "海外", "待定", "不限"}
+    _NON_CITY = {
+        "全国", "全国多地", "全国各地", "多地", "其他", "海外", "待定", "不限",
+        "广东", "浙江", "江苏", "山东", "河北", "河南", "湖南", "湖北", "四川",
+        "福建", "安徽", "江西", "山西", "陕西", "云南", "贵州", "广西", "辽宁",
+        "黑龙江", "甘肃", "青海", "海南", "内蒙古", "新疆", "西藏", "宁夏",
+    }
     city_counts: dict = {}
     for loc, n in locs:
         for t in re.split(r"[|、,，/;；\s]+", loc):
             t = t.strip()
-            if t and len(t) <= 6 and t not in _NON_CITY:
-                city_counts[t] = city_counts.get(t, 0) + n
+            if len(t) > 2 and t.endswith("市"):
+                t = t[:-1]
+            if not t or len(t) > 6 or t in _NON_CITY or t.endswith(("省", "自治州")):
+                continue
+            city_counts[t] = city_counts.get(t, 0) + n
     cities = dict(sorted(city_counts.items(), key=lambda x: -x[1])[:80])
     return {
         "company_types": {t: n for t, n in ctypes},

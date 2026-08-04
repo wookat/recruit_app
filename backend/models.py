@@ -159,6 +159,8 @@ class PushSubscription(Base):
     auth = Column(String(100), nullable=False)
     remind_days = Column(Integer, nullable=False, default=3)
     items_json = Column(Text, nullable=False, default="[]")  # [{"t": 标题, "d": "YYYY-MM-DD"}]
+    # 保存筛选快照 [{"n": 名称, "u": 列表 API 路径+参数, "t": 上次推送时的总数基线|null}]
+    filters_json = Column(Text, nullable=False, default="[]", server_default="[]")
     failures = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

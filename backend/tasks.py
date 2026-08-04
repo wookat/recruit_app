@@ -429,6 +429,101 @@ def push_due_reminders():
     return {"status": "ok", "sent": sent, "removed": removed, "failed": failed}
 
 
+INTERNAL_API_BASE = os.getenv("INTERNAL_API_BASE", "http://app:8000")
+
+
+@celery_app.task
+def push_saved_filter_news():
+    """每日向 Web Push 订阅者推送保存筛选的上新聚合（关站也能收到「+N 新」）。
+
+    基线存在订阅的 filters_json 中：首次见到某筛选只记录当前总数不推送，
+    此后总数增长即计入上新；推送与否都回写最新基线。
+    """
+    private_key = os.getenv("VAPID_PRIVATE_KEY", "")
+    sub_claim = os.getenv("VAPID_SUB", "mailto:admin@zalize.com")
+    if not private_key:
+        return {"status": "skipped", "reason": "VAPID_PRIVATE_KEY not set"}
+
+    db = SessionLocal()
+    sent = removed = failed = 0
+    totals_cache: dict = {}
+    try:
+        subs = db.query(PushSubscription).all()
+        for sub in subs:
+            try:
+                filters = json.loads(sub.filters_json or "[]")
+            except ValueError:
+                filters = []
+            if not filters:
+                continue
+            news = []
+            dirty = False
+            for f in filters:
+                u = f.get("u") or ""
+                if u not in totals_cache:
+                    try:
+                        resp = requests.get(f"{INTERNAL_API_BASE}{u}", timeout=20)
+                        resp.raise_for_status()
+                        totals_cache[u] = int(resp.json().get("total", 0))
+                    except Exception:  # noqa: BLE001  单个筛选失败不阻断其余
+                        totals_cache[u] = None
+                total = totals_cache[u]
+                if total is None:
+                    continue
+                base = f.get("t")
+                if isinstance(base, int) and total > base:
+                    news.append((total - base, f.get("n") or ""))
+                if f.get("t") != total:
+                    f["t"] = total
+                    dirty = True
+            if dirty:
+                sub.filters_json = json.dumps(filters, ensure_ascii=False)
+            if not news:
+                continue
+            news.sort(reverse=True)
+            total_new = sum(n for n, _ in news)
+            top = "、".join(f"「{name}」+{n}" for n, name in news[:2])
+            payload = json.dumps(
+                {
+                    "title": f"上岸罗盘：你订阅的筛选新增 {total_new} 条岗位",
+                    "body": top + ("…" if len(news) > 2 else ""),
+                    "url": "/?subs=1",
+                },
+                ensure_ascii=False,
+            )
+            try:
+                webpush(
+                    subscription_info={
+                        "endpoint": sub.endpoint,
+                        "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
+                    },
+                    data=payload,
+                    vapid_private_key=private_key,
+                    vapid_claims={"sub": sub_claim},
+                    ttl=3600 * 12,
+                )
+                sent += 1
+            except Exception as exc:  # noqa: BLE001  单个坏订阅不阻断其余推送
+                status = (
+                    exc.response.status_code
+                    if isinstance(exc, WebPushException) and exc.response is not None
+                    else None
+                )
+                if status in (404, 410):
+                    db.delete(sub)
+                    removed += 1
+                else:
+                    sub.failures = (sub.failures or 0) + 1
+                    if sub.failures >= 5:
+                        db.delete(sub)
+                        removed += 1
+                    failed += 1
+        db.commit()
+    finally:
+        db.close()
+    return {"status": "ok", "sent": sent, "removed": removed, "failed": failed}
+
+
 @celery_app.task
 def refresh_hot_cache():
     """预计算 /api/stats 与 /api/filters 的 Redis 热缓存（24h TTL），并预热热门筛选 count。"""

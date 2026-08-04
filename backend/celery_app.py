@@ -43,6 +43,10 @@ celery_app.conf.update(
             "task": "tasks.push_due_reminders",
             "schedule": crontab(hour=8, minute=30),  # 每天向 Web Push 订阅者发临近截止聚合提醒
         },
+        "push-saved-filter-news": {
+            "task": "tasks.push_saved_filter_news",
+            "schedule": crontab(hour=8, minute=40),  # 每天向订阅者发保存筛选上新聚合推送
+        },
         "check-dead-links": {
             "task": "tasks.check_dead_links",
             "schedule": crontab(hour=4, minute=0, day_of_week=1),  # 每周一全量扫描校招/编制链接死链

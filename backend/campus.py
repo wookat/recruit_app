@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 import cache
 import csv_export
-from crud import edu_eligible_clause, keyword_variants, title_hit_rank
+from crud import edu_eligible_clause, multi_col_hit_clause, title_hit_rank
 from database import get_db
 from models import CampusJob, LinkCheck
 from normalizer import CITY_TO_PROVINCE
@@ -100,16 +100,15 @@ def apply_campus_filters(q, f: dict):
     if f.get("updated_after"):
         q = q.filter(CampusJob.updated_at_src >= f["updated_after"])
     if f.get("keyword"):
-        clauses = []
-        for v in keyword_variants(f["keyword"]):
-            k = f"%{v}%"
-            clauses.extend([
-                CampusJob.company.ilike(k),
-                CampusJob.positions.ilike(k),
-                CampusJob.industry.ilike(k),
-                CampusJob.major_requirement.ilike(k),
-            ])
-        q = q.filter(or_(*clauses))
+        q = q.filter(multi_col_hit_clause(
+            [
+                CampusJob.company,
+                CampusJob.positions,
+                CampusJob.industry,
+                CampusJob.major_requirement,
+            ],
+            f["keyword"],
+        ))
     if f.get("due_within_days") is not None:
         today = date.today()
         q = q.filter(CampusJob.deadline_date >= today,

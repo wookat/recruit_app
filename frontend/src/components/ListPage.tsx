@@ -1537,7 +1537,12 @@ export function ListPage({
 
       <div className="relative">
       {loading && view !== 'list' && (data?.items.length ?? 0) > 0 && (
-        <div className="pointer-events-none absolute inset-x-0 top-2 z-10 flex justify-center">
+        <div
+          className={cn(
+            'pointer-events-none absolute inset-x-0 z-10 flex justify-center',
+            view === 'table' ? 'top-14' : 'top-2',
+          )}
+        >
           <span
             role="status"
             className="flex items-center gap-1.5 rounded-full border bg-background/95 px-3 py-1 text-xs text-muted-foreground shadow-sm"

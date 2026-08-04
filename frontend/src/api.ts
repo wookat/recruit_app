@@ -94,7 +94,7 @@ export interface SearchParams {
   after_year?: number
 }
 
-function toQuery(params: object) {
+export function toQuery(params: object) {
   const q = new URLSearchParams()
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return

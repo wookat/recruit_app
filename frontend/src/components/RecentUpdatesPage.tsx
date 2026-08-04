@@ -42,8 +42,22 @@ interface Props {
   onOpenBoard: (board: Board) => void
 }
 
+const CACHE_KEY = 'recruit.recentUpdatesCache'
+
+/** 会话级旧数据先展示（stale-while-revalidate），避免每次进入都整屏骨架 */
+function readCachedDays(): RecentUpdateDay[] | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { days?: RecentUpdateDay[] }
+    return Array.isArray(parsed.days) ? parsed.days : null
+  } catch {
+    return null
+  }
+}
+
 export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
-  const [days, setDays] = useState<RecentUpdateDay[] | null>(null)
+  const [days, setDays] = useState<RecentUpdateDay[] | null>(readCachedDays)
   const [failed, setFailed] = useState(false)
   const [boardFilter, setBoardFilter] = useState<Board | 'all'>(() => {
     const v = new URLSearchParams(window.location.search).get('ub')
@@ -94,6 +108,11 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
     fetchRecentUpdates(7)
       .then((r) => {
         if (!cancelled) setDays(r.days)
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ days: r.days }))
+        } catch {
+          // 存不下不影响展示
+        }
       })
       .catch(() => {
         if (!cancelled) setFailed(true)

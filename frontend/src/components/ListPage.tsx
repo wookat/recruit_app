@@ -859,24 +859,6 @@ export function ListPage({
       {filters ? (
         <>
           <MultiSelect
-            label="年份"
-            options={filters.years.map(String)}
-            selected={(params.year || []).map(String)}
-            onChange={(v) => updateParam('year', v.map(Number).filter((n) => !isNaN(n)))}
-          />
-          <MultiSelect
-            label="岗位类型"
-            options={filters.job_types}
-            selected={params.job_type || []}
-            onChange={(v) => updateParam('job_type', v)}
-          />
-          <MultiSelect
-            label="学历"
-            options={filters.edu_levels}
-            selected={params.edu_level || []}
-            onChange={(v) => updateParam('edu_level', v)}
-          />
-          <MultiSelect
             label="考试/招聘类型"
             options={filters.exam_type_norms || []}
             selected={params.exam_type_norm || []}
@@ -907,7 +889,7 @@ export function ListPage({
         </>
       ) : (
         <>
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-16 w-full rounded-lg" />
           ))}
         </>

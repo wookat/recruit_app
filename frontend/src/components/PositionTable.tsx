@@ -205,7 +205,7 @@ export const PositionTable = memo(function PositionTable({
                         'whitespace-nowrap',
                         h.column.id === 'exam_time' && 'hidden 2xl:table-cell',
                       )}
-                      style={{ width: h.column.getSize() }}
+                      style={{ width: h.column.getSize(), minWidth: h.column.getSize() }}
                     >
                       {columnFilters?.[h.column.id] ? (
                         <span className="inline-flex items-center gap-0.5">

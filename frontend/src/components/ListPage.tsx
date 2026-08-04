@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import axios from 'axios'
 import {
   fetchFilters,
   fetchSuggestions,
@@ -425,7 +426,16 @@ export function ListPage({
     setLoading(true)
     setLoadError(false)
     try {
-      const res = await fetcher(effParams, controller.signal)
+      let res: Awaited<ReturnType<typeof fetcher>>
+      try {
+        res = await fetcher(effParams, controller.signal)
+      } catch (e) {
+        // 瞬时网络抖动（status=0 无响应）自动重试一次，减少偶发「加载失败」误报
+        if (!isCurrent() || (axios.isAxiosError(e) && e.response)) throw e
+        await new Promise((r) => setTimeout(r, 800))
+        if (!isCurrent()) return
+        res = await fetcher(effParams, controller.signal)
+      }
       if (!isCurrent()) return
       setData(res)
       const kw = (params.keyword || '').trim()

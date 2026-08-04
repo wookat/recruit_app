@@ -51,6 +51,28 @@
         window.addEventListener('recruit-theme-change', apply)
       })()
     </script>
+    <script>
+      // 冷加载首屏 API 预取：裸首页/体制内默认视图时，让默认列表与筛选项请求
+      // 与 JS bundle 下载并行，缩短慢网下的 LCP；带筛选参数的深链不预取。
+      ;(function () {
+        try {
+          var s = window.location.search
+          if (s && s !== '?board=positions') return
+          var get = function (url) {
+            return fetch(url).then(function (r) {
+              if (!r.ok) throw new Error(String(r.status))
+              return r.json()
+            })
+          }
+          window.__earlyList = get('/api/positions?page=1&page_size=20&sort=year_desc')
+          window.__earlyFilters = get('/api/filters')
+          window.__earlyList.catch(function () {})
+          window.__earlyFilters.catch(function () {})
+        } catch (e) {
+          /* 预取失败静默回退正常请求 */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

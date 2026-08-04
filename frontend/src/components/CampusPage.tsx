@@ -47,6 +47,7 @@ import { expandKeyword, HOT_SEARCHES_CAMPUS } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
+import { MultiSelect } from '@/components/MultiSelect'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
 import { getProfile, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
@@ -272,11 +273,14 @@ export function CampusPage({
   const [refreshNonce, setRefreshNonce] = useState(0)
   const refreshResolveRef = useRef<(() => void) | null>(null)
   const [typeCounts, setTypeCounts] = useState<Record<string, number> | null>(null)
+  const [cityOptions, setCityOptions] = useState<string[]>([])
 
   useEffect(() => {
     let alive = true
     fetchCampusCounts().then((c) => {
-      if (alive && c) setTypeCounts(c.company_types)
+      if (!alive || !c) return
+      setTypeCounts(c.company_types)
+      if (c.cities) setCityOptions(Object.keys(c.cities))
     })
     return () => {
       alive = false
@@ -682,6 +686,23 @@ export function CampusPage({
               {c}
             </button>
           ))}
+          {cityOptions.length > 0 && (
+            <MultiSelect
+              label="更多城市"
+              options={cityOptions}
+              selected={cities}
+              onChange={(v) => {
+                setCities(v)
+                setPage(1)
+              }}
+              placeholder="搜索城市（支持拼音）…"
+              triggerLabel={
+                cities.filter((c) => !CITY_CHIPS.includes(c)).length
+                  ? `更多城市 · ${cities.filter((c) => !CITY_CHIPS.includes(c)).length}`
+                  : '更多城市'
+              }
+            />
+          )}
         </div>
       </div>
       <div

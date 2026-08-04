@@ -356,6 +356,7 @@ export interface BianzhiCounts {
 export interface CampusCounts {
   company_types: Record<string, number>
   batches: Record<string, number>
+  cities?: Record<string, number>
 }
 
 let bianzhiCountsPromise: Promise<BianzhiCounts | null> | null = null

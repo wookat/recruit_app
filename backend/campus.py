@@ -1,4 +1,5 @@
 """校招/社招信息 API：/api/campus 列表与筛选项。"""
+import re
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 
@@ -229,9 +230,24 @@ def campus_counts(db: Session = Depends(get_db)):
         .group_by(CampusJob.batch)
         .all()
     )
+    locs = (
+        db.query(CampusJob.locations, func.count())
+        .filter(CampusJob.locations != None, CampusJob.locations != "")  # noqa: E711
+        .group_by(CampusJob.locations)
+        .all()
+    )
+    _NON_CITY = {"全国", "全国多地", "多地", "其他", "海外", "待定", "不限"}
+    city_counts: dict = {}
+    for loc, n in locs:
+        for t in re.split(r"[|、,，/;；\s]+", loc):
+            t = t.strip()
+            if t and len(t) <= 6 and t not in _NON_CITY:
+                city_counts[t] = city_counts.get(t, 0) + n
+    cities = dict(sorted(city_counts.items(), key=lambda x: -x[1])[:80])
     return {
         "company_types": {t: n for t, n in ctypes},
         "batches": {b: n for b, n in batches},
+        "cities": cities,
     }
 
 

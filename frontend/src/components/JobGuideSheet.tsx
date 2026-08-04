@@ -235,7 +235,7 @@ function ExamCalendar2027() {
           </ul>
           <a
             href={t.link.href}
-            className="mt-2 inline-flex min-h-11 items-center gap-1 rounded-full border border-primary/30 bg-background px-2.5 py-1 text-xs text-primary transition-colors hover:bg-primary/10 sm:min-h-0"
+            className="mt-2 inline-flex min-h-11 items-center gap-1 rounded-md border border-primary/30 bg-background px-2.5 py-1 text-xs text-primary transition-colors hover:bg-primary/10 sm:min-h-0"
           >
             {t.link.label}
             <ArrowRight className="h-3 w-3" />
@@ -557,7 +557,7 @@ function GuideTimeline() {
                   <a
                     key={l.label}
                     href={l.href}
-                    className="inline-flex min-h-11 items-center gap-1 rounded-full border border-primary/30 bg-background px-2.5 py-1 text-xs text-primary transition-colors hover:bg-primary/10 sm:min-h-0"
+                    className="inline-flex min-h-11 items-center gap-1 rounded-md border border-primary/30 bg-background px-2.5 py-1 text-xs text-primary transition-colors hover:bg-primary/10 sm:min-h-0"
                   >
                     {l.label}
                     <ArrowRight className="h-3 w-3" />
@@ -716,9 +716,9 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
                 setGuideHash(s.key)
               }}
               className={cn(
-                'min-h-11 rounded-full border px-3 py-1 text-xs transition-colors sm:min-h-0',
+                'min-h-11 rounded-md border px-3 py-1 text-xs transition-colors sm:min-h-0',
                 active === s.key
-                  ? 'border-primary bg-primary text-primary-foreground'
+                  ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-background text-foreground hover:bg-muted',
               )}
             >
@@ -811,7 +811,7 @@ export function JobGuideSheet({ open, onClose }: { open: boolean; onClose: () =>
                 aria-pressed={!!votes[active]}
                 onClick={() => toggleVote(active)}
                 className={cn(
-                  'inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors sm:min-h-8',
+                  'inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1 text-xs transition-colors sm:min-h-8',
                   votes[active]
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',

@@ -71,7 +71,7 @@ export function MultiSelect({
           className={cn(
             'flex h-4 w-4 items-center justify-center rounded-sm border',
             isSelected
-              ? 'border-primary bg-primary text-primary-foreground'
+              ? 'border-primary bg-primary/10 text-primary'
               : 'border-muted-foreground/25'
           )}
         >

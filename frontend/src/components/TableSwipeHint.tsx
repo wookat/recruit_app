@@ -31,7 +31,7 @@ export function TableSwipeHint() {
       }}
       data-testid="table-swipe-hint"
     >
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground/80 px-3 py-1.5 text-xs text-background shadow-sm">
+      <span className="inline-flex items-center gap-1.5 rounded-md bg-foreground/80 px-3 py-1.5 text-xs text-background shadow-sm">
         <MoveHorizontal className="h-3.5 w-3.5" /> 表格可左右滑动查看更多列
       </span>
     </div>

@@ -378,9 +378,9 @@ export function CalendarPage() {
               aria-pressed={calBoard === b.key}
               onClick={() => setCalBoard(b.key)}
               className={cn(
-                'min-h-9 cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors sm:min-h-7',
+                'min-h-9 cursor-pointer rounded-md px-3 py-1 text-xs font-medium transition-colors sm:min-h-7',
                 calBoard === b.key
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-primary/10 text-primary'
                   : 'bg-muted text-muted-foreground hover:text-foreground',
               )}
             >

@@ -1009,27 +1009,27 @@ export function ListPage({
                 {advancedOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               </Button>
               <Button
-                variant={view === 'card' ? 'default' : 'outline'}
+                variant="outline"
                 size="icon"
-                className="h-11 w-11 sm:h-9 sm:w-9"
+                className={cn('h-11 w-11 sm:h-9 sm:w-9', view === 'card' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
                 aria-label="卡片视图"
                 onClick={() => setView('card')}
               >
                 <LayoutGrid className="h-4 w-4" />
               </Button>
               <Button
-                variant={view === 'table' ? 'default' : 'outline'}
+                variant="outline"
                 size="icon"
-                className="h-11 w-11 sm:h-9 sm:w-9"
+                className={cn('h-11 w-11 sm:h-9 sm:w-9', view === 'table' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
                 aria-label="表格视图"
                 onClick={() => setView('table')}
               >
                 <Table2 className="h-4 w-4" />
               </Button>
               <Button
-                variant={view === 'list' ? 'default' : 'outline'}
+                variant="outline"
                 size="icon"
-                className="h-11 w-11 sm:h-9 sm:w-9"
+                className={cn('h-11 w-11 sm:h-9 sm:w-9', view === 'list' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
                 aria-label="无限滚动列表"
                 title="无限滚动列表（大数据量浏览）"
                 onClick={() => setView('list')}
@@ -1125,7 +1125,7 @@ export function ListPage({
                   {f.name}
                 </span>
                 {(savedNews.counts[`positions|${f.name}`] ?? 0) > 0 && (
-                  <span className="shrink-0 rounded-full bg-red-500/15 px-1.5 text-[10px] font-medium text-red-600 dark:text-red-400">
+                  <span className="shrink-0 rounded-sm bg-red-500/15 px-1.5 text-[10px] font-medium text-red-600 dark:text-red-400">
                     +{savedNews.counts[`positions|${f.name}`]} 新
                   </span>
                 )}
@@ -1332,9 +1332,9 @@ export function ListPage({
               type="button"
               onClick={() => applyPreset(preset)}
               className={cn(
-                'min-h-11 shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
+                'min-h-11 shrink-0 cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
                 active
-                  ? 'border-primary bg-primary text-primary-foreground'
+                  ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
               )}
             >
@@ -1346,9 +1346,9 @@ export function ListPage({
           type="button"
           onClick={() => updateParam('hide_expired', params.hide_expired ? undefined : true)}
           className={cn(
-            'min-h-11 shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
+            'min-h-11 shrink-0 cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
             params.hide_expired
-              ? 'border-primary bg-primary text-primary-foreground'
+              ? 'border-primary bg-primary/10 text-primary'
               : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
           )}
         >
@@ -1358,9 +1358,9 @@ export function ListPage({
           type="button"
           onClick={() => setHideSeen((v) => !v)}
           className={cn(
-            'min-h-11 shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
+            'min-h-11 shrink-0 cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
             hideSeen
-              ? 'border-primary bg-primary text-primary-foreground'
+              ? 'border-primary bg-primary/10 text-primary'
               : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
           )}
         >
@@ -1375,7 +1375,7 @@ export function ListPage({
                 key={p.key}
                 type="button"
                 onClick={() => onCrossPreset(p.key)}
-                className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-full border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground sm:min-h-0"
+                className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-md border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground sm:min-h-0"
               >
                 {p.label}
                 <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
@@ -1548,7 +1548,7 @@ export function ListPage({
         >
           <span
             role="status"
-            className="flex items-center gap-1.5 rounded-full border bg-background/95 px-3 py-1 text-xs text-muted-foreground shadow-sm"
+            className="flex items-center gap-1.5 rounded-md border bg-background/95 px-3 py-1 text-xs text-muted-foreground shadow-sm"
           >
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             正在更新结果…

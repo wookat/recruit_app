@@ -65,7 +65,7 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
             {f.name}
           </span>
           {(news.counts[`${board}|${f.name}`] ?? 0) > 0 && (
-            <span className="shrink-0 rounded-full bg-red-500/15 px-1.5 text-[10px] font-medium text-red-600 dark:text-red-400">
+            <span className="shrink-0 rounded-sm bg-red-500/15 px-1.5 text-[10px] font-medium text-red-600 dark:text-red-400">
               +{news.counts[`${board}|${f.name}`]} 新
             </span>
           )}

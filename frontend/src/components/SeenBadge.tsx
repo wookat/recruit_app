@@ -16,7 +16,7 @@ export function SeenBadge({
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center rounded-full bg-muted px-1.5 py-px align-middle text-[10px] font-normal text-muted-foreground',
+        'inline-flex shrink-0 items-center rounded-sm bg-muted px-1.5 py-px align-middle text-[10px] font-normal text-muted-foreground',
         className,
       )}
       aria-label="已浏览过"

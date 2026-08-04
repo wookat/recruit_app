@@ -154,4 +154,4 @@ export function channelClass(value: AppChannel): string {
 }
 
 /** 通用彩色标签样式（与状态 pill 一致的胶囊形态）。 */
-export const PILL_BASE = 'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap'
+export const PILL_BASE = 'inline-flex items-center rounded-sm px-2 py-0.5 text-[11px] font-medium whitespace-nowrap'

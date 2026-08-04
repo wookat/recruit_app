@@ -24,7 +24,7 @@ function isoDaysAgo(n: number): string {
 }
 
 const PILL =
-  'flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 sm:min-h-9'
+  'flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 sm:min-h-9'
 
 export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDeadline }: Props) {
   const [campusNew, setCampusNew] = useState<number | null>(null)
@@ -168,7 +168,7 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
       <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5">
         <span
           className={cn(
-            'shrink-0 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground',
+            'shrink-0 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground',
           )}
         >
           今日速览

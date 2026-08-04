@@ -70,7 +70,7 @@ export function SubscriptionsSheet() {
                 <button
                   key={scope}
                   type="button"
-                  className="min-h-11 cursor-pointer rounded-full border border-primary/30 bg-primary/5 px-3 text-xs font-medium text-foreground transition-colors hover:bg-primary/10 sm:min-h-9"
+                  className="min-h-11 cursor-pointer rounded-md border border-primary/30 bg-primary/5 px-3 text-xs font-medium text-foreground transition-colors hover:bg-primary/10 sm:min-h-9"
                   onClick={() => {
                     closeSubscriptionsPanel()
                     window.location.href =
@@ -105,7 +105,7 @@ export function SubscriptionsSheet() {
                       </span>
                       <span className="min-w-0 flex-1 truncate">{e.name}</span>
                       {n > 0 && (
-                        <span className="shrink-0 rounded-full bg-red-500/15 px-1.5 text-[11px] font-medium text-red-600 dark:text-red-400">
+                        <span className="shrink-0 rounded-sm bg-red-500/15 px-1.5 text-[11px] font-medium text-red-600 dark:text-red-400">
                           +{n} 新
                         </span>
                       )}

@@ -85,6 +85,8 @@ def apply_bianzhi_filters(q, f: dict):
         q = q.filter(edu_eligible_clause(BianzhiJob.edu_requirement, f["edu"]))
     if f.get("updated_after"):
         q = q.filter(BianzhiJob.updated_at_src >= f["updated_after"])
+    if f.get("updated_before"):
+        q = q.filter(BianzhiJob.updated_at_src <= f["updated_before"])
     if f.get("keyword"):
         q = q.filter(multi_col_hit_clause(
             [
@@ -126,6 +128,7 @@ def list_bianzhi_jobs(
     job_type: Optional[str] = None,
     edu: Optional[str] = None,
     updated_after: Optional[str] = None,
+    updated_before: Optional[str] = None,
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
     hide_expired: bool = False,
     page: int = Query(1, ge=1),
@@ -140,6 +143,7 @@ def list_bianzhi_jobs(
         "job_type": job_type,
         "edu": edu,
         "updated_after": updated_after,
+        "updated_before": updated_before,
         "due_within_days": due_within_days,
         "hide_expired": hide_expired,
     })
@@ -162,6 +166,7 @@ def export_bianzhi_jobs(
     job_type: Optional[str] = None,
     edu: Optional[str] = None,
     updated_after: Optional[str] = None,
+    updated_before: Optional[str] = None,
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
     hide_expired: bool = False,
     fname: Optional[str] = None,
@@ -177,6 +182,7 @@ def export_bianzhi_jobs(
         "job_type": job_type,
         "edu": edu,
         "updated_after": updated_after,
+        "updated_before": updated_before,
         "due_within_days": due_within_days,
         "hide_expired": hide_expired,
     })
@@ -236,6 +242,21 @@ def bianzhi_counts(db: Session = Depends(get_db)):
         "cities": cities,
         "city_provinces": city_provinces,
     }
+
+
+@router.get("/timeline")
+@cache.cached("bianzhi_timeline", ttl=3600, stale=True)
+def bianzhi_timeline(db: Session = Depends(get_db)):
+    """按更新日期（updated_at_src）聚合的每日岗位数（时间线视图，1 小时缓存）。"""
+    day = func.substr(func.replace(BianzhiJob.updated_at_src, "/", "-"), 1, 10)
+    rows = (
+        db.query(day, func.count())
+        .filter(day.op("~")(r"^\d{4}-\d{2}-\d{2}$"))
+        .group_by(day)
+        .order_by(day)
+        .all()
+    )
+    return {"days": {d: n for d, n in rows}}
 
 
 @router.get("/filters")

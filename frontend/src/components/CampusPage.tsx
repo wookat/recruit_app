@@ -1,5 +1,5 @@
 import { TableSwipeHint } from './TableSwipeHint'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   buildCampusExportUrl,
   createBoardExport,
@@ -7,6 +7,8 @@ import {
   fetchCampusFilters,
   fetchCampusJob,
   fetchCampusJobs,
+  fetchCampusTimeline,
+  type CampusTimeline,
   type CampusFilterOptions,
   type CampusJob,
   type CampusParams,
@@ -29,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ArrowUpRight, ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
+import { ArrowUpRight, ChartColumn, ExternalLink, LayoutGrid, Map as MapIcon, Search, Table2, Ticket } from 'lucide-react'
 import { BoardExportButton } from '@/components/BoardExportButton'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SeenBadge } from '@/components/SeenBadge'
@@ -66,6 +68,9 @@ import { cmpNullableStr, nextSort, normalizeDateStr, type SortState } from '@/li
 import { toggleCampusFavorite, useCampusFavorites } from '@/lib/boardFavorites'
 import { applySeo } from '@/lib/seo'
 import { jobShareUrl } from '@/lib/clipboard'
+
+const CityMapPanel = lazy(() => import('@/components/CityMapPanel'))
+const TimelinePanel = lazy(() => import('@/components/TimelinePanel'))
 
 const EDU_OPTIONS = ['本科', '硕士', '博士', '大专']
 
@@ -258,6 +263,15 @@ export function CampusPage({
     urlQuery.get('board') === 'campus' ? urlQuery.get('cedu') ?? '' : '',
   )
   const [recentOnly, setRecentOnly] = useState(initialPreset === 'recent7')
+  const [timeRange, setTimeRange] = useState<{ from: string; to: string } | null>(() => {
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('board') !== 'campus') return null
+    const from = q.get('cfrom')
+    const to = q.get('cto')
+    return /^\d{4}-\d{2}-\d{2}$/.test(from ?? '') && /^\d{4}-\d{2}-\d{2}$/.test(to ?? '')
+      ? { from: from as string, to: to as string }
+      : null
+  })
   const [dueOnly, setDueOnly] = useState(
     () => new URLSearchParams(window.location.search).get('due') === '7',
   )
@@ -279,6 +293,21 @@ export function CampusPage({
   const [refreshNonce, setRefreshNonce] = useState(0)
   const refreshResolveRef = useRef<(() => void) | null>(null)
   const [typeCounts, setTypeCounts] = useState<Record<string, number> | null>(null)
+  const [cityCounts, setCityCounts] = useState<Record<string, number>>({})
+  const [mapOpen, setMapOpen] = useState(false)
+  const [timelineOpen, setTimelineOpen] = useState(false)
+  const [timeline, setTimeline] = useState<CampusTimeline | null>(null)
+
+  useEffect(() => {
+    if (!timelineOpen || timeline) return
+    let alive = true
+    fetchCampusTimeline().then((t) => {
+      if (alive && t) setTimeline(t)
+    })
+    return () => {
+      alive = false
+    }
+  }, [timelineOpen, timeline])
   const [cityOptions, setCityOptions] = useState<string[]>([])
   const [cityProvinces, setCityProvinces] = useState<Record<string, string>>({})
 
@@ -287,7 +316,10 @@ export function CampusPage({
     fetchCampusCounts().then((c) => {
       if (!alive || !c) return
       setTypeCounts(c.company_types)
-      if (c.cities) setCityOptions(Object.keys(c.cities))
+      if (c.cities) {
+        setCityOptions(Object.keys(c.cities))
+        setCityCounts(c.cities)
+      }
       if (c.city_provinces) setCityProvinces(c.city_provinces)
     })
     return () => {
@@ -405,10 +437,17 @@ export function CampusPage({
     else q.delete('ctype')
     if (keyword.trim()) q.set('bkw', keyword.trim())
     else q.delete('bkw')
+    if (timeRange) {
+      q.set('cfrom', timeRange.from)
+      q.set('cto', timeRange.to)
+    } else {
+      q.delete('cfrom')
+      q.delete('cto')
+    }
     q.delete('kw')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('campus', urlPreset)
-  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, cities, eduFilter, companyTypes, keyword])
+  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, cities, eduFilter, companyTypes, keyword, timeRange])
 
   useEffect(() => {
     markBoardVisit('campus')
@@ -449,13 +488,14 @@ export function CampusPage({
       company_type: companyTypes.length ? companyTypes : p.company_type,
       edu: eduFilter || undefined,
       location: cities.length ? cities.join(',') : undefined,
-      updated_after: recentOnly ? daysAgoStr(7) : undefined,
+      updated_after: timeRange ? timeRange.from : recentOnly ? daysAgoStr(7) : undefined,
+      updated_before: timeRange ? timeRange.to : undefined,
       due_within_days: dueOnly ? 7 : undefined,
       hide_expired: !dueOnly && hideExpired ? true : undefined,
       page,
       page_size: PAGE_SIZE,
     }
-  }, [preset, kwTrim, synAdded, companyTypes, cities, eduFilter, recentOnly, dueOnly, hideExpired, page])
+  }, [preset, kwTrim, synAdded, companyTypes, cities, eduFilter, recentOnly, timeRange, dueOnly, hideExpired, page])
 
   useEffect(() => {
     let cancelled = false
@@ -534,6 +574,10 @@ export function CampusPage({
     if (companyTypes.length) s.ctype = companyTypes.join(',')
     if (eduFilter) s.cedu = eduFilter
     if (keyword.trim()) s.bkw = keyword.trim()
+    if (timeRange) {
+      s.cfrom = timeRange.from
+      s.cto = timeRange.to
+    }
     return s
   })()
   const filterDefaultName =
@@ -559,6 +603,7 @@ export function CampusPage({
   const filterCanSave =
     preset !== 'all' ||
     recentOnly ||
+    !!timeRange ||
     dueOnly ||
     cities.length > 0 ||
     companyTypes.length > 0 ||
@@ -606,6 +651,14 @@ export function CampusPage({
         setPage(1)
       },
     })
+  if (timeRange)
+    activeFilters.push({
+      label: `更新时段：${timeRange.from}~${timeRange.to}`,
+      onRemove: () => {
+        setTimeRange(null)
+        setPage(1)
+      },
+    })
   if (dueOnly)
     activeFilters.push({
       label: '即将截止',
@@ -642,6 +695,7 @@ export function CampusPage({
   function clearAllFilters() {
     setPreset('all')
     setRecentOnly(false)
+    setTimeRange(null)
     setDueOnly(false)
     setHideExpired(false)
     setHideSeen(false)
@@ -852,6 +906,7 @@ export function CampusPage({
     cities.length +
     (eduFilter ? 1 : 0) +
     (recentOnly ? 1 : 0) +
+    (timeRange ? 1 : 0) +
     (dueOnly ? 1 : 0) +
     (hideExpired ? 1 : 0) +
     (hideSeen ? 1 : 0)
@@ -995,6 +1050,36 @@ export function CampusPage({
           >
             <Table2 className="h-4 w-4" />
           </button>
+          <button
+            type="button"
+            aria-label="地图分布"
+            title="岗位城市分布地图"
+            aria-pressed={mapOpen}
+            onClick={() => setMapOpen((v) => !v)}
+            className={cn(
+              'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
+              mapOpen
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border bg-background text-muted-foreground hover:bg-muted',
+            )}
+          >
+            <MapIcon className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="时间线"
+            title="岗位更新时间线"
+            aria-pressed={timelineOpen}
+            onClick={() => setTimelineOpen((v) => !v)}
+            className={cn(
+              'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
+              timelineOpen
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border bg-background text-muted-foreground hover:bg-muted',
+            )}
+          >
+            <ChartColumn className="h-4 w-4" />
+          </button>
           {view === 'card' && (
             <select
               aria-label="排序"
@@ -1020,6 +1105,65 @@ export function CampusPage({
       </div>
 
       {synAdded.length > 0 && <SynonymHint added={synAdded} onClose={() => setSynOff(true)} />}
+
+      {timelineOpen && (
+        <div className="rounded-lg border border-border bg-card p-2 sm:p-3">
+          <div className="flex items-center justify-between px-1 pb-1">
+            <span className="text-sm font-medium">岗位更新时间线（每日更新岗位数，拖动下方滑块选时间段）</span>
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => setTimelineOpen(false)}
+            >
+              收起
+            </button>
+          </div>
+          <Suspense fallback={<Skeleton className="h-[280px] w-full" />}>
+            {timeline ? (
+              <TimelinePanel
+                days={timeline.days}
+                range={timeRange}
+                onApplyRange={(from, to) => {
+                  setTimeRange({ from, to })
+                  setRecentOnly(false)
+                  setPage(1)
+                }}
+                onClearRange={() => {
+                  setTimeRange(null)
+                  setPage(1)
+                }}
+              />
+            ) : (
+              <Skeleton className="h-[280px] w-full" />
+            )}
+          </Suspense>
+        </div>
+      )}
+
+      {mapOpen && (
+        <div className="rounded-lg border border-border bg-card p-2 sm:p-3">
+          <div className="flex items-center justify-between px-1 pb-1">
+            <span className="text-sm font-medium">岗位城市分布（气泡大小=岗位数，点击气泡筛选该城市，可拖拽/缩放）</span>
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => setMapOpen(false)}
+            >
+              收起
+            </button>
+          </div>
+          <Suspense fallback={<Skeleton className="h-[420px] w-full sm:h-[520px]" />}>
+            <CityMapPanel
+              cities={cityCounts}
+              selected={cities}
+              onSelectCity={(c) => {
+                setCities((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]))
+                setPage(1)
+              }}
+            />
+          </Suspense>
+        </div>
+      )}
 
       {/* 城市筛选 + 近7天更新（桌面） */}
       <div className="hidden space-y-2 md:block">

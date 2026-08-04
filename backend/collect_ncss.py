@@ -4,12 +4,13 @@
     GET https://job.ncss.cn/student/jobs/jobslist/ajax/
     参数：offset=页码(1起) limit=20(固定，传更大无效)
           areaCode=省份码 property=单位性质 categoryCode=职位类别 degreeCode=学历码
-    返回：data.pagenation.count 恒为 200（不反映真实总数，不可用），
-    实际窗口上限 10 页 × 20 条 = 200 条，以页面是否拉满判断触顶。
+    返回：data.pagenation.count 恒为 200（不反映真实总数，不可用）；
+    未登录实际窗口上限 5 页 × 20 条 = 100 条（offset≥6 返回 flag=false），
+    以页面是否拉满判断触顶。
 
-分片策略（单查询窗口封顶 200 条）：
+分片策略（单查询窗口封顶 100 条）：
     单位性质 property × 省份 areaCode × 职位类别 categoryCode 枚举；
-    单分片拉满 10 页（触顶）时再按学历 degreeCode 细分，按 jobId 去重。
+    单分片拉满 5 页（触顶）时再按学历 degreeCode 细分，按 jobId 去重。
 
 字段映射（source_table='NCSS'，全部入 campus_jobs）：
     recName→company  jobName→positions  recProperty→company_type
@@ -61,7 +62,7 @@ CATEGORY_CODES = [""] + [f"{i:02d}" for i in range(1, 30)]
 DEGREE_CODES = ["51", "41", "31", "11", "01"]
 
 PAGE_SIZE = 20
-MAX_PAGES = 10
+MAX_PAGES = 5  # 未登录窗口：offset≥6 返回 flag=false
 REQUEST_INTERVAL = 1.0  # 限速：每请求间隔 ≥1s
 TIMEOUT = 30
 

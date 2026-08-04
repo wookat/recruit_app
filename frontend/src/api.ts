@@ -397,7 +397,7 @@ declare global {
   }
 }
 
-const EARLY_LIST_QUERY = 'page=1&page_size=20&sort=year_desc'
+const EARLY_LIST_QUERY = 'page=1&page_size=20&sort=year_desc&major_type=any'
 
 export async function fetchPositions(params: SearchParams, signal?: AbortSignal): Promise<PositionList> {
   const query = toQuery(params)

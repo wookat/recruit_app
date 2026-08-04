@@ -99,6 +99,8 @@ def apply_campus_filters(q, f: dict):
             q = q.filter(or_(*(CampusJob.locations.ilike(f"%{t}%") for t in terms)))
     if f.get("updated_after"):
         q = q.filter(CampusJob.updated_at_src >= f["updated_after"])
+    if f.get("updated_before"):
+        q = q.filter(CampusJob.updated_at_src <= f["updated_before"])
     if f.get("keyword"):
         q = q.filter(multi_col_hit_clause(
             [
@@ -149,6 +151,7 @@ def list_campus_jobs(
     edu: Optional[str] = None,
     location: Optional[str] = None,
     updated_after: Optional[str] = None,
+    updated_before: Optional[str] = None,
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
     hide_expired: bool = False,
     page: int = Query(1, ge=1),
@@ -167,6 +170,7 @@ def list_campus_jobs(
         "edu": edu,
         "location": location,
         "updated_after": updated_after,
+        "updated_before": updated_before,
         "due_within_days": due_within_days,
         "hide_expired": hide_expired,
     })
@@ -193,6 +197,7 @@ def export_campus_jobs(
     edu: Optional[str] = None,
     location: Optional[str] = None,
     updated_after: Optional[str] = None,
+    updated_before: Optional[str] = None,
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
     hide_expired: bool = False,
     fname: Optional[str] = None,
@@ -212,12 +217,27 @@ def export_campus_jobs(
         "edu": edu,
         "location": location,
         "updated_after": updated_after,
+        "updated_before": updated_before,
         "due_within_days": due_within_days,
         "hide_expired": hide_expired,
     })
     rows = q.order_by(*campus_export_order(due_within_days)).limit(max_rows).all()
     default = f"校招-{datetime.now().strftime('%Y%m%d')}"
     return csv_export.stream_csv(rows, CAMPUS_EXPORT_COLUMNS, csv_export.safe_fname(fname, default))
+
+
+@router.get("/timeline")
+@cache.cached("campus_timeline", ttl=3600, stale=True)
+def campus_timeline(db: Session = Depends(get_db)):
+    """按更新日期（updated_at_src）聚合的每日岗位数（时间线视图，1 小时缓存）。"""
+    rows = (
+        db.query(CampusJob.updated_at_src, func.count())
+        .filter(CampusJob.updated_at_src.op("~")(r"^\d{4}-\d{2}-\d{2}$"))
+        .group_by(CampusJob.updated_at_src)
+        .order_by(CampusJob.updated_at_src)
+        .all()
+    )
+    return {"days": {d: n for d, n in rows}}
 
 
 @router.get("/counts")

@@ -152,6 +152,7 @@ export interface CampusParams {
   edu?: string
   location?: string
   updated_after?: string
+  updated_before?: string
   due_within_days?: number
   hide_expired?: boolean
   page?: number
@@ -192,6 +193,24 @@ export async function fetchLinkStatus(url: string): Promise<LinkStatus> {
 export async function fetchCampusFilters(): Promise<CampusFilterOptions> {
   const res = await axios.get(`${API_BASE}/api/campus/filters`)
   return res.data
+}
+
+export interface CampusTimeline {
+  /** 更新日期（YYYY-MM-DD）→ 岗位数 */
+  days: Record<string, number>
+}
+
+let campusTimelinePromise: Promise<CampusTimeline | null> | null = null
+
+/** 模块级缓存单次请求，失败静默返回 null。 */
+export function fetchCampusTimeline(): Promise<CampusTimeline | null> {
+  if (!campusTimelinePromise) {
+    campusTimelinePromise = axios
+      .get(`${API_BASE}/api/campus/timeline`)
+      .then((r) => r.data)
+      .catch(() => null)
+  }
+  return campusTimelinePromise
 }
 
 /** 校招列表同步导出 CSV URL（≤2000 行）。 */

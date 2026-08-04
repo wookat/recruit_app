@@ -65,6 +65,33 @@
 
 ---
 
+# R178 组件库现代化记录（2026-08-04）
+
+老板反馈：「圆形」用得太多显得设计老。R178 对齐 2025 主流规范（shadcn/ui、Linear、Vercel Geist），全站 11 页统一套用，无新旧混用。
+
+## 1. 圆角分层（去胶囊化）
+- 新令牌层级（tokens.css）：`--radius-sm: 4px`（tag/badge）、`--radius-md: 6px`（chips/segmented，Tailwind 别名 `rounded-ctl`）、`--radius: 8px`（按钮/输入框/下拉）、`--radius-lg: 12px`（卡片/面板/弹层）、`--radius-xl: 16px`（移动 Sheet）。
+- `rounded-full` 仅保留：头像、开关、圆形图标钮、状态小圆点、进度条；移除全部胶囊 chips 与胶囊状态演示条。
+
+## 2. Chips / 预设 / 计数徽章
+- `.chip`：6px 方角轻量 tag，默认细 1px 中性边框 + 卡片底；高度 7→6（28→24px），密度收紧。
+- `.chip-on` 选中态：由「重蓝底白字」改为「细主色边框 + primary/10 浅底 + brand-700 文字」（浅底对比约 8.4:1 ≥ AA）；暗色用 brand-300 文字 + brand-400/15 浅底。
+- 新增 `.count-badge`：4px 角、primary/10 浅底、主色文字，替换顶栏收藏计数与筛选角标（原 rounded-full 白字圆点）。
+
+## 3. Segmented Control
+- 新增 `.seg / .seg-item / .seg-on`：外容器 8px 角 + muted 底 + hairline，选中项 6px 角白卡底 + xs 阴影。
+- 应用于：positions/positions-cards/campus 的表格↔卡片视图切换、calendar 的月/周/议程切换（替换原「蓝底白字拼接按钮组」，JS calView 同步改 seg 类切换）。
+
+## 4. 质感现代化
+- 灰阶改低饱和 zinc/neutral：background zinc-50、border zinc-200 hairline、muted-foreground zinc-500；暗色 zinc-950 基调。
+- 阴影收敛：card→xs（1px 投影）、raised→sm、overlay 减淡；层次优先由 1px hairline 边框表达；btn-sec 增加 xs 阴影（Geist 风格）。
+- 密度收紧一级：btn h-9→h-8、btn-sm h-8→h-7、input h-9→h-8、chips h-7→h-6、表格 td py-3→py-2.5 / th py-2.5→py-2、navlink h-9→h-8。
+
+## 5. tokens.html 升级为「组件库规范」
+- 新增圆角分层表（含 full 使用禁令）、segmented 规范、count-badge、R176/R177/R178 三代选中态对比示例；阴影示例改 xs/sm 分层说明。
+
+---
+
 # R177 高保真升级记录（2026-08-04）
 
 ## 1. 严格设计系统：tokens.css 单一事实来源

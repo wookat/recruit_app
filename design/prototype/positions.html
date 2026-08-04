@@ -39,12 +39,12 @@
     <button onclick="openEl('filter-mask');openEl('filter-panel')" class="btn-sec relative">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18M7 12h10m-7 7h4"/></svg>
       筛选
-      <span class="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 min-w-[18px] rounded-full bg-brand-600 text-white text-[10px] flex items-center justify-center">3</span>
+      <span class="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 min-w-[18px] rounded-sm2 bg-brand-600 text-white text-[10px] flex items-center justify-center">3</span>
     </button>
     <button class="btn-sec hidden sm:inline-flex">最新优先 ▾</button>
-    <div class="hidden sm:flex items-center rounded-md2 border border-line dark:border-line-d overflow-hidden">
-      <button class="h-9 px-2.5 bg-brand-600 text-white" title="表格视图"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18v14H3zM3 10h18M9 5v14"/></svg></button>
-      <button onclick="location.href='positions-cards.html'" class="h-9 px-2.5 t3 hover:bg-surface-sunken dark:hover:bg-surface-sunken-d" title="卡片视图"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></button>
+    <div class="hidden sm:flex seg">
+      <button class="seg-on" title="表格视图"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18v14H3zM3 10h18M9 5v14"/></svg></button>
+      <button onclick="location.href='positions-cards.html'" class="seg-item" title="卡片视图"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></button>
     </div>
   </div>
 

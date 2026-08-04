@@ -1,4 +1,4 @@
-/* R177：Tailwind 别名映射 —— 唯一色值来源是 assets/tokens.css 的 CSS variables。
+/* R178：Tailwind 别名映射 —— 唯一色值来源是 assets/tokens.css 的 CSS variables。
    亮/暗色由 CSS 变量自动切换，因此 xxx 与 xxx-d 别名指向同一变量（保留 R176 类名兼容）。 */
 const v = (name) => `hsl(var(--${name}) / <alpha-value>)`;
 
@@ -51,8 +51,10 @@ tailwind.config = {
         'xxl': ['24px', '32px'],
         'xxxl': ['30px', '38px'],
       },
+      /* 圆角分层（R178）：sm2=4 tag/badge，ctl=6 chips/segmented，md2=8 按钮/输入，lg2=12 卡片，xl2=16 Sheet */
       borderRadius: {
         'sm2': 'var(--radius-sm)',
+        'ctl': 'var(--radius-md)',
         'md2': 'var(--radius)',
         'lg2': 'var(--radius-lg)',
         'xl2': 'var(--radius-xl)',

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>设计规范 · 上岸罗盘 原型</title>
+<title>组件库规范 · 上岸罗盘 原型</title>
 <link rel="stylesheet" href="assets/tokens.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="assets/tokens.js"></script>
@@ -13,8 +13,8 @@
 
 <main class="max-w-[1100px] mx-auto px-4 py-6 space-y-10">
   <header>
-    <h1 class="text-xxl font-semibold tracking-tight">设计规范 <span class="tag-blue align-middle">R177</span></h1>
-    <p class="text-body t2 mt-2 max-w-2xl">基于 shadcn/ui + Radix 语义令牌体系。唯一色值来源 <code class="text-xs1 bg-muted px-1.5 py-0.5 rounded">assets/tokens.css</code>（CSS variables，亮/暗自动切换），Tailwind 配置仅做别名映射，禁止页面内写死色值。右上角 🌙 可实时切换暗色验证。</p>
+    <h1 class="text-xxl font-semibold tracking-tight">组件库规范 <span class="tag-blue align-middle">R178</span></h1>
+    <p class="text-body t2 mt-2 max-w-2xl">基于 shadcn/ui + Radix 语义令牌体系，R178 对齐 2025 主流规范（shadcn / Linear / Vercel Geist）：圆角分层、去胶囊化 chips、低饱和 zinc 灰阶、hairline 边框优先、阴影收敛。唯一色值来源 <code class="text-xs1 bg-muted px-1.5 py-0.5 rounded-sm2">assets/tokens.css</code>（CSS variables，亮/暗自动切换），Tailwind 配置仅做别名映射，禁止页面内写死色值。右上角 🌙 可实时切换暗色验证。</p>
   </header>
 
   <!-- ===== 色板 ===== -->
@@ -34,10 +34,11 @@
       <div class="s-card px-3 py-2 flex items-center gap-2"><span class="w-5 h-5 rounded" style="background:hsl(var(--ok))"></span><span class="text-xs1">成功 --ok</span></div>
     </div>
     <div class="mt-4 s-card p-4 border-l-4 !border-l-brand-600">
-      <div class="text-body font-medium">WCAG AA 对比度修正（R177）</div>
-      <p class="text-xs1 t2 mt-1">主操作色由 R176 的 #1a66f5（白字对比约 3.9:1，不达 AA）调深为 <b>--brand-600 = hsl(224 76% 48%) ≈ #1d4ed8</b>，白字对比约 <b>6.3:1 ≥ 4.5:1</b>。选中 chips、主按钮、表头激活态均使用该值；暗色下主色改用 --brand-400 亮蓝 + 深色前景，同样满足 AA。</p>
-      <div class="flex gap-2 mt-2">
-        <span class="chip-on">选中 chip（AA）</span>
+      <div class="text-body font-medium">WCAG AA 对比度（R177 修正，R178 选中态改浅底后仍达标）</div>
+      <p class="text-xs1 t2 mt-1">R178 选中 chips 改为「细主色边框 + 主色浅底 primary/10 + brand-700 文字」：brand-700 (#1e40af) 在浅底上对比约 <b>8.4:1 ≥ AA</b>；主按钮仍用 --brand-600 ≈ #1d4ed8，白字 <b>6.3:1 ≥ 4.5:1</b>。暗色下选中态用 brand-300 文字 + brand-400/15 浅底，同样达标。</p>
+      <div class="flex gap-2 mt-2 flex-wrap">
+        <span class="chip-on">R178 选中 chip（浅底，AA）</span>
+        <span class="inline-flex items-center h-7 px-2.5 rounded-full text-xs1 text-white" style="background:#1d4ed8">R177 重蓝底胶囊（已废弃）✗</span>
         <span class="inline-flex items-center h-7 px-2.5 rounded-full text-xs1 text-white" style="background:#1a66f5">R176 旧值（不达标）✗</span>
       </div>
     </div>
@@ -73,19 +74,22 @@
         </div>
       </div>
       <div class="s-card p-4">
-        <div class="text-body font-medium mb-3">圆角 & 阴影 & 边框</div>
+        <div class="text-body font-medium mb-3">圆角分层（R178）& 阴影 & 边框</div>
         <div class="flex flex-wrap gap-3">
-          <div class="w-20 h-14 bg-muted border border-border flex items-center justify-center text-xs2 t3" style="border-radius:var(--radius-sm)">sm 6</div>
-          <div class="w-20 h-14 bg-muted border border-border flex items-center justify-center text-xs2 t3" style="border-radius:var(--radius)">md 10</div>
-          <div class="w-20 h-14 bg-muted border border-border flex items-center justify-center text-xs2 t3" style="border-radius:var(--radius-lg)">lg 14</div>
-          <div class="w-20 h-14 bg-muted border border-border flex items-center justify-center text-xs2 t3" style="border-radius:var(--radius-xl)">xl 20</div>
+          <div class="w-24 h-14 bg-muted border border-border flex flex-col items-center justify-center text-xs2 t3" style="border-radius:var(--radius-sm)">sm 4<span>tag / badge</span></div>
+          <div class="w-24 h-14 bg-muted border border-border flex flex-col items-center justify-center text-xs2 t3" style="border-radius:var(--radius-md)">ctl 6<span>chips / segmented</span></div>
+          <div class="w-24 h-14 bg-muted border border-border flex flex-col items-center justify-center text-xs2 t3" style="border-radius:var(--radius)">md 8<span>按钮 / 输入</span></div>
+          <div class="w-24 h-14 bg-muted border border-border flex flex-col items-center justify-center text-xs2 t3" style="border-radius:var(--radius-lg)">lg 12<span>卡片 / 弹层</span></div>
+          <div class="w-24 h-14 bg-muted border border-border flex flex-col items-center justify-center text-xs2 t3" style="border-radius:var(--radius-xl)">xl 16<span>移动 Sheet</span></div>
+          <div class="w-24 h-14 bg-muted border border-border rounded-full flex items-center justify-center text-xs2 t3">full 仅限</div>
         </div>
+        <p class="text-xs2 t3 mt-2">rounded-full 仅限：头像、开关、圆形图标钮、状态小圆点、进度条——禁止用于 chips / 按钮 / 卡片等大面积胶囊。</p>
         <div class="flex flex-wrap gap-3 mt-4">
-          <div class="w-24 h-14 bg-card rounded-md2 flex items-center justify-center text-xs2 t3" style="box-shadow:var(--shadow-card)">card</div>
-          <div class="w-24 h-14 bg-card rounded-md2 flex items-center justify-center text-xs2 t3" style="box-shadow:var(--shadow-raised)">raised</div>
+          <div class="w-24 h-14 bg-card border border-border rounded-md2 flex items-center justify-center text-xs2 t3" style="box-shadow:var(--shadow-card)">xs card</div>
+          <div class="w-24 h-14 bg-card border border-border rounded-md2 flex items-center justify-center text-xs2 t3" style="box-shadow:var(--shadow-raised)">sm raised</div>
           <div class="w-24 h-14 bg-card rounded-md2 flex items-center justify-center text-xs2 t3" style="box-shadow:var(--shadow-overlay)">overlay</div>
         </div>
-        <p class="text-xs2 t3 mt-3">边框统一 1px --border；输入框 --input；焦点环 2px --ring + 2px offset。</p>
+        <p class="text-xs2 t3 mt-3">阴影收敛为 xs/sm 两档（overlay 仅限抽屉/弹层）；层次优先用 1px hairline 边框 --border 表达；输入框 --input；焦点环 2px --ring + 2px offset。</p>
       </div>
     </div>
   </section>
@@ -110,17 +114,19 @@
     </div>
 
     <div class="s-card p-4 mt-3">
-      <div class="text-body font-medium mb-3">筛选芯片 Chip / 标签 Badge</div>
+      <div class="text-body font-medium mb-3">筛选 Chip（R178 去胶囊化：6px 方角轻量 tag，选中 = 细主色边框 + 浅底 + 主色文字）/ 标签 Badge / 计数徽章</div>
       <div class="flex flex-wrap items-center gap-2">
         <button class="chip">未选中</button>
         <button class="chip border-brand-400 text-brand-600">悬停</button>
-        <button class="chip-on">选中（AA 白字）</button>
+        <button class="chip-on">选中（浅底 AA）</button>
         <button class="chip ring-2 ring-ring ring-offset-1 ring-offset-background">Focus</button>
         <button class="chip" disabled>禁用</button>
+        <span class="chip-on">带计数 <span class="count-badge">12</span></span>
       </div>
       <div class="flex flex-wrap items-center gap-2 mt-3">
         <span class="tag-blue">2026</span><span class="tag-teal">校招</span><span class="tag-purple">编制</span>
         <span class="tag-red">今日截止</span><span class="tag-amber">3 天后</span><span class="tag-green">应届可报</span><span class="tag-gray">详见公告</span>
+        <span class="count-badge">6</span><span class="text-xs2 t3">计数徽章 count-badge（4px 角，主色浅底）</span>
       </div>
     </div>
 
@@ -146,13 +152,14 @@
         </div>
       </div>
       <div class="s-card p-4">
-        <div class="text-body font-medium mb-3">开关 / 视图切换 / 分页</div>
+        <div class="text-body font-medium mb-3">开关（仅此类控件保留 rounded-full）/ Segmented Control / 分页</div>
         <div class="flex flex-wrap items-center gap-3">
           <span class="w-9 h-5 rounded-full bg-brand-600 relative cursor-pointer"><span class="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white"></span></span>
           <span class="w-9 h-5 rounded-full bg-muted border border-border relative cursor-pointer"><span class="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-card shadow-card"></span></span>
-          <span class="flex items-center rounded-md2 border border-border overflow-hidden text-xs1"><button class="h-8 px-3 bg-brand-600 text-white">月</button><button class="h-8 px-3 t2">周</button></span>
+          <span class="seg"><button class="seg-on">月</button><button class="seg-item">周</button><button class="seg-item">议程</button></span>
           <button class="btn-sec btn-sm">上一页</button><button class="btn-sec btn-sm" disabled>下一页</button>
         </div>
+        <p class="text-xs2 t3 mt-2">segmented：外容器 8px 角 + muted 底，选中项 6px 角白卡底 + xs 阴影（视图/日历切换统一用此）。</p>
       </div>
     </div>
 
@@ -179,7 +186,7 @@
       <div class="text-body font-medium mb-3">抽屉 Drawer / 底部 Sheet / 对话框 Dialog</div>
       <ul class="text-xs1 t2 space-y-1.5 list-disc pl-4">
         <li>桌面：右侧抽屉 540px（详情）/ 420px（筛选），overlay-mask 黑 40% + 2px 模糊。</li>
-        <li>移动：底部 Sheet（max 86–92vh，rounded-t-xl 20px），顶部居中 40×5px 手势把手 <span class="sheet-handle !inline-block !m-0 align-middle"></span>，所有触控目标 ≥44px。</li>
+        <li>移动：底部 Sheet（max 86–92vh，rounded-t-xl 16px），顶部居中 40×5px 手势把手 <span class="sheet-handle !inline-block !m-0 align-middle"></span>，所有触控目标 ≥44px。</li>
         <li>对话框（保存筛选）：居中 480px，Esc / 点击遮罩关闭。</li>
       </ul>
       <div class="flex gap-2 mt-3">

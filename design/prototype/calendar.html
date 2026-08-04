@@ -16,10 +16,10 @@
     <h1 class="text-lg1 font-semibold">报考日历</h1>
     <span class="text-xs1 t3">未来 60 天校招 / 编制截止汇总</span>
     <span class="flex-1"></span>
-    <div id="cal-tabs" class="flex items-center rounded-md2 border border-line dark:border-line-d overflow-hidden text-xs1" role="tablist">
-      <button data-view="month" onclick="calView('month')" aria-selected="true" class="h-8 px-3 min-h-[36px] bg-brand-600 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" role="tab">月</button>
-      <button data-view="week" onclick="calView('week')" aria-selected="false" class="h-8 px-3 min-h-[36px] t2 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" role="tab">周</button>
-      <button data-view="agenda" onclick="calView('agenda')" aria-selected="false" class="h-8 px-3 min-h-[36px] t2 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" role="tab">议程</button>
+    <div id="cal-tabs" class="seg" role="tablist">
+      <button data-view="month" onclick="calView('month')" aria-selected="true" class="seg-on" role="tab">月</button>
+      <button data-view="week" onclick="calView('week')" aria-selected="false" class="seg-item" role="tab">周</button>
+      <button data-view="agenda" onclick="calView('agenda')" aria-selected="false" class="seg-item" role="tab">议程</button>
     </div>
     <button class="btn-sec btn-sm">↓ 导出本月 .ics</button>
   </div>
@@ -163,7 +163,7 @@ function calView(v) {
   document.querySelectorAll('#cal-tabs [data-view]').forEach(b => {
     const on = b.dataset.view === v;
     b.setAttribute('aria-selected', on);
-    b.className = `h-8 px-3 min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${on ? 'bg-brand-600 text-white' : 't2 hover:bg-muted'}`;
+    b.className = on ? 'seg-on' : 'seg-item';
   });
   document.getElementById('cal-title').textContent = TITLES[v];
 }

@@ -1,4 +1,4 @@
-/* 上岸罗盘 · R177 原型共享 UI
+/* 上岸罗盘 · R178 原型共享 UI（组件库现代化：圆角分层、去胶囊化 chips、hairline+阴影收敛、密度收紧）
    （顶栏 / 底部导航 / 全局搜索 / 主题切换 / 组件样式 / 状态演示 / 通用交互）
    色值唯一来源：assets/tokens.css —— 本文件只组合令牌，不写死颜色。 */
 (function () {
@@ -15,25 +15,33 @@
 .s-card   { @apply bg-card border border-border rounded-lg2 shadow-card; }
 .t1 { @apply text-foreground; } .t2 { @apply text-muted-foreground; } .t3 { @apply text-muted-foreground; }
 
-/* 按钮：默认/悬停/按下/focus ring/禁用 完整状态 */
-.btn      { @apply inline-flex items-center justify-center gap-1.5 rounded-md2 px-3 h-9 text-body font-medium cursor-pointer select-none transition-colors whitespace-nowrap
+/* 按钮（rounded-md 8px）：默认/悬停/按下/focus ring/禁用 完整状态 */
+.btn      { @apply inline-flex items-center justify-center gap-1.5 rounded-md2 px-3 h-8 text-body font-medium cursor-pointer select-none transition-colors whitespace-nowrap
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background
             disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed; }
 .btn-pri  { @apply btn bg-primary text-primary-foreground hover:bg-brand-700 dark:hover:bg-brand-300 active:bg-brand-800 shadow-card; }
-.btn-sec  { @apply btn border border-border t1 bg-card hover:bg-muted active:bg-secondary; }
+.btn-sec  { @apply btn border border-border t1 bg-card hover:bg-muted active:bg-secondary shadow-card; }
 .btn-ghost{ @apply btn t2 hover:bg-muted hover:text-foreground active:bg-secondary; }
-.btn-sm   { @apply h-8 px-2.5 text-xs1; }
+.btn-sm   { @apply h-7 px-2 text-xs1 rounded-ctl; }
 .btn-danger { @apply btn bg-destructive text-destructive-foreground hover:opacity-90; }
 
-/* 筛选芯片：选中态用 brand-600（白字对比 6.4:1 ≥ AA） */
-.chip        { @apply inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs1 border border-border t2 cursor-pointer
+/* 筛选 chips（R178 去胶囊化：rounded 6px 方角轻量 tag）：
+   默认 = 细 1px 中性边框 + 中性底；选中 = 细主色边框 + 主色浅底(primary/10) + 主色文字（brand-700 白底 6.8:1 ≥ AA） */
+.chip        { @apply inline-flex items-center gap-1 h-6 px-2 rounded-ctl text-xs1 border border-border bg-card t2 cursor-pointer
                hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors whitespace-nowrap
                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background
                disabled:opacity-50 disabled:pointer-events-none; }
-.chip-on     { @apply chip bg-brand-600 border-brand-600 text-white hover:text-white dark:bg-brand-500 dark:border-brand-500; }
+.chip-on     { @apply chip border-brand-600 bg-primary/10 text-brand-700 font-medium hover:text-brand-700
+               dark:border-brand-400 dark:bg-brand-400/15 dark:text-brand-300 dark:hover:text-brand-300; }
+/* segmented control（视图切换/日历切换用） */
+.seg      { @apply inline-flex items-center gap-0.5 p-0.5 rounded-md2 border border-border bg-muted; }
+.seg-item { @apply h-7 px-2.5 rounded-ctl text-xs1 t2 cursor-pointer transition-colors hover:text-foreground whitespace-nowrap
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring; }
+.seg-on   { @apply seg-item bg-card text-foreground font-medium shadow-card; }
 
 /* 状态标签 */
 .tag         { @apply inline-flex items-center h-5 px-1.5 rounded-sm2 text-xs2 font-medium whitespace-nowrap; }
+.count-badge { @apply inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-sm2 text-xs2 font-medium bg-primary/10 text-brand-700 dark:bg-brand-400/15 dark:text-brand-300; }
 .tag-blue    { @apply tag bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300; }
 .tag-teal    { @apply tag bg-teal-50 text-teal-800 dark:bg-teal-900/60 dark:text-teal-300; }
 .tag-purple  { @apply tag bg-violet-50 text-violet-800 dark:bg-violet-900/60 dark:text-violet-300; }
@@ -43,12 +51,12 @@
 .tag-gray    { @apply tag bg-muted text-muted-foreground; }
 
 /* 输入：focus ring + 禁用 */
-.input { @apply h-9 w-full rounded-md2 border border-input bg-card px-3 text-body t1 placeholder:text-muted-foreground/70 transition-shadow
+.input { @apply h-8 w-full rounded-md2 border border-input bg-card px-2.5 text-body t1 placeholder:text-muted-foreground/70 transition-shadow
          focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-brand-500
          disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted; }
 
-.tbl th { @apply text-left text-xs1 font-medium t3 px-3 py-2.5 border-b border-border whitespace-nowrap bg-muted/60; }
-.tbl td { @apply px-3 py-3 text-body t1 border-b border-border/70 align-top; }
+.tbl th { @apply text-left text-xs1 font-medium t3 px-3 py-2 border-b border-border whitespace-nowrap bg-muted/60; }
+.tbl td { @apply px-3 py-2.5 text-body t1 border-b border-border/70 align-top; }
 .tbl tbody tr { @apply hover:bg-brand-50/60 dark:hover:bg-brand-950/40 cursor-pointer transition-colors focus-visible:outline-none focus-visible:bg-brand-50 dark:focus-visible:bg-brand-950; }
 .tbl tbody tr[aria-selected="true"] { @apply bg-brand-50 dark:bg-brand-950/60; }
 
@@ -56,7 +64,7 @@
 .drawer  { @apply fixed z-50 bg-card shadow-overlay right-0 top-0 h-full w-full sm:w-[540px] overflow-y-auto; }
 .sheet-m { @apply fixed z-50 bg-card shadow-overlay inset-x-0 bottom-0 rounded-t-xl2 max-h-[86vh] overflow-y-auto; }
 .hide-scroll::-webkit-scrollbar { display:none; } .hide-scroll { scrollbar-width:none; }
-.navlink { @apply inline-flex items-center gap-1 h-9 px-3 rounded-md2 text-body t2 whitespace-nowrap hover:bg-muted transition-colors
+.navlink { @apply inline-flex items-center gap-1 h-8 px-2.5 rounded-ctl text-body t2 whitespace-nowrap hover:bg-muted transition-colors
            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring; }
 .navlink-on { @apply navlink bg-accent text-accent-foreground font-medium; }
 /* 移动端触控热区 ≥44px */
@@ -105,7 +113,7 @@
     <button onclick="openSearch()" class="hidden lg:flex items-center gap-2 h-9 w-56 xl:w-64 px-3 rounded-md2 border border-border text-xs1 t3 hover:border-brand-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       搜索岗位 / 单位 / 专业
-      <kbd class="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-border">Ctrl K</kbd>
+      <kbd class="ml-auto text-[10px] px-1.5 py-0.5 rounded-sm2 border border-border">Ctrl K</kbd>
     </button>
     <button onclick="openSearch()" class="lg:hidden btn-ghost !h-9 !w-9 max-sm:!h-11 max-sm:!w-11 !px-0" aria-label="搜索">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -116,7 +124,7 @@
     </button>
     <a href="favorites.html" class="btn-sec !h-9 max-sm:!hidden">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 17.3-5.4 3 1-6-4.4-4.2 6-.9L12 3.7l2.8 5.5 6 .9-4.4 4.2 1 6z"/></svg>
-      收藏 <span class="tag-blue !h-4 px-1">6</span>
+      收藏 <span class="count-badge">6</span>
     </a>
   </div>
 </header>`;
@@ -265,10 +273,10 @@
     window.__stateCfg = cfg || {};
     const states = [['normal', '正常'], ['loading', '加载'], ['empty', '空态'], ['error', '错误'], ['zero', '0 结果']];
     document.body.insertAdjacentHTML('beforeend', `
-<div id="state-demo" class="fixed bottom-20 md:bottom-4 right-3 z-30 s-card !rounded-full shadow-raised px-2 py-1.5 flex items-center gap-1">
+<div id="state-demo" class="fixed bottom-20 md:bottom-4 right-3 z-30 s-card shadow-raised px-1.5 py-1 flex items-center gap-0.5">
   <span class="text-xs2 t3 pl-1.5 pr-0.5 hidden sm:inline">状态演示</span>
   ${states.map(([k, l]) => `<button data-state="${k}" onclick="setListState('${k}')" aria-pressed="${k === 'normal'}"
-    class="text-xs2 px-2 h-6 rounded-full transition-colors aria-pressed:bg-brand-600 aria-pressed:text-white t2 hover:bg-muted
+    class="text-xs2 px-2 h-6 rounded-ctl transition-colors aria-pressed:bg-primary/10 aria-pressed:text-brand-700 dark:aria-pressed:text-brand-300 aria-pressed:font-medium t2 hover:bg-muted
     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">${l}</button>`).join('')}
 </div>`);
     // 首次进入演示 600ms 骨架

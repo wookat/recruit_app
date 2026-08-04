@@ -1,5 +1,5 @@
 /* ============================================================
-   上岸罗盘 · R177 设计令牌（单一事实来源）
+   上岸罗盘 · R178 设计令牌（单一事实来源）
    基准：shadcn/ui + Radix Colors 语义令牌体系
    所有页面统一引用本文件；Tailwind 配置（tokens.js）仅做别名映射，
    不得在页面内写死色值 —— 改这里即全站生效。
@@ -20,26 +20,26 @@
   --brand-900: 226 57% 21%;
   --brand-950: 225 61% 15%;
 
-  /* ---- shadcn 语义令牌（亮色） ---- */
-  --background: 220 16% 97%;        /* 页面底 */
-  --foreground: 221 39% 11%;        /* 主文本，对比 15.9:1 */
+  /* ---- shadcn 语义令牌（亮色，R178 改低饱和 zinc/neutral 系灰阶） ---- */
+  --background: 0 0% 98%;           /* zinc-50 页面底 */
+  --foreground: 240 10% 4%;         /* zinc-950 主文本 */
   --card: 0 0% 100%;
-  --card-foreground: 221 39% 11%;
+  --card-foreground: 240 10% 4%;
   --popover: 0 0% 100%;
-  --popover-foreground: 221 39% 11%;
+  --popover-foreground: 240 10% 4%;
   --primary: var(--brand-600);
   --primary-foreground: 0 0% 100%;
-  --secondary: 216 22% 95%;
-  --secondary-foreground: 221 39% 11%;
-  --muted: 216 22% 95%;             /* 内嵌/骨架底 */
-  --muted-foreground: 220 9% 46%;   /* #6b7280 次文本，白底对比 4.8:1 ≥ AA */
-  --subtle-foreground: 220 9% 46%;  /* 三级文本与次文本合并（R176 的 #9ca3af 对比不足已废弃） */
+  --secondary: 240 5% 96%;          /* zinc-100 */
+  --secondary-foreground: 240 10% 4%;
+  --muted: 240 5% 96%;              /* 内嵌/骨架底 zinc-100 */
+  --muted-foreground: 240 4% 46%;   /* zinc-500 次文本，白底 4.6:1 ≥ AA */
+  --subtle-foreground: 240 4% 46%;
   --accent: 214 100% 97%;
   --accent-foreground: 226 71% 40%;
   --destructive: 347 77% 50%;
   --destructive-foreground: 0 0% 100%;
-  --border: 220 13% 91%;
-  --input: 220 13% 91%;
+  --border: 240 6% 90%;             /* zinc-200 hairline */
+  --input: 240 6% 90%;
   --ring: 217 91% 60%;
 
   /* ---- 板块识别色（文本级用法均 ≥ AA） ---- */
@@ -52,40 +52,41 @@
   --warn: 26 90% 37%;      /* 临期 amber-700 #b45309 白底文本 5.0:1 */
   --ok: 161 91% 24%;       /* 官方/成功 emerald-700 */
 
-  /* ---- 圆角 ---- */
-  --radius-sm: 6px;    /* 标签 */
-  --radius: 10px;      /* 按钮 / 输入框 */
-  --radius-lg: 14px;   /* 卡片 */
-  --radius-xl: 20px;   /* 移动端 Sheet */
+  /* ---- 圆角分层（R178 对齐 shadcn/Geist/Linear：控件 6–8 / 卡片 12，仅头像、开关、圆形图标钮用 rounded-full） ---- */
+  --radius-sm: 4px;    /* 标签 tag / badge */
+  --radius-md: 6px;    /* chips / 小控件 / segmented 内项 */
+  --radius: 8px;       /* 按钮 / 输入框 / 下拉 */
+  --radius-lg: 12px;   /* 卡片 / 面板 / 弹层 */
+  --radius-xl: 16px;   /* 移动端 Sheet */
 
-  /* ---- 阴影（三级） ---- */
-  --shadow-card: 0 1px 2px rgba(16, 24, 40, .05);
-  --shadow-raised: 0 4px 16px -2px rgba(16, 24, 40, .10), 0 1px 3px rgba(16, 24, 40, .06);
-  --shadow-overlay: 0 24px 64px -12px rgba(16, 24, 40, .28);
+  /* ---- 阴影（R178 收敛为 xs/sm，hairline 边框优先） ---- */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, .04);
+  --shadow-raised: 0 1px 3px rgba(0, 0, 0, .07), 0 1px 2px rgba(0, 0, 0, .05);
+  --shadow-overlay: 0 16px 48px -12px rgba(0, 0, 0, .22);
 
   color-scheme: light;
 }
 
 .dark {
-  --background: 222 29% 6%;
-  --foreground: 220 14% 96%;
-  --card: 221 31% 10%;
-  --card-foreground: 220 14% 96%;
-  --popover: 221 30% 15%;
-  --popover-foreground: 220 14% 96%;
+  --background: 240 10% 4%;           /* zinc-950 */
+  --foreground: 0 0% 98%;
+  --card: 240 6% 8%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 5% 12%;
+  --popover-foreground: 0 0% 98%;
   --primary: 213 94% 68%;             /* 暗色主操作用 brand-400，黑字底更亮 */
   --primary-foreground: 225 61% 15%;
-  --secondary: 221 30% 15%;
-  --secondary-foreground: 220 14% 96%;
-  --muted: 222 32% 8%;
-  --muted-foreground: 217 16% 69%;    /* 卡片底对比 7.3:1 */
-  --subtle-foreground: 218 12% 58%;
+  --secondary: 240 5% 12%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 5% 10%;
+  --muted-foreground: 240 5% 68%;
+  --subtle-foreground: 240 4% 56%;
   --accent: 225 61% 15%;
   --accent-foreground: 212 96% 78%;
   --destructive: 347 77% 58%;
   --destructive-foreground: 0 0% 100%;
-  --border: 221 26% 19%;
-  --input: 221 26% 19%;
+  --border: 240 4% 16%;
+  --input: 240 4% 16%;
   --ring: 213 94% 68%;
 
   --board-campus: 172 66% 50%;
@@ -94,9 +95,9 @@
   --warn: 32 95% 60%;
   --ok: 158 64% 52%;
 
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, .4);
-  --shadow-raised: 0 4px 16px -2px rgba(0, 0, 0, .5);
-  --shadow-overlay: 0 24px 64px -12px rgba(0, 0, 0, .6);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, .35);
+  --shadow-raised: 0 1px 3px rgba(0, 0, 0, .45);
+  --shadow-overlay: 0 16px 48px -12px rgba(0, 0, 0, .55);
 
   color-scheme: dark;
 }
@@ -116,7 +117,7 @@ body {
 
 /* 骨架屏 */
 @keyframes skel-pulse { 50% { opacity: .55; } }
-.skel { background: hsl(var(--muted)); border-radius: var(--radius); animation: skel-pulse 1.6s ease-in-out infinite; }
+.skel { background: hsl(var(--muted)); border-radius: var(--radius-md); animation: skel-pulse 1.6s ease-in-out infinite; }
 .dark .skel { background: hsl(var(--secondary)); }
 
 /* 移动端 Sheet 手势把手 */

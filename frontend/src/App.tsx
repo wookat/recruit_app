@@ -30,6 +30,7 @@ import {
 } from '@/lib/savedNews'
 import { SubscriptionsSheet } from '@/components/SubscriptionsSheet'
 import { lazyRetry } from '@/lib/lazyRetry'
+import { BoardErrorBoundary } from '@/components/BoardErrorBoundary'
 import { reportPv } from '@/lib/metrics'
 
 const JobGuideSheet = lazy(() =>
@@ -640,6 +641,9 @@ export default function App() {
               }}
             />
           )}
+          <BoardErrorBoundary
+            resetKey={`${tab}|${section.mode}|${section.preset ?? ''}|${section.keyword ?? ''}|${boardQuickNonce}`}
+          >
           <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
             {tab !== 'admin' && section.mode === 'campus' && (
               <CampusPage
@@ -691,6 +695,7 @@ export default function App() {
             )}
             {tab === 'admin' && showAdmin && <AdminPage />}
           </Suspense>
+          </BoardErrorBoundary>
         </div>
       </main>
 

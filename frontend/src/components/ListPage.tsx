@@ -398,7 +398,7 @@ export function ListPage({
       document.body.removeChild(ta)
     }
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setTimeout(() => setCopied(false), 3500)
   }
 
   const kwTrim = (params.keyword || '').trim()

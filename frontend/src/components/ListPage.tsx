@@ -1218,13 +1218,16 @@ export function ListPage({
             <Button
               variant="link"
               size="sm"
-              className="h-auto min-h-11 p-0 text-xs sm:min-h-0"
+              className="relative h-auto min-h-11 px-1 py-0 text-xs sm:min-h-0"
               onClick={copyShareLink}
             >
               {copied ? (
                 <>
-                  <Check className="mr-0.5 h-3.5 w-3.5" />
+                  <Check className="mr-0.5 h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                   已复制
+                  <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-0.5 text-[11px] text-background shadow">
+                    链接已复制，可直接粘贴分享
+                  </span>
                 </>
               ) : (
                 <>

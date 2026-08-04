@@ -68,7 +68,7 @@ const columns: ColumnDef<Position>[] = [
     id: 'edu_level_norm',
     accessorFn: (row) => row.edu_level_norm || row.edu_requirement,
     header: '学历要求',
-    size: 100,
+    size: 130,
   },
   { accessorKey: 'work_location', header: '工作地点', size: 120 },
   { accessorKey: 'signup_time', header: '报名时间', size: 160 },

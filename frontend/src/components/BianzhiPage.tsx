@@ -72,6 +72,8 @@ const MajorGuideSheet = lazy(() =>
   lazyRetry(() => import('@/components/MajorGuideSheet').then((m) => ({ default: m.MajorGuideSheet }))),
 )
 
+const EDU_OPTIONS = ['本科', '硕士', '博士', '大专']
+
 const CATEGORY_TONES: Record<string, Tone> = {
   公务员事业单位: 'blue',
   教育系统: 'green',
@@ -714,7 +716,7 @@ export function BianzhiPage({
   const eduRow = (
     <div className="flex flex-wrap items-center gap-1.5">
       <span className="text-xs text-muted-foreground">我的学历（含可投的「及以上/不限」）：</span>
-      {['本科', '硕士', '博士', '大专'].map((e) => (
+      {EDU_OPTIONS.map((e) => (
         <button
           key={e}
           onClick={() => {
@@ -859,7 +861,7 @@ export function BianzhiPage({
       )}
 
       <MatchByProfileButton
-        note="按省份+专业匹配（编制无学历字段，已跳过该维度）"
+        note="按省份+专业+学历匹配"
         active={profileMatched}
         onApply={(p) => {
           const kw = p.major.trim()
@@ -870,6 +872,8 @@ export function BianzhiPage({
             .map((loc) => opts.find((o) => o === loc || loc.startsWith(o) || o.startsWith(loc)))
             .filter((v): v is string => !!v)
           setProvinces([...new Set(provs)])
+          const edu = p.eduLevel.find((e) => EDU_OPTIONS.includes(e))
+          setEduFilter(edu ?? '')
           setPage(1)
           setProfileMatched(true)
         }}
@@ -877,6 +881,7 @@ export function BianzhiPage({
           setSearchInput('')
           setKeyword('')
           setProvinces([])
+          setEduFilter('')
           setPage(1)
           setProfileMatched(false)
         }}

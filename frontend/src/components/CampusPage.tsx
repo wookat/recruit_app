@@ -66,6 +66,8 @@ import { toggleCampusFavorite, useCampusFavorites } from '@/lib/boardFavorites'
 import { applySeo } from '@/lib/seo'
 import { jobShareUrl } from '@/lib/clipboard'
 
+const EDU_OPTIONS = ['本科', '硕士', '博士', '大专']
+
 const COMPANY_TYPE_TONES: Record<string, Tone> = {
   民企: 'blue',
   央国企: 'red',
@@ -758,7 +760,7 @@ export function CampusPage({
   const eduRow = (
     <div className="flex flex-wrap items-center gap-1.5">
       <span className="text-xs text-muted-foreground">我的学历（含可投的「及以上/不限」）：</span>
-      {['本科', '硕士', '博士', '大专'].map((e) => (
+      {EDU_OPTIONS.map((e) => (
         <button
           key={e}
           type="button"
@@ -908,13 +910,15 @@ export function CampusPage({
       )}
 
       <MatchByProfileButton
-        note="按专业+城市匹配（校招暂无学历筛选，已跳过该维度）"
+        note="按专业+城市+学历匹配"
         active={profileMatched}
         onApply={(p) => {
           const kw = p.major.trim()
           setSearchInput(kw)
           setKeyword(kw)
           setCities(p.location[0] ? [p.location[0]] : [])
+          const edu = p.eduLevel.find((e) => EDU_OPTIONS.includes(e))
+          setEduFilter(edu ?? '')
           setPage(1)
           setProfileMatched(true)
         }}
@@ -922,6 +926,7 @@ export function CampusPage({
           setSearchInput('')
           setKeyword('')
           setCities([])
+          setEduFilter('')
           setPage(1)
           setProfileMatched(false)
         }}

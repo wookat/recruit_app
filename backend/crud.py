@@ -603,6 +603,8 @@ def get_filter_options(db: Session, limit: int = 120):
         .distinct()
         .all()
     )
+    _prefecture_cities = set(ALL_CITIES)
+
     def _norm_district(prov: str, city: str, dist: str):
         d = dist.strip()
         for pre in (f"{prov}省", f"{prov}市", f"{prov}自治区", prov):
@@ -615,6 +617,9 @@ def get_filter_options(db: Session, limit: int = 120):
                 break
         d = d.strip()
         if len(d) < 2 or d == "辖区" or "省" in d:
+            return None
+        base = d[:-1] if len(d) > 2 and d.endswith("市") else d
+        if base != city and base in _prefecture_cities:
             return None
         return d
 

@@ -70,11 +70,30 @@ export function LocationFilter({ filters, value, onChange }: LocationFilterProps
   }
 
   function handleCityChange(next: string[]) {
-    onChange([...new Set([...selectedProvinces, ...next, ...selectedDistricts])])
+    // 选中城市后自动取消其所属省份（避免省+市并集导致计数不收窄）
+    const added = next.filter((c) => !selectedCities.includes(c))
+    const dropProvs = new Set<string>()
+    for (const node of f.location_tree) {
+      if (added.some((c) => node.cities.includes(c))) dropProvs.add(node.province)
+    }
+    const keptProvs = selectedProvinces.filter((p) => !dropProvs.has(p))
+    onChange([...new Set([...keptProvs, ...next, ...selectedDistricts])])
   }
 
   function handleDistrictChange(next: string[]) {
-    onChange([...new Set([...selectedProvinces, ...selectedCities, ...next])])
+    // 选中区县后自动取消其所属省/市
+    const added = next.filter((d) => !selectedDistricts.includes(d))
+    const dropProvs = new Set<string>()
+    const dropCities = new Set<string>()
+    for (const n of f.district_tree || []) {
+      if (added.some((d) => n.districts.includes(d))) {
+        dropProvs.add(n.province)
+        dropCities.add(n.city)
+      }
+    }
+    const keptProvs = selectedProvinces.filter((p) => !dropProvs.has(p))
+    const keptCities = selectedCities.filter((c) => !dropCities.has(c))
+    onChange([...new Set([...keptProvs, ...keptCities, ...next])])
   }
 
   return (

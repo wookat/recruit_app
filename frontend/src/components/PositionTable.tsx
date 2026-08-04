@@ -53,17 +53,22 @@ import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
 
+/** 岗位示例回退值与考试类型相同时两列逐行重复，表格里该列显示「—」 */
+function dedupExamType(title: string, examType: string | null | undefined): string {
+  return examType && title.trim() === examType.trim() ? '—' : title
+}
+
 const columns: ColumnDef<Position>[] = [
-  { accessorKey: 'employer', header: '用人单位/系统', size: 220 },
+  { accessorKey: 'employer', header: '用人单位/系统', size: 200 },
   { accessorKey: 'year', header: '年份', size: 70 },
   { accessorKey: 'job_type', header: '岗位类型', size: 100 },
   {
     id: 'exam_type',
     accessorFn: (row) => row.exam_type_norm || row.exam_type,
     header: '考试/招聘类型',
-    size: 160,
+    size: 130,
   },
-  { accessorKey: 'position_example', header: '岗位示例', size: 260 },
+  { accessorKey: 'position_example', header: '岗位示例', size: 220 },
   {
     id: 'edu_level_norm',
     accessorFn: (row) => row.edu_level_norm || row.edu_requirement,
@@ -71,7 +76,7 @@ const columns: ColumnDef<Position>[] = [
     size: 130,
   },
   { accessorKey: 'work_location', header: '工作地点', size: 150 },
-  { accessorKey: 'signup_time', header: '报名时间', size: 160 },
+  { accessorKey: 'signup_time', header: '报名时间', size: 150 },
   { accessorKey: 'exam_time', header: '考试时间', size: 160 },
   { accessorKey: 'created_at', header: '更新', size: 100 },
 ]
@@ -300,9 +305,12 @@ export const PositionTable = memo(function PositionTable({
                             <Highlight
                               text={truncate(
                                 cell.column.id === 'position_example'
-                                  ? stripOrgPrefix(
-                                      String(cell.getValue() || '-'),
-                                      row.original.employer,
+                                  ? dedupExamType(
+                                      stripOrgPrefix(
+                                        String(cell.getValue() || '-'),
+                                        row.original.employer,
+                                        row.original.exam_type_norm || row.original.exam_type,
+                                      ),
                                       row.original.exam_type_norm || row.original.exam_type,
                                     )
                                   : String(cell.getValue() || '—'),

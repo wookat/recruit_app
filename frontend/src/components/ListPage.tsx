@@ -994,6 +994,8 @@ export function ListPage({
                 size="icon"
                 className={cn('h-11 w-11 sm:h-9 sm:w-9', view === 'card' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
                 aria-label="卡片视图"
+                title="卡片视图"
+                aria-pressed={view === 'card'}
                 onClick={() => setView('card')}
               >
                 <LayoutGrid className="h-4 w-4" />
@@ -1003,6 +1005,8 @@ export function ListPage({
                 size="icon"
                 className={cn('h-11 w-11 sm:h-9 sm:w-9', view === 'table' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
                 aria-label="表格视图"
+                title="表格视图"
+                aria-pressed={view === 'table'}
                 onClick={() => setView('table')}
               >
                 <Table2 className="h-4 w-4" />
@@ -1013,6 +1017,7 @@ export function ListPage({
                 className={cn('h-11 w-11 sm:h-9 sm:w-9', view === 'list' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
                 aria-label="无限滚动列表"
                 title="无限滚动列表（大数据量浏览）"
+                aria-pressed={view === 'list'}
                 onClick={() => setView('list')}
               >
                 <Rows3 className="h-4 w-4" />

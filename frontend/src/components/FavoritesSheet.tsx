@@ -1890,7 +1890,7 @@ function ExtLinkConfirmToggleRow() {
         <span
           className={cn(
             'inline-flex h-5 w-9 items-center rounded-full border px-0.5 transition-colors',
-            enabled ? 'border-primary bg-primary' : 'border-border bg-muted',
+            enabled ? 'border-primary bg-primary' : 'border-input bg-muted dark:bg-input',
           )}
         >
           <span
@@ -1954,7 +1954,7 @@ function PushToggleRow() {
         <span
           className={cn(
             'inline-flex h-5 w-9 items-center rounded-full border px-0.5 transition-colors',
-            enabled ? 'border-primary bg-primary' : 'border-border bg-muted',
+            enabled ? 'border-primary bg-primary' : 'border-input bg-muted dark:bg-input',
           )}
         >
           <span
@@ -2007,7 +2007,7 @@ function NewsNotifyToggleRow() {
         <span
           className={cn(
             'inline-flex h-5 w-9 items-center rounded-full border px-0.5 transition-colors',
-            enabled ? 'border-primary bg-primary' : 'border-border bg-muted',
+            enabled ? 'border-primary bg-primary' : 'border-input bg-muted dark:bg-input',
           )}
         >
           <span
@@ -2062,7 +2062,7 @@ function NotifyToggleRow() {
         <span
           className={cn(
             'inline-flex h-5 w-9 items-center rounded-full border px-0.5 transition-colors',
-            enabled ? 'border-primary bg-primary' : 'border-border bg-muted',
+            enabled ? 'border-primary bg-primary' : 'border-input bg-muted dark:bg-input',
           )}
         >
           <span

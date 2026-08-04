@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ExternalLink } from 'lucide-react'
+import { BadgeCheck, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -9,13 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { domainOf, useConfirmExtLink } from '@/lib/extLink'
+import { domainOf, sourceTrust, useConfirmExtLink } from '@/lib/extLink'
 
 /** 详情外链：显示目标域名徽章；开启「外链打开前确认」时先弹确认层再跳转。 */
 export function ExtLinkAnchor({ url }: { url: string }) {
   const confirmOn = useConfirmExtLink()
   const [pending, setPending] = useState(false)
   const domain = domainOf(url)
+  const trust = sourceTrust(url)
 
   const openNow = () => {
     setPending(false)
@@ -40,7 +41,18 @@ export function ExtLinkAnchor({ url }: { url: string }) {
         <ExternalLink className="ml-1 h-3 w-3 shrink-0" />
       </a>
       {domain && (
-        <div className="mt-0.5 text-xs text-muted-foreground">跳转至：{domain}</div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+          <span>跳转至：{domain}</span>
+          {trust === 'official' && (
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-px font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+              <BadgeCheck className="h-3 w-3" aria-hidden="true" />
+              官方来源
+            </span>
+          )}
+          {trust === 'third-party' && (
+            <span className="rounded-full bg-muted px-1.5 py-px">第三方来源 · 请以官方公告为准</span>
+          )}
+        </div>
       )}
       {confirmOn && (
         <Dialog open={pending} onOpenChange={(o) => !o && setPending(false)}>

@@ -426,6 +426,11 @@ export function PositionSheet({
                     <div>
                       <div className="text-xs font-medium text-muted-foreground">信息来源</div>
                       <ExtLinkAnchor url={safeUrl(item.source_url)!} />
+                      {!item.signup_time?.trim() && !item.exam_time?.trim() && (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          来源页未提供报名/考试时间，请打开信息来源原文核实。
+                        </div>
+                      )}
                     </div>
                   )}
                 </Section>

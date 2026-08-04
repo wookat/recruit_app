@@ -36,7 +36,7 @@ function unifiedFields(s: BoardCompareItem): { label: string; value: string }[] 
     return [
       { label: '来源板块', value: BOARD_NAMES.positions },
       { label: '单位', value: j.employer || dash },
-      { label: '岗位', value: j.position_example ? stripOrgPrefix(j.position_example, j.employer) : dash },
+      { label: '岗位', value: j.position_example ? stripOrgPrefix(j.position_example, j.employer, j.exam_type_norm || j.exam_type) : dash },
       { label: '工作地点', value: j.work_location || dash },
       { label: '学历要求', value: j.edu_level_norm || j.edu_requirement || dash },
       { label: '专业要求', value: major || j.raw_major || dash },

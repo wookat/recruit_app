@@ -70,7 +70,7 @@ const columns: ColumnDef<Position>[] = [
     header: '学历要求',
     size: 130,
   },
-  { accessorKey: 'work_location', header: '工作地点', size: 120 },
+  { accessorKey: 'work_location', header: '工作地点', size: 150 },
   { accessorKey: 'signup_time', header: '报名时间', size: 160 },
   { accessorKey: 'exam_time', header: '考试时间', size: 160 },
   { accessorKey: 'created_at', header: '更新', size: 100 },
@@ -303,6 +303,7 @@ export const PositionTable = memo(function PositionTable({
                                   ? stripOrgPrefix(
                                       String(cell.getValue() || '-'),
                                       row.original.employer,
+                                      row.original.exam_type_norm || row.original.exam_type,
                                     )
                                   : String(cell.getValue() || '—'),
                               )}

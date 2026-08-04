@@ -76,7 +76,7 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
         </div>
         <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
           <Highlight
-            text={item.position_example ? stripOrgPrefix(item.position_example, item.employer) : '-'}
+            text={item.position_example ? stripOrgPrefix(item.position_example, item.employer, item.exam_type_norm || item.exam_type) : '-'}
             query={highlight}
           />
         </h3>

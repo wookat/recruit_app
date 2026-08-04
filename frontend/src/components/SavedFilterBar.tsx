@@ -50,7 +50,7 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
     setHint(
       dropped
         ? `已达 10 组上限，删除了最旧的「${dropped}」`
-        : '已保存并订阅：有匹配新岗位会在 chip 上显示「+N 新」，今日速览同步提示',
+        : '已保存并订阅，上新时 chip 显示「+N 新」',
     )
     setTimeout(() => setHint(null), 6000)
   }

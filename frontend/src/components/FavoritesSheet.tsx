@@ -216,7 +216,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
         {
           key: `positions-${p.id}`,
           title:
-            (p.position_example && stripOrgPrefix(p.position_example, p.employer)) ||
+            (p.position_example && stripOrgPrefix(p.position_example, p.employer, p.exam_type_norm || p.exam_type)) ||
             p.exam_type ||
             '-',
           badge: String(p.year),
@@ -860,7 +860,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
               {p.year}
             </Badge>
             <span className="line-clamp-1 text-sm font-medium">
-              {(p.position_example && stripOrgPrefix(p.position_example, p.employer)) ||
+              {(p.position_example && stripOrgPrefix(p.position_example, p.employer, p.exam_type_norm || p.exam_type)) ||
                 p.exam_type ||
                 '-'}
             </span>

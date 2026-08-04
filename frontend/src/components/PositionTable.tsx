@@ -224,8 +224,8 @@ export const PositionTable = memo(function PositionTable({
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody>
-              {loading ? (
+            <TableBody className={cn(loading && data.length > 0 && 'opacity-50 transition-opacity')}>
+              {loading && data.length === 0 ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     {Array.from({ length: columns.length + 1 }).map((_, j) => (

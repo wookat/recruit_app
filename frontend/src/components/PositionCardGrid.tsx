@@ -45,7 +45,7 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, 
     scrollMargin: listRef.current?.offsetTop ?? 0,
   })
 
-  if (loading) {
+  if (loading && data.length === 0) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
@@ -71,7 +71,7 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, 
     )
   }
 
-  if (data.length === 0) {
+  if (data.length === 0 && !loading) {
     return (
       <EmptyState
         title="没有找到匹配的岗位"
@@ -82,7 +82,7 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, 
   }
 
   return (
-    <div className="space-y-3">
+    <div className={loading ? 'space-y-3 opacity-50 transition-opacity' : 'space-y-3'}>
       {virtualize ? (
         <div key="virtual" ref={listRef} className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
           {virtualizer.getVirtualItems().map((vi) => {

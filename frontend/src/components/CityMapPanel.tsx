@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as echarts from 'echarts/core'
 import { ScatterChart, EffectScatterChart } from 'echarts/charts'
 import { GeoComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
@@ -25,6 +25,14 @@ interface Props {
 export function CityMapPanel({ cities, onSelectCity, selected }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const chartRef = useRef<echarts.ECharts | null>(null)
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
+
+  useEffect(() => {
+    const el = document.documentElement
+    const observer = new MutationObserver(() => setIsDark(el.classList.contains('dark')))
+    observer.observe(el, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!ref.current) return
@@ -47,7 +55,6 @@ export function CityMapPanel({ cities, onSelectCity, selected }: Props) {
       .map(([c, n]) => ({ name: c, value: [...COORDS[c], n] }))
     const max = Math.max(1, ...data.map((d) => d.value[2]))
     const selectedSet = new Set(selected ?? [])
-    const isDark = document.documentElement.classList.contains('dark')
     chart.setOption({
       tooltip: {
         trigger: 'item',
@@ -73,6 +80,7 @@ export function CityMapPanel({ cities, onSelectCity, selected }: Props) {
         min: 0,
         max,
         show: false,
+        seriesIndex: 0,
         inRange: { color: ['#93c5fd', '#2563eb'] },
         dimension: 2,
       },
@@ -95,7 +103,7 @@ export function CityMapPanel({ cities, onSelectCity, selected }: Props) {
         },
       ],
     })
-  }, [cities, selected])
+  }, [cities, selected, isDark])
 
   useEffect(() => {
     const chart = chartRef.current

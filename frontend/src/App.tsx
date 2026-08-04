@@ -216,24 +216,26 @@ function setTheme(v: 'light' | 'dark' | 'system') {
 
 function BrandMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 64 64" className={className} role="img" aria-label="上岸罗盘">
+    <svg viewBox="0 0 64 64" className={className} role="img" aria-label="上岸雷达">
       <defs>
         <linearGradient id="brand-bg" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#2563EB" />
           <stop offset="1" stopColor="#0891B2" />
         </linearGradient>
+        <linearGradient id="brand-sweep" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#FFFFFF" stopOpacity="0.85" />
+          <stop offset="1" stopColor="#FFFFFF" stopOpacity="0.05" />
+        </linearGradient>
       </defs>
       <rect width="64" height="64" rx="14" fill="url(#brand-bg)" />
-      <path d="M47 13 L23 29 L30 36 Z" fill="#FFFFFF" />
-      <path d="M47 13 L30 36 L37 43 Z" fill="#FFFFFF" opacity="0.55" />
-      <path
-        d="M14 50 Q19 45.5 24 50 T34 50 T44 50 T54 50"
-        fill="none"
-        stroke="#FFFFFF"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-        opacity="0.9"
-      />
+      <circle cx="32" cy="34" r="21" fill="none" stroke="#FFFFFF" strokeWidth="2.5" opacity="0.9" />
+      <circle cx="32" cy="34" r="13.5" fill="none" stroke="#FFFFFF" strokeWidth="1.8" opacity="0.55" />
+      <circle cx="32" cy="34" r="6.5" fill="none" stroke="#FFFFFF" strokeWidth="1.5" opacity="0.35" />
+      <path d="M32 34 L32 13 A21 21 0 0 1 46.9 19.2 Z" fill="url(#brand-sweep)" />
+      <line x1="32" y1="34" x2="46.9" y2="19.2" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="32" cy="34" r="3" fill="#FFFFFF" />
+      <circle cx="41" cy="26.5" r="2.6" fill="#FFFFFF" />
+      <circle cx="23" cy="42" r="2" fill="#FFFFFF" opacity="0.85" />
     </svg>
   )
 }
@@ -499,7 +501,7 @@ export default function App() {
           <div className="flex items-center gap-2.5">
             <BrandMark className="h-9 w-9 shrink-0" />
             <div className="flex flex-col leading-none">
-              <h1 className="whitespace-nowrap text-lg font-bold tracking-tight">上岸罗盘</h1>
+              <h1 className="whitespace-nowrap text-lg font-bold tracking-tight">上岸雷达</h1>
               <span className="mt-0.5 hidden text-[11px] tracking-widest text-muted-foreground sm:block">
                 体制内岗位 · 校招信息 一站检索
               </span>

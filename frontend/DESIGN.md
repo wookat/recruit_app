@@ -1,7 +1,7 @@
 # 前端设计规范（Design System）
 
 > 适用范围：`frontend/` 全部界面。技术体系：Tailwind CSS v4 + shadcn/ui（Base UI），token 定义于 `src/index.css`。
-> 原则：中性灰阶打底 + 品牌蓝主色（呼应「上岸罗盘」Logo 蓝青渐变）、语义色只用于状态表达、4px 栅格、亮暗双模式一致可读。
+> 原则：中性灰阶打底 + 品牌蓝主色（呼应「上岸雷达」Logo 蓝青渐变）、语义色只用于状态表达、4px 栅格、亮暗双模式一致可读。
 
 ---
 

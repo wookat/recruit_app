@@ -297,6 +297,54 @@ export function fetchBianzhiTimeline(): Promise<CampusTimeline | null> {
   return bianzhiTimelinePromise
 }
 
+export type MatchLevel = 'exact' | 'semantic' | 'unlimited' | 'none' | 'unset'
+
+export interface MatchReasons {
+  major: MatchLevel
+  edu: 'ok' | 'unset'
+  location: MatchLevel
+  grad_year: MatchLevel
+  unit_type: MatchLevel
+}
+
+export interface MatchProfileIn {
+  edu_level: string[]
+  majors: string[]
+  locations: string[]
+  grad_year: string
+  unit_types: string[]
+}
+
+export interface CampusMatchItem {
+  job: CampusJob
+  score: number
+  reasons: MatchReasons
+}
+
+export interface BianzhiMatchItem {
+  job: BianzhiJob
+  score: number
+  reasons: MatchReasons
+}
+
+export interface MatchOut<T> {
+  items: T[]
+  expanded_terms: string[]
+  categories: string[]
+  semantic_source: 'ai' | 'rules'
+}
+
+/** 画像多维匹配（AI 语义专业扩展+逐维打分）。 */
+export async function fetchCampusMatch(p: MatchProfileIn): Promise<MatchOut<CampusMatchItem>> {
+  const res = await axios.post(`${API_BASE}/api/match/campus`, p)
+  return res.data
+}
+
+export async function fetchBianzhiMatch(p: MatchProfileIn): Promise<MatchOut<BianzhiMatchItem>> {
+  const res = await axios.post(`${API_BASE}/api/match/bianzhi`, p)
+  return res.data
+}
+
 /** 编制列表同步导出 CSV URL（≤2000 行）。 */
 export function buildBianzhiExportUrl(params: BianzhiParams, fname: string): string {
   const { page: _p, page_size: _ps, ...rest } = params

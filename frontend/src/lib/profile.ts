@@ -3,8 +3,24 @@ import { useSyncExternalStore } from 'react'
 /** 全站共享的用户画像（一键匹配条件），存 localStorage。 */
 export interface UserProfile {
   eduLevel: string[]
+  /** 兼容字段：首个专业（旧版本单专业）。 */
   major: string
+  /** 专业（支持多个）。 */
+  majors: string[]
   location: string[]
+  /** 应届年份，如「2026届」；空为不限。 */
+  gradYear: string
+  /** 意向单位类型（校招 company_type / 编制 category）。 */
+  unitTypes: string[]
+}
+
+const EMPTY: UserProfile = {
+  eduLevel: [],
+  major: '',
+  majors: [],
+  location: [],
+  gradYear: '',
+  unitTypes: [],
 }
 
 const KEY = 'recruit.profile'
@@ -16,17 +32,22 @@ function strArr(v: unknown): string[] {
 function load(): UserProfile {
   try {
     const raw = localStorage.getItem(KEY)
-    if (!raw) return { eduLevel: [], major: '', location: [] }
+    if (!raw) return { ...EMPTY }
     const v: unknown = JSON.parse(raw)
-    if (typeof v !== 'object' || v === null) return { eduLevel: [], major: '', location: [] }
+    if (typeof v !== 'object' || v === null) return { ...EMPTY }
     const o = v as Record<string, unknown>
+    const major = typeof o.major === 'string' ? o.major : ''
+    const majors = strArr(o.majors)
     return {
       eduLevel: strArr(o.eduLevel),
-      major: typeof o.major === 'string' ? o.major : '',
+      major: majors[0] ?? major,
+      majors: majors.length ? majors : major.trim() ? [major.trim()] : [],
       location: strArr(o.location),
+      gradYear: typeof o.gradYear === 'string' ? o.gradYear : '',
+      unitTypes: strArr(o.unitTypes),
     }
   } catch {
-    return { eduLevel: [], major: '', location: [] }
+    return { ...EMPTY }
   }
 }
 
@@ -45,7 +66,15 @@ export function getProfile(): UserProfile {
 }
 
 export function saveProfile(p: UserProfile) {
-  profile = { eduLevel: p.eduLevel, major: p.major.trim(), location: p.location }
+  const majors = p.majors.map((m) => m.trim()).filter(Boolean).slice(0, 5)
+  profile = {
+    eduLevel: p.eduLevel,
+    major: majors[0] ?? p.major.trim(),
+    majors,
+    location: p.location,
+    gradYear: p.gradYear.trim(),
+    unitTypes: p.unitTypes,
+  }
   try {
     localStorage.setItem(KEY, JSON.stringify(profile))
   } catch {
@@ -55,7 +84,7 @@ export function saveProfile(p: UserProfile) {
 }
 
 export function clearProfile() {
-  profile = { eduLevel: [], major: '', location: [] }
+  profile = { ...EMPTY }
   try {
     localStorage.removeItem(KEY)
   } catch {
@@ -81,5 +110,5 @@ export function profileEduToBoardOption(eduLevel: string[]): string | null {
 
 /** 画像是否已有可用于板块匹配的维度（专业或地点）。 */
 export function profileUsable(p: UserProfile): boolean {
-  return !!p.major.trim() || p.location.length > 0
+  return p.majors.length > 0 || !!p.major.trim() || p.location.length > 0
 }

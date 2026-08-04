@@ -97,7 +97,7 @@ def get_share_meta(db, job_key: str) -> dict | None:
         org = (meta["org"] or "").strip()[:40]
         if org and org != head:
             head = f"{head} - {org}" if head else org
-        title = f"{head} | {BOARD_NAMES[board]} - 上岸罗盘" if head else ""
+        title = f"{head} | {BOARD_NAMES[board]} - 上岸雷达" if head else ""
         desc = meta["summary"][:150] or f"{BOARD_NAMES[board]}岗位详情，报名条件与官方公告入口见站内。"
         return {"title": title, "desc": desc}
 
@@ -113,7 +113,7 @@ def get_search_meta(query_params) -> dict | None:
     if not kw:
         return None
     return {
-        "title": f"「{kw}」相关岗位 - 三板块聚合搜索 | 上岸罗盘",
+        "title": f"「{kw}」相关岗位 - 三板块聚合搜索 | 上岸雷达",
         "desc": f"在体制内、校招、编制三大板块中搜索「{kw}」相关岗位与公告，关键词高亮、可直达岗位详情与官方公告。",
     }
 

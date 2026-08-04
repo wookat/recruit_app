@@ -1642,7 +1642,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     className="h-11 gap-1 text-xs sm:h-7"
                     disabled={icsEvents.length === 0}
                     onClick={() =>
-                      downloadIcs(icsEvents, `上岸罗盘截止日历_${new Date().toISOString().slice(0, 10)}.ics`)
+                      downloadIcs(icsEvents, `上岸雷达截止日历_${new Date().toISOString().slice(0, 10)}.ics`)
                     }
                   >
                     <CalendarDays className="h-3.5 w-3.5" />

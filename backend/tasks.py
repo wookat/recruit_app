@@ -390,7 +390,7 @@ def push_due_reminders():
             body = f"最近的一条：{first[1]}（{'今天截止' if first[0] == 0 else f'剩 {first[0]} 天'}）"
             payload = json.dumps(
                 {
-                    "title": f"上岸罗盘：{len(due)} 条收藏即将截止报名",
+                    "title": f"上岸雷达：{len(due)} 条收藏即将截止报名",
                     "body": body,
                     "url": "/?fav=1",
                 },
@@ -485,7 +485,7 @@ def push_saved_filter_news():
             top = "、".join(f"「{name}」+{n}" for n, name in news[:2])
             payload = json.dumps(
                 {
-                    "title": f"上岸罗盘：你订阅的筛选新增 {total_new} 条岗位",
+                    "title": f"上岸雷达：你订阅的筛选新增 {total_new} 条岗位",
                     "body": top + ("…" if len(news) > 2 else ""),
                     "url": "/?subs=1",
                 },

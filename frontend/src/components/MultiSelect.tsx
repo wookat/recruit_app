@@ -110,9 +110,15 @@ export function MultiSelect({
                   ? `${triggerLabel || label} · ${selected.length}`
                   : `已选 ${selected.length} 项`}
               </span>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 {selected.length > 0 && (
-                  <span onClick={clear} className="rounded-full p-0.5 hover:bg-muted">
+                  <span
+                    role="button"
+                    aria-label="清除已选"
+                    title="清除已选"
+                    onClick={clear}
+                    className="-my-1 rounded-full p-1 hover:bg-destructive/10 hover:text-destructive"
+                  >
                     <X className="h-3.5 w-3.5 text-muted-foreground" />
                   </span>
                 )}

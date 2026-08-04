@@ -61,10 +61,28 @@ def keyword_variants(keyword: str) -> List[str]:
     return [v.strip() for v in keyword.split("|") if v.strip()] or [keyword]
 
 
+def variant_tokens(v: str) -> List[str]:
+    """变体内空白分词：多词为 AND 语义（如「菏泽 会计」）。"""
+    return v.split() or [v]
+
+
+def _variant_ilike(col, v: str):
+    """单列命中一个变体：各 token 都包含（AND）。"""
+    return and_(*(col.ilike(f"%{t}%") for t in variant_tokens(v)))
+
+
+def multi_col_hit_clause(cols, keyword: str):
+    """多列命中：每个 token 命中任一列，token 间 AND，变体间 OR。"""
+    return or_(*(
+        and_(*(or_(*(c.ilike(f"%{t}%") for c in cols)) for t in variant_tokens(v)))
+        for v in keyword_variants(keyword)
+    ))
+
+
 def title_hit_rank(col, keyword: str):
     """标题列命中任一关键词变体则排前（0），否则排后（1）。"""
     return case(
-        (or_(*(col.ilike(f"%{v}%") for v in keyword_variants(keyword))), 0),
+        (or_(*(_variant_ilike(col, v) for v in keyword_variants(keyword))), 0),
         else_=1,
     )
 
@@ -87,7 +105,7 @@ def edu_eligible_clause(col, edu: str):
 
 
 def _hit_clause(col, keyword: str):
-    return or_(*(col.ilike(f"%{v}%") for v in keyword_variants(keyword)))
+    return or_(*(_variant_ilike(col, v) for v in keyword_variants(keyword)))
 
 
 def _kw_bigrams(v: str) -> List[str]:
@@ -102,8 +120,8 @@ def _bigram_hit_clause(col, keyword: str):
     单字词无 bigram，回退纯 ILIKE。"""
     clauses = []
     for v in keyword_variants(keyword):
-        ilike = col.ilike(f"%{v}%")
-        bgs = _kw_bigrams(v)
+        ilike = _variant_ilike(col, v)
+        bgs = [bg for t in variant_tokens(v) for bg in _kw_bigrams(t)]
         if bgs:
             clauses.append(and_(func.bigrams(col).op("@>")(array(bgs)), ilike))
         else:
@@ -255,27 +273,23 @@ def _apply_filters(query, model, filters: PositionFilter):
         ))
 
     if filters.keyword:
-        variants = keyword_variants(filters.keyword)
         if hasattr(model, "search_text"):
             # bigram GIN 预过滤 + ILIKE 精校（2 字词 trgm 覆盖不到，结果集不变）
             query = query.filter(_bigram_hit_clause(model.search_text, filters.keyword))
         else:
-            clauses = []
-            for v in variants:
-                k = f"%{v}%"
-                clauses.extend([
-                    model.position_example.ilike(k),
-                    model.employer.ilike(k),
-                    model.undergrad_major.ilike(k),
-                    model.grad_major.ilike(k),
-                    model.raw_major.ilike(k),
-                    model.special_requirements.ilike(k),
-                    model.exam_type.ilike(k),
-                    model.work_location.ilike(k),
-                    model.job_type.ilike(k),
-                    model.notes.ilike(k),
-                ])
-            query = query.filter(or_(*clauses))
+            cols = [
+                model.position_example,
+                model.employer,
+                model.undergrad_major,
+                model.grad_major,
+                model.raw_major,
+                model.special_requirements,
+                model.exam_type,
+                model.work_location,
+                model.job_type,
+                model.notes,
+            ]
+            query = query.filter(multi_col_hit_clause(cols, filters.keyword))
     return query
 
 

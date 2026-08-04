@@ -35,6 +35,7 @@ import {
 import { pinyinMatch } from '@/lib/pinyin'
 import { markSavedFilterSeen, removeSavedFilterBaseline, useSavedNews } from '@/lib/savedNews'
 import {
+  ArrowUpRight,
   Search,
   Filter,
   X,
@@ -1368,14 +1369,16 @@ export function ListPage({
         {crossPresets && crossPresets.length > 0 && onCrossPreset && (
           <>
             <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+            <span className="shrink-0 text-xs text-muted-foreground">去其他板块</span>
             {crossPresets.map((p) => (
               <button
                 key={p.key}
                 type="button"
                 onClick={() => onCrossPreset(p.key)}
-                className="min-h-11 shrink-0 cursor-pointer rounded-full border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground sm:min-h-0"
+                className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-full border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground sm:min-h-0"
               >
                 {p.label}
+                <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
               </button>
             ))}
           </>

@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Building2, ExternalLink, FlaskConical, GraduationCap, Landmark, LayoutGrid, LayoutList, Library, PenLine, School, Search, Stethoscope, Table2 } from 'lucide-react'
+import { ArrowUpRight, Building2, ExternalLink, FlaskConical, GraduationCap, Landmark, LayoutGrid, LayoutList, Library, PenLine, School, Search, Stethoscope, Table2 } from 'lucide-react'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SeenBadge } from '@/components/SeenBadge'
 import { NewDot } from '@/components/NewDot'
@@ -828,14 +828,16 @@ export function BianzhiPage({
           {crossPresets && crossPresets.length > 0 && onCrossPreset && (
             <>
               <span className="my-auto h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+              <span className="my-auto shrink-0 text-xs text-muted-foreground">去其他板块</span>
               {crossPresets.map((p) => (
                 <button
                   key={p.key}
                   type="button"
                   onClick={() => onCrossPreset(p.key)}
-                  className="min-h-11 whitespace-nowrap rounded-full border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-9"
+                  className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-9"
                 >
                   {p.label}
+                  <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               ))}
             </>

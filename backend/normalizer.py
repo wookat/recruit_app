@@ -110,6 +110,23 @@ def normalize_job_type(jt: Optional[str]) -> str:
     return j
 
 
+_SOE_HINTS = (
+    "中国", "国家", "国能", "国网", "国华", "华能", "大唐", "华电",
+    "中核", "中广核", "中船", "中航", "航天", "中铁", "中建", "中交",
+    "中石油", "中石化", "中海油", "中移", "电网", "烟草",
+)
+
+
+def corporate_job_type(job_type: str, employer: Optional[str]) -> str:
+    """事业单位渠道混入的公司主体重分类：有限公司/股份公司不属于事业编。"""
+    if job_type != "事业单位/事业编" or not employer:
+        return job_type
+    e = str(employer)
+    if "有限公司" not in e and "股份有限" not in e:
+        return job_type
+    return "央企/国企" if any(h in e for h in _SOE_HINTS) else "其他企业"
+
+
 def _extract_district(remainder: str) -> Optional[str]:
     r = _normalize_name(remainder)
     if r and len(r) >= 2:

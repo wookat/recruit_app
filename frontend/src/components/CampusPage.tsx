@@ -52,7 +52,6 @@ import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { MultiSelect, type OptionGroup } from '@/components/MultiSelect'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
-import { getProfile, profileEduToBoardOption, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { deriveCampusTags } from '@/lib/jobTags'
 import { readJobParam } from '@/lib/jobDeepLink'
@@ -401,16 +400,6 @@ export function CampusPage({
       cancelled = true
     }
   }, [detail])
-  const [profileMatched, setProfileMatched] = useState(() => {
-    const p = getProfile()
-    if (!profileUsable(p)) return false
-    const q = new URLSearchParams(window.location.search)
-    const kw = q.get('bkw') ?? ''
-    const c = q.get('city')
-    return (
-      (!!kw || !!c) && kw === p.major.trim() && (c ?? null) === (p.location[0] ?? null)
-    )
-  })
   const deepLinkDone = useRef(false)
   const toggleSort = useCallback((key: string) => setSort((s) => nextSort(s, key)), [])
 
@@ -680,18 +669,6 @@ export function CampusPage({
       label: '隐藏已看过',
       onRemove: () => setHideSeen(false),
     })
-  if (profileMatched)
-    activeFilters.push({
-      label: '按我的条件匹配',
-      onRemove: () => {
-        setSearchInput('')
-        setKeyword('')
-        setCities([])
-        setPage(1)
-        setProfileMatched(false)
-      },
-    })
-
   function clearAllFilters() {
     setPreset('all')
     setRecentOnly(false)
@@ -704,7 +681,6 @@ export function CampusPage({
     setCompanyTypes([])
     setSearchInput('')
     setKeyword('')
-    setProfileMatched(false)
     setPage(1)
   }
 
@@ -970,27 +946,7 @@ export function CampusPage({
         </button>
       )}
 
-      <MatchByProfileButton
-        note="按专业+城市+学历匹配"
-        active={profileMatched}
-        onApply={(p) => {
-          const kw = p.major.trim()
-          setSearchInput(kw)
-          setKeyword(kw)
-          setCities(p.location[0] ? [p.location[0]] : [])
-          setEduFilter(profileEduToBoardOption(p.eduLevel) ?? '')
-          setPage(1)
-          setProfileMatched(true)
-        }}
-        onClear={() => {
-          setSearchInput('')
-          setKeyword('')
-          setCities([])
-          setEduFilter('')
-          setPage(1)
-          setProfileMatched(false)
-        }}
-      />
+      <MatchByProfileButton board="campus" onOpenDetail={(j) => setDetail(j as CampusJob)} />
 
       <BoardRecommendSection
         board="campus"

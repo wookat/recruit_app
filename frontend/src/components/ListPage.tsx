@@ -507,7 +507,7 @@ export function ListPage({
         : major && edu.some((e) => e.startsWith('硕士') || e.startsWith('博士')) && !edu.includes('本科')
         ? 'grad'
         : 'any'
-    saveProfile({ eduLevel: edu, major, location: params.location || [] })
+    saveProfile({ ...getProfile(), eduLevel: edu, major, majors: major ? [major] : [], location: params.location || [] })
     setParams((p) => ({
       ...p,
       page: 1,
@@ -645,7 +645,7 @@ export function ListPage({
   function applyRecommend() {
     const major = majorInput.trim()
     if (!major) return
-    saveProfile({ eduLevel: params.edu_level || [], major, location: params.location || [] })
+    saveProfile({ ...getProfile(), eduLevel: params.edu_level || [], major, majors: [major], location: params.location || [] })
     setRecommendQuery({
       major,
       edu_level: params.edu_level?.length ? params.edu_level : undefined,

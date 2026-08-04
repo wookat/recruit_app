@@ -52,7 +52,6 @@ import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { MultiSelect, type OptionGroup } from '@/components/MultiSelect'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
-import { getProfile, profileEduToBoardOption, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
 import { deriveBianzhiTags } from '@/lib/jobTags'
 import { readJobParam } from '@/lib/jobDeepLink'
@@ -266,18 +265,6 @@ export function BianzhiPage({
   }, [])
   const [sort, setSort] = useState<SortState | null>(null)
   const [detail, setDetail] = useState<BianzhiJob | null>(null)
-  const [profileMatched, setProfileMatched] = useState(() => {
-    const p = getProfile()
-    if (!profileUsable(p)) return false
-    const q = new URLSearchParams(window.location.search)
-    const kw = q.get('bkw') ?? ''
-    const prov = (q.get('prov') ?? '').split(',').filter(Boolean)
-    if (!kw && !prov.length) return false
-    if (kw !== p.major.trim()) return false
-    return prov.every((v) =>
-      p.location.some((loc) => loc === v || loc.startsWith(v) || v.startsWith(loc)),
-    )
-  })
   const deepLinkDone = useRef(false)
   const toggleSort = useCallback((key: string) => setSort((s) => nextSort(s, key)), [])
 
@@ -542,18 +529,6 @@ export function BianzhiPage({
       label: '隐藏已看过',
       onRemove: () => setHideSeen(false),
     })
-  if (profileMatched)
-    activeFilters.push({
-      label: '按我的条件匹配',
-      onRemove: () => {
-        setSearchInput('')
-        setKeyword('')
-        setProvinces([])
-        setPage(1)
-        setProfileMatched(false)
-      },
-    })
-
   function clearAllFilters() {
     selectPreset('all')
     setEduFilter('')
@@ -566,7 +541,6 @@ export function BianzhiPage({
     setCities([])
     setSearchInput('')
     setKeyword('')
-    setProfileMatched(false)
     setPage(1)
   }
 
@@ -919,31 +893,7 @@ export function BianzhiPage({
         </button>
       )}
 
-      <MatchByProfileButton
-        note="按省份+专业+学历匹配"
-        active={profileMatched}
-        onApply={(p) => {
-          const kw = p.major.trim()
-          setSearchInput(kw)
-          setKeyword(kw)
-          const opts = filters?.provinces ?? []
-          const provs = p.location
-            .map((loc) => opts.find((o) => o === loc || loc.startsWith(o) || o.startsWith(loc)))
-            .filter((v): v is string => !!v)
-          setProvinces([...new Set(provs)])
-          setEduFilter(profileEduToBoardOption(p.eduLevel) ?? '')
-          setPage(1)
-          setProfileMatched(true)
-        }}
-        onClear={() => {
-          setSearchInput('')
-          setKeyword('')
-          setProvinces([])
-          setEduFilter('')
-          setPage(1)
-          setProfileMatched(false)
-        }}
-      />
+      <MatchByProfileButton board="bianzhi" onOpenDetail={(j) => setDetail(j as BianzhiJob)} />
 
       <BoardRecommendSection
         board="bianzhi"

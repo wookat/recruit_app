@@ -48,7 +48,6 @@ import {
   Check,
   Link2,
   Download,
-  MoreHorizontal,
   SlidersHorizontal,
   Loader2,
   ChevronDown,
@@ -1219,7 +1218,7 @@ export function ListPage({
             <Button
               variant="link"
               size="sm"
-              className="hidden h-auto p-0 text-xs sm:inline-flex"
+              className="h-auto min-h-11 p-0 text-xs sm:min-h-0"
               onClick={copyShareLink}
             >
               {copied ? (
@@ -1238,8 +1237,8 @@ export function ListPage({
               <DropdownMenuTrigger
                 render={
                   <Button variant="link" size="sm" className="h-11 p-0 text-xs sm:hidden">
-                    <MoreHorizontal className="mr-0.5 h-3.5 w-3.5" />
-                    更多
+                    <Download className="mr-0.5 h-3.5 w-3.5" />
+                    导出
                   </Button>
                 }
               />
@@ -1275,10 +1274,6 @@ export function ListPage({
                     全部导出 Excel
                     <span className="text-[11px] text-muted-foreground">最多 5 万行</span>
                   </span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={copyShareLink}>
-                  <Link2 className="h-4 w-4" />
-                  <span className="whitespace-nowrap">复制筛选链接</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

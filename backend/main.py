@@ -740,6 +740,17 @@ if os.path.isdir(dist_dir):
             return HTMLResponse(share_meta.inject_meta(raw, meta["title"], meta["desc"]))
         return FileResponse(index_path, media_type="text/html")
 
+    @app.middleware("http")
+    async def static_cache_headers(request: Request, call_next):
+        """带 hash 的 /assets/* 长缓存 immutable；HTML/SW 走 no-cache 协商，保证发版即时生效。"""
+        response = await call_next(request)
+        path = request.url.path
+        if path.startswith("/assets/"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif path == "/sw.js" or path.endswith(".html") or path == "/":
+            response.headers.setdefault("Cache-Control", "no-cache")
+        return response
+
     app.mount("/", StaticFiles(directory=dist_dir, html=True), name="static")
 else:
     @app.get("/")

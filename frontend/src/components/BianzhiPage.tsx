@@ -45,7 +45,7 @@ import { SynonymHint } from '@/components/SynonymHint'
 import { HotSearchPills } from '@/components/HotSearchPills'
 import { expandKeyword, HOT_SEARCHES_BIANZHI } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
-import { getViewPref, setViewPref } from '@/lib/viewPref'
+import { getViewPref, setViewPref, useOnNarrowScreen } from '@/lib/viewPref'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { MultiSelect, type OptionGroup } from '@/components/MultiSelect'
@@ -228,6 +228,7 @@ export function BianzhiPage({
   const [showHrSites, setShowHrSites] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const [view, setView] = useState<'table' | 'card'>(() => getViewPref('bianzhi'))
+  useOnNarrowScreen(useCallback(() => setView((v) => (v === 'table' ? 'card' : v)), []))
   const selectView = useCallback((v: 'table' | 'card') => {
     setView(v)
     setViewPref('bianzhi', v)

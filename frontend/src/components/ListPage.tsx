@@ -14,7 +14,7 @@ import { FreshnessNote } from './FreshnessNote'
 import { DeadlinesCard } from './DeadlinesCard'
 import { TodayGlance } from './TodayGlance'
 import { buildShareUrl, paramsFromQueryString, paramsToQueryString, POSITION_URL_KEYS } from '@/lib/urlFilters'
-import { isNarrowScreen, readViewPref, setViewPref } from '@/lib/viewPref'
+import { isNarrowScreen, readViewPref, setViewPref, useOnNarrowScreen } from '@/lib/viewPref'
 import { useSeenSet } from '@/lib/viewHistory'
 import { markBoardVisit } from '@/lib/lastVisit'
 import { expandKeyword } from '@/lib/synonyms'
@@ -235,6 +235,9 @@ export function ListPage({
     setViewState(v)
     setViewPref('positions', v)
   }, [])
+  useOnNarrowScreen(
+    useCallback(() => setViewState((v) => (v === 'table' ? 'card' : v)), []),
+  )
   const [filterOpen, setFilterOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [deadlineView, setDeadlineView] = useState(false)

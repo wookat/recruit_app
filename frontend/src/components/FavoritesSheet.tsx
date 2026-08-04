@@ -74,7 +74,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, ArrowRight, Bookmark, ChevronDown, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, MonitorSmartphone, Scale, ShieldCheck, Sparkles, Square, SquareCheck } from 'lucide-react'
+import { AlarmClock, ArrowRight, TriangleAlert, Bookmark, ChevronDown, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, MonitorSmartphone, Scale, ShieldCheck, Sparkles, Square, SquareCheck } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1971,7 +1971,11 @@ function PushToggleRow() {
           : '默认关闭，开启后关站也能收到截止提醒与订阅上新推送'}
       </span>
       {error && (
-        <span role="alert" className="w-full text-amber-700 dark:text-amber-300">
+        <span
+          role="alert"
+          className="flex w-full items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+        >
+          <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {error}
         </span>
       )}

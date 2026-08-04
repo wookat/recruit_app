@@ -4,11 +4,12 @@
     GET https://job.ncss.cn/student/jobs/jobslist/ajax/
     参数：offset=页码(1起) limit=20(固定，传更大无效)
           areaCode=省份码 property=单位性质 categoryCode=职位类别 degreeCode=学历码
-    返回：data.pagenation {count,total,limit,offset}，count 封顶 200（10 页 × 20 条窗口上限）
+    返回：data.pagenation.count 恒为 200（不反映真实总数，不可用），
+    实际窗口上限 10 页 × 20 条 = 200 条，以页面是否拉满判断触顶。
 
 分片策略（单查询窗口封顶 200 条）：
     单位性质 property × 省份 areaCode × 职位类别 categoryCode 枚举；
-    单分片 count 触顶 200 时再按学历 degreeCode 细分，按 jobId 去重。
+    单分片拉满 10 页（触顶）时再按学历 degreeCode 细分，按 jobId 去重。
 
 字段映射（source_table='NCSS'，全部入 campus_jobs）：
     recName→company  jobName→positions  recProperty→company_type
@@ -61,7 +62,6 @@ DEGREE_CODES = ["51", "41", "31", "11", "01"]
 
 PAGE_SIZE = 20
 MAX_PAGES = 10
-WINDOW_CAP = PAGE_SIZE * MAX_PAGES  # 200，count 触顶说明需细分
 REQUEST_INTERVAL = 1.0  # 限速：每请求间隔 ≥1s
 TIMEOUT = 30
 
@@ -103,52 +103,40 @@ def _get(params: dict, retries: int = 3) -> dict:
             return {}
 
 
-def probe_shard(search: dict) -> tuple:
-    """探针一个分片：返回 (count, 首页 list)。count 封顶 WINDOW_CAP=200。"""
-    data = _get({"offset": 1, "limit": PAGE_SIZE, **search})
-    pg = data.get("pagenation") or {}
-    return int(pg.get("count") or 0), data.get("list") or []
+def fetch_shard(search: dict) -> tuple:
+    """拉取一个分片全部页：返回 (dict jobId->item, 是否触顶)。
+
+    pagenation.count 恒为 200 不可信，以「拉满 MAX_PAGES 页且末页满页」判定触顶。"""
+    items = {}
+    last_full = False
+    for page in range(1, MAX_PAGES + 1):
+        data = _get({"offset": page, "limit": PAGE_SIZE, **search})
+        batch = data.get("list") or []
+        for it in batch:
+            if it.get("jobId"):
+                items[it["jobId"]] = it
+        last_full = len(batch) >= PAGE_SIZE
+        if not last_full:
+            break
+    return items, last_full
 
 
-def build_shards(verbose: bool = False):
-    """枚举分片：性质×省×类别 → 触顶按学历。yield (search_dict, count, 首页 list)。"""
+def iter_all_jobs(verbose: bool = False):
+    """枚举分片：性质×省×类别 → 触顶按学历细分，逐条 yield 职位。"""
     for prop in PROPERTIES:
         for area in PROVINCE_CODES:
             for cat in CATEGORY_CODES:
                 search = {"property": prop, "areaCode": area, "categoryCode": cat}
-                count, first = probe_shard(search)
-                if count <= 0:
-                    continue
-                if count < WINDOW_CAP:
-                    yield search, count, first
-                    continue
-                if verbose:
-                    print(f"  触顶细分: {prop}/{area}/cat={cat or '-'}", flush=True)
-                for deg in DEGREE_CODES:
-                    d_search = dict(search)
-                    d_search["degreeCode"] = deg
-                    d_count, d_first = probe_shard(d_search)
-                    if d_count > 0:
-                        yield d_search, d_count, d_first
-
-
-def iter_shard_jobs(search: dict, count: int, first_batch: list = None):
-    """按页拉取一个分片，jobId 去重。"""
-    seen = set()
-    max_pages = min(MAX_PAGES, (count + PAGE_SIZE - 1) // PAGE_SIZE)
-    for page in range(1, max_pages + 1):
-        if page == 1 and first_batch is not None:
-            batch = first_batch
-        else:
-            data = _get({"offset": page, "limit": PAGE_SIZE, **search})
-            batch = data.get("list") or []
-        for item in batch:
-            jid = item.get("jobId")
-            if jid and jid not in seen:
-                seen.add(jid)
-                yield item
-        if len(batch) < PAGE_SIZE:
-            break
+                items, capped = fetch_shard(search)
+                if capped:
+                    if verbose:
+                        print(f"  触顶细分: {prop}/{area}/cat={cat or '-'}", flush=True)
+                    for deg in DEGREE_CODES:
+                        d_search = dict(search)
+                        d_search["degreeCode"] = deg
+                        d_items, _ = fetch_shard(d_search)
+                        items.update(d_items)
+                yield from items.values()
 
 
 def _date_of(ms) -> str:
@@ -267,21 +255,19 @@ class Ingestor:
 def collect(dry_run: bool = False, limit: int = 0) -> dict:
     db = SessionLocal()
     fetched = 0
-    est_total = 0
     try:
         Base.metadata.create_all(bind=engine, tables=[CampusJob.__table__])
         ing = Ingestor(db)
         print("== 枚举 NCSS 分片（性质×省×类别）")
-        for search, count, first in build_shards(verbose=True):
-            est_total += count
-            if dry_run and not limit:
+        seen_ids = set()
+        for item in iter_all_jobs(verbose=True):
+            jid = item.get("jobId")
+            if jid in seen_ids:
                 continue
-            for item in iter_shard_jobs(search, count, first):
-                ing.ingest(item, dry_run=dry_run)
-                fetched += 1
-                if limit and fetched >= limit:
-                    break
-            if not dry_run:
+            seen_ids.add(jid)
+            ing.ingest(item, dry_run=dry_run)
+            fetched += 1
+            if not dry_run and fetched % 500 == 0:
                 db.commit()
             if limit and fetched >= limit:
                 break
@@ -290,8 +276,7 @@ def collect(dry_run: bool = False, limit: int = 0) -> dict:
             cache.invalidate_prefixes(
                 "campus_filters", "campus_counts", "campus_timeline",
             )
-        result = {"dry_run": dry_run, "fetched": fetched,
-                  "est_total": est_total, **ing.stats}
+        result = {"dry_run": dry_run, "fetched": fetched, **ing.stats}
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return result
     finally:

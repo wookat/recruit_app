@@ -150,6 +150,8 @@ function campusQueryToParams(query: string): CampusParams {
   if (ctype) p.company_type = ctype.split(',')
   const city = q.get('city')
   if (city) p.location = city
+  const cedu = q.get('cedu')
+  if (cedu) p.edu = cedu
   const kw = q.get('bkw')
   if (kw) p.keyword = kw
   if (q.get('due')) p.due_within_days = 7

@@ -149,6 +149,7 @@ export interface CampusParams {
   grad_year?: string
   no_exam_only?: boolean
   referral_only?: boolean
+  edu?: string
   location?: string
   updated_after?: string
   due_within_days?: number
@@ -356,6 +357,7 @@ export interface BianzhiCounts {
 export interface CampusCounts {
   company_types: Record<string, number>
   batches: Record<string, number>
+  cities?: Record<string, number>
 }
 
 let bianzhiCountsPromise: Promise<BianzhiCounts | null> | null = null

@@ -629,7 +629,7 @@ export function BianzhiPage({
 
   const eduRow = (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-xs text-muted-foreground">学历：</span>
+      <span className="text-xs text-muted-foreground">我的学历（含可投的「及以上/不限」）：</span>
       {['本科', '硕士', '博士', '大专'].map((e) => (
         <button
           key={e}

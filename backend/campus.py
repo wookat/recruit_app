@@ -1,4 +1,5 @@
 """校招/社招信息 API：/api/campus 列表与筛选项。"""
+import re
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session
 
 import cache
 import csv_export
-from crud import keyword_variants, title_hit_rank
+from crud import edu_eligible_clause, keyword_variants, title_hit_rank
 from database import get_db
 from models import CampusJob, LinkCheck
 
@@ -89,8 +90,12 @@ def apply_campus_filters(q, f: dict):
         q = q.filter(or_(CampusJob.no_exam.ilike("%免笔试%"), CampusJob.no_exam == "/"))
     if f.get("referral_only"):
         q = q.filter(CampusJob.referral_code != None, CampusJob.referral_code != "")  # noqa: E711
+    if f.get("edu"):
+        q = q.filter(edu_eligible_clause(CampusJob.edu_requirement, f["edu"]))
     if f.get("location"):
-        q = q.filter(CampusJob.locations.ilike(f"%{f['location']}%"))
+        terms = [t.strip() for t in f["location"].split(",") if t.strip()]
+        if terms:
+            q = q.filter(or_(*(CampusJob.locations.ilike(f"%{t}%") for t in terms)))
     if f.get("updated_after"):
         q = q.filter(CampusJob.updated_at_src >= f["updated_after"])
     if f.get("keyword"):
@@ -141,6 +146,7 @@ def list_campus_jobs(
     grad_year: Optional[str] = None,
     no_exam_only: bool = False,
     referral_only: bool = False,
+    edu: Optional[str] = None,
     location: Optional[str] = None,
     updated_after: Optional[str] = None,
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
@@ -158,6 +164,7 @@ def list_campus_jobs(
         "grad_year": grad_year,
         "no_exam_only": no_exam_only,
         "referral_only": referral_only,
+        "edu": edu,
         "location": location,
         "updated_after": updated_after,
         "due_within_days": due_within_days,
@@ -183,6 +190,7 @@ def export_campus_jobs(
     grad_year: Optional[str] = None,
     no_exam_only: bool = False,
     referral_only: bool = False,
+    edu: Optional[str] = None,
     location: Optional[str] = None,
     updated_after: Optional[str] = None,
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
@@ -201,6 +209,7 @@ def export_campus_jobs(
         "grad_year": grad_year,
         "no_exam_only": no_exam_only,
         "referral_only": referral_only,
+        "edu": edu,
         "location": location,
         "updated_after": updated_after,
         "due_within_days": due_within_days,
@@ -227,9 +236,32 @@ def campus_counts(db: Session = Depends(get_db)):
         .group_by(CampusJob.batch)
         .all()
     )
+    locs = (
+        db.query(CampusJob.locations, func.count())
+        .filter(CampusJob.locations != None, CampusJob.locations != "")  # noqa: E711
+        .group_by(CampusJob.locations)
+        .all()
+    )
+    _NON_CITY = {
+        "全国", "全国多地", "全国各地", "多地", "其他", "海外", "待定", "不限",
+        "广东", "浙江", "江苏", "山东", "河北", "河南", "湖南", "湖北", "四川",
+        "福建", "安徽", "江西", "山西", "陕西", "云南", "贵州", "广西", "辽宁",
+        "黑龙江", "甘肃", "青海", "海南", "内蒙古", "新疆", "西藏", "宁夏",
+    }
+    city_counts: dict = {}
+    for loc, n in locs:
+        for t in re.split(r"[|、,，/;；\s]+", loc):
+            t = t.strip()
+            if len(t) > 2 and t.endswith("市"):
+                t = t[:-1]
+            if not t or len(t) > 6 or t in _NON_CITY or t.endswith(("省", "自治州")):
+                continue
+            city_counts[t] = city_counts.get(t, 0) + n
+    cities = dict(sorted(city_counts.items(), key=lambda x: -x[1])[:80])
     return {
         "company_types": {t: n for t, n in ctypes},
         "batches": {b: n for b, n in batches},
+        "cities": cities,
     }
 
 

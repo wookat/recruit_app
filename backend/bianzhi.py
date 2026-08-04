@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 import cache
 import csv_export
-from crud import keyword_variants, title_hit_rank
+from crud import edu_eligible_clause, keyword_variants, title_hit_rank
 from database import get_db
 from models import BianzhiJob
 
@@ -77,7 +77,7 @@ def apply_bianzhi_filters(q, f: dict):
     if f.get("job_type"):
         q = q.filter(BianzhiJob.job_type.ilike(f"%{f['job_type']}%"))
     if f.get("edu"):
-        q = q.filter(BianzhiJob.edu_requirement.ilike(f"%{f['edu']}%"))
+        q = q.filter(edu_eligible_clause(BianzhiJob.edu_requirement, f["edu"]))
     if f.get("updated_after"):
         q = q.filter(BianzhiJob.updated_at_src >= f["updated_after"])
     if f.get("keyword"):

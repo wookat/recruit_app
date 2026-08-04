@@ -616,7 +616,7 @@ def get_filter_options(db: Session, limit: int = 120):
                 d = d[len(pre):]
                 break
         d = d.strip()
-        if len(d) < 2 or d == "辖区" or "省" in d or "自治区" in d:
+        if len(d) < 2 or d in ("辖区", "市辖区") or "省" in d or "自治区" in d:
             return None
         base = d[:-1] if len(d) > 2 and d.endswith("市") else d
         if base != city and base in _prefecture_cities:

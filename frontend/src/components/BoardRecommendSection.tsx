@@ -163,8 +163,12 @@ export function BoardRecommendSection({ board, onOpenDetail }: Props) {
           <Sparkles className="h-4 w-4 shrink-0 text-primary" />
           <span className="shrink-0 whitespace-nowrap">为你推荐</span>
           <span className="min-w-0 max-w-60 truncate text-xs font-normal text-muted-foreground">
-            {basisSource}（{basisLabel}）
+            {basisSource}
+            <span className="hidden sm:inline">（{basisLabel}）</span>
           </span>
+          {collapsed && (
+            <span className="shrink-0 text-xs font-normal text-primary">展开</span>
+          )}
         </button>
         {!collapsed && (
           <Button
@@ -179,7 +183,13 @@ export function BoardRecommendSection({ board, onOpenDetail }: Props) {
           </Button>
         )}
       </div>
-      {!collapsed && (
+      <div
+        className={cn(
+          'grid transition-[grid-template-rows] duration-200 ease-out',
+          collapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]',
+        )}
+      >
+        <div className="min-h-0 overflow-hidden">
         <div className="scrollbar-none mt-3 flex gap-3 overflow-x-auto pb-1">
           {(items ?? []).map((j) =>
             board === 'campus' ? (
@@ -195,7 +205,8 @@ export function BoardRecommendSection({ board, onOpenDetail }: Props) {
             <div className="py-6 text-center text-xs text-muted-foreground">暂无更多推荐</div>
           )}
         </div>
-      )}
+        </div>
+      </div>
     </div>
   )
 }

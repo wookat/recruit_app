@@ -207,8 +207,9 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
                       {meta.label}
                     </Badge>
                     {b.bulk ? (
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                        数据全量同步日 · 非新增岗位数，不逐条展示
+                      <span className="whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                        <span className="sm:hidden">全量同步日 · 不逐条展示</span>
+                        <span className="hidden sm:inline">数据全量同步日 · 非新增岗位数，不逐条展示</span>
                       </span>
                     ) : (
                       <span className="text-xs font-semibold text-primary">

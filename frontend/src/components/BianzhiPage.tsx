@@ -47,6 +47,7 @@ import { expandKeyword, HOT_SEARCHES_BIANZHI } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
+import { MultiSelect } from '@/components/MultiSelect'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
 import { getProfile, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
@@ -162,6 +163,8 @@ export function BianzhiPage({
     urlQuery.get('board') === 'bianzhi' ? urlQuery.get('bedu') ?? '' : '',
   )
   const [provinceCounts, setProvinceCounts] = useState<Record<string, number> | null>(null)
+  const [cityOptions, setCityOptions] = useState<string[]>([])
+  const [cityProvinces, setCityProvinces] = useState<Record<string, string>>({})
 
   useEffect(() => {
     let alive = true
@@ -175,6 +178,8 @@ export function BianzhiPage({
         }
       }
       setProvinceCounts(acc)
+      if (c.cities) setCityOptions(Object.keys(c.cities))
+      if (c.city_provinces) setCityProvinces(c.city_provinces)
     })
     return () => {
       alive = false
@@ -202,6 +207,10 @@ export function BianzhiPage({
   }, [keyword, crossFetchTotal])
   const [provinces, setProvinces] = useState<string[]>(() => {
     const v = urlQuery.get('prov')
+    return v ? v.split(',').filter(Boolean) : []
+  })
+  const [cities, setCities] = useState<string[]>(() => {
+    const v = urlQuery.get('board') === 'bianzhi' ? urlQuery.get('bcity') : null
     return v ? v.split(',').filter(Boolean) : []
   })
   const [page, setPage] = useState(1)
@@ -251,13 +260,15 @@ export function BianzhiPage({
     else q.delete('hseen')
     if (provinces.length) q.set('prov', provinces.join(','))
     else q.delete('prov')
+    if (cities.length) q.set('bcity', cities.join(','))
+    else q.delete('bcity')
     if (keyword.trim()) q.set('bkw', keyword.trim())
     else q.delete('bkw')
     if (eduFilter) q.set('bedu', eduFilter)
     else q.delete('bedu')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
     applySeo('bianzhi', preset)
-  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, provinces, keyword, eduFilter])
+  }, [preset, recentOnly, dueOnly, hideExpired, hideSeen, provinces, cities, keyword, eduFilter])
 
   useEffect(() => {
     markBoardVisit('bianzhi')
@@ -280,6 +291,7 @@ export function BianzhiPage({
     return {
       category: cat ? [cat] : undefined,
       province: provinces.length ? provinces : undefined,
+      city: cities.length ? cities.join(',') : undefined,
       keyword: kwTrim ? (synAdded.length ? expandKeyword(kwTrim).expanded : kwTrim) : undefined,
       edu: eduFilter || undefined,
       updated_after: recentOnly ? daysAgoStr(7) : undefined,
@@ -288,7 +300,7 @@ export function BianzhiPage({
       page: fetchPage,
       page_size: isLiankaoPreset ? 100 : PAGE_SIZE,
     }
-  }, [preset, recentOnly, kwTrim, synAdded, provinces, dueOnly, hideExpired, fetchPage, isLiankaoPreset, eduFilter])
+  }, [preset, recentOnly, kwTrim, synAdded, provinces, cities, dueOnly, hideExpired, fetchPage, isLiankaoPreset, eduFilter])
 
   useEffect(() => {
     let cancelled = false
@@ -358,6 +370,7 @@ export function BianzhiPage({
       '编制',
       preset !== 'all' ? presetLabel : undefined,
       ...provinces,
+      ...cities,
       keyword || undefined,
       eduFilter || undefined,
       recentOnly ? '近7天' : undefined,
@@ -366,7 +379,7 @@ export function BianzhiPage({
       new Date().toISOString().slice(0, 10).replace(/-/g, ''),
     ]
     return parts.filter(Boolean).join('-')
-  }, [preset, provinces, keyword, eduFilter, recentOnly, dueOnly, hideExpired])
+  }, [preset, provinces, cities, keyword, eduFilter, recentOnly, dueOnly, hideExpired])
   const isLiankao = isLiankaoPreset
 
   const filterSnapshot = (() => {
@@ -375,6 +388,7 @@ export function BianzhiPage({
     else if (preset !== 'all') s.bpreset = preset
     if (dueOnly) s.due = '7'
     if (provinces.length) s.prov = provinces.join(',')
+    if (cities.length) s.bcity = cities.join(',')
     if (eduFilter) s.bedu = eduFilter
     if (keyword.trim()) s.bkw = keyword.trim()
     return s
@@ -386,6 +400,11 @@ export function BianzhiPage({
         : provinces.length <= 3
           ? provinces.join('+')
           : `${provinces.slice(0, 3).join('+')}等${provinces.length}地`,
+      cities.length === 0
+        ? null
+        : cities.length <= 3
+          ? cities.join('+')
+          : `${cities.slice(0, 3).join('+')}等${cities.length}城`,
       preset !== 'all' ? PRESETS.find((p) => p.key === preset)?.label : null,
       eduFilter || null,
       recentOnly ? '近7天更新' : null,
@@ -395,7 +414,13 @@ export function BianzhiPage({
       .filter(Boolean)
       .join('·') || '编制筛选'
   const filterCanSave =
-    preset !== 'all' || recentOnly || dueOnly || provinces.length > 0 || !!eduFilter || !!keyword.trim()
+    preset !== 'all' ||
+    recentOnly ||
+    dueOnly ||
+    provinces.length > 0 ||
+    cities.length > 0 ||
+    !!eduFilter ||
+    !!keyword.trim()
 
   const activeFilters: RemovableFilter[] = []
   if (keyword)
@@ -409,6 +434,14 @@ export function BianzhiPage({
     })
   for (const p of provinces)
     activeFilters.push({ label: `省份：${p}`, onRemove: () => toggleProvince(p) })
+  for (const c of cities)
+    activeFilters.push({
+      label: `城市：${c}`,
+      onRemove: () => {
+        setCities((prev) => prev.filter((x) => x !== c))
+        setPage(1)
+      },
+    })
   if (preset !== 'all') {
     const presetLabel = PRESETS.find((v) => v.key === preset)?.label
     if (presetLabel)
@@ -471,6 +504,7 @@ export function BianzhiPage({
     setHideExpired(false)
     setHideSeen(false)
     setProvinces([])
+    setCities([])
     setSearchInput('')
     setKeyword('')
     setProfileMatched(false)
@@ -624,6 +658,38 @@ export function BianzhiPage({
         className="pointer-events-none absolute inset-y-0 -right-4 w-8 bg-gradient-to-l from-background to-transparent md:hidden"
         aria-hidden
       />
+      </div>
+    ) : null
+
+  const cityChoices = useMemo(() => {
+    if (!provinces.length) return cityOptions
+    const within = cityOptions.filter((c) => provinces.includes(cityProvinces[c] ?? ''))
+    return within.length ? within : cityOptions
+  }, [cityOptions, cityProvinces, provinces])
+
+  const cityRow =
+    cityOptions.length > 0 ? (
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-xs text-muted-foreground">城市（可多选）：</span>
+        <div className="w-60">
+          <MultiSelect
+            label=""
+            options={cityChoices}
+            selected={cities}
+            onChange={(v) => {
+              setCities(v)
+              setPage(1)
+            }}
+            placeholder="搜索城市（支持拼音）…"
+            triggerLabel={
+              cities.length
+                ? `城市 · ${cities.length}`
+                : provinces.length
+                  ? '已选省份内城市'
+                  : '全部城市'
+            }
+          />
+        </div>
       </div>
     ) : null
 
@@ -899,18 +965,23 @@ export function BianzhiPage({
         {guideOpen && <MajorGuideSheet open={guideOpen} onClose={() => setGuideOpen(false)} />}
       </Suspense>
 
-      {/* 省份 + 学历 chips（桌面） */}
+      {/* 省份 + 城市 + 学历 chips（桌面） */}
       {provinceRow && (
         <div className="hidden space-y-2 md:block">
           {provinceRow}
+          {cityRow}
           {eduRow}
         </div>
       )}
 
       {/* 移动端筛选：超两行自动折叠 */}
       {provinceRow && (
-        <MobileFilterCollapse count={provinces.length + (eduFilter ? 1 : 0)} title="编制筛选">
+        <MobileFilterCollapse
+          count={provinces.length + cities.length + (eduFilter ? 1 : 0)}
+          title="编制筛选"
+        >
           {provinceRow}
+          {cityRow}
           {eduRow}
         </MobileFilterCollapse>
       )}

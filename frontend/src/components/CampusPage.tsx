@@ -47,7 +47,7 @@ import { expandKeyword, HOT_SEARCHES_CAMPUS } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
-import { MultiSelect } from '@/components/MultiSelect'
+import { MultiSelect, type OptionGroup } from '@/components/MultiSelect'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
 import { getProfile, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
@@ -277,6 +277,7 @@ export function CampusPage({
   const refreshResolveRef = useRef<(() => void) | null>(null)
   const [typeCounts, setTypeCounts] = useState<Record<string, number> | null>(null)
   const [cityOptions, setCityOptions] = useState<string[]>([])
+  const [cityProvinces, setCityProvinces] = useState<Record<string, string>>({})
 
   useEffect(() => {
     let alive = true
@@ -284,11 +285,28 @@ export function CampusPage({
       if (!alive || !c) return
       setTypeCounts(c.company_types)
       if (c.cities) setCityOptions(Object.keys(c.cities))
+      if (c.city_provinces) setCityProvinces(c.city_provinces)
     })
     return () => {
       alive = false
     }
   }, [])
+  /** 「更多城市」按省份分组（省内城市保持岗位数降序，无映射城市归「其他地区」） */
+  const cityGroups = useMemo<OptionGroup[] | null>(() => {
+    if (!cityOptions.length || !Object.keys(cityProvinces).length) return null
+    const byProv = new Map<string, string[]>()
+    for (const c of cityOptions) {
+      const prov = cityProvinces[c] ?? '其他地区'
+      const arr = byProv.get(prov)
+      if (arr) arr.push(c)
+      else byProv.set(prov, [c])
+    }
+    const groups = [...byProv.entries()].map(([label, options]) => ({ label, options }))
+    groups.sort((a, b) =>
+      a.label === '其他地区' ? 1 : b.label === '其他地区' ? -1 : b.options.length - a.options.length,
+    )
+    return groups
+  }, [cityOptions, cityProvinces])
   const [data, setData] = useState<{ total: number; items: CampusJob[] } | null>(null)
   const [filters, setFilters] = useState<CampusFilterOptions | null>(null)
   const [loading, setLoading] = useState(true)
@@ -713,7 +731,8 @@ export function CampusPage({
           {cityOptions.length > 0 && (
             <MultiSelect
               label="更多城市"
-              options={cityOptions}
+              options={cityGroups ? undefined : cityOptions}
+              groups={cityGroups ?? undefined}
               selected={cities}
               onChange={(v) => {
                 setCities(v)

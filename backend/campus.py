@@ -13,6 +13,7 @@ import csv_export
 from crud import edu_eligible_clause, keyword_variants, title_hit_rank
 from database import get_db
 from models import CampusJob, LinkCheck
+from normalizer import CITY_TO_PROVINCE
 
 router = APIRouter(prefix="/api/campus", tags=["campus"])
 
@@ -258,10 +259,17 @@ def campus_counts(db: Session = Depends(get_db)):
                 continue
             city_counts[t] = city_counts.get(t, 0) + n
     cities = dict(sorted(city_counts.items(), key=lambda x: -x[1])[:80])
+    _municipalities = {"北京", "天津", "上海", "重庆"}
+    city_provinces = {
+        c: (c if c in _municipalities else CITY_TO_PROVINCE[c])
+        for c in cities
+        if c in _municipalities or c in CITY_TO_PROVINCE
+    }
     return {
         "company_types": {t: n for t, n in ctypes},
         "batches": {b: n for b, n in batches},
         "cities": cities,
+        "city_provinces": city_provinces,
     }
 
 

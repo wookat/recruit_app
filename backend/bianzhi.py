@@ -1,4 +1,5 @@
 """编制类招聘公告 API：/api/bianzhi 列表与筛选项。"""
+import re
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 
@@ -74,6 +75,10 @@ def apply_bianzhi_filters(q, f: dict):
         q = q.filter(BianzhiJob.category.in_(f["category"]))
     if f.get("province"):
         q = q.filter(BianzhiJob.province.in_(f["province"]))
+    if f.get("city"):
+        terms = [t.strip() for t in f["city"].split(",") if t.strip()]
+        if terms:
+            q = q.filter(or_(*(BianzhiJob.work_location.ilike(f"%{t}%") for t in terms)))
     if f.get("job_type"):
         q = q.filter(BianzhiJob.job_type.ilike(f"%{f['job_type']}%"))
     if f.get("edu"):
@@ -118,6 +123,7 @@ def list_bianzhi_jobs(
     keyword: Optional[str] = None,
     category: Optional[List[str]] = Query(None),
     province: Optional[List[str]] = Query(None),
+    city: Optional[str] = None,
     job_type: Optional[str] = None,
     edu: Optional[str] = None,
     updated_after: Optional[str] = None,
@@ -131,6 +137,7 @@ def list_bianzhi_jobs(
         "keyword": keyword,
         "category": category,
         "province": province,
+        "city": city,
         "job_type": job_type,
         "edu": edu,
         "updated_after": updated_after,
@@ -152,6 +159,7 @@ def export_bianzhi_jobs(
     keyword: Optional[str] = None,
     category: Optional[List[str]] = Query(None),
     province: Optional[List[str]] = Query(None),
+    city: Optional[str] = None,
     job_type: Optional[str] = None,
     edu: Optional[str] = None,
     updated_after: Optional[str] = None,
@@ -166,6 +174,7 @@ def export_bianzhi_jobs(
         "keyword": keyword,
         "category": category,
         "province": province,
+        "city": city,
         "job_type": job_type,
         "edu": edu,
         "updated_after": updated_after,
@@ -193,9 +202,39 @@ def bianzhi_counts(db: Session = Depends(get_db)):
         .group_by(BianzhiJob.province)
         .all()
     )
+    locs = (
+        db.query(BianzhiJob.province, BianzhiJob.work_location, func.count())
+        .filter(BianzhiJob.work_location != None, BianzhiJob.work_location != "")  # noqa: E711
+        .group_by(BianzhiJob.province, BianzhiJob.work_location)
+        .all()
+    )
+    _NON_CITY = {"全国", "全国多地", "全国各地", "多地", "其他", "海外", "待定", "不限"}
+    city_counts: dict = {}
+    city_prov_counts: dict = {}
+    for prov, loc, n in locs:
+        for t in re.split(r"[|、,，/;；\s]+", loc):
+            t = t.strip()
+            if len(t) > 2 and t.endswith("市"):
+                t = t[:-1]
+            if not t or len(t) > 8 or t in _NON_CITY or t.endswith("省"):
+                continue
+            city_counts[t] = city_counts.get(t, 0) + n
+            if prov:
+                key = (t, prov)
+                city_prov_counts[key] = city_prov_counts.get(key, 0) + n
+    cities = dict(sorted(city_counts.items(), key=lambda x: -x[1])[:200])
+    city_provinces: dict = {}
+    for (t, prov), n in city_prov_counts.items():
+        if t not in cities:
+            continue
+        best = city_provinces.get(t)
+        if best is None or n > city_prov_counts[(t, best)]:
+            city_provinces[t] = prov
     return {
         "categories": {c: n for c, n in cats},
         "provinces": {p: n for p, n in provs},
+        "cities": cities,
+        "city_provinces": city_provinces,
     }
 
 

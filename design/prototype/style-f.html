@@ -3,31 +3,89 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Style F</title>
-<script>window.STYLE={key:'F',name:'硬朗方角编辑风',ref:'GitHub Primer × 瑞士国际主义排版'};</script>
+<title>F 报纸编辑风 · 上岸罗盘 R180</title>
 <style>
-:root{
-  --bg:#ffffff; --card:#ffffff; --fg:#1f2328; --fg2:#59636e; --fg3:#818b98;
-  --line:#d1d9e0; --muted:#f6f8fa;
-  --accent:#1f2328; --accent-fg:#ffffff; --accent-weak:#ddf4ff; --accent-text:#0969da;
-  --chip-on-bg:#ddf4ff; --chip-on-fg:#0969da; --chip-on-bd:#0969da;
-  --r-ctl:0px; --r-btn:0px; --r-card:0px; --r-tag:0px; --r-badge:0px; --r-logo:0px;
-  --ctl-h:32px; --chip-h:26px; --td-py:10px; --th-py:8px;
-  --title-w:700; --title-s:14px;
-  --row-hover:#f6f8fa; --row-sel:#ddf4ff; --ring:rgba(9,105,218,.15);
-  --th-bg:#f6f8fa; --card-shadow:none; --bw:1.5px;
-  --tag-bg:#f6f8fa; --tag-fg:#59636e; --tag-bw:1px;
-  --tag-b-bg:#ddf4ff; --tag-b-fg:#0969da; --tag-c-bg:#dafbe1; --tag-c-fg:#1a7f37;
-  --danger:#d1242f; --banner-bg:#1f2328; --banner-fg:#fff;
+/* Style F · 报纸式硬朗编辑风（GitHub Primer × 瑞士国际主义 × 报纸版式）
+   几何：圆角 0px ｜ 边框 3px 粗黑 rule + 1px 细分隔 ｜ 阴影 无
+   排版：衬线大标题 + 无衬线正文、全大写栏目字距、等宽数字
+   骨架：报纸式三栏分栏布局，头条区 + 分栏条目 + 粗分隔线，无表格 */
+*{box-sizing:border-box;margin:0}
+body{font-family:Georgia,"Times New Roman","Songti SC","SimSun",serif;background:#f7f6f2;color:#151412}
+a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+.sans{font-family:"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif}
+.bn{background:#151412;color:#f7f6f2;font-size:11px;padding:5px 16px;display:flex;gap:12px;font-family:Arial,sans-serif}
+.bn a{margin-left:auto;text-decoration:underline}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+.mast{text-align:center;padding:26px 0 14px;border-bottom:3px solid #151412}
+.mast h1{font-size:44px;letter-spacing:.12em;font-weight:700}
+.mast .sub{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#6d6a61;margin-top:6px}
+.navrow{display:flex;justify-content:center;gap:0;border-bottom:1px solid #151412}
+.navrow a{padding:9px 22px;font-size:12px;letter-spacing:.18em;text-transform:uppercase;border-right:1px solid #d8d5cb}
+.navrow a:first-child{border-left:1px solid #d8d5cb}
+.navrow a:hover{background:#151412;color:#f7f6f2}
+.navrow .on{background:#151412;color:#f7f6f2;font-weight:700}
+.toolrow{display:flex;gap:0;align-items:stretch;border-bottom:3px double #151412;flex-wrap:wrap}
+.toolrow>*{border-right:1px solid #d8d5cb;padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:6px}
+.toolrow .lbl{letter-spacing:.2em;text-transform:uppercase;font-size:10px;color:#6d6a61}
+.toolrow button{background:none;border:none;text-decoration:underline;text-underline-offset:3px;padding:0}
+.toolrow button.on{font-weight:700;text-decoration-thickness:3px}
+.toolrow .go{margin-left:auto;border-right:none;border-left:1px solid #d8d5cb}
+.toolrow .go button{background:#151412;color:#f7f6f2;padding:6px 18px;text-decoration:none;letter-spacing:.1em}
+.lead{display:grid;grid-template-columns:2fr 1fr;border-bottom:3px solid #151412}
+.lead-l{padding:22px 24px 22px 0;border-right:1px solid #151412}
+.kick{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#a33d2a;font-weight:700}
+.lead h2{font-size:30px;line-height:1.25;margin:8px 0 10px}
+.lead p{font-size:14px;line-height:1.8;color:#44423c}
+.lead-r{padding:22px 0 22px 24px;display:flex;flex-direction:column;gap:0}
+.lead-r .it{padding:12px 0;border-bottom:1px dotted #a9a598}
+.lead-r .it:last-child{border-bottom:none}
+.cols{column-count:3;column-gap:28px;column-rule:1px solid #d8d5cb;padding:20px 0 30px}
+.item{break-inside:avoid;padding:0 0 16px;margin-bottom:16px;border-bottom:1px solid #d8d5cb}
+.item h3{font-size:17px;line-height:1.35}
+.item h3:hover{text-decoration:underline;text-underline-offset:3px}
+.emp{font-size:12px;color:#6d6a61;margin-top:3px;font-style:italic}
+.fx{display:flex;gap:10px;margin-top:8px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#44423c;flex-wrap:wrap}
+.fx b{font-weight:700}
+.dead{color:#a33d2a;font-weight:700}
+.foot{border-top:3px solid #151412;padding:14px 0 60px;display:flex;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#6d6a61}
+.foot span:last-child{margin-left:auto}
+@media(max-width:767px){
+ .mast h1{font-size:30px}
+ .navrow{overflow-x:auto}.navrow a{padding:8px 14px;white-space:nowrap}
+ .lead{grid-template-columns:1fr}.lead-l{border-right:none;border-bottom:1px solid #151412;padding-right:0}
+ .lead-r{padding-left:0}
+ .cols{column-count:1}
 }
-body{font-family:'SF Mono',ui-monospace,'JetBrains Mono',Menlo,Consolas,'PingFang SC','Microsoft YaHei',monospace}
-.sd-tbl th{text-transform:uppercase;letter-spacing:.06em;font-size:11px;font-weight:700}
-.sd-header{border-bottom-width:2px}
-.sd-btn-pri:hover{background:#0969da;border-color:#0969da}
-.sd-chip:hover{border-color:#1f2328;color:#1f2328;background:#f6f8fa}
+@media(min-width:768px) and (max-width:1023px){.cols{column-count:2}}
 </style>
 <script src="assets/data.js"></script>
-<script src="assets/style-demo.js"></script>
 </head>
-<body></body>
+<body>
+<div class="bn">F · 报纸编辑风 &nbsp;参考：GitHub Primer × 瑞士国际主义 × 报纸版式 ｜ 圆角 0px · 3px 粗 rule · 衬线标题 · 分栏<a href="styles.html">← 返回风格选择</a></div>
+<div class="wrap">
+  <div class="mast"><h1>上岸罗盘</h1><div class="sub sans">Public Sector Career Gazette · 第 10,000 期 · 2026-08-04</div></div>
+  <div class="navrow sans"><a class="on" href="#">体制内</a><a href="#">校招</a><a href="#">编制</a><a href="#">日历</a><a href="#">今日更新</a><a href="#">攻略</a></div>
+  <div class="toolrow sans">
+    <span class="lbl">筛选</span>
+    <span><button class="on">全部 10,000+</button></span><span><button>公务员</button></span><span><button>事业编</button></span><span><button>军队文职</button></span><span><button>国企央企</button></span><span><button>选调生</button></span>
+    <span class="go"><button>⌕ 检索岗位 / 单位 / 专业</button></span>
+  </div>
+  <div class="lead" id="lead"></div>
+  <div class="cols" id="cols"></div>
+  <div class="foot sans"><span>Compiled from jobs.zalize.com</span><span>第 1 页 / 共 500 页 →</span></div>
+</div>
+<script>
+const R=(window.DATA_POSITIONS||[]).slice(0,20);
+const dl=(d,i)=>i===0?'<span class="dead">今日截止</span>':(d?'截至 '+d.slice(5,10):'详见公告');
+const hd=R[0],side=R.slice(1,4),rest=R.slice(4);
+document.getElementById('lead').innerHTML=`
+<div class="lead-l"><span class="kick sans">头条 · 即将截止</span><h2>${hd.title} —— ${hd.employer}</h2>
+<p>${hd.loc} · ${hd.type} · ${hd.edu||'学历详见公告'}。本岗位<b>${dl(hd.deadline,0).replace(/<[^>]+>/g,'')}</b>，符合条件者请从速报名。编辑部按截止时间与更新热度为您甄选每日头条岗位。</p>
+<div class="fx sans"><b>${hd.year}</b><span>${hd.type}</span><span class="dead">今日截止</span><span style="margin-left:auto;text-decoration:underline">立即报名 →</span></div></div>
+<div class="lead-r sans">${side.map((p,j)=>`<div class="it"><h3 style="font-family:Georgia,'Songti SC',serif;font-size:16px">${p.title}</h3><div class="emp">${p.employer}</div><div class="fx"><span>${p.loc}</span><span>${dl(p.deadline,j+1)}</span></div></div>`).join('')}</div>`;
+document.getElementById('cols').innerHTML=rest.map((p,i)=>`
+<div class="item"><h3>${p.title}</h3><div class="emp">${p.employer}</div>
+<div class="fx sans"><b>${p.year}</b><span>${p.type}</span><span>${p.loc}</span><span>${p.edu||''}</span><span>${dl(p.deadline,i+4)}</span></div></div>`).join('');
+</script>
+</body>
 </html>

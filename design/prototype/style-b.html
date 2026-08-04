@@ -3,26 +3,125 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Style B</title>
-<script>window.STYLE={key:'B',name:'企业中后台风',ref:'Ant Design 5 / 飞书'};</script>
+<title>B 企业中后台风 · 上岸罗盘 R180</title>
 <style>
-:root{
-  --bg:#f5f5f5; --card:#ffffff; --fg:rgba(0,0,0,.88); --fg2:rgba(0,0,0,.65); --fg3:rgba(0,0,0,.45);
-  --line:#d9d9d9; --muted:#f5f5f5;
-  --accent:#1677ff; --accent-fg:#ffffff; --accent-weak:#e6f4ff; --accent-text:#1677ff;
-  --chip-on-bg:#e6f4ff; --chip-on-fg:#1677ff; --chip-on-bd:#91caff;
-  --r-ctl:6px; --r-btn:6px; --r-card:8px; --r-tag:4px; --r-badge:10px; --r-logo:6px;
-  --ctl-h:32px; --chip-h:26px; --td-py:12px; --th-py:10px;
-  --title-w:600; --title-s:14px;
-  --row-hover:#fafafa; --row-sel:#e6f4ff; --ring:rgba(22,119,255,.15);
-  --th-bg:#fafafa; --card-shadow:0 1px 2px rgba(0,0,0,.03),0 1px 6px -1px rgba(0,0,0,.02);
-  --tag-bg:#fafafa; --tag-fg:rgba(0,0,0,.65); --tag-bw:1px;
-  --tag-b-bg:#e6f4ff; --tag-b-fg:#1677ff; --tag-c-bg:#f6ffed; --tag-c-fg:#52c41a;
-  --danger:#ff4d4f; --banner-bg:#001529; --banner-fg:#fff;
+/* Style B · 企业中后台风（Ant Design 5 / 飞书）
+   几何：圆角 6px ｜ 边框 1px #d9d9d9 + 表头灰底 ｜ 阴影 细（0 1px 2px）
+   排版：14px 标准、rgba 黑阶（.88/.65/.45）、功能色蓝绿红
+   骨架：左侧深色侧栏 + 面包屑页头 + 统计卡片行 + 内容卡片内表格 + 分页器 */
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#f0f2f5;color:rgba(0,0,0,.88);font-size:14px;display:flex;min-height:100vh}
+a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+.side{width:208px;background:#001529;color:rgba(255,255,255,.65);flex-shrink:0;display:flex;flex-direction:column}
+.side .lg{height:56px;display:flex;align-items:center;gap:10px;padding:0 20px;color:#fff;font-weight:600;font-size:15px}
+.side .lg i{width:26px;height:26px;border-radius:6px;background:#1677ff;font-style:normal;display:flex;align-items:center;justify-content:center;font-size:13px}
+.side a{display:flex;align-items:center;gap:10px;height:40px;padding:0 20px;font-size:14px}
+.side a:hover{color:#fff}
+.side .on{background:#1677ff;color:#fff}
+.side .grp{font-size:11px;color:rgba(255,255,255,.35);padding:14px 20px 6px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{background:#fff;height:56px;display:flex;align-items:center;gap:16px;padding:0 24px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.bc{font-size:13px;color:rgba(0,0,0,.45)}
+.bc b{color:rgba(0,0,0,.88);font-weight:500}
+.top .sr{margin-left:auto;display:flex;align-items:center;gap:8px;background:#f5f5f5;border-radius:6px;height:32px;padding:0 12px;color:rgba(0,0,0,.45);font-size:13px;width:260px}
+.avatar{width:30px;height:30px;border-radius:50%;background:#1677ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px}
+.body{padding:20px 24px 60px;display:grid;gap:16px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.stat{background:#fff;border-radius:6px;padding:16px 20px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.stat .l{font-size:13px;color:rgba(0,0,0,.45)}
+.stat .v{font-size:24px;font-weight:600;margin-top:4px}
+.stat .d{font-size:12px;margin-top:6px}
+.up{color:#52c41a}.down{color:#ff4d4f}
+.card{background:#fff;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.chd{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid #f0f0f0}
+.chd h3{font-size:16px;font-weight:600}
+.btn{height:32px;padding:0 14px;border-radius:6px;border:1px solid #d9d9d9;background:#fff;font-size:13px}
+.btn:hover{border-color:#1677ff;color:#1677ff}
+.btn.p{background:#1677ff;border-color:#1677ff;color:#fff}
+.btn.p:hover{background:#4096ff;color:#fff}
+.fbar{display:flex;gap:10px;padding:14px 20px;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;align-items:center}
+.inp{height:32px;border:1px solid #d9d9d9;border-radius:6px;padding:0 11px;font-size:13px;flex:1;max-width:320px;outline:none}
+.inp:focus{border-color:#1677ff;box-shadow:0 0 0 2px rgba(22,119,255,.1)}
+.sel{height:32px;border:1px solid #d9d9d9;border-radius:6px;padding:0 11px;font-size:13px;background:#fff;color:rgba(0,0,0,.65)}
+table{width:100%;border-collapse:collapse}
+th{background:#fafafa;font-weight:600;font-size:13px;text-align:left;padding:11px 16px;border-bottom:1px solid #f0f0f0;color:rgba(0,0,0,.88)}
+td{padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:13.5px;vertical-align:middle}
+tr:hover td{background:#fafafa}
+tr.sel td{background:#e6f4ff}
+.tt{font-weight:500;color:rgba(0,0,0,.88)}
+.te{font-size:12px;color:rgba(0,0,0,.45);margin-top:2px}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:4px;border:1px solid}
+.tag.g{color:rgba(0,0,0,.65);background:#fafafa;border-color:#d9d9d9}
+.tag.b{color:#1677ff;background:#e6f4ff;border-color:#91caff}
+.tag.gr{color:#52c41a;background:#f6ffed;border-color:#b7eb8f}
+.tag.r{color:#ff4d4f;background:#fff2f0;border-color:#ffccc7}
+.lk{color:#1677ff;font-size:13px}
+.pgn{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;font-size:13px;color:rgba(0,0,0,.65);align-items:center}
+.pgn .n{min-width:32px;height:32px;border:1px solid #d9d9d9;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fff}
+.pgn .n.on{border-color:#1677ff;color:#1677ff}
+.bn{position:fixed;top:0;left:0;right:0;background:#001529;color:#fff;font-size:11px;padding:5px 16px;display:flex;gap:12px;z-index:20}
+.bn a{margin-left:auto;text-decoration:underline}
+body{padding-top:26px}
+.side{padding-top:26px;margin-top:-26px}
+@media(max-width:767px){
+ .side{display:none}
+ .stats{grid-template-columns:repeat(2,1fr)}
+ table thead{display:none}
+ table,tbody,tr,td{display:block;width:100%}
+ tr{border-bottom:8px solid #f0f2f5}
+ td{border:none;padding:4px 16px}
+ td:first-child{padding-top:12px}td:last-child{padding-bottom:12px}
+ .top .sr{width:auto;flex:1}
+ .bc{display:none}
 }
 </style>
 <script src="assets/data.js"></script>
-<script src="assets/style-demo.js"></script>
 </head>
-<body></body>
+<body>
+<div class="bn">B · 企业中后台风 &nbsp;参考：Ant Design 5 / 飞书 ｜ 圆角 6px · 1px 边框+细阴影 · 深色侧栏中后台骨架<a href="styles.html">← 返回风格选择</a></div>
+<aside class="side">
+  <div class="lg"><i>◈</i>上岸罗盘</div>
+  <div class="grp">求职板块</div>
+  <a class="on" href="#">📋 体制内岗位</a><a href="#">🎓 校园招聘</a><a href="#">🏛️ 编制岗位</a>
+  <div class="grp">工具</div>
+  <a href="#">📅 报考日历</a><a href="#">🔔 今日更新</a><a href="#">⭐ 我的收藏</a><a href="#">📖 备考攻略</a>
+</aside>
+<div class="main">
+  <div class="top">
+    <span class="bc">首页 / <b>体制内岗位</b></span>
+    <div class="sr">🔍 搜索岗位、单位、专业、地点…</div>
+    <span class="avatar">用</span>
+  </div>
+  <div class="body">
+    <div class="stats">
+      <div class="stat"><div class="l">在招岗位</div><div class="v">10,000+</div><div class="d up">↑ 今日 +312</div></div>
+      <div class="stat"><div class="l">今日更新</div><div class="v">312</div><div class="d up">↑ 较昨日 +8%</div></div>
+      <div class="stat"><div class="l">即将截止</div><div class="v">20</div><div class="d down">3 天内截止</div></div>
+      <div class="stat"><div class="l">我的收藏</div><div class="v">6</div><div class="d" style="color:rgba(0,0,0,.45)">2 个待报名</div></div>
+    </div>
+    <div class="card">
+      <div class="chd"><h3>岗位列表</h3><span style="margin-left:auto"></span><button class="btn">导出 CSV</button><button class="btn p">一键匹配</button></div>
+      <div class="fbar">
+        <input class="inp" placeholder="搜索岗位、单位、专业…">
+        <select class="sel"><option>类型：全部</option></select>
+        <select class="sel"><option>地点：全部</option></select>
+        <select class="sel"><option>学历：全部</option></select>
+        <button class="btn">重置</button><button class="btn p">查询</button>
+      </div>
+      <table><thead><tr><th>岗位 / 用人单位</th><th>年份</th><th>类型</th><th>地点</th><th>学历</th><th>截止时间</th><th>操作</th></tr></thead><tbody id="tb"></tbody></table>
+      <div class="pgn">共 10,000+ 条<span class="n">‹</span><span class="n on">1</span><span class="n">2</span><span class="n">3</span><span class="n">…</span><span class="n">500</span><span class="n">›</span></div>
+    </div>
+  </div>
+</div>
+<script>
+const R=(window.DATA_POSITIONS||[]).slice(0,20);
+const tg=t=>t==='省级公务员考试'?'b':(t==='事业单位'?'gr':'g');
+const dl=(d,i)=>i===0?'<span class="tag r">今日截止</span>':(d?d.slice(0,10):'详见公告');
+document.getElementById('tb').innerHTML=R.map((p,i)=>`
+<tr class="${i===3?'sel':''}"><td><div class="tt">${p.title}</div><div class="te">${p.employer}</div></td>
+<td>${p.year}</td><td><span class="tag ${tg(p.type)}">${p.type}</span></td><td>${p.loc}</td>
+<td>${p.edu||'—'}</td><td>${dl(p.deadline,i)}</td>
+<td><a class="lk" href="#">收藏</a>　<a class="lk" href="#">报名</a></td></tr>`).join('');
+</script>
+</body>
 </html>

@@ -33,8 +33,8 @@ ul{padding-left:18px;color:#525252;font-size:13px;display:grid;gap:3px}
 </head>
 <body>
 <div class="wrap">
-  <h1>R179 · 风格候选方案（供 Thomas 选择）</h1>
-  <p class="lead">针对「胶囊/圆形显老」的反馈，调研 Linear / Vercel / Notion / Stripe / GitHub Primer / Ant Design 5 / 飞书 / BOSS直聘 等国内外产品后，提炼 <b>6 种彼此差异明显的风格方向</b>。每种都用<b>同一份体制内岗位数据、同一信息结构</b>做了完整实景小样（桌面+移动响应式），点击「查看完整小样」横向对比。<b>A 与 F 为明显方角/硬朗方向。</b></p>
+  <h1>R180 · 风格候选方案（供 Thomas 选择）</h1>
+  <p class="lead">6 种风格<b>各自独立编写 DOM 与布局骨架</b>（不共用模板）：数据表格 / 中后台侧栏 / 文档列表 / 双栏 master-detail / 卡片瀑布流 / 报纸分栏，圆角（2/6/8/12/4+16/0px）、边框、阴影、排版全部错开。每种仍用<b>同一份真实岗位数据</b>，桌面+移动响应式。<b>A 与 F 为明显方角/硬朗方向。</b></p>
   <div class="grid">
 
     <div class="card">
@@ -42,9 +42,9 @@ ul{padding-left:18px;color:#525252;font-size:13px;display:grid;gap:3px}
       <div class="body">
         <div class="head"><span class="key" style="background:#171717">A</span><span class="name">极简工具风</span><span class="ref">Linear / Vercel Geist</span></div>
         <ul>
-          <li>4–5px 小圆角、近直角，黑白单色 + 墨色主按钮</li>
-          <li>hairline 1px 边框、零阴影、负字距，高信息密度</li>
-          <li>选中态：实心墨色方块，克制不花哨</li>
+          <li>圆角 2px · hairline 1px · 零阴影 · 12/13px 高密度</li>
+          <li>骨架：全宽数据表格 + 悬停行内操作 + 命令栏</li>
+          <li>负字距 + 等宽数字，黑白单色</li>
         </ul>
         <div class="fit">适合：想要「专业工具感」、彻底告别胶囊与彩色的方向</div>
         <div class="btns"><a class="btn btn-pri" href="style-a.html">查看完整小样</a></div>
@@ -56,9 +56,9 @@ ul{padding-left:18px;color:#525252;font-size:13px;display:grid;gap:3px}
       <div class="body">
         <div class="head"><span class="key" style="background:#1677ff">B</span><span class="name">企业中后台风</span><span class="ref">Ant Design 5 / 飞书</span></div>
         <ul>
-          <li>6px 圆角、Ant 蓝 #1677ff、完整功能色体系（蓝/绿/红）</li>
-          <li>表头浅灰底、层级清晰、间距舒展的中后台表格范式</li>
-          <li>选中态：浅蓝底 + 蓝字 + 浅蓝边框</li>
+          <li>圆角 6px · 1px 边框 + 细阴影 · 功能色蓝/绿/红</li>
+          <li>骨架：深色侧栏 + 面包屑 + 统计卡片行 + 卡片内表格 + 分页器</li>
+          <li>14px 标准密度、rgba 黑阶层级</li>
         </ul>
         <div class="fit">适合：国内用户最熟悉的企业级审美，稳妥不出错</div>
         <div class="btns"><a class="btn btn-pri" href="style-b.html">查看完整小样</a></div>
@@ -70,9 +70,9 @@ ul{padding-left:18px;color:#525252;font-size:13px;display:grid;gap:3px}
       <div class="body">
         <div class="head"><span class="key" style="background:#37352f">C</span><span class="name">编辑器内容风</span><span class="ref">Notion / Craft</span></div>
         <ul>
-          <li>无边框、大量留白、窄版心（1000px）、暖灰阶</li>
-          <li>行分隔仅用极浅 hairline，悬停整行浅灰块</li>
-          <li>15px 正文 + 宽松行高，阅读感优先</li>
+          <li>圆角 8px（仅悬停块）· 无边框 · 无阴影 · 暖灰阶</li>
+          <li>骨架：窄版心 760px 文档页——大 emoji 图标 + 属性行 + 分组条目列表</li>
+          <li>衬线正文 16px / 行高 1.7，阅读感优先</li>
         </ul>
         <div class="fit">适合：内容/攻略比重高、想突出「安静阅读」体验的方向</div>
         <div class="btns"><a class="btn btn-pri" href="style-c.html">查看完整小样</a></div>
@@ -84,9 +84,9 @@ ul{padding-left:18px;color:#525252;font-size:13px;display:grid;gap:3px}
       <div class="body">
         <div class="head"><span class="key" style="background:#635bff">D</span><span class="name">商业清爽风</span><span class="ref">Stripe / Mercury</span></div>
         <ul>
-          <li>靛紫 #635bff、页首淡渐变点缀、精致多层阴影</li>
-          <li>7px 圆角、深蓝墨字 #0a2540、冷灰蓝背景</li>
-          <li>主按钮带渐变与投影，质感精致</li>
+          <li>圆角 12px · 无边框（多层阴影分层）· 渐变主按钮</li>
+          <li>骨架：渐变 hero 搜索带 + 双栏 master-detail（左列表右详情联动，可点击）</li>
+          <li>15px、深蓝墨 #0a2540、28px/700 大标题</li>
         </ul>
         <div class="fit">适合：想要「商业产品高级感」、体现品牌温度的方向</div>
         <div class="btns"><a class="btn btn-pri" href="style-d.html">查看完整小样</a></div>
@@ -98,9 +98,9 @@ ul{padding-left:18px;color:#525252;font-size:13px;display:grid;gap:3px}
       <div class="body">
         <div class="head"><span class="key" style="background:#00a6a7">E</span><span class="name">国内招聘产品风</span><span class="ref">BOSS直聘 / 拉勾</span></div>
         <ul>
-          <li>青绿 #00a6a7 强调色、加粗标题、色块标签</li>
-          <li>高信息密度卡片列表、「今日截止」红色块强提醒</li>
-          <li>导航选中用下划线条，移动端为主场</li>
+          <li>圆角 4px 色块 + 16px 大卡双档 · 无边框灰底白卡 · 悬停浮起</li>
+          <li>骨架：青绿品牌条大搜索 + 横滑分类 + 三列卡片瀑布流 + 圆形 FAB</li>
+          <li>16px/700 加粗标题、「截止」占薪资位强提醒</li>
         </ul>
         <div class="fit">适合：贴近国内求职者习惯、强转化导向的方向</div>
         <div class="btns"><a class="btn btn-pri" href="style-e.html">查看完整小样</a></div>
@@ -110,20 +110,20 @@ ul{padding-left:18px;color:#525252;font-size:13px;display:grid;gap:3px}
     <div class="card">
       <a class="shot" href="style-f.html"><img src="assets/screenshots/r179/thumb-f.png" alt="Style F"></a>
       <div class="body">
-        <div class="head"><span class="key" style="background:#1f2328">F</span><span class="name">硬朗方角编辑风</span><span class="ref">GitHub Primer × 瑞士国际主义排版</span></div>
+        <div class="head"><span class="key" style="background:#1f2328">F</span><span class="name">报纸编辑风</span><span class="ref">GitHub Primer × 瑞士国际主义 × 报纸版式</span></div>
         <ul>
-          <li>0px 纯直角、1.5px 粗边框、等宽字体细节</li>
-          <li>大写字距表头、强对比黑白 + 链接蓝</li>
-          <li>全站无任何圆形元素，最「反胶囊」的选项</li>
+          <li>圆角 0px · 3px 粗黑 rule + 双细线 · 无阴影</li>
+          <li>骨架：报头 + 头条区（2:1 分栏）+ 三栏报纸分栏列表</li>
+          <li>衬线大标题 + 全大写字距栏目，无任何圆形元素</li>
         </ul>
-        <div class="fit">适合：想要最硬朗、最工程师审美、绝无「显老圆形」的方向</div>
+        <div class="fit">适合：想要最硬朗、最独特、绝无「显老圆形」的方向</div>
         <div class="btns"><a class="btn btn-pri" href="style-f.html">查看完整小样</a></div>
       </div>
     </div>
 
   </div>
   <div class="note">
-    说明：6 个小样共用同一份真实岗位数据（assets/data.js，抓自 jobs.zalize.com）与同一信息结构，仅样式层不同，因此差异全部来自设计语言本身。选定方向后，将按该方向把 R177/R178 的 11 页完整原型全部重制（含暗色模式与全部交互状态）。桌面请直接浏览，移动请缩窄窗口或用手机预览（≤767px 自动切换卡片+底栏布局）。
+    说明：6 个小样使用同一份真实岗位数据（assets/data.js，抓自 jobs.zalize.com），但 <b>DOM 结构、布局骨架、几何与排版全部独立编写</b>（R180 重做，不共用模板/令牌文件）。选定方向后，将按该方向把 11 页完整原型全部重制（含暗色模式与全部交互状态）。桌面请直接浏览，移动请缩窄窗口或用手机预览（≤767px 各有独立移动布局）。
   </div>
 </div>
 </body>

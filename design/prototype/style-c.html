@@ -3,31 +3,88 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Style C</title>
-<script>window.STYLE={key:'C',name:'编辑器内容风',ref:'Notion / Craft'};</script>
+<title>C 编辑器内容风 · 上岸罗盘 R180</title>
 <style>
-:root{
-  --bg:#ffffff; --card:#ffffff; --fg:#37352f; --fg2:#6b6963; --fg3:#9b9a97;
-  --line:#ededec; --muted:#f1f1ef;
-  --accent:#37352f; --accent-fg:#ffffff; --accent-weak:#f1f1ef; --accent-text:#37352f;
-  --chip-on-bg:#f1f1ef; --chip-on-fg:#37352f; --chip-on-bd:#37352f;
-  --r-ctl:6px; --r-btn:6px; --r-card:10px; --r-tag:4px; --r-badge:4px; --r-logo:6px;
-  --ctl-h:34px; --chip-h:28px; --td-py:14px; --th-py:8px;
-  --title-w:600; --title-s:15px;
-  --row-hover:#f7f7f5; --row-sel:#f1f1ef; --ring:rgba(55,53,47,.08);
-  --row-line:#f4f4f2; --card-shadow:none; --bw:0px;
-  --tag-bg:#f1f1ef; --tag-fg:#6b6963;
-  --tag-b-bg:#e7f3f8; --tag-b-fg:#2383a8; --tag-c-bg:#f6f0e8; --tag-c-fg:#9f6b23;
-  --banner-bg:#37352f; --banner-fg:#fff;
+/* Style C · 编辑器内容风（Notion / Craft）
+   几何：圆角 8px（仅悬停块与控件）｜ 无边框（仅极浅分隔线）｜ 阴影 无
+   排版：16px 正文 · 行高 1.7 · 衬线大标题 · 暖灰阶（#37352f 系）
+   骨架：窄版心（760px）文档式列表，日期分组小节标题 + 缩进条目 + 行内 emoji 图标，无表格无卡片 */
+*{box-sizing:border-box;margin:0}
+body{font-family:"Charter","Georgia",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#fffefc;color:#37352f;font-size:16px;line-height:1.7}
+a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+.ui{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.bn{background:#37352f;color:#fffefc;font-size:11px;padding:5px 16px;display:flex;gap:12px}
+.bn a{margin-left:auto;text-decoration:underline}
+.top{position:sticky;top:0;background:rgba(255,254,252,.92);backdrop-filter:blur(6px);display:flex;align-items:center;gap:4px;padding:10px 18px;font-size:14px;color:#9b9a97;z-index:5}
+.top .crumb b{color:#37352f;font-weight:500}
+.top .acts{margin-left:auto;display:flex;gap:2px}
+.top .acts button{background:none;border:none;padding:5px 9px;border-radius:8px;color:#6b6963;font-size:13px}
+.top .acts button:hover{background:#f1f0ec}
+.doc{max-width:760px;margin:0 auto;padding:44px 24px 120px}
+.icon{font-size:56px;line-height:1}
+h1{font-size:38px;font-weight:700;letter-spacing:-.01em;margin:14px 0 6px}
+.desc{color:#8f8d86;font-size:16px}
+.props{margin:22px 0 8px;display:grid;gap:6px;font-size:14px}
+.prop{display:flex;gap:14px;align-items:baseline}
+.prop .k{width:88px;color:#9b9a97;flex-shrink:0}
+.pill{display:inline-block;padding:1px 8px;border-radius:8px;font-size:13px;margin-right:6px}
+.pv1{background:#f1f0ec;color:#57554e}
+.pv2{background:#e9f3f7;color:#2b6a8a}
+.pv3{background:#f8ede3;color:#9a6b2f}
+.hr{border:none;border-top:1px solid #f0efeb;margin:20px 0}
+.grp{margin-top:34px}
+.grp h2{font-size:15px;font-weight:600;color:#9b9a97;letter-spacing:.02em;display:flex;gap:8px;align-items:center}
+.grp h2::after{content:'';flex:1;border-top:1px solid #f0efeb}
+.it{display:flex;gap:14px;padding:13px 10px;margin:2px -10px;border-radius:8px;align-items:baseline}
+.it:hover{background:#f7f6f2}
+.it .em{font-size:19px;flex-shrink:0;line-height:1.5}
+.it .tx{flex:1;min-width:0}
+.it .t{font-size:17px;font-weight:600;letter-spacing:-.005em}
+.it .s{font-size:14px;color:#8f8d86;margin-top:1px}
+.it .mt{display:flex;gap:14px;font-size:13px;color:#9b9a97;margin-top:5px;flex-wrap:wrap}
+.it .mt .dead{color:#c14e38;font-weight:600}
+.it .arrow{color:#c9c7bf;font-size:14px;align-self:center;opacity:0;flex-shrink:0}
+.it:hover .arrow{opacity:1}
+.more{margin-top:26px;text-align:center}
+.more button{background:none;border:none;color:#9b9a97;font-size:14px;padding:8px 18px;border-radius:8px}
+.more button:hover{background:#f1f0ec;color:#37352f}
+@media(max-width:767px){
+ h1{font-size:30px}.icon{font-size:44px}
+ .doc{padding:28px 18px 100px}
+ .prop .k{width:72px}
 }
-.sd-header{border-bottom:1px solid var(--line)}
-.sd-search,.sd-input,.sd-chip,.sd-btn-sec{border:1px solid var(--line)}
-.sd-main{max-width:1000px}
-.sd-list-wrap{border:none}
-body{font-size:15px;line-height:1.6}
 </style>
 <script src="assets/data.js"></script>
-<script src="assets/style-demo.js"></script>
 </head>
-<body></body>
+<body>
+<div class="bn ui">C · 编辑器内容风 &nbsp;参考：Notion / Craft ｜ 圆角 8px（仅悬停块）· 无边框 · 衬线正文 · 文档式分组列表<a href="styles.html">← 返回风格选择</a></div>
+<div class="top ui">
+  <span class="crumb">上岸罗盘 / 求职空间 / <b>体制内岗位</b></span>
+  <div class="acts"><button>搜索</button><button>筛选</button><button>⭐ 收藏 6</button><button>⋯</button></div>
+</div>
+<div class="doc">
+  <div class="icon">🧭</div>
+  <h1>体制内岗位</h1>
+  <p class="desc">公务员、事业编、军队文职与国企央企在招岗位，按截止时间整理。共 10,000+ 条，更新于 12 小时前。</p>
+  <div class="props ui">
+    <div class="prop"><span class="k">板块</span><span><span class="pill pv1">公务员</span><span class="pill pv1">事业编</span><span class="pill pv1">军队文职</span><span class="pill pv1">国企央企</span></span></div>
+    <div class="prop"><span class="k">当前筛选</span><span><span class="pill pv2">2026 年</span><span class="pill pv2">全部地区</span><span class="pill pv3">即将截止优先</span></span></div>
+  </div>
+  <hr class="hr">
+  <div id="list"></div>
+  <div class="more ui"><button>加载更多 ↓　（第 1 页 / 共 500 页）</button></div>
+</div>
+<script>
+const R=(window.DATA_POSITIONS||[]).slice(0,20);
+const em=t=>t==='省级公务员考试'?'🏛️':(t==='事业单位'?'📘':'📄');
+const dl=(d,i)=>i===0?'<span class="dead">今日截止</span>':(d?'截至 '+d.slice(5,10):'详见公告');
+const groups=[['⏰ 即将截止',R.slice(0,4)],['🗓️ 本周更新',R.slice(4,12)],['📚 更早',R.slice(12)]];
+document.getElementById('list').innerHTML=groups.map(([g,rs],gi)=>`
+<div class="grp"><h2 class="ui">${g}</h2>${rs.map((p,j)=>{const i=gi===0?j:(gi===1?j+4:j+12);return`
+<div class="it"><span class="em">${em(p.type)}</span><span class="tx">
+<div class="t">${p.title}</div><div class="s">${p.employer}</div>
+<div class="mt ui"><span>${p.type}</span><span>${p.loc}</span>${p.edu?`<span>${p.edu}</span>`:''}<span>${dl(p.deadline,i)}</span></div>
+</span><span class="arrow">→</span></div>`;}).join('')}</div>`).join('');
+</script>
+</body>
 </html>

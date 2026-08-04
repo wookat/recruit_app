@@ -3,32 +3,101 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Style E</title>
-<script>window.STYLE={key:'E',name:'国内招聘产品风',ref:'BOSS直聘 / 拉勾'};</script>
+<title>E 国内招聘产品风 · 上岸罗盘 R180</title>
 <style>
-:root{
-  --bg:#f5f6f8; --card:#ffffff; --fg:#222222; --fg2:#5e5e5e; --fg3:#999999;
-  --line:#eeeeee; --muted:#f5f6f8;
-  --accent:#00a6a7; --accent-fg:#ffffff; --accent-weak:#e6f7f7; --accent-text:#00a6a7;
-  --chip-on-bg:#e6f7f7; --chip-on-fg:#00a6a7; --chip-on-bd:#00a6a7;
-  --r-ctl:6px; --r-btn:8px; --r-card:12px; --r-tag:4px; --r-badge:8px; --r-logo:8px;
-  --ctl-h:36px; --chip-h:28px; --td-py:14px; --th-py:10px;
-  --title-w:700; --title-s:15px;
-  --row-hover:#fafcfc; --row-sel:#e6f7f7; --ring:rgba(0,166,167,.15);
-  --card-shadow:0 2px 8px rgba(0,0,0,.04);
-  --tag-bg:#f5f6f8; --tag-fg:#5e5e5e;
-  --tag-b-bg:#e6f7f7; --tag-b-fg:#00a6a7; --tag-c-bg:#fff3e5; --tag-c-fg:#e07f00;
-  --danger:#fa5151; --banner-bg:#00a6a7; --banner-fg:#fff;
+/* Style E · 国内招聘产品风（BOSS直聘 / 拉勾）
+   几何：圆角 4px（小色块）+ 16px（大卡片）双档 ｜ 无边框（灰底衬托白卡）｜ 阴影 悬停浮起
+   排版：加粗 16px 标题 + 高亮薪资位（此处为截止/编制类型）+ 色块标签
+   骨架：三列卡片瀑布流（masonry），顶部青绿品牌条 + 横滑分类，无表格无侧栏 */
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#f4f6f9;color:#222;font-size:14px}
+a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+.bn{background:#00404a;color:#fff;font-size:11px;padding:5px 16px;display:flex;gap:12px}
+.bn a{margin-left:auto;text-decoration:underline}
+.brand{background:linear-gradient(135deg,#00b3b4,#009193);color:#fff}
+.brand-in{max-width:1200px;margin:0 auto;padding:0 20px}
+.brow{display:flex;align-items:center;gap:22px;height:58px}
+.logo{font-weight:800;font-size:19px;display:flex;gap:8px;align-items:center}
+nav{display:flex;gap:20px;font-size:15px}
+nav a{opacity:.82;padding:17px 0;position:relative}
+nav a:hover{opacity:1}
+nav .on{opacity:1;font-weight:700}
+nav .on::after{content:'';position:absolute;left:0;right:0;bottom:10px;height:3px;background:#fff;border-radius:2px}
+.brow .fav{margin-left:auto;font-size:14px;background:rgba(255,255,255,.16);padding:7px 14px;border-radius:4px}
+.bigsearch{display:flex;padding:10px 0 22px;gap:0}
+.bigsearch input{flex:1;height:48px;border:none;border-radius:4px 0 0 4px;padding:0 18px;font-size:15px;outline:none}
+.bigsearch button{height:48px;padding:0 34px;border:none;border-radius:0 4px 4px 0;background:#ff9f1c;color:#fff;font-size:16px;font-weight:700}
+.cats{background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.05)}
+.cats-in{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;gap:26px;overflow-x:auto;font-size:14px}
+.cats a{padding:13px 0;white-space:nowrap;color:#5e5e5e;border-bottom:2px solid transparent}
+.cats .on{color:#00a6a7;font-weight:700;border-bottom-color:#00a6a7}
+.count{max-width:1200px;margin:16px auto 0;padding:0 20px;font-size:13px;color:#999;display:flex;gap:10px}
+.count b{color:#222}
+.count .hot{color:#fa5151;font-weight:600;margin-left:auto}
+.grid{max-width:1200px;margin:12px auto 0;padding:0 20px 80px;column-count:3;column-gap:14px}
+.jc{break-inside:avoid;background:#fff;border-radius:16px;padding:18px;margin-bottom:14px;transition:box-shadow .15s,transform .15s;cursor:pointer}
+.jc:hover{box-shadow:0 10px 26px -6px rgba(0,90,91,.18);transform:translateY(-2px)}
+.jc .r1{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.jc .t{font-size:16px;font-weight:700;line-height:1.4}
+.jc:hover .t{color:#00a6a7}
+.jc .money{color:#00a6a7;font-weight:800;font-size:15px;white-space:nowrap}
+.jc .money.hot{color:#fa5151}
+.jc .org{color:#5e5e5e;font-size:13px;margin-top:6px}
+.jc .tags{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.jc .tg{font-size:12px;padding:3px 8px;border-radius:4px;background:#f4f6f9;color:#5e5e5e}
+.jc .tg.t1{background:#e6f7f7;color:#00a6a7;font-weight:600}
+.jc .tg.t2{background:#fff3e5;color:#e07f00}
+.jc .tg.t3{background:#fff0f0;color:#fa5151;font-weight:600}
+.jc .foot{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px dashed #eee;font-size:12px;color:#999}
+.jc .hr{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#b3e6e6,#00a6a7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px}
+.jc .go{margin-left:auto;color:#00a6a7;font-weight:600}
+.fab{position:fixed;right:18px;bottom:80px;width:52px;height:52px;border-radius:50%;border:none;background:#00a6a7;color:#fff;font-size:12px;font-weight:700;box-shadow:0 8px 20px rgba(0,166,167,.4);z-index:10}
+.tabbar{display:none}
+@media(max-width:1023px){.grid{column-count:2}}
+@media(max-width:767px){
+ nav{display:none}
+ .grid{column-count:1;padding-bottom:110px}
+ .tabbar{display:grid;position:fixed;bottom:0;left:0;right:0;grid-template-columns:repeat(5,1fr);background:#fff;box-shadow:0 -2px 12px rgba(0,0,0,.06);z-index:10}
+ .tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 10px;font-size:11px;color:#999}
+ .tabbar .on{color:#00a6a7;font-weight:600}
+ .tabbar i{font-style:normal;font-size:18px}
 }
-.sd-title{color:#222}
-.sd-tbl tbody tr:hover .sd-title,.sd-mcard:active .sd-title{color:var(--accent)}
-.sd-btn-pri{font-weight:600}
-.sd-nav-on{position:relative;background:transparent;color:var(--accent)}
-.sd-nav-on::after{content:'';position:absolute;left:10px;right:10px;bottom:-4px;height:3px;border-radius:2px;background:var(--accent)}
-.sd-danger{background:#fff0f0;padding:2px 6px;border-radius:4px}
 </style>
 <script src="assets/data.js"></script>
-<script src="assets/style-demo.js"></script>
 </head>
-<body></body>
+<body>
+<div class="bn">E · 国内招聘产品风 &nbsp;参考：BOSS直聘 / 拉勾 ｜ 圆角 4/16px 双档 · 无边框灰底白卡 · 卡片瀑布流<a href="styles.html">← 返回风格选择</a></div>
+<div class="brand"><div class="brand-in">
+  <div class="brow">
+    <span class="logo">🧭 上岸罗盘</span>
+    <nav><a class="on" href="#">体制内</a><a href="#">校招</a><a href="#">编制</a><a href="#">报考日历</a><a href="#">今日更新</a><a href="#">攻略</a></nav>
+    <span class="fav">☆ 收藏 6</span>
+  </div>
+  <div class="bigsearch"><input placeholder="搜索岗位 / 单位 / 专业，如：会计、教师、杭州事业编"><button>搜索</button></div>
+</div></div>
+<div class="cats"><div class="cats-in">
+  <a class="on" href="#">推荐</a><a href="#">公务员</a><a href="#">事业编</a><a href="#">军队文职</a><a href="#">国企央企</a><a href="#">选调生</a><a href="#">教师</a><a href="#">医疗卫生</a><a href="#">应届可报</a><a href="#">即将截止</a>
+</div></div>
+<div class="count"><span>共 <b>10,000+</b> 个在招岗位 · 更新于 12 小时前</span><span class="hot">🔥 20 个岗位即将截止</span></div>
+<div class="grid" id="grid"></div>
+<button class="fab">一键<br>匹配</button>
+<nav class="tabbar"><a class="on" href="#"><i>💼</i>岗位</a><a href="#"><i>📅</i>日历</a><a href="#"><i>🔍</i>搜索</a><a href="#"><i>⭐</i>收藏</a><a href="#"><i>📖</i>攻略</a></nav>
+<script>
+const R=(window.DATA_POSITIONS||[]).slice(0,20);
+const dl=(d,i)=>i===0?'<span class="money hot">今日截止</span>':(d?`<span class="money">${d.slice(5,10)} 截止</span>`:'<span class="money">详见公告</span>');
+document.getElementById('grid').innerHTML=R.map((p,i)=>`
+<div class="jc">
+ <div class="r1"><span class="t">${p.title}</span>${dl(p.deadline,i)}</div>
+ <div class="org">${p.employer}</div>
+ <div class="tags">
+   <span class="tg t1">${p.type}</span><span class="tg">${p.year}</span>
+   ${p.edu?`<span class="tg">${p.edu}</span>`:''}
+   ${i===0?'<span class="tg t3">最后一天</span>':''}
+   ${i%4===1?'<span class="tg t2">应届可报</span>':''}
+   ${p.major?`<span class="tg">${p.major.length>10?p.major.slice(0,10)+'…':p.major}</span>`:''}
+ </div>
+ <div class="foot"><span class="hr">编</span><span>${p.loc}</span><span class="go">立即报名 →</span></div>
+</div>`).join('');
+</script>
+</body>
 </html>

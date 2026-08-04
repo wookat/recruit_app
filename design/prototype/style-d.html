@@ -3,32 +3,120 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Style D</title>
-<script>window.STYLE={key:'D',name:'商业清爽风',ref:'Stripe / Mercury'};</script>
+<title>D 商业清爽风 · 上岸罗盘 R180</title>
 <style>
-:root{
-  --bg:#f6f8fb; --card:#ffffff; --fg:#0a2540; --fg2:#425466; --fg3:#727f96;
-  --line:#e6ebf1; --muted:#f0f3f8;
-  --accent:#635bff; --accent-fg:#ffffff; --accent-weak:#eeecff; --accent-text:#5851df;
-  --chip-on-bg:#eeecff; --chip-on-fg:#5851df; --chip-on-bd:#b8b3ff;
-  --r-ctl:7px; --r-btn:7px; --r-card:12px; --r-tag:5px; --r-badge:5px; --r-logo:8px;
-  --ctl-h:34px; --chip-h:27px; --td-py:11px; --th-py:9px;
-  --title-w:600; --title-s:14px;
-  --row-hover:#f8fafc; --row-sel:#f4f3ff; --ring:rgba(99,91,255,.18);
-  --card-shadow:0 2px 5px -1px rgba(50,50,93,.08),0 1px 3px -1px rgba(0,0,0,.05);
-  --btn-shadow:0 1px 2px rgba(50,50,93,.1);
-  --tag-bg:#f0f3f8; --tag-fg:#425466; --tag-b-bg:#eeecff; --tag-b-fg:#5851df;
-  --tag-c-bg:#e2fbf3; --tag-c-fg:#0e8262;
-  --danger:#df1c41; --banner-bg:#0a2540; --banner-fg:#fff;
-  --header-bg:#ffffff;
+/* Style D · 商业清爽风（Stripe / Mercury）
+   几何：圆角 12px ｜ 无边框（阴影分层代替）｜ 阴影 多层浮起（Stripe 式）
+   排版：15px · 深蓝墨 #0a2540 · 大标题 28px/700 · 渐变强调
+   骨架：双栏 master-detail —— 左列可滚动岗位列表（选中高亮），右侧固定详情面板 */
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#f6f9fc;color:#0a2540;font-size:15px}
+a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}
+.bn{background:#0a2540;color:#fff;font-size:11px;padding:5px 16px;display:flex;gap:12px}
+.bn a{margin-left:auto;text-decoration:underline}
+.hero{background:linear-gradient(100deg,#635bff12,#00d4ff10 45%,transparent 70%),#fff;box-shadow:0 1px 0 rgba(10,37,64,.06)}
+.hero-in{max-width:1280px;margin:0 auto;padding:0 24px}
+.hrow{display:flex;align-items:center;gap:26px;height:64px}
+.logo{font-weight:700;font-size:17px;display:flex;gap:9px;align-items:center}
+.logo i{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#635bff,#8f7bff);color:#fff;font-style:normal;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(99,91,255,.35)}
+nav{display:flex;gap:4px;font-size:14px;color:#425466}
+nav a{padding:7px 12px;border-radius:12px}
+nav a:hover{background:#f0f3f9;color:#0a2540}
+nav .on{color:#635bff;font-weight:600}
+.hrow .cta{margin-left:auto;display:flex;gap:10px;align-items:center}
+.b1{height:38px;padding:0 18px;border-radius:12px;border:none;background:linear-gradient(180deg,#7a73ff,#635bff);color:#fff;font-weight:600;font-size:14px;box-shadow:0 2px 5px rgba(99,91,255,.35),0 1px 2px rgba(10,37,64,.1)}
+.b2{height:38px;padding:0 16px;border-radius:12px;border:none;background:#fff;color:#0a2540;font-weight:500;font-size:14px;box-shadow:0 1px 3px rgba(10,37,64,.12)}
+.hcopy{padding:26px 0 24px}
+.hcopy h1{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.hcopy p{color:#425466;margin-top:6px;font-size:15px}
+.searchband{display:flex;gap:10px;padding-bottom:26px;flex-wrap:wrap}
+.sinput{flex:1;min-width:240px;max-width:520px;height:44px;border:none;border-radius:12px;padding:0 18px;font-size:14px;box-shadow:0 2px 6px rgba(10,37,64,.1),0 0 0 1px rgba(10,37,64,.04);outline:none}
+.sinput:focus{box-shadow:0 2px 6px rgba(10,37,64,.1),0 0 0 2px #635bff66}
+.fsel{height:44px;border:none;border-radius:12px;padding:0 16px;background:#fff;color:#425466;font-size:14px;box-shadow:0 1px 3px rgba(10,37,64,.08)}
+.split{max-width:1280px;margin:22px auto 0;padding:0 24px 70px;display:grid;grid-template-columns:5fr 4fr;gap:22px;align-items:start}
+.list{display:grid;gap:12px}
+.li{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 3px rgba(10,37,64,.08);display:flex;gap:14px;align-items:center;transition:box-shadow .15s,transform .15s;cursor:pointer}
+.li:hover{box-shadow:0 6px 18px -4px rgba(10,37,64,.16);transform:translateY(-1px)}
+.li.on{box-shadow:0 0 0 2px #635bff,0 6px 18px -4px rgba(99,91,255,.3)}
+.li .ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.ic1{background:#efeeff;color:#635bff}.ic2{background:#e5f8f2;color:#0e8262}.ic3{background:#fef1e6;color:#c2571b}
+.li .tx{flex:1;min-width:0}
+.li .t{font-weight:600;font-size:15px}
+.li .s{color:#697386;font-size:13px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .rt{text-align:right;flex-shrink:0}
+.li .loc{font-size:12px;color:#697386}
+.li .dd{font-size:12px;color:#425466;margin-top:3px}
+.li .dd.hot{color:#df1c41;font-weight:600}
+.detail{position:sticky;top:18px;background:#fff;border-radius:12px;box-shadow:0 6px 24px -6px rgba(10,37,64,.14);padding:26px}
+.detail .kick{font-size:12px;font-weight:600;color:#635bff;letter-spacing:.04em}
+.detail h2{font-size:22px;font-weight:700;margin-top:6px;letter-spacing:-.01em}
+.detail .org{color:#425466;margin-top:4px;font-size:14px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+.fact{background:#f6f9fc;border-radius:12px;padding:12px 14px}
+.fact .k{font-size:12px;color:#697386}
+.fact .v{font-weight:600;margin-top:2px;font-size:14px}
+.fact .v.hot{color:#df1c41}
+.dbtns{display:flex;gap:10px;margin-top:22px}
+.note{margin-top:16px;font-size:12.5px;color:#697386;line-height:1.6}
+@media(max-width:1023px){.split{grid-template-columns:1fr}.detail{position:static;order:-1}}
+@media(max-width:767px){
+ nav,.hcopy p{display:none}
+ .hcopy{padding:16px 0 14px}.hcopy h1{font-size:22px}
+ .detail{display:none}
+ .li .rt{display:none}
 }
-.sd-header{border-bottom:none;box-shadow:0 1px 3px rgba(50,50,93,.06)}
-.sd-btn-pri{background:linear-gradient(180deg,#7a73ff,#635bff)}
-.sd-main::before{content:'';display:block;position:absolute;left:0;right:0;height:180px;margin-top:-16px;background:linear-gradient(100deg,rgba(99,91,255,.06),rgba(0,208,255,.05) 60%,transparent);pointer-events:none}
-.sd-main{position:relative}
 </style>
 <script src="assets/data.js"></script>
-<script src="assets/style-demo.js"></script>
 </head>
-<body></body>
+<body>
+<div class="bn">D · 商业清爽风 &nbsp;参考：Stripe / Mercury ｜ 圆角 12px · 无边框阴影分层 · 双栏 master-detail<a href="styles.html">← 返回风格选择</a></div>
+<div class="hero"><div class="hero-in">
+  <div class="hrow">
+    <span class="logo"><i>◈</i>上岸罗盘</span>
+    <nav><a class="on" href="#">体制内</a><a href="#">校招</a><a href="#">编制</a><a href="#">日历</a><a href="#">更新</a></nav>
+    <span class="cta"><button class="b2">☆ 收藏 · 6</button><button class="b1">一键匹配</button></span>
+  </div>
+  <div class="hcopy"><h1>找到你的编制岗位</h1><p>10,000+ 个公务员 / 事业编 / 军队文职 / 国企岗位，每日更新，点击左侧列表即时查看详情。</p></div>
+  <div class="searchband">
+    <input class="sinput" placeholder="搜索岗位、单位、专业、地点…">
+    <select class="fsel"><option>类型：全部</option></select>
+    <select class="fsel"><option>地点：全部</option></select>
+    <select class="fsel"><option>学历：全部</option></select>
+  </div>
+</div></div>
+<div class="split">
+  <div class="list" id="list"></div>
+  <aside class="detail" id="detail"></aside>
+</div>
+<script>
+const R=(window.DATA_POSITIONS||[]).slice(0,20);
+const ic=t=>t==='省级公务员考试'?'ic1':(t==='事业单位'?'ic2':'ic3');
+const em=t=>t==='省级公务员考试'?'🏛️':(t==='事业单位'?'📘':'💼');
+const dl=(d,i)=>i===0?'今日截止':(d?'截至 '+d.slice(5,10):'详见公告');
+let sel=0;
+function renderList(){
+ document.getElementById('list').innerHTML=R.map((p,i)=>`
+ <div class="li ${i===sel?'on':''}" onclick="pick(${i})">
+  <span class="ic ${ic(p.type)}">${em(p.type)}</span>
+  <span class="tx"><div class="t">${p.title}</div><div class="s">${p.employer}</div></span>
+  <span class="rt"><div class="loc">${p.loc}</div><div class="dd ${i===0?'hot':''}">${dl(p.deadline,i)}</div></span>
+ </div>`).join('');
+}
+function renderDetail(){
+ const p=R[sel];
+ document.getElementById('detail').innerHTML=`
+ <div class="kick">${p.type} · ${p.year}</div><h2>${p.title}</h2><div class="org">${p.employer}</div>
+ <div class="facts">
+  <div class="fact"><div class="k">工作地点</div><div class="v">${p.loc}</div></div>
+  <div class="fact"><div class="k">学历要求</div><div class="v">${p.edu||'详见公告'}</div></div>
+  <div class="fact"><div class="k">报名截止</div><div class="v ${sel===0?'hot':''}">${dl(p.deadline,sel)}</div></div>
+  <div class="fact"><div class="k">专业要求</div><div class="v">${p.major||'不限 / 详见公告'}</div></div>
+ </div>
+ <div class="dbtns"><button class="b1" style="flex:1">立即报名 ↗</button><button class="b2">☆ 收藏</button></div>
+ <div class="note">信息来源于官方公告，报名前请以原文为准。相似岗位：同单位另有 ${(sel%3)+1} 个在招岗位。</div>`;
+}
+function pick(i){sel=i;renderList();renderDetail();}
+renderList();renderDetail();
+</script>
+</body>
 </html>

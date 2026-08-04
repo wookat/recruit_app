@@ -23,23 +23,40 @@ async function purgeSwCaches(): Promise<void> {
   }
 }
 
+/** 空模块（0 字节 chunk）import 会成功但导出为 undefined，需与加载失败同样处理 */
+function isEmptyModule(mod: unknown): boolean {
+  return (
+    typeof mod === 'object' &&
+    mod !== null &&
+    'default' in mod &&
+    (mod as { default: unknown }).default === undefined
+  )
+}
+
+function purgeAndReload<T>(): Promise<T> {
+  sessionStorage.setItem(RELOAD_FLAG, '1')
+  void purgeSwCaches().finally(() => window.location.reload())
+  return new Promise<T>(() => {}) // 刷新中，挂起避免闪 ErrorBoundary
+}
+
 /**
  * 动态 import 失败自动恢复：部署后旧标签页请求已删 chunk 404、或 SW
- * 预缓存到损坏 chunk（空响应体导致缺 export/语法错误）时，先清空
+ * 预缓存到损坏 chunk（空响应体导致缺 export/空模块）时，先清空
  * caches+注销 SW，再带 sessionStorage 防死循环标记整页刷新一次；
  * 刷新后仍失败才把错误抛给 ErrorBoundary。
  */
 export function lazyRetry<T>(factory: () => Promise<T>): Promise<T> {
   return factory().then(
     (mod) => {
+      if (isEmptyModule(mod) && sessionStorage.getItem(RELOAD_FLAG) !== '1') {
+        return purgeAndReload<T>()
+      }
       sessionStorage.removeItem(RELOAD_FLAG) // 加载成功后重置，下次部署仍可自动恢复一次
       return mod
     },
     (e: unknown) => {
       if (isChunkLoadError(e) && sessionStorage.getItem(RELOAD_FLAG) !== '1') {
-        sessionStorage.setItem(RELOAD_FLAG, '1')
-        void purgeSwCaches().finally(() => window.location.reload())
-        return new Promise<T>(() => {}) // 刷新中，挂起避免闪 ErrorBoundary
+        return purgeAndReload<T>()
       }
       throw e
     },

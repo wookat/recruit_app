@@ -208,7 +208,8 @@ def bianzhi_counts(db: Session = Depends(get_db)):
         .group_by(BianzhiJob.province, BianzhiJob.work_location)
         .all()
     )
-    _NON_CITY = {"全国", "全国多地", "全国各地", "多地", "其他", "海外", "待定", "不限"}
+    _NON_CITY = {"全国", "全国多地", "全国各地", "多地", "其他", "海外", "待定", "不限",
+                 "亚洲", "欧洲", "非洲", "美洲", "大洋洲", "国内", "国外", "境外", "各地", "异地", "远程"}
     city_counts: dict = {}
     city_prov_counts: dict = {}
     for prov, loc, n in locs:
@@ -219,7 +220,7 @@ def bianzhi_counts(db: Session = Depends(get_db)):
             if not t or len(t) > 8 or t in _NON_CITY or t.endswith("省"):
                 continue
             city_counts[t] = city_counts.get(t, 0) + n
-            if prov:
+            if prov and not re.search(r"[|、,，/;；\s]", prov):
                 key = (t, prov)
                 city_prov_counts[key] = city_prov_counts.get(key, 0) + n
     cities = dict(sorted(city_counts.items(), key=lambda x: -x[1])[:200])

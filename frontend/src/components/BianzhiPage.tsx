@@ -47,7 +47,7 @@ import { expandKeyword, HOT_SEARCHES_BIANZHI } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
-import { MultiSelect } from '@/components/MultiSelect'
+import { MultiSelect, type OptionGroup } from '@/components/MultiSelect'
 import { BoardRecommendSection } from '@/components/BoardRecommendSection'
 import { getProfile, profileUsable } from '@/lib/profile'
 import { BoardJobSheet } from '@/components/BoardJobSheet'
@@ -667,6 +667,23 @@ export function BianzhiPage({
     return within.length ? within : cityOptions
   }, [cityOptions, cityProvinces, provinces])
 
+  /** 城市选项按省份分组（省组按城市数降序，无映射城市归「其他地区」） */
+  const cityGroups = useMemo<OptionGroup[] | null>(() => {
+    if (!cityChoices.length || !Object.keys(cityProvinces).length) return null
+    const byProv = new Map<string, string[]>()
+    for (const c of cityChoices) {
+      const prov = cityProvinces[c] ?? '其他地区'
+      const arr = byProv.get(prov)
+      if (arr) arr.push(c)
+      else byProv.set(prov, [c])
+    }
+    const groups = [...byProv.entries()].map(([label, options]) => ({ label, options }))
+    groups.sort((a, b) =>
+      a.label === '其他地区' ? 1 : b.label === '其他地区' ? -1 : b.options.length - a.options.length,
+    )
+    return groups
+  }, [cityChoices, cityProvinces])
+
   const cityRow =
     cityOptions.length > 0 ? (
       <div className="flex flex-wrap items-center gap-1.5">
@@ -674,7 +691,8 @@ export function BianzhiPage({
         <div className="w-60">
           <MultiSelect
             label=""
-            options={cityChoices}
+            options={cityGroups ? undefined : cityChoices}
+            groups={cityGroups ?? undefined}
             selected={cities}
             onChange={(v) => {
               setCities(v)

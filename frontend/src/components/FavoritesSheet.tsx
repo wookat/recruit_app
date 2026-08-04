@@ -423,7 +423,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
     return (
       <span
         title="该条目超过 7 天未更新状态，记得跟进下一步"
-        className="inline-flex shrink-0 items-center gap-1 rounded-full bg-yellow-100 px-1.5 py-0.5 text-[11px] font-medium text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
+        className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-yellow-100 px-1.5 py-0.5 text-[11px] font-medium text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" aria-hidden="true" />
         7天未更新
@@ -625,7 +625,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           type="button"
           aria-pressed={!!meta?.priority}
           className={cn(
-            'inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors',
+            'inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors',
             meta?.priority
               ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
               : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -909,7 +909,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           type="button"
           aria-pressed={!!priorities[p.id]}
           className={cn(
-            'inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors',
+            'inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors',
             priorities[p.id]
               ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
               : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -1293,9 +1293,9 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   aria-pressed={remindDays === n}
                   onClick={() => setRemindDays(n)}
                   className={cn(
-                    'min-h-11 min-w-11 cursor-pointer rounded-full border px-2.5 py-0.5 transition-colors sm:min-h-6 sm:min-w-0',
+                    'min-h-11 min-w-11 cursor-pointer rounded-md border px-2.5 py-0.5 transition-colors sm:min-h-6 sm:min-w-0',
                     remindDays === n
-                      ? 'border-primary bg-primary text-primary-foreground'
+                      ? 'border-primary bg-primary/10 text-primary'
                       : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >
@@ -1453,9 +1453,9 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     type="button"
                     aria-pressed={sortMode === m}
                     className={cn(
-                      'min-h-9 cursor-pointer rounded-full px-2 py-0.5 font-medium transition-colors sm:min-h-0',
+                      'min-h-9 cursor-pointer rounded-md px-2 py-0.5 font-medium transition-colors sm:min-h-0',
                       sortMode === m
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'bg-primary/10 text-primary'
                         : 'bg-muted text-muted-foreground hover:bg-muted/70',
                     )}
                     onClick={() => changeSortMode(m)}
@@ -1470,9 +1470,9 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                 <button
                   type="button"
                   aria-pressed={statusFilter === null}
-                  className={`cursor-pointer rounded-full px-2 py-0.5 text-[11px] font-medium transition-shadow ${
+                  className={`cursor-pointer rounded-md px-2 py-0.5 text-[11px] font-medium transition-shadow ${
                     statusFilter === null
-                      ? 'bg-primary text-primary-foreground ring-2 ring-primary/50'
+                      ? 'bg-primary/10 text-primary ring-1 ring-primary/40'
                       : 'bg-muted text-muted-foreground'
                   }`}
                   onClick={() => {
@@ -1488,7 +1488,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     key={s}
                     type="button"
                     aria-pressed={statusFilter === s}
-                    className={`cursor-pointer rounded-full px-2 py-0.5 text-[11px] font-medium transition-shadow ${STATUS_COLORS[s]} ${
+                    className={`cursor-pointer rounded-md px-2 py-0.5 text-[11px] font-medium transition-shadow ${STATUS_COLORS[s]} ${
                       statusFilter === s ? 'ring-2 ring-primary/50' : statusFilter ? 'opacity-50' : ''
                     }`}
                     onClick={() => {
@@ -1502,7 +1502,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                 {statusFilter && (
                   <button
                     type="button"
-                    className="cursor-pointer rounded-full px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
+                    className="cursor-pointer rounded-md px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
                     onClick={() => {
                       setStatusFilter(null)
                       setStageFilter(null)
@@ -1522,7 +1522,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-popover px-4 py-1.5 sm:px-6">
                       <AlarmClock className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
                       <span className="text-xs font-semibold">即将截止（7 天内）</span>
-                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
+                      <span className="rounded-sm bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
                         {dueSoon.length} 条
                       </span>
                     </div>
@@ -1551,7 +1551,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                             </span>
                             <span className="min-w-0 flex-1 truncate font-medium">{title}</span>
                             <span
-                              className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                              className={`shrink-0 rounded-sm px-2 py-0.5 text-[11px] font-medium ${
                                 daysLeft <= 1
                                   ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
                                   : daysLeft <= 3
@@ -1605,7 +1605,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   {groups.map((g) => (
                     <div key={g.status}>
                       <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-popover px-4 py-1.5 sm:px-6">
-                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_COLORS[g.status]}`}>
+                        <span className={`rounded-sm px-2 py-0.5 text-[11px] font-medium ${STATUS_COLORS[g.status]}`}>
                           {g.status}
                         </span>
                         <span className="text-xs text-muted-foreground">{g.items.length} 个岗位</span>
@@ -1662,7 +1662,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                       <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-popover px-4 py-1.5 sm:px-6">
                         <span className="text-xs font-semibold">{formatDayLabel(date)}</span>
                         <span
-                          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          className={`rounded-sm px-2 py-0.5 text-[11px] font-medium ${
                             expired
                               ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
                               : n <= 1
@@ -1694,7 +1694,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   <div>
                     <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-popover px-4 py-1.5 sm:px-6">
                       <span className="text-xs font-semibold">无固定截止日期</span>
-                      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
+                      <span className="rounded-sm bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
                         {filteredUndated.length} 条（招满为止/详见公告等）
                       </span>
                     </div>

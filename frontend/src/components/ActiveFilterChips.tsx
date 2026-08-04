@@ -22,7 +22,7 @@ export function FilterSummaryBar({
           key={f.label}
           type="button"
           onClick={f.onRemove}
-          className="inline-flex min-h-11 items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive sm:min-h-0"
+          className="inline-flex min-h-11 items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive sm:min-h-0"
         >
           {f.label}
           <X className="h-3 w-3" />
@@ -31,7 +31,7 @@ export function FilterSummaryBar({
       <button
         type="button"
         onClick={onClearAll}
-        className="ml-auto inline-flex min-h-11 items-center rounded-full px-2.5 py-1 text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-destructive hover:underline sm:min-h-0"
+        className="ml-auto inline-flex min-h-11 items-center rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-destructive hover:underline sm:min-h-0"
       >
         清除全部
       </button>
@@ -51,7 +51,7 @@ export function ActiveFilterChips({ filters }: { filters: RemovableFilter[] }) {
             key={f.label}
             type="button"
             onClick={f.onRemove}
-            className="inline-flex min-h-11 items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive sm:min-h-0"
+            className="inline-flex min-h-11 items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive sm:min-h-0"
           >
             {f.label}
             <X className="h-3 w-3" />

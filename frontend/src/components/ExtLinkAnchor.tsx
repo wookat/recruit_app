@@ -44,13 +44,13 @@ export function ExtLinkAnchor({ url }: { url: string }) {
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
           <span>跳转至：{domain}</span>
           {trust === 'official' && (
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-px font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+            <span className="inline-flex items-center gap-0.5 rounded-sm bg-emerald-50 px-1.5 py-px font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
               <BadgeCheck className="h-3 w-3" aria-hidden="true" />
               官方来源
             </span>
           )}
           {trust === 'third-party' && (
-            <span className="rounded-full bg-muted px-1.5 py-px">第三方来源 · 请以官方公告为准</span>
+            <span className="rounded-sm bg-muted px-1.5 py-px">第三方来源 · 请以官方公告为准</span>
           )}
         </div>
       )}

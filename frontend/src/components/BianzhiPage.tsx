@@ -643,9 +643,9 @@ export function BianzhiPage({
               key={p}
               onClick={() => toggleProvince(p)}
               className={cn(
-                'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+                'min-h-11 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs transition-colors md:min-h-0',
                 provinces.includes(p)
-                  ? 'border-primary bg-primary text-primary-foreground'
+                  ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
               )}
             >
@@ -727,9 +727,9 @@ export function BianzhiPage({
             setPage(1)
           }}
           className={cn(
-            'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            'min-h-11 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs transition-colors md:min-h-0',
             eduFilter === e
-              ? 'border-primary bg-primary text-primary-foreground'
+              ? 'border-primary bg-primary/10 text-primary'
               : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
           )}
         >
@@ -750,9 +750,9 @@ export function BianzhiPage({
               key={v.key}
               onClick={() => selectPreset(v.key)}
               className={cn(
-                'inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+                'inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
                 preset === v.key
-                  ? 'border-primary bg-primary text-primary-foreground'
+                  ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-background text-foreground hover:bg-muted',
               )}
             >
@@ -775,9 +775,9 @@ export function BianzhiPage({
               setPage(1)
             }}
             className={cn(
-              'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+              'min-h-11 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
               recentOnly
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-foreground hover:bg-muted',
             )}
           >
@@ -790,9 +790,9 @@ export function BianzhiPage({
               setPage(1)
             }}
             className={cn(
-              'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+              'min-h-11 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
               dueOnly
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-foreground hover:bg-muted',
             )}
           >
@@ -805,9 +805,9 @@ export function BianzhiPage({
               setPage(1)
             }}
             className={cn(
-              'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+              'min-h-11 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
               hideExpired
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-foreground hover:bg-muted',
             )}
           >
@@ -817,9 +817,9 @@ export function BianzhiPage({
             type="button"
             onClick={() => setHideSeen((v) => !v)}
             className={cn(
-              'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+              'min-h-11 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
               hideSeen
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-foreground hover:bg-muted',
             )}
           >
@@ -834,7 +834,7 @@ export function BianzhiPage({
                   key={p.key}
                   type="button"
                   onClick={() => onCrossPreset(p.key)}
-                  className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-9"
+                  className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-md border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-9"
                 >
                   {p.label}
                   <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -931,7 +931,7 @@ export function BianzhiPage({
             className={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
               view === 'card'
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-muted-foreground hover:bg-muted',
             )}
           >
@@ -944,7 +944,7 @@ export function BianzhiPage({
             className={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
               view === 'table'
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-muted-foreground hover:bg-muted',
             )}
           >
@@ -980,7 +980,7 @@ export function BianzhiPage({
                 href={s.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted sm:min-h-0"
+                className="inline-flex min-h-11 items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted sm:min-h-0"
               >
                 {s.province} <ExternalLink className="h-3 w-3 text-muted-foreground" />
               </a>

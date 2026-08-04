@@ -10,7 +10,7 @@ export function HotSearchPills({ onPick, words }: { onPick: (word: string) => vo
           <button
             key={w}
             type="button"
-            className="min-h-11 cursor-pointer rounded-full border bg-muted/50 px-3 py-1 text-xs text-foreground/80 transition-colors hover:bg-muted hover:text-foreground sm:min-h-7"
+            className="min-h-11 cursor-pointer rounded-md border bg-muted/50 px-3 py-1 text-xs text-foreground/80 transition-colors hover:bg-muted hover:text-foreground sm:min-h-7"
             onClick={() => onPick(w)}
           >
             {w}

@@ -295,7 +295,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
               {recent.slice(0, 8).map((k) => (
                 <span
                   key={k}
-                  className="inline-flex items-center gap-0.5 rounded-full bg-muted pl-2.5 pr-1 text-xs text-foreground/80"
+                  className="inline-flex items-center gap-0.5 rounded-md bg-muted pl-2.5 pr-1 text-xs text-foreground/80"
                 >
                   <button
                     type="button"
@@ -481,7 +481,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
             {/\s/.test(kw) && (
               <button
                 type="button"
-                className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
+                className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-md border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
                 onClick={() => setQ(kw.replace(/\s+/g, ''))}
               >
                 试试去掉空格：「{kw.replace(/\s+/g, '')}」
@@ -491,7 +491,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
               <button
                 key={syn}
                 type="button"
-                className="ml-1.5 mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
+                className="ml-1.5 mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-md border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
                 onClick={() => setQ(syn)}
               >
                 试试同义词：「{syn}」
@@ -500,7 +500,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
             {synOff && expandKeyword(kw).added.length > 0 && (
               <button
                 type="button"
-                className="ml-1.5 mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
+                className="ml-1.5 mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-md border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
                 onClick={() => setSynOff(false)}
               >
                 重新开启同义匹配（{expandKeyword(kw).added.join('、')}）
@@ -512,7 +512,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                 <button
                   key={w}
                   type="button"
-                  className="min-h-11 cursor-pointer rounded-full border bg-muted/50 px-3 py-1 text-xs text-foreground/80 transition-colors hover:bg-muted hover:text-foreground sm:min-h-7"
+                  className="min-h-11 cursor-pointer rounded-md border bg-muted/50 px-3 py-1 text-xs text-foreground/80 transition-colors hover:bg-muted hover:text-foreground sm:min-h-7"
                   onClick={() => setQ(w)}
                 >
                   {w}

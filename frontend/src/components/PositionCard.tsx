@@ -42,7 +42,7 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
               </span>
             )}
             {status && (
-              <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_COLORS[status]}`}>
+              <span className={`rounded-sm px-2 py-0.5 text-[11px] font-medium ${STATUS_COLORS[status]}`}>
                 {status}
               </span>
             )}

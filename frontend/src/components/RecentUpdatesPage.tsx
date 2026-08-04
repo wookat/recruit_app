@@ -121,9 +121,9 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
           aria-pressed={dateFilter === 'all'}
           onClick={() => selectDate('all')}
           className={cn(
-            'min-h-11 rounded-full border px-3 py-1 text-xs transition-colors sm:min-h-0',
+            'min-h-11 rounded-md border px-3 py-1 text-xs transition-colors sm:min-h-0',
             dateFilter === 'all'
-              ? 'border-primary bg-primary text-primary-foreground'
+              ? 'border-primary bg-primary/10 text-primary'
               : 'border-border bg-background text-foreground hover:bg-muted',
           )}
         >
@@ -138,9 +138,9 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
             title={opt.count === 0 ? '当日无新增' : undefined}
             onClick={() => selectDate(opt.iso)}
             className={cn(
-              'min-h-11 rounded-full border px-3 py-1 text-xs transition-colors sm:min-h-0',
+              'min-h-11 rounded-md border px-3 py-1 text-xs transition-colors sm:min-h-0',
               dateFilter === opt.iso
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-foreground hover:bg-muted',
               days !== null && opt.count === 0 && 'cursor-not-allowed opacity-40 hover:bg-background',
             )}
@@ -158,9 +158,9 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
             aria-pressed={boardFilter === b}
             onClick={() => selectBoard(b)}
             className={cn(
-              'min-h-11 rounded-full border px-3 py-1 text-xs transition-colors sm:min-h-0',
+              'min-h-11 rounded-md border px-3 py-1 text-xs transition-colors sm:min-h-0',
               boardFilter === b
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-foreground hover:bg-muted',
             )}
           >
@@ -207,7 +207,7 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
                       {meta.label}
                     </Badge>
                     {b.bulk ? (
-                      <span className="whitespace-nowrap rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                      <span className="whitespace-nowrap rounded-sm bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
                         <span className="sm:hidden">全量同步日 · 不逐条展示</span>
                         <span className="hidden sm:inline">数据全量同步日 · 非新增岗位数，不逐条展示</span>
                       </span>

@@ -691,7 +691,7 @@ export function CampusPage({
           key={t}
           onClick={() => toggleCompanyType(t)}
           className={cn(
-            'min-h-11 rounded-full px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            'min-h-11 rounded-md px-2.5 py-1 text-xs transition-colors md:min-h-0',
             companyTypes.includes(t)
               ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
               : 'hover:brightness-95 dark:hover:brightness-110',
@@ -724,9 +724,9 @@ export function CampusPage({
                 setPage(1)
               }}
               className={cn(
-                'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+                'min-h-11 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs transition-colors md:min-h-0',
                 cities.includes(c)
-                  ? 'border-primary bg-primary text-primary-foreground'
+                  ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-background text-foreground hover:bg-muted',
               )}
             >
@@ -772,9 +772,9 @@ export function CampusPage({
             setPage(1)
           }}
           className={cn(
-            'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            'min-h-11 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs transition-colors md:min-h-0',
             eduFilter === e
-              ? 'border-primary bg-primary text-primary-foreground'
+              ? 'border-primary bg-primary/10 text-primary'
               : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
           )}
         >
@@ -793,9 +793,9 @@ export function CampusPage({
             setPage(1)
           }}
           className={cn(
-            'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            'min-h-11 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs transition-colors md:min-h-0',
             recentOnly
-              ? 'border-primary bg-primary text-primary-foreground'
+              ? 'border-primary bg-primary/10 text-primary'
               : 'border-border bg-background text-foreground hover:bg-muted',
           )}
         >
@@ -808,9 +808,9 @@ export function CampusPage({
             setPage(1)
           }}
           className={cn(
-            'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            'min-h-11 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs transition-colors md:min-h-0',
             dueOnly
-              ? 'border-primary bg-primary text-primary-foreground'
+              ? 'border-primary bg-primary/10 text-primary'
               : 'border-border bg-background text-foreground hover:bg-muted',
           )}
         >
@@ -823,9 +823,9 @@ export function CampusPage({
             setPage(1)
           }}
           className={cn(
-            'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            'min-h-11 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs transition-colors md:min-h-0',
             hideExpired
-              ? 'border-primary bg-primary text-primary-foreground'
+              ? 'border-primary bg-primary/10 text-primary'
               : 'border-border bg-background text-foreground hover:bg-muted',
           )}
         >
@@ -835,9 +835,9 @@ export function CampusPage({
           type="button"
           onClick={() => setHideSeen((v) => !v)}
           className={cn(
-            'min-h-11 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs transition-colors md:min-h-0',
+            'min-h-11 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs transition-colors md:min-h-0',
             hideSeen
-              ? 'border-primary bg-primary text-primary-foreground'
+              ? 'border-primary bg-primary/10 text-primary'
               : 'border-border bg-background text-foreground hover:bg-muted',
           )}
         >
@@ -865,9 +865,9 @@ export function CampusPage({
               key={v.key}
               onClick={() => selectPreset(v.key)}
               className={cn(
-                'min-h-11 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+                'min-h-11 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
                 preset === v.key
-                  ? 'border-primary bg-primary text-primary-foreground'
+                  ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-background text-foreground hover:bg-muted',
               )}
             >
@@ -888,7 +888,7 @@ export function CampusPage({
                   key={p.key}
                   type="button"
                   onClick={() => onCrossPreset(p.key)}
-                  className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-9"
+                  className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-md border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-9"
                 >
                   {p.label}
                   <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -976,7 +976,7 @@ export function CampusPage({
             className={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
               view === 'card'
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-muted-foreground hover:bg-muted',
             )}
           >
@@ -989,7 +989,7 @@ export function CampusPage({
             className={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
               view === 'table'
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-muted-foreground hover:bg-muted',
             )}
           >

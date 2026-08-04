@@ -230,7 +230,7 @@ def export_campus_jobs(
 @cache.cached("campus_timeline", ttl=3600, stale=True)
 def campus_timeline(db: Session = Depends(get_db)):
     """按更新日期（updated_at_src）聚合的每日岗位数（时间线视图，1 小时缓存）。"""
-    day = func.substr(CampusJob.updated_at_src, 1, 10)
+    day = func.substr(func.replace(CampusJob.updated_at_src, "/", "-"), 1, 10)
     rows = (
         db.query(day, func.count())
         .filter(day.op("~")(r"^\d{4}-\d{2}-\d{2}$"))

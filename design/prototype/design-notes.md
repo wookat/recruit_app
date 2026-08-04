@@ -65,6 +65,23 @@
 
 ---
 
+# R179 风格候选方案记录（2026-08-04）
+
+老板对 R178 反馈「还是胶囊风格」，改为提供风格候选供其选择。实测调研 Linear、GitHub Primer、Ant Design 5、Lark/飞书、Airbnb（截图存档），Vercel/Notion/Stripe 与 BOSS直聘/拉勾按公开设计体系（Geist / BOSS 视觉规范）提炼。
+
+- 选择页：`styles.html`（6 张风格卡片：缩略截图 + 参考产品 + 特征要点 + 完整小样链接）。
+- 小样：`style-a.html` ~ `style-f.html`，共用 `assets/data.js` 同一份数据与 `assets/style-demo.js` 同一信息结构（顶栏/筛选 chips/工具栏/20 行岗位表格/分页；≤767px 自动切卡片+底栏），每页仅一份 CSS 变量决定观感，差异全部来自设计语言：
+  - A 极简工具风（Linear/Vercel Geist）：4–5px 圆角、黑白单色、hairline、零阴影、高密度。
+  - B 企业中后台风（Ant Design 5/飞书）：6px 圆角、#1677ff、功能色体系、表头浅灰底。
+  - C 编辑器内容风（Notion/Craft）：无边框、留白、窄版心、暖灰阶、15px 阅读态。
+  - D 商业清爽风（Stripe/Mercury）：#635bff、页首淡渐变、精致阴影、深蓝墨字。
+  - E 国内招聘产品风（BOSS直聘/拉勾）：#00a6a7 色块、加粗标题、高密度卡片、下划线导航。
+  - F 硬朗方角编辑风（GitHub Primer×瑞士排版）：0px 直角、1.5px 粗边框、等宽字、无任何圆形。
+- 截图：`assets/screenshots/r179/`（选择页缩略图 + 桌面/移动小样截图）。
+- 选定方向后，将按该方向重制 R177/R178 的 11 页完整原型（含暗色与全部交互状态）。
+
+---
+
 # R178 组件库现代化记录（2026-08-04）
 
 老板反馈：「圆形」用得太多显得设计老。R178 对齐 2025 主流规范（shadcn/ui、Linear、Vercel Geist），全站 11 页统一套用，无新旧混用。

@@ -45,6 +45,7 @@ import { SynonymHint } from '@/components/SynonymHint'
 import { HotSearchPills } from '@/components/HotSearchPills'
 import { expandKeyword, HOT_SEARCHES_CAMPUS } from '@/lib/synonyms'
 import { addRecentSearch, saveQuery } from '@/lib/storage'
+import { getViewPref, setViewPref } from '@/lib/viewPref'
 import { MatchByProfileButton } from '@/components/MatchByProfileButton'
 import { MobileFilterCollapse } from '@/components/MobileFilterCollapse'
 import { MultiSelect, type OptionGroup } from '@/components/MultiSelect'
@@ -313,9 +314,11 @@ export function CampusPage({
   const [filters, setFilters] = useState<CampusFilterOptions | null>(null)
   const [loading, setLoading] = useState(true)
   const campusFavorites = useCampusFavorites()
-  const [view, setView] = useState<'table' | 'card'>(() =>
-    typeof window !== 'undefined' && window.innerWidth < 768 ? 'card' : 'table',
-  )
+  const [view, setView] = useState<'table' | 'card'>(() => getViewPref('campus'))
+  const selectView = useCallback((v: 'table' | 'card') => {
+    setView(v)
+    setViewPref('campus', v)
+  }, [])
   const [sort, setSort] = useState<SortState | null>(null)
   const [detail, setDetail] = useState<CampusJob | null>(null)
   const [relatedJobs, setRelatedJobs] = useState<CampusJob[]>([])
@@ -967,7 +970,7 @@ export function CampusPage({
           <button
             type="button"
             aria-label="卡片视图"
-            onClick={() => setView('card')}
+            onClick={() => selectView('card')}
             className={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
               view === 'card'
@@ -980,7 +983,7 @@ export function CampusPage({
           <button
             type="button"
             aria-label="表格视图"
-            onClick={() => setView('table')}
+            onClick={() => selectView('table')}
             className={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
               view === 'table'

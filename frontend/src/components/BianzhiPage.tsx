@@ -660,7 +660,7 @@ export function BianzhiPage({
         </div>
       </div>
       <div
-        className="pointer-events-none absolute inset-y-0 -right-4 w-8 bg-gradient-to-l from-background to-transparent md:hidden"
+        className="pointer-events-none absolute inset-y-0 -right-4 w-8 bg-gradient-to-l from-background to-transparent md:right-0 lg:hidden"
         aria-hidden
       />
       </div>

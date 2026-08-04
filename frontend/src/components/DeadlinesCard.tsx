@@ -95,7 +95,10 @@ export function DeadlinesCard({ days = 7, limit = 20, defaultExpanded = false }:
                 <Badge variant="outline" className={`shrink-0 text-[11px] ${urgencyClass(n)}`}>
                   {daysLeftLabel(n, e.deadline)}
                 </Badge>
-                <span className="line-clamp-1 min-w-0 flex-1">
+                <span
+                  className="line-clamp-1 min-w-0 flex-1"
+                  title={[e.title, e.employer].filter(Boolean).join('｜')}
+                >
                   {e.title || '-'}
                   {e.employer && <span className="ml-2 text-xs text-muted-foreground">{e.employer}</span>}
                 </span>

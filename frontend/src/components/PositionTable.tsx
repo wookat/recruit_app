@@ -53,25 +53,35 @@ import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { parseSignupDeadline } from '@/lib/deadline'
 import { cmpNullableStr, nextSort, type SortState } from '@/lib/tableSort'
 
+/** 表格里报名时间只显示日期，带时分秒的完整时间戳靠 hover title 查看 */
+function dateOnly(s: string): string {
+  return s.replace(/(\d{4}-\d{2}-\d{2})[ T]\d{2}:\d{2}(?::\d{2})?/g, '$1')
+}
+
+/** 岗位示例回退值与考试类型相同时两列逐行重复，表格里该列显示「—」 */
+function dedupExamType(title: string, examType: string | null | undefined): string {
+  return examType && title.trim() === examType.trim() ? '—' : title
+}
+
 const columns: ColumnDef<Position>[] = [
-  { accessorKey: 'employer', header: '用人单位/系统', size: 220 },
+  { accessorKey: 'employer', header: '用人单位/系统', size: 180 },
   { accessorKey: 'year', header: '年份', size: 70 },
-  { accessorKey: 'job_type', header: '岗位类型', size: 100 },
+  { accessorKey: 'job_type', header: '岗位类型', size: 90 },
   {
     id: 'exam_type',
     accessorFn: (row) => row.exam_type_norm || row.exam_type,
     header: '考试/招聘类型',
-    size: 160,
+    size: 130,
   },
-  { accessorKey: 'position_example', header: '岗位示例', size: 260 },
+  { accessorKey: 'position_example', header: '岗位示例', size: 200 },
   {
     id: 'edu_level_norm',
     accessorFn: (row) => row.edu_level_norm || row.edu_requirement,
     header: '学历要求',
-    size: 130,
+    size: 110,
   },
   { accessorKey: 'work_location', header: '工作地点', size: 150 },
-  { accessorKey: 'signup_time', header: '报名时间', size: 160 },
+  { accessorKey: 'signup_time', header: '报名时间', size: 150 },
   { accessorKey: 'exam_time', header: '考试时间', size: 160 },
   { accessorKey: 'created_at', header: '更新', size: 100 },
 ]
@@ -204,6 +214,8 @@ export const PositionTable = memo(function PositionTable({
                       className={cn(
                         'whitespace-nowrap',
                         h.column.id === 'exam_time' && 'hidden 2xl:table-cell',
+                        h.column.id === 'exam_type' && 'hidden min-[1750px]:table-cell',
+                        h.column.id === 'edu_level_norm' && 'hidden min-[1100px]:table-cell',
                       )}
                       style={{ width: h.column.getSize(), minWidth: h.column.getSize() }}
                     >
@@ -260,6 +272,8 @@ export const PositionTable = memo(function PositionTable({
                           'max-w-xs truncate text-sm',
                           (cell.column.id === 'exam_time' || cell.column.id === 'created_at') &&
                             'hidden 2xl:table-cell',
+                          cell.column.id === 'exam_type' && 'hidden min-[1750px]:table-cell',
+                          cell.column.id === 'edu_level_norm' && 'hidden min-[1100px]:table-cell',
                           cell.column.id === 'employer' &&
                             'max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:max-w-[150px] max-sm:border-r max-sm:bg-card max-sm:shadow-[8px_0_12px_-6px_rgba(0,0,0,0.18)] group-hover:max-sm:bg-muted',
                         )}
@@ -289,7 +303,9 @@ export const PositionTable = memo(function PositionTable({
                           </span>
                         ) : cell.column.id === 'signup_time' ? (
                           <span className="inline-flex max-w-full items-center gap-1.5">
-                            <span className="truncate">{truncate(String(cell.getValue() || '-'))}</span>
+                            <span className="truncate">
+                              {truncate(dateOnly(String(cell.getValue() || '-')))}
+                            </span>
                             <DueBadge date={row.original.signup_deadline?.slice(0, 10)} />
                           </span>
                         ) : cell.column.id === 'created_at' ? (
@@ -300,9 +316,12 @@ export const PositionTable = memo(function PositionTable({
                             <Highlight
                               text={truncate(
                                 cell.column.id === 'position_example'
-                                  ? stripOrgPrefix(
-                                      String(cell.getValue() || '-'),
-                                      row.original.employer,
+                                  ? dedupExamType(
+                                      stripOrgPrefix(
+                                        String(cell.getValue() || '-'),
+                                        row.original.employer,
+                                        row.original.exam_type_norm || row.original.exam_type,
+                                      ),
                                       row.original.exam_type_norm || row.original.exam_type,
                                     )
                                   : String(cell.getValue() || '—'),

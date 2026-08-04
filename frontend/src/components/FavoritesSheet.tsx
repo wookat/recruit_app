@@ -1931,8 +1931,8 @@ function PushToggleRow() {
       const items = buildPushItems(favorites, campusFavs, bianzhiFavs)
       const result = await enablePush(remindDays, items)
       if (result === 'denied') setError('浏览器已拒绝通知权限（可在地址栏站点设置中重新允许）')
-      else if (result === 'unconfigured') setError('推送服务暂未配置，请稍后再试')
-      else if (result !== 'granted') setError('开启失败，请稍后再试')
+      else if (result === 'unconfigured') setError('开启失败：网络异常或推送服务未就绪，请再点一次开关重试')
+      else if (result !== 'granted') setError('开启失败，请再点一次开关重试')
     } finally {
       setBusy(false)
     }
@@ -1970,7 +1970,11 @@ function PushToggleRow() {
           ? '不打开站点也会在每天早上推送临近截止的收藏与保存筛选的上新'
           : '默认关闭，开启后关站也能收到截止提醒与订阅上新推送'}
       </span>
-      {error && <span className="w-full text-amber-700 dark:text-amber-300">{error}</span>}
+      {error && (
+        <span role="alert" className="w-full text-amber-700 dark:text-amber-300">
+          {error}
+        </span>
+      )}
     </div>
   )
 }

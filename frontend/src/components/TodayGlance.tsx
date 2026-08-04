@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchBianzhiJobs, fetchCampusJobs, fetchDeadlines } from '@/api'
 import { AlarmClock, Bookmark, BriefcaseBusiness, Landmark, Sparkles, ChevronRight } from 'lucide-react'
 import { openSubscriptionsPanel, useSavedNews } from '@/lib/savedNews'
+import { getSavedFilters, getSavedQueries } from '@/lib/storage'
 import { cn } from '@/lib/utils'
 
 // hide_expired 计数模块级缓存，会话内只请求一次
@@ -34,6 +35,11 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
   const [bianzhiDue, setBianzhiDue] = useState<number | null>(null)
   const [deadlineCount, setDeadlineCount] = useState<number | null>(null)
   const savedNews = useSavedNews()
+  /** 有保存的筛选时即使无上新也保留订阅入口，方便回访用户找到订阅面板 */
+  const hasSubscriptions =
+    getSavedFilters().length > 0 ||
+    getSavedQueries('campus').length > 0 ||
+    getSavedQueries('bianzhi').length > 0
 
   useEffect(() => {
     fetchCampusJobs({ updated_after: isoDaysAgo(7), page: 1, page_size: 1 })
@@ -70,12 +76,20 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
   }, [])
 
   const items = [
-    savedNews.sum > 0 && (
+    savedNews.sum > 0 ? (
       <button key="subs" type="button" className={PILL} onClick={openSubscriptionsPanel}>
         <Bookmark className="h-3.5 w-3.5 text-primary" />
         我的订阅上新 <span className="font-semibold text-red-600 dark:text-red-400">+{savedNews.sum}</span>
         <ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
+    ) : (
+      hasSubscriptions && (
+        <button key="subs" type="button" className={PILL} onClick={openSubscriptionsPanel}>
+          <Bookmark className="h-3.5 w-3.5 text-primary" />
+          我的订阅
+          <ChevronRight className="h-3 w-3 text-muted-foreground" />
+        </button>
+      )
     ),
     onUpdates && (
       <button key="updates" type="button" className={PILL} onClick={onUpdates}>

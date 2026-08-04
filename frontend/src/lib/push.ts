@@ -87,6 +87,18 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
   return out
 }
 
+/** 取 VAPID 公钥，瞬时网络抖动（status=0）自动重试一次。 */
+async function fetchVapidKey(): Promise<string> {
+  try {
+    const res = await axios.get(`${API_BASE}/api/push/vapid-key`)
+    return res.data.key
+  } catch {
+    await new Promise((r) => setTimeout(r, 800))
+    const res = await axios.get(`${API_BASE}/api/push/vapid-key`)
+    return res.data.key
+  }
+}
+
 async function getSubscription(): Promise<PushSubscription | null> {
   const reg = await navigator.serviceWorker.ready
   return reg.pushManager.getSubscription()
@@ -124,11 +136,11 @@ export async function enablePush(
   if (perm !== 'granted') return 'denied'
   let key: string
   try {
-    const res = await axios.get(`${API_BASE}/api/push/vapid-key`)
-    key = res.data.key
+    key = await fetchVapidKey()
   } catch {
     return 'unconfigured'
   }
+  if (!key) return 'unconfigured'
   try {
     const reg = await navigator.serviceWorker.ready
     const sub =

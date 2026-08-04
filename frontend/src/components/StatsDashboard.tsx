@@ -4,11 +4,16 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { BarChart3, ChevronDown, ChevronUp } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface StatsDashboardProps {
   onSelectYear?: (year: number) => void
   onSelectExamType?: (examType: string) => void
   onSelectProvince?: (province: string) => void
+  /** 当前生效的筛选值，用于高亮看板里对应行的选中态 */
+  selectedYear?: number
+  selectedExamType?: string
+  selectedProvinces?: string[]
   /** sidebar：右侧栏列表形态；card：页内卡片（默认） */
   variant?: 'card' | 'sidebar'
 }
@@ -18,11 +23,13 @@ function StatList({
   entries,
   onSelect,
   max,
+  isSelected,
 }: {
   title: string
   entries: { name: string; count: number }[]
   onSelect?: (name: string) => void
   max?: number
+  isSelected?: (name: string) => boolean
 }) {
   const [showAll, setShowAll] = useState(false)
   if (entries.length === 0) return null
@@ -35,11 +42,15 @@ function StatList({
           <li key={e.name}>
             <button
               type="button"
-              className="flex w-full items-center justify-between gap-2 rounded px-1 py-1.5 text-left text-xs hover:bg-muted"
+              className={cn(
+                'flex w-full items-center justify-between gap-2 rounded px-1 py-1.5 text-left text-xs hover:bg-muted',
+                isSelected?.(e.name) && 'bg-primary/10 font-medium text-primary hover:bg-primary/10',
+              )}
+              aria-pressed={isSelected?.(e.name) || undefined}
               onClick={() => onSelect?.(e.name)}
             >
               <span className="truncate">{e.name}</span>
-              <span className="shrink-0 tabular-nums text-muted-foreground">{e.count.toLocaleString()}</span>
+              <span className={cn('shrink-0 tabular-nums text-muted-foreground', isSelected?.(e.name) && 'text-primary/80')}>{e.count.toLocaleString()}</span>
             </button>
           </li>
         ))}
@@ -61,10 +72,12 @@ function StatGroup({
   title,
   entries,
   onSelect,
+  isSelected,
 }: {
   title: string
   entries: { name: string; count: number }[]
   onSelect?: (name: string) => void
+  isSelected?: (name: string) => boolean
 }) {
   if (entries.length === 0) return null
   return (
@@ -75,11 +88,14 @@ function StatGroup({
           <Badge
             key={e.name}
             variant="outline"
-            className={onSelect ? 'cursor-pointer gap-1 font-normal hover:bg-muted' : 'gap-1 font-normal'}
+            className={cn(
+              onSelect ? 'cursor-pointer gap-1 font-normal hover:bg-muted' : 'gap-1 font-normal',
+              isSelected?.(e.name) && 'border-primary bg-primary/10 text-primary hover:bg-primary/10',
+            )}
             onClick={() => onSelect?.(e.name)}
           >
             {e.name}
-            <span className="text-muted-foreground">{e.count.toLocaleString()}</span>
+            <span className={isSelected?.(e.name) ? 'text-primary/80' : 'text-muted-foreground'}>{e.count.toLocaleString()}</span>
           </Badge>
         ))}
       </div>
@@ -87,7 +103,15 @@ function StatGroup({
   )
 }
 
-export function StatsDashboard({ onSelectYear, onSelectExamType, onSelectProvince, variant = 'card' }: StatsDashboardProps) {
+export function StatsDashboard({
+  onSelectYear,
+  onSelectExamType,
+  onSelectProvince,
+  selectedYear,
+  selectedExamType,
+  selectedProvinces,
+  variant = 'card',
+}: StatsDashboardProps) {
   const [stats, setStats] = useState<Stats | null>(null)
   const [failed, setFailed] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -115,13 +139,26 @@ export function StatsDashboard({ onSelectYear, onSelectExamType, onSelectProvinc
             title="按年份（点击筛选）"
             entries={stats.by_year}
             max={6}
+            isSelected={(name) => Number(name) === selectedYear}
             onSelect={(name) => {
               const y = Number(name)
               if (!isNaN(y)) onSelectYear?.(y)
             }}
           />
-          <StatList title="按考试类型（点击筛选）" entries={stats.by_exam_type} max={8} onSelect={onSelectExamType} />
-          <StatList title="按省份（点击筛选）" entries={stats.by_province} max={8} onSelect={onSelectProvince} />
+          <StatList
+            title="按考试类型（点击筛选）"
+            entries={stats.by_exam_type}
+            max={8}
+            isSelected={(name) => name === selectedExamType}
+            onSelect={onSelectExamType}
+          />
+          <StatList
+            title="按省份（点击筛选）"
+            entries={stats.by_province}
+            max={8}
+            isSelected={(name) => selectedProvinces?.includes(name) ?? false}
+            onSelect={onSelectProvince}
+          />
         </CardContent>
       </Card>
     )
@@ -158,6 +195,7 @@ export function StatsDashboard({ onSelectYear, onSelectExamType, onSelectProvinc
         <StatGroup
           title="按年份（点击筛选）"
           entries={stats.by_year.slice(0, expanded ? undefined : 6)}
+          isSelected={(name) => Number(name) === selectedYear}
           onSelect={(name) => {
             const y = Number(name)
             if (!isNaN(y)) onSelectYear?.(y)
@@ -165,8 +203,18 @@ export function StatsDashboard({ onSelectYear, onSelectExamType, onSelectProvinc
         />
         {expanded && (
           <>
-            <StatGroup title="按考试类型（点击筛选）" entries={stats.by_exam_type} onSelect={onSelectExamType} />
-            <StatGroup title="按省份（点击筛选）" entries={stats.by_province} onSelect={onSelectProvince} />
+            <StatGroup
+              title="按考试类型（点击筛选）"
+              entries={stats.by_exam_type}
+              isSelected={(name) => name === selectedExamType}
+              onSelect={onSelectExamType}
+            />
+            <StatGroup
+              title="按省份（点击筛选）"
+              entries={stats.by_province}
+              isSelected={(name) => selectedProvinces?.includes(name) ?? false}
+              onSelect={onSelectProvince}
+            />
           </>
         )}
       </CardContent>

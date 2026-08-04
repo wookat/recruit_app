@@ -1159,19 +1159,21 @@ export function ListPage({
                 </Button>
               </span>
             ) : (
-              <Button
-                variant="link"
-                size="sm"
-                className="h-auto min-h-11 p-0 text-xs disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0"
-                disabled={activeFilters.length === 0 && !deadlineView}
-                onClick={() => {
-                  setSaveName(defaultFilterName)
-                  setSaveOpen(true)
-                }}
-              >
-                <BookmarkPlus className="mr-0.5 h-3.5 w-3.5" />
-                保存当前筛选
-              </Button>
+              <span title={activeFilters.length === 0 && !deadlineView ? '先设置筛选条件后可保存' : undefined}>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto min-h-11 p-0 text-xs disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0"
+                  disabled={activeFilters.length === 0 && !deadlineView}
+                  onClick={() => {
+                    setSaveName(defaultFilterName)
+                    setSaveOpen(true)
+                  }}
+                >
+                  <BookmarkPlus className="mr-0.5 h-3.5 w-3.5" />
+                  保存当前筛选
+                </Button>
+              </span>
             )}
             {saveHint && <span className="text-muted-foreground">{saveHint}</span>}
             {exportTask ? (
@@ -1633,9 +1635,19 @@ export function ListPage({
       <aside className="mt-5 xl:sticky xl:top-16 xl:mt-0 xl:max-h-[calc(100dvh-5rem)] xl:overflow-y-auto">
         <StatsDashboard
           variant="sidebar"
-          onSelectYear={(y) => updateParam('year', [y])}
-          onSelectExamType={(t) => updateParam('exam_type_norm', [t])}
-          onSelectProvince={(p) => updateParam('location', [...new Set([...(params.location || []), p])])}
+          selectedYear={params.year?.[0]}
+          selectedExamType={params.exam_type_norm?.[0]}
+          selectedProvinces={params.location}
+          onSelectYear={(y) => updateParam('year', params.year?.[0] === y ? [] : [y])}
+          onSelectExamType={(t) => updateParam('exam_type_norm', params.exam_type_norm?.[0] === t ? [] : [t])}
+          onSelectProvince={(p) =>
+            updateParam(
+              'location',
+              params.location?.includes(p)
+                ? params.location.filter((v) => v !== p)
+                : [...new Set([...(params.location || []), p])],
+            )
+          }
         />
       </aside>
     )}

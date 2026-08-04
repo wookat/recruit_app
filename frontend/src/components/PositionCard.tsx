@@ -74,12 +74,12 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
             />
           </div>
         </div>
-        <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
+        <h2 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">
           <Highlight
             text={item.position_example ? stripOrgPrefix(item.position_example, item.employer, item.exam_type_norm || item.exam_type) : '-'}
             query={highlight}
           />
-        </h3>
+        </h2>
       </CardHeader>
       <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
         <div className="flex items-start gap-2">

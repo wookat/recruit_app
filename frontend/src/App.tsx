@@ -125,7 +125,7 @@ function syncSectionUrl(section: Section) {
   if (section.mode === 'search') {
     q.set('board', 'search')
     q.set('q', section.keyword || '')
-    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bkw', 'hexp', 'cview', 'ub', 'cboard']) q.delete(k)
+    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bcity', 'bkw', 'hexp', 'cview', 'ub', 'cboard']) q.delete(k)
     for (const k of POSITION_URL_KEYS) q.delete(k)
   } else if (section.mode === 'positions') {
     if (q.get('board')) q.delete('hexp')
@@ -135,12 +135,13 @@ function syncSectionUrl(section: Section) {
     q.delete('city')
     q.delete('ctype')
     q.delete('prov')
+    q.delete('bcity')
     q.delete('bkw')
     q.delete('cview')
     q.delete('ub')
   } else if (section.mode === 'calendar' || section.mode === 'updates') {
     q.set('board', section.mode)
-    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bkw', 'hexp']) q.delete(k)
+    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bcity', 'bkw', 'hexp']) q.delete(k)
     if (section.mode === 'updates') {
       q.delete('cview')
       q.delete('cboard')
@@ -158,8 +159,10 @@ function syncSectionUrl(section: Section) {
     }
     if (section.preset) q.set('bpreset', section.preset)
     else q.delete('bpreset')
-    if (section.mode === 'campus') q.delete('prov')
-    else {
+    if (section.mode === 'campus') {
+      q.delete('prov')
+      q.delete('bcity')
+    } else {
       q.delete('city')
       q.delete('ctype')
     }
@@ -297,7 +300,7 @@ export default function App() {
 
   const clearBoardParams = useCallback(() => {
     const q = new URLSearchParams(window.location.search)
-    for (const k of ['city', 'ctype', 'prov', 'bkw']) q.delete(k)
+    for (const k of ['city', 'ctype', 'prov', 'bcity', 'bkw']) q.delete(k)
     const qs = q.toString()
     window.history.replaceState(
       null,

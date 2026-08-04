@@ -234,6 +234,7 @@ export interface BianzhiParams {
   keyword?: string
   category?: string[]
   province?: string[]
+  city?: string
   job_type?: string
   edu?: string
   updated_after?: string
@@ -352,6 +353,8 @@ export async function fetchRecentUpdates(days = 7): Promise<{ days: RecentUpdate
 export interface BianzhiCounts {
   categories: Record<string, number>
   provinces: Record<string, number>
+  cities?: Record<string, number>
+  city_provinces?: Record<string, string>
 }
 
 export interface CampusCounts {

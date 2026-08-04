@@ -167,6 +167,10 @@ function bianzhiQueryToParams(query: string): BianzhiParams {
   else if (preset && BIANZHI_PRESET_CATEGORY[preset]) p.category = [BIANZHI_PRESET_CATEGORY[preset]]
   const prov = q.get('prov')
   if (prov) p.province = prov.split(',')
+  const bcity = q.get('bcity')
+  if (bcity) p.city = bcity
+  const bedu = q.get('bedu')
+  if (bedu) p.edu = bedu
   const kw = q.get('bkw')
   if (kw) p.keyword = kw
   if (q.get('due')) p.due_within_days = 7

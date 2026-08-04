@@ -504,6 +504,7 @@ export function BianzhiPage({
     setHideExpired(false)
     setHideSeen(false)
     setProvinces([])
+    setCities([])
     setSearchInput('')
     setKeyword('')
     setProfileMatched(false)

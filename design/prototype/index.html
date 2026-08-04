@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>上岸罗盘 · R176 UI/UX 原型总览</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/tokens.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="" data-mobile="jobs" class="s-page t1 min-h-screen">
+
+<main class="max-w-[1100px] mx-auto px-4 py-8">
+  <div class="max-w-2xl">
+    <div class="text-xs1 text-brand-600 font-medium">R176 · 全站 UI/UX 原型重设计</div>
+    <h1 class="text-xxl font-semibold tracking-tight mt-1">上岸罗盘 新版原型</h1>
+    <p class="text-body t2 mt-2">纯静态 HTML + Tailwind（CDN），可点击跳转。每页均为响应式（拖窄窗口或用手机视口查看移动布局），右上角可切换暗色模式。走查结论见 <code class="text-xs1 bg-surface-sunken dark:bg-surface-sunken-d px-1.5 py-0.5 rounded">audit-report.md</code>，改动理由见 <code class="text-xs1 bg-surface-sunken dark:bg-surface-sunken-d px-1.5 py-0.5 rounded">design-notes.md</code>。</p>
+  </div>
+
+  <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+    <a href="positions.html" class="s-card p-4 hover:shadow-raised transition-shadow">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-5 rounded-full bg-tizhi"></span><span class="font-semibold">体制内列表（表格）</span></div>
+      <p class="text-xs1 t2 mt-1.5">首屏还内容 · 单行工具栏 · 图形化数据看板 · 含：筛选面板、保存筛选管理、详情抽屉三个可点交互</p>
+    </a>
+    <a href="positions-cards.html" class="s-card p-4 hover:shadow-raised transition-shadow">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-5 rounded-full bg-tizhi"></span><span class="font-semibold">体制内列表（卡片）</span></div>
+      <p class="text-xs1 t2 mt-1.5">卡片视图，截止状态用色环强调</p>
+    </a>
+    <a href="campus.html" class="s-card p-4 hover:shadow-raised transition-shadow">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-5 rounded-full bg-campus"></span><span class="font-semibold">校招信息</span></div>
+      <p class="text-xs1 t2 mt-1.5">与体制内同构的筛选骨架 + 公司卡片（logo 位/批次/免笔试）</p>
+    </a>
+    <a href="bianzhi.html" class="s-card p-4 hover:shadow-raised transition-shadow">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-5 rounded-full bg-bianzhi"></span><span class="font-semibold">编制公告</span></div>
+      <p class="text-xs1 t2 mt-1.5">分类计数 chips + 省份分布图形化</p>
+    </a>
+    <a href="search-results.html" class="s-card p-4 hover:shadow-raised transition-shadow">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-5 rounded-full bg-brand-500"></span><span class="font-semibold">聚合搜索结果</span></div>
+      <p class="text-xs1 t2 mt-1.5">结果 Tab 计数 + 关键词高亮；全局搜索弹层任意页 Ctrl K 体验</p>
+    </a>
+    <a href="favorites.html" class="s-card p-4 hover:shadow-raised transition-shadow">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-5 rounded-full bg-amber-400"></span><span class="font-semibold">我的收藏</span></div>
+      <p class="text-xs1 t2 mt-1.5">投递漏斗列表 + 「提醒与同步设置」页签（推送订阅、同步码）</p>
+    </a>
+    <a href="calendar.html" class="s-card p-4 hover:shadow-raised transition-shadow">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-5 rounded-full bg-rose-400"></span><span class="font-semibold">报考日历</span></div>
+      <p class="text-xs1 t2 mt-1.5">月格内事件预览 + 当日事件侧栏 + .ics 导出</p>
+    </a>
+    <a href="updates.html" class="s-card p-4 hover:shadow-raised transition-shadow">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-5 rounded-full bg-emerald-400"></span><span class="font-semibold">今日更新</span></div>
+      <p class="text-xs1 t2 mt-1.5">三板块统计卡 + 时间轴分组 + 订阅引导</p>
+    </a>
+    <a href="guide.html" class="s-card p-4 hover:shadow-raised transition-shadow">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-5 rounded-full bg-sky-400"></span><span class="font-semibold">求职攻略</span></div>
+      <p class="text-xs1 t2 mt-1.5">独立页面 + 粘性目录 + 赛道卡片 + 流程时间线</p>
+    </a>
+    <a href="tokens.html" class="s-card p-4 hover:shadow-raised transition-shadow sm:col-span-2 lg:col-span-3 bg-gradient-to-r from-brand-50 to-white dark:from-brand-950 dark:to-surface-card-d">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-5 rounded-full bg-brand-600"></span><span class="font-semibold">设计令牌与组件规范</span></div>
+      <p class="text-xs1 t2 mt-1.5">配色（含暗色映射）/ 字阶 / 间距 / 圆角 / 阴影 / 按钮·芯片·标签·表格·抽屉组件 / 布局断点规范</p>
+    </a>
+  </div>
+
+  <div class="mt-8 text-xs1 t3">
+    验收提示：① 每页缩窄到 375px 查看移动布局与底部导航；② 任意页 Ctrl K 打开全局搜索；③ 体制内列表页点「筛选」「保存筛选」、点任意行打开详情抽屉；④ 收藏页切「提醒与同步设置」页签看推送订阅与同步码。
+  </div>
+</main>
+
+</body>
+</html>

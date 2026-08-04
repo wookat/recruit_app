@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>体制内岗位 · 上岸罗盘 原型</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/tokens.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="positions" data-mobile="jobs" class="s-page t1 min-h-screen">
+
+<main class="max-w-[1280px] mx-auto px-4 py-4">
+
+  <!-- 场景入口：单行横滑，替代旧版两行预设 pill + 速览横条 -->
+  <div class="flex items-center gap-1.5 overflow-x-auto hide-scroll pb-1">
+    <span class="chip-on">全部 <span class="opacity-80">10,000+</span></span>
+    <span class="chip">公务员</span>
+    <span class="chip">事业编</span>
+    <span class="chip">军队文职</span>
+    <span class="chip">国企央企</span>
+    <span class="chip">选调生</span>
+    <span class="chip text-brand-600 border-brand-200 dark:border-brand-800">✨ 2027 最新</span>
+    <span class="chip text-rose-600 border-rose-200 dark:border-rose-900">⏰ 即将截止 20</span>
+    <span class="chip">近 7 天更新</span>
+    <span class="w-px h-5 bg-line dark:bg-line-d shrink-0 mx-1"></span>
+    <a class="chip" href="campus.html">校招 ↗</a>
+    <a class="chip" href="bianzhi.html">编制公告 ↗</a>
+  </div>
+
+  <!-- 工具栏：一行解决 搜索/筛选/排序/视图，首屏还给列表 -->
+  <div class="mt-3 flex items-center gap-2">
+    <div class="relative flex-1 max-w-xl">
+      <svg class="absolute left-3 top-2.5 t3" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input class="input !pl-9" placeholder="搜索岗位、单位、专业、地点…"/>
+    </div>
+    <button onclick="openEl('filter-mask');openEl('filter-panel')" class="btn-sec relative">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18M7 12h10m-7 7h4"/></svg>
+      筛选
+      <span class="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 min-w-[18px] rounded-full bg-brand-600 text-white text-[10px] flex items-center justify-center">3</span>
+    </button>
+    <button class="btn-sec hidden sm:inline-flex">最新优先 ▾</button>
+    <div class="hidden sm:flex items-center rounded-md2 border border-line dark:border-line-d overflow-hidden">
+      <button class="h-9 px-2.5 bg-brand-600 text-white" title="表格视图"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18v14H3zM3 10h18M9 5v14"/></svg></button>
+      <button onclick="location.href='positions-cards.html'" class="h-9 px-2.5 t3 hover:bg-surface-sunken dark:hover:bg-surface-sunken-d" title="卡片视图"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></button>
+    </div>
+  </div>
+
+  <!-- 已选条件 + 保存筛选：芯片化，可管理 -->
+  <div class="mt-2.5 flex items-center gap-1.5 flex-wrap">
+    <span class="text-xs2 t3">已选</span>
+    <span class="chip-on !h-6 !text-xs2">2026 ✕</span>
+    <span class="chip-on !h-6 !text-xs2">湖南 · 长沙 +2 ✕</span>
+    <span class="chip-on !h-6 !text-xs2">本科及以上 ✕</span>
+    <button class="text-xs2 t3 hover:text-brand-600 underline underline-offset-2">清空</button>
+    <span class="flex-1"></span>
+    <button onclick="openEl('saved-mask');openEl('saved-pop')" class="btn-ghost btn-sm">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2ZM17 21v-8H7v8M7 3v5h8"/></svg>
+      保存筛选 <span class="tag-blue !h-4 px-1">2</span>
+    </button>
+  </div>
+
+  <div class="mt-3 grid grid-cols-1 lg:grid-cols-[1fr_290px] gap-4 items-start">
+
+    <!-- 列表主体 -->
+    <section>
+      <!-- 截止提醒：压缩为一条可展开横条 -->
+      <button class="w-full s-card !rounded-md2 px-3.5 h-10 flex items-center gap-2 text-body mb-3 hover:border-rose-300 transition-colors">
+        <span class="tag-red">今日截止 3</span>
+        <span class="t2 truncate">文物保护 · 山东省文物保护修复与鉴定中心 等 20 条报名即将截止</span>
+        <span class="ml-auto text-xs2 t3 shrink-0">展开 ▾</span>
+      </button>
+
+      <div class="flex items-baseline justify-between mb-2 px-0.5">
+        <div class="text-body t2">共 <b class="t1">10,000+</b> 条 <span class="text-xs2 t3 ml-1">数据更新于 12 小时前</span></div>
+        <div class="hidden sm:flex gap-3 text-xs2 t3">
+          <button class="hover:text-brand-600">导出 CSV</button>
+          <button class="hover:text-brand-600">复制筛选链接</button>
+        </div>
+      </div>
+
+      <!-- 桌面：表格视图 -->
+      <div class="s-card overflow-hidden hidden md:block">
+        <table class="tbl w-full">
+          <thead><tr>
+            <th class="w-8"></th><th>岗位 / 用人单位</th><th>年份</th><th>类型</th><th>地点</th><th>学历</th><th>截止</th><th class="w-20"></th>
+          </tr></thead>
+          <tbody>
+            <tr onclick="openEl('detail-mask');openEl('detail-drawer')">
+              <td><button class="t3 hover:text-amber-500" title="收藏">☆</button></td>
+              <td>
+                <div class="font-medium">水利工程、土木工程与土木水利岗</div>
+                <div class="text-xs1 t3 mt-0.5">中国水利水电第八工程局有限公司（湖南）</div>
+              </td>
+              <td><span class="tag-blue">2026</span></td>
+              <td class="t2">央国企社招</td>
+              <td class="t2">长沙、西宁</td>
+              <td class="t2">本科及以上</td>
+              <td><span class="tag-gray">详见公告</span></td>
+              <td><span class="text-brand-600 text-xs1 font-medium">报名 ↗</span></td>
+            </tr>
+            <tr onclick="openEl('detail-mask');openEl('detail-drawer')">
+              <td><button class="text-amber-400" title="已收藏">★</button></td>
+              <td>
+                <div class="font-medium">高中语文教师（应届生）</div>
+                <div class="text-xs1 t3 mt-0.5">海南寰岛高级中学有限公司</div>
+              </td>
+              <td><span class="tag-blue">2026</span></td>
+              <td class="t2">事业单位招聘</td>
+              <td class="t2">海口 · 美兰区</td>
+              <td class="t2">本科</td>
+              <td><span class="tag-red">今日截止</span></td>
+              <td><span class="text-brand-600 text-xs1 font-medium">报名 ↗</span></td>
+            </tr>
+            <tr onclick="openEl('detail-mask');openEl('detail-drawer')">
+              <td><button class="t3 hover:text-amber-500">☆</button></td>
+              <td>
+                <div class="font-medium">化工装置操作岗；化学技术应用</div>
+                <div class="text-xs1 t3 mt-0.5">黑龙江省龙江化工有限公司</div>
+              </td>
+              <td><span class="tag-blue">2026</span></td>
+              <td class="t2">国企招聘</td>
+              <td class="t2">齐齐哈尔</td>
+              <td class="t2">大专及以上</td>
+              <td><span class="tag-red">今日截止</span></td>
+              <td><span class="text-brand-600 text-xs1 font-medium">报名 ↗</span></td>
+            </tr>
+            <tr onclick="openEl('detail-mask');openEl('detail-drawer')">
+              <td><button class="t3 hover:text-amber-500">☆</button></td>
+              <td>
+                <div class="font-medium">党校教学科研岗；文科教师</div>
+                <div class="text-xs1 t3 mt-0.5">湖北航天工业学校</div>
+              </td>
+              <td><span class="tag-blue">2026</span></td>
+              <td class="t2">事业单位招聘</td>
+              <td class="t2">孝感 · 孝南区</td>
+              <td class="t2">硕士研究生</td>
+              <td class="t2">08-15</td>
+              <td><span class="text-brand-600 text-xs1 font-medium">公告 ↗</span></td>
+            </tr>
+            <tr onclick="openEl('detail-mask');openEl('detail-drawer')">
+              <td><button class="t3 hover:text-amber-500">☆</button></td>
+              <td>
+                <div class="font-medium">能源与动力工程（水动方向）；水利电力工程师</div>
+                <div class="text-xs1 t3 mt-0.5">新疆兵团勘测设计院集团股份有限公司</div>
+              </td>
+              <td><span class="tag-blue">2026</span></td>
+              <td class="t2">央国企社招</td>
+              <td class="t2">乌鲁木齐</td>
+              <td class="t2">本科及以上</td>
+              <td><span class="tag-amber">3 天后</span></td>
+              <td><span class="text-brand-600 text-xs1 font-medium">报名 ↗</span></td>
+            </tr>
+            <tr onclick="openEl('detail-mask');openEl('detail-drawer')">
+              <td><button class="t3 hover:text-amber-500">☆</button></td>
+              <td>
+                <div class="font-medium">综合管理类岗位（面向 2026 届高校毕业生）</div>
+                <div class="text-xs1 t3 mt-0.5">湖南省长沙市天心区人民政府办公室</div>
+              </td>
+              <td><span class="tag-blue">2026</span></td>
+              <td class="t2">省级公务员考试</td>
+              <td class="t2">长沙 · 天心区</td>
+              <td class="t2">本科及以上</td>
+              <td class="t2">08-22</td>
+              <td><span class="text-brand-600 text-xs1 font-medium">公告 ↗</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="flex items-center justify-between px-4 h-12 text-xs1 t3">
+          <span>第 1–50 条 / 10,000+</span>
+          <div class="flex gap-1"><button class="btn-sec btn-sm">上一页</button><button class="btn-sec btn-sm">下一页</button></div>
+        </div>
+      </div>
+
+      <!-- 移动：紧凑两行卡片列表（替代横向滚动表格） -->
+      <div class="md:hidden s-card divide-y divide-line dark:divide-line-d overflow-hidden">
+        <div class="p-3.5 active:bg-surface-sunken dark:active:bg-surface-sunken-d" onclick="openEl('detail-mask');openEl('detail-drawer')">
+          <div class="flex items-start gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="font-medium truncate">水利工程、土木工程与土木水利岗</div>
+              <div class="text-xs1 t3 truncate mt-0.5">中国水利水电第八工程局有限公司</div>
+            </div>
+            <button class="t3 text-lg leading-none">☆</button>
+          </div>
+          <div class="flex items-center gap-1.5 mt-2 overflow-hidden">
+            <span class="tag-blue">2026</span><span class="tag-gray">央国企社招</span>
+            <span class="text-xs2 t3">长沙、西宁 · 本科及以上</span>
+            <span class="ml-auto text-xs2 t3 shrink-0">详见公告</span>
+          </div>
+        </div>
+        <div class="p-3.5" onclick="openEl('detail-mask');openEl('detail-drawer')">
+          <div class="flex items-start gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="font-medium truncate">高中语文教师（应届生）</div>
+              <div class="text-xs1 t3 truncate mt-0.5">海南寰岛高级中学有限公司</div>
+            </div>
+            <button class="text-amber-400 text-lg leading-none">★</button>
+          </div>
+          <div class="flex items-center gap-1.5 mt-2 overflow-hidden">
+            <span class="tag-blue">2026</span><span class="tag-gray">事业单位</span>
+            <span class="text-xs2 t3">海口 · 本科</span>
+            <span class="ml-auto shrink-0"><span class="tag-red">今日截止</span></span>
+          </div>
+        </div>
+        <div class="p-3.5" onclick="openEl('detail-mask');openEl('detail-drawer')">
+          <div class="flex items-start gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="font-medium truncate">化工装置操作岗；化学技术应用</div>
+              <div class="text-xs1 t3 truncate mt-0.5">黑龙江省龙江化工有限公司</div>
+            </div>
+            <button class="t3 text-lg leading-none">☆</button>
+          </div>
+          <div class="flex items-center gap-1.5 mt-2 overflow-hidden">
+            <span class="tag-blue">2026</span><span class="tag-gray">国企招聘</span>
+            <span class="text-xs2 t3">齐齐哈尔 · 大专及以上</span>
+            <span class="ml-auto shrink-0"><span class="tag-red">今日截止</span></span>
+          </div>
+        </div>
+        <div class="p-3.5" onclick="openEl('detail-mask');openEl('detail-drawer')">
+          <div class="flex items-start gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="font-medium truncate">党校教学科研岗；文科教师</div>
+              <div class="text-xs1 t3 truncate mt-0.5">湖北航天工业学校</div>
+            </div>
+            <button class="t3 text-lg leading-none">☆</button>
+          </div>
+          <div class="flex items-center gap-1.5 mt-2 overflow-hidden">
+            <span class="tag-blue">2026</span><span class="tag-gray">事业单位</span>
+            <span class="text-xs2 t3">孝感 · 硕士</span>
+            <span class="ml-auto text-xs2 t3 shrink-0">08-15 截止</span>
+          </div>
+        </div>
+        <div class="p-3.5" onclick="openEl('detail-mask');openEl('detail-drawer')">
+          <div class="flex items-start gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="font-medium truncate">综合管理类岗位（面向 2026 届毕业生）</div>
+              <div class="text-xs1 t3 truncate mt-0.5">长沙市天心区人民政府办公室</div>
+            </div>
+            <button class="t3 text-lg leading-none">☆</button>
+          </div>
+          <div class="flex items-center gap-1.5 mt-2 overflow-hidden">
+            <span class="tag-blue">2026</span><span class="tag-gray">省考</span>
+            <span class="text-xs2 t3">长沙 · 本科及以上</span>
+            <span class="ml-auto text-xs2 t3 shrink-0">08-22 截止</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 数据看板侧栏：图形化 + 折叠分组（桌面/大屏） -->
+    <aside class="hidden lg:block space-y-3 sticky top-[72px]">
+      <div class="s-card p-4">
+        <div class="flex items-baseline justify-between">
+          <h3 class="text-body font-semibold">数据看板</h3>
+          <span class="text-xs2 t3">共 889,923 条</span>
+        </div>
+        <div class="mt-3">
+          <div class="text-xs2 t3 mb-1.5">按年份 · 点击筛选</div>
+          <div class="space-y-1.5">
+            <button class="w-full group">
+              <div class="flex justify-between text-xs1"><span class="t2 group-hover:text-brand-600">2025</span><span class="t3">425,538</span></div>
+              <div class="h-1.5 rounded-full bg-surface-sunken dark:bg-surface-sunken-d mt-1"><div class="h-1.5 rounded-full bg-brand-500" style="width:96%"></div></div>
+            </button>
+            <button class="w-full group">
+              <div class="flex justify-between text-xs1"><span class="t2 group-hover:text-brand-600">2026</span><span class="t3">411,118</span></div>
+              <div class="h-1.5 rounded-full bg-surface-sunken dark:bg-surface-sunken-d mt-1"><div class="h-1.5 rounded-full bg-brand-500" style="width:93%"></div></div>
+            </button>
+            <button class="w-full group">
+              <div class="flex justify-between text-xs1"><span class="t2 group-hover:text-brand-600">2024</span><span class="t3">27,526</span></div>
+              <div class="h-1.5 rounded-full bg-surface-sunken dark:bg-surface-sunken-d mt-1"><div class="h-1.5 rounded-full bg-brand-400" style="width:8%"></div></div>
+            </button>
+            <button class="w-full group">
+              <div class="flex justify-between text-xs1"><span class="t2 group-hover:text-brand-600">2027</span><span class="t3">2,261</span></div>
+              <div class="h-1.5 rounded-full bg-surface-sunken dark:bg-surface-sunken-d mt-1"><div class="h-1.5 rounded-full bg-brand-300" style="width:2%"></div></div>
+            </button>
+          </div>
+          <button class="text-xs2 text-brand-600 mt-2">展开全部 7 项 ▾</button>
+        </div>
+        <div class="mt-4 pt-3 border-t border-line dark:border-line-d">
+          <div class="text-xs2 t3 mb-1.5">按考试类型</div>
+          <div class="flex flex-wrap gap-1.5">
+            <span class="chip !h-6 !text-xs2">事业单位 21.5万</span>
+            <span class="chip !h-6 !text-xs2">省考 19.3万</span>
+            <span class="chip !h-6 !text-xs2">专业技术 12.7万</span>
+            <span class="chip !h-6 !text-xs2">国考 6.0万</span>
+            <span class="chip !h-6 !text-xs2">军队文职 4.5万</span>
+            <span class="chip !h-6 !text-xs2">更多 ▾</span>
+          </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-line dark:border-line-d">
+          <div class="text-xs2 t3 mb-1.5">按省份 Top</div>
+          <div class="flex flex-wrap gap-1.5">
+            <span class="chip !h-6 !text-xs2">安徽 7.6万</span>
+            <span class="chip !h-6 !text-xs2">内蒙古 6.9万</span>
+            <span class="chip !h-6 !text-xs2">河南 6.5万</span>
+            <span class="chip !h-6 !text-xs2">湖北 5.8万</span>
+            <span class="chip !h-6 !text-xs2">北京 4.9万</span>
+            <span class="chip !h-6 !text-xs2">全部 31 省 ▾</span>
+          </div>
+        </div>
+      </div>
+      <div class="s-card p-4 bg-gradient-to-br from-brand-50 to-white dark:from-brand-950 dark:to-surface-card-d">
+        <div class="text-body font-semibold">✨ 一键匹配我的条件</div>
+        <p class="text-xs1 t2 mt-1">按专业 + 城市 + 学历秒筛可报岗位</p>
+        <div class="flex gap-2 mt-3">
+          <input class="input !h-8 !text-xs1" placeholder="你的专业，如：计算机"/>
+          <button class="btn-pri btn-sm shrink-0">匹配</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<!-- ▼ 统一筛选面板（桌面右侧抽屉 / 移动底部 Sheet 同一套骨架） -->
+<div id="filter-mask" class="overlay-mask hidden" onclick="closeEl('filter-mask');closeEl('filter-panel')"></div>
+<div id="filter-panel" class="hidden drawer sm:!w-[420px]">
+  <div class="sticky top-0 bg-surface-card dark:bg-surface-card-d border-b border-line dark:border-line-d px-4 h-13 py-3 flex items-center justify-between z-10">
+    <h2 class="text-md1 font-semibold">筛选 <span class="text-xs2 t3 font-normal">三板块通用</span></h2>
+    <div class="flex items-center gap-2">
+      <button class="btn-ghost btn-sm">重置</button>
+      <button onclick="closeEl('filter-mask');closeEl('filter-panel')" class="btn-ghost btn-sm">✕</button>
+    </div>
+  </div>
+  <div class="p-4 space-y-5 pb-24">
+    <section>
+      <div class="text-xs1 font-medium t2 mb-2">时间</div>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="chip-on">2026</span><span class="chip">2027</span><span class="chip">2025</span>
+        <span class="w-px h-5 bg-line dark:bg-line-d mx-1"></span>
+        <span class="chip">仅看报名中</span><span class="chip">3 天内截止</span><span class="chip">近 7 天更新</span>
+      </div>
+    </section>
+    <section>
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-xs1 font-medium t2">地点（可多选）</div>
+        <span class="text-xs2 text-brand-600">已选 3 个城市</span>
+      </div>
+      <div class="grid grid-cols-[96px_1fr] border border-line dark:border-line-d rounded-md2 overflow-hidden h-52">
+        <div class="border-r border-line dark:border-line-d bg-surface-sunken/60 dark:bg-surface-sunken-d/60 overflow-y-auto text-xs1">
+          <button class="w-full text-left px-3 py-2 bg-surface-card dark:bg-surface-card-d text-brand-600 font-medium border-l-2 border-brand-600">湖南</button>
+          <button class="w-full text-left px-3 py-2 t2">广东</button>
+          <button class="w-full text-left px-3 py-2 t2">北京</button>
+          <button class="w-full text-left px-3 py-2 t2">四川</button>
+          <button class="w-full text-left px-3 py-2 t2">浙江</button>
+          <button class="w-full text-left px-3 py-2 t2">江苏</button>
+          <button class="w-full text-left px-3 py-2 t2">湖北</button>
+        </div>
+        <div class="p-2.5 overflow-y-auto">
+          <div class="flex flex-wrap gap-1.5">
+            <span class="chip-on !h-6 !text-xs2">长沙 ✓</span>
+            <span class="chip-on !h-6 !text-xs2">株洲 ✓</span>
+            <span class="chip-on !h-6 !text-xs2">湘潭 ✓</span>
+            <span class="chip !h-6 !text-xs2">衡阳</span>
+            <span class="chip !h-6 !text-xs2">邵阳</span>
+            <span class="chip !h-6 !text-xs2">岳阳</span>
+            <span class="chip !h-6 !text-xs2">常德</span>
+            <span class="chip !h-6 !text-xs2">张家界</span>
+            <span class="chip !h-6 !text-xs2">益阳</span>
+            <span class="chip !h-6 !text-xs2">郴州</span>
+            <span class="chip !h-6 !text-xs2">永州</span>
+            <span class="chip !h-6 !text-xs2">怀化</span>
+            <span class="chip !h-6 !text-xs2">娄底</span>
+            <span class="chip !h-6 !text-xs2">湘西州</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section>
+      <div class="text-xs1 font-medium t2 mb-2">学历（含可报的「及以上/不限」）</div>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="chip">大专</span><span class="chip-on">本科</span><span class="chip">硕士</span><span class="chip">博士</span><span class="chip">不限</span>
+      </div>
+    </section>
+    <section>
+      <div class="text-xs1 font-medium t2 mb-2">岗位类型 / 考试类型</div>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="chip">公务员（国考）</span><span class="chip">公务员（省考）</span><span class="chip">事业单位</span>
+        <span class="chip">军队文职</span><span class="chip">央国企</span><span class="chip">选调生</span><span class="chip">专业技术岗</span>
+      </div>
+    </section>
+    <section>
+      <div class="text-xs1 font-medium t2 mb-2">更多</div>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="chip">隐藏已截止</span><span class="chip">隐藏已看过</span><span class="chip">仅看有编制</span><span class="chip">不限专业可报</span>
+      </div>
+    </section>
+  </div>
+  <div class="fixed bottom-0 right-0 w-full sm:w-[420px] bg-surface-card dark:bg-surface-card-d border-t border-line dark:border-line-d p-3 flex gap-2 z-10">
+    <button class="btn-sec flex-none" onclick="openEl('saved-mask');openEl('saved-pop')">☆ 保存此筛选</button>
+    <button class="btn-pri flex-1" onclick="closeEl('filter-mask');closeEl('filter-panel')">查看 3,842 条结果</button>
+  </div>
+</div>
+
+<!-- ▼ 保存筛选管理弹层 -->
+<div id="saved-mask" class="overlay-mask hidden" onclick="closeEl('saved-mask');closeEl('saved-pop')"></div>
+<div id="saved-pop" class="hidden fixed z-50 inset-x-3 top-24 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[480px] s-card overflow-hidden">
+  <div class="px-4 h-12 flex items-center justify-between border-b border-line dark:border-line-d">
+    <h3 class="text-body font-semibold">保存的筛选</h3>
+    <button onclick="closeEl('saved-mask');closeEl('saved-pop')" class="btn-ghost btn-sm">✕</button>
+  </div>
+  <div class="p-4 space-y-3">
+    <div class="flex gap-2">
+      <input class="input" value="湖南本科 · 事业编" />
+      <button class="btn-pri shrink-0">保存当前</button>
+    </div>
+    <div class="space-y-2">
+      <div class="flex items-center gap-2 p-2.5 rounded-md2 border border-line dark:border-line-d">
+        <span class="text-body">📌 长沙本科 · 2026</span>
+        <span class="text-xs2 t3">命中 1,204 条</span>
+        <span class="flex-1"></span>
+        <button class="btn-ghost btn-sm">应用</button><button class="btn-ghost btn-sm">改名</button><button class="btn-ghost btn-sm text-rose-500">删除</button>
+      </div>
+      <div class="flex items-center gap-2 p-2.5 rounded-md2 border border-line dark:border-line-d">
+        <span class="text-body">教师 · 海南</span>
+        <span class="text-xs2 t3">命中 316 条</span>
+        <span class="flex-1"></span>
+        <button class="btn-ghost btn-sm">应用</button><button class="btn-ghost btn-sm">改名</button><button class="btn-ghost btn-sm text-rose-500">删除</button>
+      </div>
+    </div>
+    <div class="flex items-center justify-between p-2.5 rounded-md2 bg-surface-sunken dark:bg-surface-sunken-d text-xs1 t2">
+      <span>🔔 订阅：保存的筛选有上新时提醒我</span>
+      <span class="w-9 h-5 rounded-full bg-brand-600 relative"><span class="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white"></span></span>
+    </div>
+    <div class="flex gap-3 text-xs2 t3">
+      <button class="hover:text-brand-600">↓ 导出全部</button>
+      <button class="hover:text-brand-600">🔗 复制筛选链接</button>
+    </div>
+  </div>
+</div>
+
+<!-- ▼ 岗位详情抽屉：锚点导航 + 带文字操作 -->
+<div id="detail-mask" class="overlay-mask hidden" onclick="closeEl('detail-mask');closeEl('detail-drawer')"></div>
+<div id="detail-drawer" class="hidden drawer">
+  <div class="sticky top-0 bg-surface-card dark:bg-surface-card-d z-10 border-b border-line dark:border-line-d">
+    <div class="px-5 pt-4 pb-3">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="tag-blue">2026</span><span class="tag-gray">事业单位招聘</span><span class="tag-green">应届可报</span><span class="tag-red">今日截止</span>
+          </div>
+          <h2 class="text-lg1 font-semibold mt-2">高中语文教师（应届生）</h2>
+          <div class="text-xs1 t2 mt-1">海南寰岛高级中学有限公司 · 海口市美兰区</div>
+        </div>
+        <button onclick="closeEl('detail-mask');closeEl('detail-drawer')" class="btn-ghost btn-sm shrink-0">✕</button>
+      </div>
+      <div class="flex gap-2 mt-3">
+        <button class="btn-pri btn-sm flex-1 sm:flex-none">立即报名 ↗</button>
+        <button class="btn-sec btn-sm">★ 已收藏</button>
+        <button class="btn-sec btn-sm">状态：未投递 ▾</button>
+        <button class="btn-sec btn-sm hidden sm:inline-flex">⇄ 对比</button>
+        <button class="btn-ghost btn-sm">分享</button>
+      </div>
+    </div>
+    <div class="flex gap-4 px-5 text-xs1 border-t border-line dark:border-line-d overflow-x-auto hide-scroll">
+      <a href="#d-basic" class="py-2.5 border-b-2 border-brand-600 text-brand-600 font-medium whitespace-nowrap">基本信息</a>
+      <a href="#d-req" class="py-2.5 border-b-2 border-transparent t2 whitespace-nowrap">报考条件</a>
+      <a href="#d-comp" class="py-2.5 border-b-2 border-transparent t2 whitespace-nowrap">竞争参考</a>
+      <a href="#d-time" class="py-2.5 border-b-2 border-transparent t2 whitespace-nowrap">时间安排</a>
+      <a href="#d-src" class="py-2.5 border-b-2 border-transparent t2 whitespace-nowrap">来源</a>
+    </div>
+  </div>
+  <div class="p-5 space-y-6 pb-16">
+    <section id="d-basic">
+      <h3 class="text-body font-semibold mb-3">基本信息</h3>
+      <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-body">
+        <div><dt class="text-xs2 t3">用人单位</dt><dd class="mt-0.5">海南寰岛高级中学有限公司</dd></div>
+        <div><dt class="text-xs2 t3">工作地点</dt><dd class="mt-0.5">海口市 · 美兰区</dd></div>
+        <div><dt class="text-xs2 t3">招聘类型</dt><dd class="mt-0.5">事业单位公开招聘</dd></div>
+        <div><dt class="text-xs2 t3">招聘人数</dt><dd class="mt-0.5">2 人</dd></div>
+      </dl>
+    </section>
+    <section id="d-req" class="pt-1">
+      <h3 class="text-body font-semibold mb-3">报考条件</h3>
+      <dl class="space-y-3 text-body">
+        <div><dt class="text-xs2 t3">学历要求</dt><dd class="mt-0.5">本科及以上（含应届）</dd></div>
+        <div><dt class="text-xs2 t3">专业要求</dt><dd class="mt-0.5">汉语言文学、学科教学（语文）及相关专业</dd></div>
+        <div><dt class="text-xs2 t3">其他要求</dt><dd class="mt-0.5">具有高级中学教师资格证；普通话二级甲等及以上</dd></div>
+      </dl>
+    </section>
+    <section id="d-comp" class="pt-1">
+      <h3 class="text-body font-semibold mb-3">竞争参考</h3>
+      <div class="rounded-md2 bg-brand-50 dark:bg-brand-950 p-3.5 text-body">
+        <div class="flex items-baseline gap-2"><span class="text-xl1 font-semibold text-brand-700 dark:text-brand-300">160</span><span class="text-xs1 t2">同组岗位（2026 · 海南 · 事业单位）</span></div>
+        <div class="text-xs1 t2 mt-1">其中不限专业约 <b class="text-brand-700 dark:text-brand-300">1%</b>，本岗位限专业，竞争预计低于均值</div>
+      </div>
+    </section>
+    <section id="d-time" class="pt-1">
+      <h3 class="text-body font-semibold mb-3">时间安排</h3>
+      <ol class="relative border-l border-line dark:border-line-d ml-1.5 space-y-4 text-body">
+        <li class="pl-4"><span class="absolute -left-[5px] w-2.5 h-2.5 rounded-full bg-brand-600 mt-1.5"></span><div class="text-xs2 t3">报名截止</div><div class="font-medium text-rose-600">今天 18:00</div></li>
+        <li class="pl-4"><span class="absolute -left-[5px] w-2.5 h-2.5 rounded-full bg-line dark:bg-line-d mt-1.5"></span><div class="text-xs2 t3">笔试</div><div>08-16（以准考证为准）</div></li>
+        <li class="pl-4"><span class="absolute -left-[5px] w-2.5 h-2.5 rounded-full bg-line dark:bg-line-d mt-1.5"></span><div class="text-xs2 t3">面试</div><div>另行通知</div></li>
+      </ol>
+      <button class="btn-sec btn-sm mt-3">＋ 加入报考日历</button>
+    </section>
+    <section id="d-src" class="pt-1">
+      <h3 class="text-body font-semibold mb-3">来源</h3>
+      <div class="flex items-center gap-2 p-3 rounded-md2 border border-line dark:border-line-d text-body">
+        <span class="tag-green">官方来源</span>
+        <span class="t2 truncate">hainan.hrss.gov.cn · 海南省人社厅</span>
+        <a class="ml-auto text-brand-600 text-xs1 font-medium shrink-0" href="#">打开原文 ↗</a>
+      </div>
+      <p class="text-xs2 t3 mt-2">数据整合自官方公告，报名前请以原文为准 · 发现问题？<a class="underline" href="#">反馈纠错</a></p>
+    </section>
+  </div>
+  <div class="sticky bottom-0 sm:hidden bg-surface-card dark:bg-surface-card-d border-t border-line dark:border-line-d p-3 flex gap-2">
+    <button class="btn-sec flex-none">★</button>
+    <button class="btn-pri flex-1">立即报名 ↗</button>
+  </div>
+</div>
+
+</body>
+</html>

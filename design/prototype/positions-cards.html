@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>体制内岗位 · 卡片视图 · 上岸罗盘 原型</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/tokens.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="positions" data-mobile="jobs" class="s-page t1 min-h-screen">
+
+<main class="max-w-[1280px] mx-auto px-4 py-4">
+  <div class="flex items-center gap-1.5 overflow-x-auto hide-scroll pb-1">
+    <span class="chip-on">全部 <span class="opacity-80">10,000+</span></span>
+    <span class="chip">公务员</span><span class="chip">事业编</span><span class="chip">军队文职</span>
+    <span class="chip">国企央企</span><span class="chip">选调生</span>
+    <span class="chip text-rose-600 border-rose-200 dark:border-rose-900">⏰ 即将截止 20</span>
+  </div>
+
+  <div class="mt-3 flex items-center gap-2">
+    <div class="relative flex-1 max-w-xl">
+      <svg class="absolute left-3 top-2.5 t3" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input class="input !pl-9" placeholder="搜索岗位、单位、专业、地点…"/>
+    </div>
+    <button class="btn-sec">筛选</button>
+    <button class="btn-sec hidden sm:inline-flex">最新优先 ▾</button>
+    <div class="hidden sm:flex items-center rounded-md2 border border-line dark:border-line-d overflow-hidden">
+      <button onclick="location.href='positions.html'" class="h-9 px-2.5 t3 hover:bg-surface-sunken dark:hover:bg-surface-sunken-d" title="表格视图"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18v14H3zM3 10h18M9 5v14"/></svg></button>
+      <button class="h-9 px-2.5 bg-brand-600 text-white" title="卡片视图"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></button>
+    </div>
+  </div>
+
+  <!-- 卡片视图：桌面 3 列，突出截止与竞争信息 -->
+  <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+    <div class="s-card p-4 hover:shadow-raised transition-shadow cursor-pointer">
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-1.5 flex-wrap"><span class="tag-blue">2026</span><span class="tag-gray">央国企社招</span></div>
+        <button class="t3 hover:text-amber-500">☆</button>
+      </div>
+      <div class="font-medium mt-2 leading-snug">水利工程、土木工程与土木水利岗</div>
+      <div class="text-xs1 t3 mt-1 truncate">中国水利水电第八工程局有限公司（湖南）</div>
+      <div class="flex items-center gap-3 text-xs1 t2 mt-3">
+        <span>📍 长沙、西宁</span><span>🎓 本科及以上</span>
+      </div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t border-line dark:border-line-d">
+        <span class="tag-gray">截止详见公告</span>
+        <span class="text-brand-600 text-xs1 font-medium">报名 ↗</span>
+      </div>
+    </div>
+    <div class="s-card p-4 hover:shadow-raised transition-shadow cursor-pointer ring-1 ring-rose-200 dark:ring-rose-900">
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-1.5 flex-wrap"><span class="tag-blue">2026</span><span class="tag-gray">事业单位</span><span class="tag-red">今日截止</span></div>
+        <button class="text-amber-400">★</button>
+      </div>
+      <div class="font-medium mt-2 leading-snug">高中语文教师（应届生）</div>
+      <div class="text-xs1 t3 mt-1 truncate">海南寰岛高级中学有限公司</div>
+      <div class="flex items-center gap-3 text-xs1 t2 mt-3">
+        <span>📍 海口 · 美兰区</span><span>🎓 本科</span>
+      </div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t border-line dark:border-line-d">
+        <span class="text-rose-600 text-xs1 font-medium">今天 18:00 截止</span>
+        <span class="text-brand-600 text-xs1 font-medium">报名 ↗</span>
+      </div>
+    </div>
+    <div class="s-card p-4 hover:shadow-raised transition-shadow cursor-pointer">
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-1.5 flex-wrap"><span class="tag-blue">2026</span><span class="tag-gray">省考</span><span class="tag-green">应届可报</span></div>
+        <button class="t3 hover:text-amber-500">☆</button>
+      </div>
+      <div class="font-medium mt-2 leading-snug">综合管理类岗位（面向 2026 届高校毕业生）</div>
+      <div class="text-xs1 t3 mt-1 truncate">长沙市天心区人民政府办公室</div>
+      <div class="flex items-center gap-3 text-xs1 t2 mt-3">
+        <span>📍 长沙 · 天心区</span><span>🎓 本科及以上</span>
+      </div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t border-line dark:border-line-d">
+        <span class="text-xs1 t2">08-22 截止</span>
+        <span class="text-brand-600 text-xs1 font-medium">公告 ↗</span>
+      </div>
+    </div>
+    <div class="s-card p-4 hover:shadow-raised transition-shadow cursor-pointer">
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-1.5 flex-wrap"><span class="tag-blue">2026</span><span class="tag-gray">事业单位</span></div>
+        <button class="t3 hover:text-amber-500">☆</button>
+      </div>
+      <div class="font-medium mt-2 leading-snug">党校教学科研岗；文科教师</div>
+      <div class="text-xs1 t3 mt-1 truncate">湖北航天工业学校</div>
+      <div class="flex items-center gap-3 text-xs1 t2 mt-3">
+        <span>📍 孝感 · 孝南区</span><span>🎓 硕士研究生</span>
+      </div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t border-line dark:border-line-d">
+        <span class="text-xs1 t2">08-15 截止</span>
+        <span class="text-brand-600 text-xs1 font-medium">公告 ↗</span>
+      </div>
+    </div>
+    <div class="s-card p-4 hover:shadow-raised transition-shadow cursor-pointer">
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-1.5 flex-wrap"><span class="tag-blue">2026</span><span class="tag-gray">央国企社招</span><span class="tag-amber">3 天后截止</span></div>
+        <button class="t3 hover:text-amber-500">☆</button>
+      </div>
+      <div class="font-medium mt-2 leading-snug">能源与动力工程（水动方向）；水利电力工程师</div>
+      <div class="text-xs1 t3 mt-1 truncate">新疆兵团勘测设计院集团股份有限公司</div>
+      <div class="flex items-center gap-3 text-xs1 t2 mt-3">
+        <span>📍 乌鲁木齐</span><span>🎓 本科及以上</span>
+      </div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t border-line dark:border-line-d">
+        <span class="text-amber-600 text-xs1 font-medium">08-07 截止</span>
+        <span class="text-brand-600 text-xs1 font-medium">报名 ↗</span>
+      </div>
+    </div>
+    <div class="s-card p-4 hover:shadow-raised transition-shadow cursor-pointer">
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-1.5 flex-wrap"><span class="tag-blue">2026</span><span class="tag-gray">国企招聘</span><span class="tag-red">今日截止</span></div>
+        <button class="t3 hover:text-amber-500">☆</button>
+      </div>
+      <div class="font-medium mt-2 leading-snug">化工装置操作岗；化学技术应用</div>
+      <div class="text-xs1 t3 mt-1 truncate">黑龙江省龙江化工有限公司</div>
+      <div class="flex items-center gap-3 text-xs1 t2 mt-3">
+        <span>📍 齐齐哈尔</span><span>🎓 大专及以上</span>
+      </div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t border-line dark:border-line-d">
+        <span class="text-rose-600 text-xs1 font-medium">今天 17:00 截止</span>
+        <span class="text-brand-600 text-xs1 font-medium">报名 ↗</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-center mt-5">
+    <button class="btn-sec">加载更多（第 1–24 / 10,000+ 条）</button>
+  </div>
+</main>
+
+</body>
+</html>

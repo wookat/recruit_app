@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>今日更新 · 上岸罗盘 原型</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/tokens.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="updates" data-mobile="jobs" class="s-page t1 min-h-screen">
+
+<main class="max-w-[960px] mx-auto px-4 py-5">
+  <div class="flex items-center gap-2 flex-wrap">
+    <h1 class="text-lg1 font-semibold">今日更新</h1>
+    <span class="text-xs1 t3">每天自动抓取官方公告，最近 7 天</span>
+    <span class="flex-1"></span>
+    <span class="chip-on !h-7">全部板块</span>
+    <span class="chip !h-7"><span class="w-2 h-2 rounded-full bg-tizhi mr-0.5"></span>体制内</span>
+    <span class="chip !h-7"><span class="w-2 h-2 rounded-full bg-campus mr-0.5"></span>校招</span>
+    <span class="chip !h-7"><span class="w-2 h-2 rounded-full bg-bianzhi mr-0.5"></span>编制</span>
+  </div>
+
+  <!-- 今日统计卡 -->
+  <div class="mt-4 grid grid-cols-3 gap-3">
+    <div class="s-card p-3.5">
+      <div class="text-xs2 t3">体制内新增</div>
+      <div class="text-xl1 font-semibold mt-0.5 text-tizhi">+128</div>
+    </div>
+    <div class="s-card p-3.5">
+      <div class="text-xs2 t3">校招新增</div>
+      <div class="text-xl1 font-semibold mt-0.5 text-campus">+47</div>
+    </div>
+    <div class="s-card p-3.5">
+      <div class="text-xs2 t3">编制公告新增</div>
+      <div class="text-xl1 font-semibold mt-0.5 text-bianzhi">+92</div>
+    </div>
+  </div>
+
+  <!-- 时间轴分组 -->
+  <section class="mt-5">
+    <div class="flex items-center gap-2 mb-2">
+      <h2 class="text-body font-semibold">今天 · 08-04</h2>
+      <span class="tag-blue">267 条</span>
+    </div>
+    <div class="s-card divide-y divide-line dark:divide-line-d overflow-hidden">
+      <a class="flex items-center gap-3 p-3.5 hover:bg-brand-50/50 dark:hover:bg-brand-950/30" href="positions.html">
+        <span class="w-9 h-9 rounded-md2 bg-blue-100 dark:bg-blue-900/50 text-blue-600 flex items-center justify-center font-semibold shrink-0 text-xs1">湘</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">湖南省 2026 年下半年事业单位联考公告（1,204 岗位）</div>
+          <div class="flex items-center gap-1.5 mt-1"><span class="tag-blue">体制内</span><span class="tag-green">应届可报</span><span class="text-xs2 t3">本科及以上 · 全省</span></div>
+        </div>
+        <span class="text-xs2 t3 shrink-0">09:12</span>
+      </a>
+      <a class="flex items-center gap-3 p-3.5 hover:bg-brand-50/50 dark:hover:bg-brand-950/30" href="campus.html">
+        <span class="w-9 h-9 rounded-md2 bg-orange-100 dark:bg-orange-900/50 text-orange-600 flex items-center justify-center font-semibold shrink-0 text-xs1">米</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">小米 2027 届秋招提前批开启（技术/产品/供应链 300+ 岗位）</div>
+          <div class="flex items-center gap-1.5 mt-1"><span class="tag-teal">校招</span><span class="tag-green">含免笔试</span><span class="text-xs2 t3">全国多地</span></div>
+        </div>
+        <span class="text-xs2 t3 shrink-0">08:40</span>
+      </a>
+      <a class="flex items-center gap-3 p-3.5 hover:bg-brand-50/50 dark:hover:bg-brand-950/30" href="bianzhi.html">
+        <span class="w-9 h-9 rounded-md2 bg-violet-100 dark:bg-violet-900/50 text-violet-600 flex items-center justify-center font-semibold shrink-0 text-xs1">粤</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">广州市天河区教育系统公开招聘教师 156 名</div>
+          <div class="flex items-center gap-1.5 mt-1"><span class="tag-purple">编制</span><span class="tag-blue">本科及以上</span><span class="text-xs2 t3">广州 · 天河区</span></div>
+        </div>
+        <span class="text-xs2 t3 shrink-0">08:15</span>
+      </a>
+      <button class="w-full p-3 text-xs1 text-brand-600 font-medium hover:bg-surface-sunken dark:hover:bg-surface-sunken-d">展开今天全部 267 条 ▾</button>
+    </div>
+  </section>
+
+  <section class="mt-5">
+    <div class="flex items-center gap-2 mb-2">
+      <h2 class="text-body font-semibold">昨天 · 08-03</h2>
+      <span class="tag-gray">312 条</span>
+    </div>
+    <div class="s-card divide-y divide-line dark:divide-line-d overflow-hidden">
+      <a class="flex items-center gap-3 p-3.5 hover:bg-brand-50/50 dark:hover:bg-brand-950/30" href="bianzhi.html">
+        <span class="w-9 h-9 rounded-md2 bg-violet-100 dark:bg-violet-900/50 text-violet-600 flex items-center justify-center font-semibold shrink-0 text-xs1">浙</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">浙江大学医学遗传与发育研究院公开招聘 4 名工作人员</div>
+          <div class="flex items-center gap-1.5 mt-1"><span class="tag-purple">编制</span><span class="tag-blue">本科及以上</span><span class="text-xs2 t3">杭州</span></div>
+        </div>
+        <span class="text-xs2 t3 shrink-0">16:02</span>
+      </a>
+      <a class="flex items-center gap-3 p-3.5 hover:bg-brand-50/50 dark:hover:bg-brand-950/30" href="campus.html">
+        <span class="w-9 h-9 rounded-md2 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 flex items-center justify-center font-semibold shrink-0 text-xs1">德</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">德勤 2026/2027 届审计税务咨询类岗位网申开启</div>
+          <div class="flex items-center gap-1.5 mt-1"><span class="tag-teal">校招</span><span class="tag-amber">有笔试</span><span class="text-xs2 t3">全国</span></div>
+        </div>
+        <span class="text-xs2 t3 shrink-0">11:30</span>
+      </a>
+      <button class="w-full p-3 text-xs1 text-brand-600 font-medium hover:bg-surface-sunken dark:hover:bg-surface-sunken-d">展开昨天全部 312 条 ▾</button>
+    </div>
+  </section>
+
+  <div class="mt-5 s-card p-4 flex items-center gap-3 bg-gradient-to-r from-brand-50 to-white dark:from-brand-950 dark:to-surface-card-d">
+    <span class="text-xl1">🔔</span>
+    <div class="flex-1">
+      <div class="text-body font-medium">不想每天来刷？订阅更新推送</div>
+      <div class="text-xs1 t2">按你保存的筛选条件，有新岗位时推送浏览器通知</div>
+    </div>
+    <a href="favorites.html" class="btn-pri btn-sm shrink-0">去开启</a>
+  </div>
+</main>
+
+</body>
+</html>

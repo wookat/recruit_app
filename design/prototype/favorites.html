@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的收藏 · 上岸罗盘 原型</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/tokens.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="" data-mobile="fav" class="s-page t1 min-h-screen">
+
+<main class="max-w-[960px] mx-auto px-4 py-5">
+  <div class="flex items-center gap-2">
+    <h1 class="text-lg1 font-semibold">我的收藏</h1>
+    <span class="tag-blue">6</span>
+    <span class="flex-1"></span>
+    <button class="btn-ghost btn-sm">🕒 最近浏览</button>
+    <button class="btn-ghost btn-sm">📊 本周小结</button>
+  </div>
+
+  <!-- 主页签：收藏内容 vs 设置（旧版设置块挤在列表上方） -->
+  <div class="mt-3 flex gap-1 border-b border-line dark:border-line-d">
+    <button onclick="openEl('fav-list');closeEl('fav-settings')" id="tab-list" class="px-3.5 py-2.5 text-body border-b-2 border-brand-600 text-brand-600 font-medium">收藏列表</button>
+    <button onclick="openEl('fav-settings');closeEl('fav-list')" id="tab-set" class="px-3.5 py-2.5 text-body border-b-2 border-transparent t2">提醒与同步设置</button>
+  </div>
+
+  <!-- 收藏列表：投递漏斗视角 -->
+  <div id="fav-list" class="mt-4 space-y-4">
+    <div class="flex items-center gap-1.5 overflow-x-auto hide-scroll">
+      <span class="chip-on">全部 6</span>
+      <span class="chip"><span class="w-2 h-2 rounded-full bg-tizhi mr-0.5"></span>体制内 3</span>
+      <span class="chip"><span class="w-2 h-2 rounded-full bg-campus mr-0.5"></span>校招 2</span>
+      <span class="chip"><span class="w-2 h-2 rounded-full bg-bianzhi mr-0.5"></span>编制 1</span>
+      <span class="w-px h-5 bg-line dark:bg-line-d mx-1 shrink-0"></span>
+      <span class="chip">未投递 3</span><span class="chip">已投递 2</span><span class="chip">已笔试 1</span>
+    </div>
+
+    <!-- 即将截止置顶分组 -->
+    <div>
+      <div class="text-xs1 font-medium text-rose-600 mb-2">⏰ 3 天内截止（2）</div>
+      <div class="s-card divide-y divide-line dark:divide-line-d overflow-hidden">
+        <div class="p-3.5 flex items-start gap-3">
+          <span class="w-1 self-stretch rounded-full bg-tizhi shrink-0"></span>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium truncate">高中语文教师（应届生）</div>
+            <div class="text-xs1 t3 truncate mt-0.5">海南寰岛高级中学 · 海口</div>
+            <div class="flex items-center gap-1.5 mt-1.5"><span class="tag-red">今日 18:00 截止</span><span class="tag-gray">未投递</span></div>
+          </div>
+          <div class="flex flex-col items-end gap-1.5 shrink-0">
+            <button class="btn-pri btn-sm">去报名 ↗</button>
+            <button class="btn-ghost btn-sm">状态 ▾</button>
+          </div>
+        </div>
+        <div class="p-3.5 flex items-start gap-3">
+          <span class="w-1 self-stretch rounded-full bg-campus shrink-0"></span>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium truncate">OC&C 欧晰析咨询 · 助理咨询顾问</div>
+            <div class="text-xs1 t3 truncate mt-0.5">外企 · 秋招 · 2027 届</div>
+            <div class="flex items-center gap-1.5 mt-1.5"><span class="tag-amber">08-07 截止</span><span class="tag-blue">已投递</span></div>
+          </div>
+          <div class="flex flex-col items-end gap-1.5 shrink-0">
+            <button class="btn-sec btn-sm">查看进度</button>
+            <button class="btn-ghost btn-sm">状态 ▾</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="text-xs1 font-medium t2 mb-2">全部收藏</div>
+      <div class="s-card divide-y divide-line dark:divide-line-d overflow-hidden">
+        <div class="p-3.5 flex items-start gap-3">
+          <span class="w-1 self-stretch rounded-full bg-tizhi shrink-0"></span>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium truncate">综合管理类岗位（2026 届）</div>
+            <div class="text-xs1 t3 truncate mt-0.5">长沙市天心区人民政府办公室</div>
+            <div class="flex items-center gap-1.5 mt-1.5"><span class="tag-gray">08-22 截止</span><span class="tag-gray">未投递</span></div>
+          </div>
+          <button class="btn-ghost btn-sm shrink-0">状态 ▾</button>
+        </div>
+        <div class="p-3.5 flex items-start gap-3">
+          <span class="w-1 self-stretch rounded-full bg-tizhi shrink-0"></span>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium truncate">党校教学科研岗；文科教师</div>
+            <div class="text-xs1 t3 truncate mt-0.5">湖北航天工业学校 · 孝感</div>
+            <div class="flex items-center gap-1.5 mt-1.5"><span class="tag-gray">08-15 截止</span><span class="tag-green">已笔试</span></div>
+          </div>
+          <button class="btn-ghost btn-sm shrink-0">状态 ▾</button>
+        </div>
+        <div class="p-3.5 flex items-start gap-3">
+          <span class="w-1 self-stretch rounded-full bg-campus shrink-0"></span>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium truncate">小米 · 校园大使</div>
+            <div class="text-xs1 t3 truncate mt-0.5">民企 · 秋招 · 2027/2028 届</div>
+            <div class="flex items-center gap-1.5 mt-1.5"><span class="tag-gray">滚动招聘</span><span class="tag-blue">已投递</span></div>
+          </div>
+          <button class="btn-ghost btn-sm shrink-0">状态 ▾</button>
+        </div>
+        <div class="p-3.5 flex items-start gap-3">
+          <span class="w-1 self-stretch rounded-full bg-bianzhi shrink-0"></span>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium truncate">西安建筑科技大学 师资博士后</div>
+            <div class="text-xs1 t3 truncate mt-0.5">高校高职大专 · 西安</div>
+            <div class="flex items-center gap-1.5 mt-1.5"><span class="tag-gray">详见正文</span><span class="tag-gray">未投递</span></div>
+          </div>
+          <button class="btn-ghost btn-sm shrink-0">状态 ▾</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <button class="btn-sec btn-sm">⇄ 对比选中岗位</button>
+      <button class="btn-sec btn-sm">↓ 导出收藏</button>
+    </div>
+  </div>
+
+  <!-- 设置页签：提醒 + 推送订阅 + 同步码 -->
+  <div id="fav-settings" class="hidden mt-4 space-y-4 max-w-xl">
+    <div class="s-card p-4">
+      <h3 class="text-body font-semibold">截止提醒</h3>
+      <div class="mt-3 space-y-3">
+        <div class="flex items-center justify-between text-body">
+          <span>提前提醒天数</span>
+          <div class="flex gap-1"><span class="chip !h-6 !text-xs2">1 天</span><span class="chip-on !h-6 !text-xs2">3 天</span><span class="chip !h-6 !text-xs2">7 天</span></div>
+        </div>
+        <div class="flex items-center justify-between text-body">
+          <span>打开网站时弹出临期提醒</span>
+          <span class="w-9 h-5 rounded-full bg-brand-600 relative cursor-pointer"><span class="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white"></span></span>
+        </div>
+      </div>
+    </div>
+    <div class="s-card p-4">
+      <h3 class="text-body font-semibold">推送订阅（关站也能收到）</h3>
+      <div class="mt-3 space-y-3">
+        <div class="flex items-center justify-between text-body">
+          <div><div>收藏岗位临期推送</div><div class="text-xs2 t3 mt-0.5">截止前按提醒天数推送浏览器通知</div></div>
+          <span class="w-9 h-5 rounded-full bg-brand-600 relative cursor-pointer"><span class="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white"></span></span>
+        </div>
+        <div class="flex items-center justify-between text-body">
+          <div><div>保存筛选上新推送</div><div class="text-xs2 t3 mt-0.5">「长沙本科 · 2026」等有新岗位时通知</div></div>
+          <span class="w-9 h-5 rounded-full bg-surface-sunken dark:bg-surface-sunken-d relative cursor-pointer"><span class="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow"></span></span>
+        </div>
+        <div class="flex items-center justify-between text-body">
+          <div><div>每周求职小结</div><div class="text-xs2 t3 mt-0.5">每周一推送上周新增与临期汇总</div></div>
+          <span class="w-9 h-5 rounded-full bg-brand-600 relative cursor-pointer"><span class="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white"></span></span>
+        </div>
+      </div>
+    </div>
+    <div class="s-card p-4">
+      <h3 class="text-body font-semibold">跨设备同步</h3>
+      <p class="text-xs1 t2 mt-1">收藏、投递状态、保存的筛选在手机和电脑间同步（无需注册）。</p>
+      <div class="mt-3 flex items-center gap-3 p-3 rounded-md2 bg-surface-sunken dark:bg-surface-sunken-d">
+        <div class="font-mono text-lg1 tracking-[.2em] font-semibold">7QK4-MZ2A</div>
+        <span class="text-xs2 t3">有效期 10 分钟</span>
+        <button class="btn-sec btn-sm ml-auto">复制</button>
+        <button class="btn-ghost btn-sm">刷新</button>
+      </div>
+      <div class="mt-3 flex gap-2">
+        <input class="input" placeholder="在另一台设备输入同步码…"/>
+        <button class="btn-pri shrink-0">同步</button>
+      </div>
+      <p class="text-xs2 t3 mt-2">上次同步：昨天 21:34 · iPhone Safari</p>
+    </div>
+  </div>
+</main>
+
+<script>
+document.getElementById('tab-list').addEventListener('click',function(){this.className='px-3.5 py-2.5 text-body border-b-2 border-brand-600 text-brand-600 font-medium';document.getElementById('tab-set').className='px-3.5 py-2.5 text-body border-b-2 border-transparent t2'})
+document.getElementById('tab-set').addEventListener('click',function(){this.className='px-3.5 py-2.5 text-body border-b-2 border-brand-600 text-brand-600 font-medium';document.getElementById('tab-list').className='px-3.5 py-2.5 text-body border-b-2 border-transparent t2'})
+</script>
+</body>
+</html>

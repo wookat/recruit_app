@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>报考日历 · 上岸罗盘 原型</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/tokens.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="calendar" data-mobile="calendar" class="s-page t1 min-h-screen">
+
+<main class="max-w-[1100px] mx-auto px-4 py-5">
+  <div class="flex items-center gap-2 flex-wrap">
+    <h1 class="text-lg1 font-semibold">报考日历</h1>
+    <span class="text-xs1 t3">未来 60 天校招 / 编制截止汇总</span>
+    <span class="flex-1"></span>
+    <div class="flex items-center rounded-md2 border border-line dark:border-line-d overflow-hidden text-xs1">
+      <button class="h-8 px-3 bg-brand-600 text-white">月</button>
+      <button class="h-8 px-3 t2">周</button>
+      <button class="h-8 px-3 t2">议程</button>
+    </div>
+    <button class="btn-sec btn-sm">↓ 导出本月 .ics</button>
+  </div>
+
+  <div class="mt-3 flex items-center gap-2 flex-wrap">
+    <button class="btn-ghost btn-sm">‹</button>
+    <span class="text-body font-medium">2026 年 8 月</span>
+    <button class="btn-ghost btn-sm">›</button>
+    <span class="w-px h-5 bg-line dark:bg-line-d mx-1"></span>
+    <span class="chip-on !h-6 !text-xs2">全部 182</span>
+    <span class="chip !h-6 !text-xs2"><span class="w-2 h-2 rounded-full bg-campus mr-0.5"></span>校招</span>
+    <span class="chip !h-6 !text-xs2"><span class="w-2 h-2 rounded-full bg-bianzhi mr-0.5"></span>编制</span>
+    <span class="chip !h-6 !text-xs2"><span class="w-2 h-2 rounded-full bg-amber-500 mr-0.5"></span>我的收藏截止</span>
+  </div>
+
+  <div class="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 items-start">
+    <!-- 月视图：格内直接预览事件（旧版只有数字角标） -->
+    <div class="s-card overflow-hidden">
+      <div class="grid grid-cols-7 text-center text-xs1 t3 border-b border-line dark:border-line-d">
+        <div class="py-2">一</div><div class="py-2">二</div><div class="py-2">三</div><div class="py-2">四</div><div class="py-2">五</div><div class="py-2">六</div><div class="py-2">日</div>
+      </div>
+      <div class="grid grid-cols-7 text-xs2 [&>div]:min-h-[86px] [&>div]:p-1.5 [&>div]:border-b [&>div]:border-r [&>div]:border-line/60 dark:[&>div]:border-line-d/60">
+        <div class="t3"></div><div class="t3"></div><div class="t3"></div><div class="t3"></div><div class="t3"></div>
+        <div><span class="t3">1</span></div>
+        <div><span class="t3">2</span></div>
+
+        <div><span class="t3">3</span><div class="mt-1 space-y-0.5"><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×2</span></div></div>
+        <div class="bg-brand-50/60 dark:bg-brand-950/40"><span class="inline-flex w-5 h-5 items-center justify-center rounded-full bg-brand-600 text-white">4</span>
+          <div class="mt-1 space-y-0.5">
+            <span class="block truncate rounded px-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">★ 高中语文教师</span>
+            <span class="block truncate rounded px-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">校招 ×2</span>
+            <span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×4</span>
+          </div>
+        </div>
+        <div><span class="t3">5</span><div class="mt-1"><span class="block truncate rounded px-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">校招 ×6</span></div></div>
+        <div><span class="t3">6</span><div class="mt-1"><span class="block truncate rounded px-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">校招 ×2</span></div></div>
+        <div><span class="t3">7</span><div class="mt-1 space-y-0.5"><span class="block truncate rounded px-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">★ OC&C 咨询</span><span class="block truncate rounded px-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">校招 ×4</span></div></div>
+        <div><span class="t3">8</span><div class="mt-1"><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×3</span></div></div>
+        <div><span class="t3">9</span><div class="mt-1"><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×7</span></div></div>
+
+        <div><span class="t3">10</span><div class="mt-1"><span class="block truncate rounded px-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">校招 ×4</span></div></div>
+        <div><span class="t3">11</span><div class="mt-1"><span class="block truncate rounded px-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">校招 ×2</span></div></div>
+        <div><span class="t3">12</span><div class="mt-1"><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×5</span></div></div>
+        <div><span class="t3">13</span><div class="mt-1"><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×5</span></div></div>
+        <div><span class="t3">14</span><div class="mt-1"><span class="block truncate rounded px-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">校招 ×9</span></div></div>
+        <div><span class="t3">15</span><div class="mt-1 space-y-0.5"><span class="block truncate rounded px-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">★ 党校教研岗</span><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×6</span></div></div>
+        <div><span class="t3">16</span></div>
+
+        <div><span class="t3">17</span><div class="mt-1"><span class="block truncate rounded px-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">校招 ×1</span></div></div>
+        <div><span class="t3">18</span><div class="mt-1"><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×2</span></div></div>
+        <div><span class="t3">19</span></div>
+        <div><span class="t3">20</span><div class="mt-1"><span class="block truncate rounded px-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">校招 ×4</span></div></div>
+        <div><span class="t3">21</span><div class="mt-1"><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×1</span></div></div>
+        <div><span class="t3">22</span><div class="mt-1 space-y-0.5"><span class="block truncate rounded px-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300">★ 天心区综管岗</span><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×3</span></div></div>
+        <div><span class="t3">23</span></div>
+
+        <div><span class="t3">24</span><div class="mt-1"><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×3</span></div></div>
+        <div><span class="t3">25</span><div class="mt-1"><span class="block truncate rounded px-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">校招 ×1</span></div></div>
+        <div><span class="t3">26</span><div class="mt-1"><span class="block truncate rounded px-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">校招 ×2</span></div></div>
+        <div><span class="t3">27</span><div class="mt-1"><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×6</span></div></div>
+        <div><span class="t3">28</span><div class="mt-1"><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×5</span></div></div>
+        <div><span class="t3">29</span></div>
+        <div><span class="t3">30</span><div class="mt-1"><span class="block truncate rounded px-1 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">校招 ×4</span></div></div>
+
+        <div><span class="t3">31</span><div class="mt-1"><span class="block truncate rounded px-1 bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300">编制 ×28</span></div></div>
+        <div></div><div></div><div></div><div></div><div></div><div></div>
+      </div>
+    </div>
+
+    <!-- 当日事件面板（点击日期查看，替代旧版无预览） -->
+    <aside class="s-card p-4 lg:sticky lg:top-[72px]">
+      <div class="flex items-baseline justify-between">
+        <h3 class="text-body font-semibold">8 月 4 日 · 今天</h3>
+        <span class="text-xs2 t3">7 条截止</span>
+      </div>
+      <div class="mt-3 space-y-2.5">
+        <div class="p-3 rounded-md2 border border-amber-200 dark:border-amber-900 bg-amber-50/60 dark:bg-amber-950/40">
+          <div class="text-xs2 text-amber-700 dark:text-amber-300 font-medium">★ 我的收藏 · 今日 18:00 截止</div>
+          <div class="font-medium mt-0.5">高中语文教师（应届生）</div>
+          <div class="text-xs1 t3">海南寰岛高级中学 · 海口</div>
+          <button class="btn-pri btn-sm mt-2">去报名 ↗</button>
+        </div>
+        <div class="p-3 rounded-md2 border border-line dark:border-line-d">
+          <div class="text-xs2 t3"><span class="inline-block w-2 h-2 rounded-full bg-bianzhi mr-1"></span>编制</div>
+          <div class="font-medium mt-0.5">文物保护 · 山东省文物保护修复与鉴定中心</div>
+          <button class="text-xs1 text-brand-600 font-medium mt-1">查看公告 →</button>
+        </div>
+        <div class="p-3 rounded-md2 border border-line dark:border-line-d">
+          <div class="text-xs2 t3"><span class="inline-block w-2 h-2 rounded-full bg-bianzhi mr-1"></span>编制</div>
+          <div class="font-medium mt-0.5">化工装置操作岗 · 黑龙江省龙江化工</div>
+          <button class="text-xs1 text-brand-600 font-medium mt-1">查看公告 →</button>
+        </div>
+        <div class="p-3 rounded-md2 border border-line dark:border-line-d">
+          <div class="text-xs2 t3"><span class="inline-block w-2 h-2 rounded-full bg-campus mr-1"></span>校招</div>
+          <div class="font-medium mt-0.5">传音控股 AI 顶尖人才计划（提前批）</div>
+          <button class="text-xs1 text-brand-600 font-medium mt-1">查看详情 →</button>
+        </div>
+        <button class="w-full btn-ghost btn-sm">查看全部 7 条 ▾</button>
+      </div>
+    </aside>
+  </div>
+</main>
+
+</body>
+</html>

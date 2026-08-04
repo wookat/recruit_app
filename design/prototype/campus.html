@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>校招信息 · 上岸罗盘 原型</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/tokens.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="campus" data-mobile="jobs" class="s-page t1 min-h-screen">
+
+<main class="max-w-[1280px] mx-auto px-4 py-4">
+
+  <!-- 板块识别条：校招 · 青色 -->
+  <div class="flex items-center gap-2 mb-3">
+    <span class="w-1.5 h-5 rounded-full bg-campus"></span>
+    <h1 class="text-lg1 font-semibold">校招信息</h1>
+    <span class="text-xs1 t3">共 18,896 条 · 更新于 9 小时前</span>
+    <span class="flex-1"></span>
+    <button class="btn-sec btn-sm hidden sm:inline-flex">↓ 导出 CSV</button>
+  </div>
+
+  <!-- 场景入口：与体制内同构的一行横滑 chips -->
+  <div class="flex items-center gap-1.5 overflow-x-auto hide-scroll pb-1">
+    <span class="chip-on !bg-campus !border-campus">全部</span>
+    <span class="chip">校招汇总 5758</span>
+    <span class="chip">免笔试 734</span>
+    <span class="chip">内推码</span>
+    <span class="chip">央国企校招 1684</span>
+    <span class="chip">24-25 届可投 10399</span>
+    <span class="chip">秋招</span><span class="chip">春招</span><span class="chip">实习</span><span class="chip">27 届秋招</span>
+    <span class="w-px h-5 bg-line dark:bg-line-d shrink-0 mx-1"></span>
+    <a class="chip" href="positions.html">体制内 ↗</a>
+    <a class="chip" href="bianzhi.html">编制公告 ↗</a>
+  </div>
+
+  <!-- 工具栏（与体制内一致的骨架） -->
+  <div class="mt-3 flex items-center gap-2">
+    <div class="relative flex-1 max-w-xl">
+      <svg class="absolute left-3 top-2.5 t3" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input class="input !pl-9" placeholder="搜索公司 / 岗位 / 行业 / 专业…"/>
+    </div>
+    <button class="btn-sec relative">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18M7 12h10m-7 7h4"/></svg>
+      筛选
+      <span class="absolute -top-1.5 -right-1.5 min-w-[18px] h-4.5 rounded-full bg-campus text-white text-[10px] flex items-center justify-center">2</span>
+    </button>
+    <button class="btn-sec hidden sm:inline-flex">截止最近 ▾</button>
+    <div class="hidden sm:flex items-center rounded-md2 border border-line dark:border-line-d overflow-hidden">
+      <button class="h-9 px-2.5 t3 hover:bg-surface-sunken dark:hover:bg-surface-sunken-d" title="表格视图"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18v14H3zM3 10h18M9 5v14"/></svg></button>
+      <button class="h-9 px-2.5 bg-campus text-white" title="卡片视图"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></button>
+    </div>
+  </div>
+
+  <div class="mt-2.5 flex items-center gap-1.5 flex-wrap">
+    <span class="text-xs2 t3">已选</span>
+    <span class="chip-on !h-6 !text-xs2 !bg-campus !border-campus">2027 届 ✕</span>
+    <span class="chip-on !h-6 !text-xs2 !bg-campus !border-campus">本科可投 ✕</span>
+    <button class="text-xs2 t3 hover:text-brand-600 underline underline-offset-2">清空</button>
+  </div>
+
+  <!-- 卡片视图（校招默认）：桌面 3 列 / 平板 2 列 / 移动 1 列 -->
+  <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+    <!-- card -->
+    <div class="s-card p-4 hover:shadow-raised transition-shadow cursor-pointer">
+      <div class="flex items-start gap-3">
+        <span class="w-10 h-10 rounded-md2 bg-orange-100 dark:bg-orange-900/50 text-orange-600 flex items-center justify-center font-semibold shrink-0">米</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">小米 · 校园大使</div>
+          <div class="text-xs1 t3 truncate mt-0.5">民企 · 校招汇总表</div>
+        </div>
+        <button class="t3 hover:text-amber-500">☆</button>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mt-3">
+        <span class="tag-teal">秋招</span><span class="tag-blue">2027 届 · 2028 届</span><span class="tag-green">含免笔试</span>
+      </div>
+      <div class="text-xs1 t2 mt-2">本科 / 硕士 / 博士 可投</div>
+      <div class="flex items-center gap-2 mt-3 pt-3 border-t border-line dark:border-line-d">
+        <button class="btn-pri btn-sm !bg-campus hover:!bg-teal-700 flex-1">投递 ↗</button>
+        <button class="btn-sec btn-sm">公告</button>
+        <button class="btn-ghost btn-sm">⇄</button>
+      </div>
+    </div>
+    <div class="s-card p-4 hover:shadow-raised transition-shadow cursor-pointer">
+      <div class="flex items-start gap-3">
+        <span class="w-10 h-10 rounded-md2 bg-sky-100 dark:bg-sky-900/50 text-sky-600 flex items-center justify-center font-semibold shrink-0">OC</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">OC&C 欧晰析咨询 · 助理咨询顾问</div>
+          <div class="text-xs1 t3 truncate mt-0.5">外企 · 校招汇总表</div>
+        </div>
+        <button class="text-amber-400">★</button>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mt-3">
+        <span class="tag-teal">秋招</span><span class="tag-blue">2027 届</span><span class="tag-green">免笔试（部分岗位）</span>
+      </div>
+      <div class="text-xs1 t2 mt-2">本科 / 硕士 / 博士 可投</div>
+      <div class="flex items-center gap-2 mt-3 pt-3 border-t border-line dark:border-line-d">
+        <button class="btn-pri btn-sm !bg-campus hover:!bg-teal-700 flex-1">投递 ↗</button>
+        <button class="btn-sec btn-sm">公告</button>
+        <button class="btn-ghost btn-sm">⇄</button>
+      </div>
+    </div>
+    <div class="s-card p-4 hover:shadow-raised transition-shadow cursor-pointer">
+      <div class="flex items-start gap-3">
+        <span class="w-10 h-10 rounded-md2 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 flex items-center justify-center font-semibold shrink-0">德</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">德勤 · 审计税务咨询类岗位</div>
+          <div class="text-xs1 t3 truncate mt-0.5">外企 · 校招汇总表</div>
+        </div>
+        <button class="t3 hover:text-amber-500">☆</button>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mt-3">
+        <span class="tag-teal">秋招</span><span class="tag-blue">2026 届 · 2027 届</span><span class="tag-amber">有笔试</span>
+      </div>
+      <div class="text-xs1 t2 mt-2">本科 / 硕士 / 博士 可投</div>
+      <div class="flex items-center gap-2 mt-3 pt-3 border-t border-line dark:border-line-d">
+        <button class="btn-pri btn-sm !bg-campus hover:!bg-teal-700 flex-1">投递 ↗</button>
+        <button class="btn-sec btn-sm">公告</button>
+        <button class="btn-ghost btn-sm">⇄</button>
+      </div>
+    </div>
+    <div class="s-card p-4 hover:shadow-raised transition-shadow cursor-pointer">
+      <div class="flex items-start gap-3">
+        <span class="w-10 h-10 rounded-md2 bg-rose-100 dark:bg-rose-900/50 text-rose-600 flex items-center justify-center font-semibold shrink-0">发</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">中国发展出版社 · 人力资源部实习生</div>
+          <div class="text-xs1 t3 truncate mt-0.5">央国企 · 校招汇总表</div>
+        </div>
+        <button class="t3 hover:text-amber-500">☆</button>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mt-3">
+        <span class="tag-purple">实习</span><span class="tag-blue">2027 届 · 2028 届</span><span class="tag-green">含免笔试</span>
+      </div>
+      <div class="text-xs1 t2 mt-2">本科 / 硕士 / 博士 可投 · 人事基础业务、公文辅助</div>
+      <div class="flex items-center gap-2 mt-3 pt-3 border-t border-line dark:border-line-d">
+        <button class="btn-pri btn-sm !bg-campus hover:!bg-teal-700 flex-1">投递 ↗</button>
+        <button class="btn-sec btn-sm">公告</button>
+        <button class="btn-ghost btn-sm">⇄</button>
+      </div>
+    </div>
+    <div class="s-card p-4 hover:shadow-raised transition-shadow cursor-pointer">
+      <div class="flex items-start gap-3">
+        <span class="w-10 h-10 rounded-md2 bg-violet-100 dark:bg-violet-900/50 text-violet-600 flex items-center justify-center font-semibold shrink-0">传</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">传音控股-TAIG · AI 算法类 AI 产品类</div>
+          <div class="text-xs1 t3 truncate mt-0.5">民企 · AI 顶尖人才招聘计划</div>
+        </div>
+        <button class="t3 hover:text-amber-500">☆</button>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mt-3">
+        <span class="tag-amber">秋招提前批</span><span class="tag-blue">2026 届 · 2027 届</span><span class="tag-green">免笔试（部分岗位）</span>
+      </div>
+      <div class="text-xs1 t2 mt-2">本科 / 硕士 / 博士 可投</div>
+      <div class="flex items-center gap-2 mt-3 pt-3 border-t border-line dark:border-line-d">
+        <button class="btn-pri btn-sm !bg-campus hover:!bg-teal-700 flex-1">投递 ↗</button>
+        <button class="btn-sec btn-sm">公告</button>
+        <button class="btn-ghost btn-sm">⇄</button>
+      </div>
+    </div>
+    <div class="s-card p-4 hover:shadow-raised transition-shadow cursor-pointer">
+      <div class="flex items-start gap-3">
+        <span class="w-10 h-10 rounded-md2 bg-lime-100 dark:bg-lime-900/50 text-lime-600 flex items-center justify-center font-semibold shrink-0">神</span>
+        <div class="flex-1 min-w-0">
+          <div class="font-medium truncate">神农集团 · 校企育才兴农计划学员</div>
+          <div class="text-xs1 t3 truncate mt-0.5">民企 · 校招汇总表</div>
+        </div>
+        <button class="t3 hover:text-amber-500">☆</button>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mt-3">
+        <span class="tag-teal">秋招</span><span class="tag-blue">2027 届</span><span class="tag-green">免笔试（部分岗位）</span>
+      </div>
+      <div class="text-xs1 t2 mt-2">本科 / 硕士 / 博士 可投</div>
+      <div class="flex items-center gap-2 mt-3 pt-3 border-t border-line dark:border-line-d">
+        <button class="btn-pri btn-sm !bg-campus hover:!bg-teal-700 flex-1">投递 ↗</button>
+        <button class="btn-sec btn-sm">公告</button>
+        <button class="btn-ghost btn-sm">⇄</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-center mt-5">
+    <button class="btn-sec">加载更多（第 1–24 / 18,896 条）</button>
+  </div>
+</main>
+
+</body>
+</html>

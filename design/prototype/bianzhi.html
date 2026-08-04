@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>编制公告 · 上岸罗盘 原型</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/tokens.js"></script>
+<script src="assets/ui.js"></script>
+</head>
+<body data-page="bianzhi" data-mobile="jobs" class="s-page t1 min-h-screen">
+
+<main class="max-w-[1280px] mx-auto px-4 py-4">
+
+  <div class="flex items-center gap-2 mb-3">
+    <span class="w-1.5 h-5 rounded-full bg-bianzhi"></span>
+    <h1 class="text-lg1 font-semibold">编制公告</h1>
+    <span class="text-xs1 t3">共 37,833 条 · 更新于 9 小时前</span>
+    <span class="flex-1"></span>
+    <button class="btn-sec btn-sm hidden sm:inline-flex">🏛 各省人社官网</button>
+    <button class="btn-sec btn-sm hidden sm:inline-flex">🎓 专业就业方向</button>
+  </div>
+
+  <!-- 分类：与其他板块同构的一行横滑 chips（带计数） -->
+  <div class="flex items-center gap-1.5 overflow-x-auto hide-scroll pb-1">
+    <span class="chip-on !bg-bianzhi !border-bianzhi">全部</span>
+    <span class="chip">公务员事业单位 9,444</span>
+    <span class="chip">教育系统 7,118</span>
+    <span class="chip">医疗系统 6,810</span>
+    <span class="chip">高校高职大专 9,435</span>
+    <span class="chip">科研院所 1,376</span>
+    <span class="chip">央国企社招 3,551</span>
+    <span class="chip">大型联考 99</span>
+    <span class="w-px h-5 bg-line dark:bg-line-d shrink-0 mx-1"></span>
+    <a class="chip" href="positions.html">体制内 ↗</a>
+    <a class="chip" href="campus.html">校招 ↗</a>
+  </div>
+
+  <div class="mt-3 flex items-center gap-2">
+    <div class="relative flex-1 max-w-xl">
+      <svg class="absolute left-3 top-2.5 t3" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input class="input !pl-9" placeholder="搜索招聘单位 / 工作地 / 专业…"/>
+    </div>
+    <button class="btn-sec relative">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18M7 12h10m-7 7h4"/></svg>
+      筛选
+      <span class="absolute -top-1.5 -right-1.5 min-w-[18px] h-4.5 rounded-full bg-bianzhi text-white text-[10px] flex items-center justify-center">1</span>
+    </button>
+    <button class="btn-sec hidden sm:inline-flex">最新优先 ▾</button>
+  </div>
+
+  <div class="mt-2.5 flex items-center gap-1.5 flex-wrap">
+    <span class="text-xs2 t3">已选</span>
+    <span class="chip-on !h-6 !text-xs2 !bg-bianzhi !border-bianzhi">广东 · 全部城市 ✕</span>
+    <button class="text-xs2 t3 hover:text-brand-600 underline underline-offset-2">清空</button>
+  </div>
+
+  <!-- 桌面：公告列表（表格） -->
+  <div class="mt-4 s-card overflow-hidden hidden md:block">
+    <table class="tbl w-full">
+      <thead><tr><th class="w-8"></th><th>招聘单位 / 公告</th><th>分类</th><th>工作地</th><th>学历要求</th><th>专业/学科</th><th>截止</th><th class="w-20"></th></tr></thead>
+      <tbody>
+        <tr>
+          <td><button class="t3 hover:text-amber-500">☆</button></td>
+          <td><div class="font-medium max-w-md">中国水利水电第八工程局有限公司（湖南）2026 年社会招聘公告</div></td>
+          <td><span class="tag-amber">央国企社招</span></td>
+          <td class="t2">长沙、西宁、其他</td>
+          <td><span class="tag-blue">本科及以上</span></td>
+          <td class="t2 max-w-[220px] truncate">水利工程、土木工程与土木水利、能源动力…</td>
+          <td class="t2">—</td>
+          <td><span class="text-brand-600 text-xs1 font-medium">报名 ↗</span></td>
+        </tr>
+        <tr>
+          <td><button class="t3 hover:text-amber-500">☆</button></td>
+          <td><div class="font-medium max-w-md">山东电力设备有限公司 2026 年招才引才简章</div></td>
+          <td><span class="tag-amber">央国企社招</span></td>
+          <td class="t2">济南、大洋洲、广州</td>
+          <td><span class="tag-blue">本科及以上</span></td>
+          <td class="t2 max-w-[220px] truncate">电气工程、机械工程、控制科学与工程…</td>
+          <td class="t2">—</td>
+          <td><span class="text-brand-600 text-xs1 font-medium">报名 ↗</span></td>
+        </tr>
+        <tr>
+          <td><button class="text-amber-400">★</button></td>
+          <td><div class="font-medium max-w-md">西安建筑科技大学公共管理学院 2026 年招聘教师（师资博士后）公告</div></td>
+          <td><span class="tag-purple">高校高职大专</span></td>
+          <td class="t2">西安</td>
+          <td><span class="tag-blue">博士研究生</span></td>
+          <td class="t2 max-w-[220px] truncate">公共管理学 | 数字经济</td>
+          <td class="t2">详见正文</td>
+          <td><span class="text-brand-600 text-xs1 font-medium">公告 ↗</span></td>
+        </tr>
+        <tr>
+          <td><button class="t3 hover:text-amber-500">☆</button></td>
+          <td><div class="font-medium max-w-md">重庆交通大学 2026 年招收全职博士后简章</div></td>
+          <td><span class="tag-purple">高校高职大专</span></td>
+          <td class="t2">重庆</td>
+          <td><span class="tag-blue">博士研究生</span></td>
+          <td class="t2 max-w-[220px] truncate">土木工程与土木水利 | 水利工程 | 交通运输…</td>
+          <td class="t2">详见正文</td>
+          <td><span class="text-brand-600 text-xs1 font-medium">公告 ↗</span></td>
+        </tr>
+        <tr>
+          <td><button class="t3 hover:text-amber-500">☆</button></td>
+          <td><div class="font-medium max-w-md">浙江大学医学遗传与发育研究院薛东春团队 2026 年公开招聘 4 名工作人员</div></td>
+          <td><span class="tag-purple">高校高职大专</span></td>
+          <td class="t2">杭州</td>
+          <td><span class="tag-blue">本科及以上</span></td>
+          <td class="t2 max-w-[220px] truncate">生物学 | 药学</td>
+          <td class="t2">详见正文</td>
+          <td><span class="text-brand-600 text-xs1 font-medium">公告 ↗</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="flex items-center justify-between px-4 h-12 text-xs1 t3">
+      <span>第 1–50 条 / 37,833</span>
+      <div class="flex gap-1"><button class="btn-sec btn-sm">上一页</button><button class="btn-sec btn-sm">下一页</button></div>
+    </div>
+  </div>
+
+  <!-- 移动：紧凑公告卡 -->
+  <div class="md:hidden mt-4 s-card divide-y divide-line dark:divide-line-d overflow-hidden">
+    <div class="p-3.5">
+      <div class="flex items-start gap-2">
+        <div class="font-medium flex-1">中国水利水电第八工程局有限公司（湖南）2026 年社会招聘公告</div>
+        <button class="t3 text-lg leading-none">☆</button>
+      </div>
+      <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+        <span class="tag-amber">央国企社招</span><span class="tag-blue">本科及以上</span>
+        <span class="text-xs2 t3">长沙、西宁 · 水利工程等</span>
+      </div>
+    </div>
+    <div class="p-3.5">
+      <div class="flex items-start gap-2">
+        <div class="font-medium flex-1">西安建筑科技大学公共管理学院 2026 年招聘教师（师资博士后）公告</div>
+        <button class="text-amber-400 text-lg leading-none">★</button>
+      </div>
+      <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+        <span class="tag-purple">高校高职大专</span><span class="tag-blue">博士</span>
+        <span class="text-xs2 t3">西安 · 公共管理学</span>
+      </div>
+    </div>
+    <div class="p-3.5">
+      <div class="flex items-start gap-2">
+        <div class="font-medium flex-1">重庆交通大学 2026 年招收全职博士后简章</div>
+        <button class="t3 text-lg leading-none">☆</button>
+      </div>
+      <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+        <span class="tag-purple">高校高职大专</span><span class="tag-blue">博士</span>
+        <span class="text-xs2 t3">重庆 · 土木/水利/交通</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 省份分布（图形化，替代旧版 pill 计数墙） -->
+  <div class="mt-4 s-card p-4 max-w-3xl">
+    <div class="flex items-baseline justify-between">
+      <h3 class="text-body font-semibold">按省份分布 · 点击筛选</h3>
+      <button class="text-xs2 text-brand-600">全部 31 省 ▾</button>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2.5 mt-3">
+      <button class="group"><div class="flex justify-between text-xs1"><span class="t2 group-hover:text-brand-600">广东</span><span class="t3">4,552</span></div><div class="h-1.5 rounded-full bg-surface-sunken dark:bg-surface-sunken-d mt-1"><div class="h-1.5 rounded-full bg-bianzhi" style="width:100%"></div></div></button>
+      <button class="group"><div class="flex justify-between text-xs1"><span class="t2 group-hover:text-brand-600">北京</span><span class="t3">3,607</span></div><div class="h-1.5 rounded-full bg-surface-sunken dark:bg-surface-sunken-d mt-1"><div class="h-1.5 rounded-full bg-bianzhi/80" style="width:79%"></div></div></button>
+      <button class="group"><div class="flex justify-between text-xs1"><span class="t2 group-hover:text-brand-600">四川</span><span class="t3">3,122</span></div><div class="h-1.5 rounded-full bg-surface-sunken dark:bg-surface-sunken-d mt-1"><div class="h-1.5 rounded-full bg-bianzhi/70" style="width:69%"></div></div></button>
+      <button class="group"><div class="flex justify-between text-xs1"><span class="t2 group-hover:text-brand-600">浙江</span><span class="t3">2,918</span></div><div class="h-1.5 rounded-full bg-surface-sunken dark:bg-surface-sunken-d mt-1"><div class="h-1.5 rounded-full bg-bianzhi/60" style="width:64%"></div></div></button>
+      <button class="group"><div class="flex justify-between text-xs1"><span class="t2 group-hover:text-brand-600">江苏</span><span class="t3">2,264</span></div><div class="h-1.5 rounded-full bg-surface-sunken dark:bg-surface-sunken-d mt-1"><div class="h-1.5 rounded-full bg-bianzhi/50" style="width:50%"></div></div></button>
+      <button class="group"><div class="flex justify-between text-xs1"><span class="t2 group-hover:text-brand-600">上海</span><span class="t3">1,937</span></div><div class="h-1.5 rounded-full bg-surface-sunken dark:bg-surface-sunken-d mt-1"><div class="h-1.5 rounded-full bg-bianzhi/40" style="width:43%"></div></div></button>
+    </div>
+  </div>
+</main>
+
+</body>
+</html>

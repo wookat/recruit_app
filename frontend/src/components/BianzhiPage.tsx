@@ -375,20 +375,27 @@ export function BianzhiPage({
     else if (preset !== 'all') s.bpreset = preset
     if (dueOnly) s.due = '7'
     if (provinces.length) s.prov = provinces.join(',')
+    if (eduFilter) s.bedu = eduFilter
     if (keyword.trim()) s.bkw = keyword.trim()
     return s
   })()
   const filterDefaultName =
     [
-      provinces[0],
+      provinces.length === 0
+        ? null
+        : provinces.length <= 3
+          ? provinces.join('+')
+          : `${provinces.slice(0, 3).join('+')}等${provinces.length}地`,
       preset !== 'all' ? PRESETS.find((p) => p.key === preset)?.label : null,
+      eduFilter || null,
+      recentOnly ? '近7天更新' : null,
       dueOnly ? '即将截止' : null,
       keyword.trim() || null,
     ]
       .filter(Boolean)
       .join('·') || '编制筛选'
   const filterCanSave =
-    preset !== 'all' || recentOnly || dueOnly || provinces.length > 0 || !!keyword.trim()
+    preset !== 'all' || recentOnly || dueOnly || provinces.length > 0 || !!eduFilter || !!keyword.trim()
 
   const activeFilters: RemovableFilter[] = []
   if (keyword)

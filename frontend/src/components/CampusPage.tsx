@@ -500,7 +500,11 @@ export function CampusPage({
   const filterDefaultName =
     [
       city,
-      companyTypes[0],
+      companyTypes.length === 0
+        ? null
+        : companyTypes.length <= 3
+          ? companyTypes.join('+')
+          : `${companyTypes.slice(0, 3).join('+')}等${companyTypes.length}类`,
       preset !== 'all' ? PRESETS.find((p) => p.key === preset)?.label : null,
       recentOnly ? '近7天更新' : null,
       dueOnly ? '即将截止' : null,

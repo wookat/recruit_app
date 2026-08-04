@@ -389,8 +389,28 @@ export function fetchCampusCounts(): Promise<CampusCounts | null> {
   return campusCountsPromise
 }
 
+/** index.html 内联脚本发出的首屏预取（与 JS 下载并行），首次匹配请求消费一次后清除。 */
+declare global {
+  interface Window {
+    __earlyList?: Promise<PositionList>
+    __earlyFilters?: Promise<FilterOptions>
+  }
+}
+
+const EARLY_LIST_QUERY = 'page=1&page_size=20&sort=year_desc'
+
 export async function fetchPositions(params: SearchParams, signal?: AbortSignal): Promise<PositionList> {
-  const res = await axios.get(`${API_BASE}/api/positions?${toQuery(params)}`, { signal })
+  const query = toQuery(params)
+  if (query === EARLY_LIST_QUERY && window.__earlyList) {
+    const early = window.__earlyList
+    window.__earlyList = undefined
+    try {
+      return await early
+    } catch {
+      // 预取失败回退正常请求
+    }
+  }
+  const res = await axios.get(`${API_BASE}/api/positions?${query}`, { signal })
   return res.data
 }
 
@@ -400,6 +420,15 @@ export async function fetchSources(params: SearchParams, signal?: AbortSignal): 
 }
 
 export async function fetchFilters(): Promise<FilterOptions> {
+  if (window.__earlyFilters) {
+    const early = window.__earlyFilters
+    window.__earlyFilters = undefined
+    try {
+      return await early
+    } catch {
+      // 预取失败回退正常请求
+    }
+  }
   const res = await axios.get(`${API_BASE}/api/filters`)
   return res.data
 }

@@ -23,6 +23,10 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     result_expires=3600 * 24,
     beat_schedule={
+        "collect-iguopin-jobs": {
+            "task": "tasks.collect_iguopin_jobs",
+            "schedule": crontab(hour=5, minute=30),  # 每天采集国聘校招/央国企社招增量
+        },
         "check-watch-sources": {
             "task": "tasks.check_watch_sources",
             "schedule": crontab(hour=6, minute=0),  # 每天 6:00 检查全部来源

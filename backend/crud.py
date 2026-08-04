@@ -633,9 +633,12 @@ def get_filter_options(db: Session, limit: int = 120):
         d = _norm_district(prov, city, dist)
         if d:
             dt_map.setdefault((prov, city), set()).add(d)
+    _prov_order = {p: i for i, p in enumerate(PROVINCE_DISPLAY_ORDER)}
     district_tree = [
         {"province": p, "city": c, "districts": sorted(ds)}
-        for (p, c), ds in sorted(dt_map.items())
+        for (p, c), ds in sorted(
+            dt_map.items(), key=lambda kv: (_prov_order.get(kv[0][0], 99), kv[0][0], kv[0][1])
+        )
     ]
 
     return {

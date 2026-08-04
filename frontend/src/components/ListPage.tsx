@@ -13,6 +13,7 @@ import { FreshnessNote } from './FreshnessNote'
 import { DeadlinesCard } from './DeadlinesCard'
 import { TodayGlance } from './TodayGlance'
 import { buildShareUrl, paramsFromQueryString, paramsToQueryString, POSITION_URL_KEYS } from '@/lib/urlFilters'
+import { readViewPref, setViewPref } from '@/lib/viewPref'
 import { useSeenSet } from '@/lib/viewHistory'
 import { markBoardVisit } from '@/lib/lastVisit'
 import { expandKeyword } from '@/lib/synonyms'
@@ -198,6 +199,8 @@ const PRESET_VIEWS: PresetView[] = [
 type ViewMode = 'table' | 'card' | 'list'
 
 function defaultView(): ViewMode {
+  const saved = readViewPref('positions', ['table', 'card', 'list'] as const)
+  if (saved) return saved
   if (typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches) {
     return 'card'
   }
@@ -226,7 +229,11 @@ export function ListPage({
   const [data, setData] = useState<PositionList | null>(null)
   const [loading, setLoading] = useState(false)
   const [slowLoading, setSlowLoading] = useState(false)
-  const [view, setView] = useState<ViewMode>(defaultView)
+  const [view, setViewState] = useState<ViewMode>(defaultView)
+  const setView = useCallback((v: ViewMode) => {
+    setViewState(v)
+    setViewPref('positions', v)
+  }, [])
   const [filterOpen, setFilterOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [deadlineView, setDeadlineView] = useState(false)

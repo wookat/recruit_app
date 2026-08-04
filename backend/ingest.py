@@ -11,7 +11,7 @@ from sqlalchemy.dialects.postgresql import insert
 sys.path.insert(0, os.path.dirname(__file__))
 from database import Base, SessionLocal
 from models import Position, Source
-from normalizer import normalize_edu, normalize_job_type, parse_location_tags
+from normalizer import corporate_job_type, normalize_edu, normalize_job_type, parse_location_tags
 from etl.normalize_v2 import (
     clean_employer,
     content_hash_v2,
@@ -93,10 +93,13 @@ def _build_search_text(rec: dict) -> str:
 
 
 def _enrich_record(rec: dict) -> dict:
-    rec["job_type"] = normalize_job_type(rec.get("job_type"))
-    rec["edu_level_norm"] = normalize_edu(rec.get("edu_requirement"))
+    jt = normalize_job_type(rec.get("job_type"))
     rec["employer"] = clean_employer(rec.get("employer"))
-    rec["exam_type_norm"] = normalize_exam_type(rec.get("exam_type"))
+    rec["job_type"] = corporate_job_type(jt, rec["employer"])
+    rec["edu_level_norm"] = normalize_edu(rec.get("edu_requirement"))
+    rec["exam_type_norm"] = (
+        "企业招聘" if rec["job_type"] != jt else normalize_exam_type(rec.get("exam_type"))
+    )
     province, city, district, location_tags = parse_location(rec.get("work_location"))
     rec["province"] = province
     rec["city"] = city

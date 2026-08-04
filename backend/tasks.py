@@ -27,6 +27,7 @@ import quality
 from models import BianzhiJob, CampusJob, PushSubscription
 from pywebpush import webpush, WebPushException
 import refresh_feishu
+import collect_iguopin
 import import_guopin_2027
 from cache import get_redis
 from etl.normalize_v2 import parse_signup_deadline_v2
@@ -77,6 +78,16 @@ def scrape_guopin_2027(self):
         return {"status": "done", "source": "https://www.iguopin.com"}
     except Exception as exc:
         raise self.retry(exc=exc, countdown=60)
+
+
+@celery_app.task(bind=True, max_retries=2, default_retry_delay=300)
+def collect_iguopin_jobs(self):
+    """每日增量采集国聘 iguopin 校招/央国企社招职位（幂等可重跑）。"""
+    self.update_state(state="PROGRESS", meta={"step": "collecting iguopin jobs"})
+    try:
+        return collect_iguopin.collect()
+    except Exception as exc:
+        raise self.retry(exc=exc)
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)

@@ -49,6 +49,20 @@ def get_or_set(key: str, ttl: int, fn: Callable[[], Any]) -> Any:
 STALE_TTL = 7 * 86400
 
 
+def invalidate_prefixes(*prefixes: str) -> int:
+    """删除指定前缀的缓存键（stale: 副本前缀不同，天然保留），返回删除数。"""
+    r = get_redis()
+    n = 0
+    try:
+        for prefix in prefixes:
+            keys = list(r.scan_iter(f"{prefix}:*"))
+            if keys:
+                n += r.delete(*keys)
+    except Exception:
+        pass
+    return n
+
+
 def cached(prefix: str, ttl: int = 60, stale: bool = False):
     """Redis 缓存装饰器。stale=True 时额外保留一份 7 天的副本，
     当重算失败（如共享服务器负载导致语句超时）时返回旧数据而非 500。"""

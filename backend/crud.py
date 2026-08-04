@@ -22,6 +22,7 @@ from normalizer import (
     ALL_PROVINCES,
     ALL_CITIES,
     CITY_TO_PROVINCE,
+    PROVINCE_DISPLAY_ORDER,
 )
 
 
@@ -645,7 +646,7 @@ def get_filter_options(db: Session, limit: int = 120):
         "exam_types": distinct_values(Position.exam_type),
         "edu_levels": edu_levels,
         "categories": list(CATEGORY_KEYWORDS.keys()),
-        "provinces": ALL_PROVINCES,
+        "provinces": PROVINCE_DISPLAY_ORDER,
         "location_tree": location_tree(),
         "hot_locations": hot_locations,
         "districts": districts,

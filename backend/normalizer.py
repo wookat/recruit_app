@@ -37,6 +37,8 @@ PROVINCE_TO_CITIES: Dict[str, List[str]] = {}
 CITY_TO_PROVINCE: Dict[str, str] = {}
 ALL_PROVINCES: List[str] = []
 ALL_CITIES: List[str] = []
+# 行政区划顺序（pc.json 原始顺序），供前端展示用
+PROVINCE_DISPLAY_ORDER: List[str] = []
 
 # 直辖市下属区域列表
 MUNICIPAL_DISTRICTS: Dict[str, List[str]] = {}
@@ -47,6 +49,8 @@ for prov_raw, cities_raw in _PC_DATA.items():
     if not prov:
         continue
     ALL_PROVINCES.append(prov)
+    if prov not in PROVINCE_DISPLAY_ORDER:
+        PROVINCE_DISPLAY_ORDER.append(prov)
     city_shorts: List[str] = []
     for c in cities_raw:
         sc = _normalize_name(c)
@@ -230,6 +234,6 @@ def location_tree() -> List[Dict]:
     """返回前端级联选择需要的数据结构：省 -> 城市列表"""
     return [
         {"province": prov, "cities": PROVINCE_TO_CITIES.get(prov, [])}
-        for prov in ALL_PROVINCES
+        for prov in PROVINCE_DISPLAY_ORDER
         if PROVINCE_TO_CITIES.get(prov)
     ]

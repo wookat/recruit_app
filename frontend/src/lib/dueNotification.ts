@@ -71,7 +71,7 @@ export function maybeNotifyDue(count: number, remindDays: number, onOpenFavorite
   } catch {
     return
   }
-  const n = new Notification('上岸罗盘 · 截止提醒', {
+  const n = new Notification('上岸雷达 · 截止提醒', {
     body: `你有 ${count} 条收藏岗位将在 ${remindDays} 天内截止报名，点击查看`,
     tag: 'recruit-due-daily',
     icon: '/favicon.svg',

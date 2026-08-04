@@ -71,7 +71,7 @@ export function OnboardingCard({ onOpenTips }: { onOpenTips: () => void }) {
       >
         <X className="h-4 w-4" />
       </button>
-      <h2 className="pr-10 text-sm font-bold">👋 欢迎使用上岸罗盘 · 3 步开始</h2>
+      <h2 className="pr-10 text-sm font-bold">👋 欢迎使用上岸雷达 · 3 步开始</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         {STEPS.map((s) => (
           <div key={s.title} className="flex items-start gap-2.5">

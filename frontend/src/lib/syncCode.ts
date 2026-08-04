@@ -89,7 +89,7 @@ export async function importSyncCode(code: string): Promise<SyncImportResult> {
     throw new Error('同步码内容损坏')
   }
   if (payload.app !== 'recruit-sync' || typeof payload.version !== 'number') {
-    throw new Error('不是上岸罗盘的同步码')
+    throw new Error('不是上岸雷达的同步码')
   }
   const restored = restoreBackup(JSON.stringify(payload.backup))
 

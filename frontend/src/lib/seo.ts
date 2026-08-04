@@ -1,8 +1,8 @@
-const SITE = '上岸罗盘'
+const SITE = '上岸雷达'
 
-const DEFAULT_TITLE = '上岸罗盘 - 公务员/事业编/校招一站式岗位检索'
+const DEFAULT_TITLE = '上岸雷达 - 公务员/事业编/校招一站式岗位检索'
 const DEFAULT_DESC =
-  '上岸罗盘：全国体制内岗位一站式检索平台，覆盖公务员、事业编、军队文职、国企招聘，支持专业、学历、地区快速匹配，助你找准上岸方向。'
+  '上岸雷达：全国体制内岗位一站式检索平台，覆盖公务员、事业编、军队文职、国企招聘，支持专业、学历、地区快速匹配，助你找准上岸方向。'
 
 const CAMPUS_PRESET_LABELS: Record<string, string> = {
   noexam: '免笔试',

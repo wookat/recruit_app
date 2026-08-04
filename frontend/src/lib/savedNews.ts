@@ -273,7 +273,7 @@ export function maybeNotifySavedNews(onOpen: () => void) {
   } catch {
     return
   }
-  const n = new Notification('上岸罗盘 · 订阅上新', {
+  const n = new Notification('上岸雷达 · 订阅上新', {
     body: `你订阅的 ${filterCount} 个筛选共新增 ${state.sum} 条，点击查看`,
     tag: 'recruit-news-daily',
     icon: '/favicon.svg',

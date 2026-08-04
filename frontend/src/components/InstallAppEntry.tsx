@@ -45,7 +45,7 @@ function isIos(): boolean {
 const IOS_STEPS = [
   { icon: Share, text: '用 Safari 打开本站，点击底部工具栏的「分享」按钮' },
   { icon: SquarePlus, text: '在分享菜单中向下找到「添加到主屏幕」并点击' },
-  { icon: MonitorDown, text: '点击右上角「添加」，桌面即出现上岸罗盘图标，像 App 一样打开' },
+  { icon: MonitorDown, text: '点击右上角「添加」，桌面即出现上岸雷达图标，像 App 一样打开' },
 ]
 
 /** 「安装到桌面」入口：安卓 beforeinstallprompt 直接调起，iOS 显示分步引导弹层，
@@ -75,7 +75,7 @@ export function InstallAppEntry() {
     <>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5">
         <MonitorDown className="h-4 w-4 shrink-0 text-primary" />
-        <span className="min-w-0 flex-1 text-sm">把上岸罗盘安装到桌面，像 App 一样一键打开，支持离线查看收藏</span>
+        <span className="min-w-0 flex-1 text-sm">把上岸雷达安装到桌面，像 App 一样一键打开，支持离线查看收藏</span>
         <Button size="sm" className="min-h-11 sm:min-h-8" onClick={handleClick}>
           安装到桌面
         </Button>

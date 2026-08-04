@@ -68,6 +68,17 @@ export function useProfile(): UserProfile {
   return useSyncExternalStore(subscribe, () => profile)
 }
 
+/** 画像学历枚举（本科/硕士研究生/博士研究生/大专/中专）归一到校招/编制板块的学历选项（本科/硕士/博士/大专）。 */
+export function profileEduToBoardOption(eduLevel: string[]): string | null {
+  for (const e of eduLevel) {
+    if (e.includes('本科')) return '本科'
+    if (e.startsWith('硕士')) return '硕士'
+    if (e.startsWith('博士')) return '博士'
+    if (e.includes('大专') || e.includes('中专')) return '大专'
+  }
+  return null
+}
+
 /** 画像是否已有可用于板块匹配的维度（专业或地点）。 */
 export function profileUsable(p: UserProfile): boolean {
   return !!p.major.trim() || p.location.length > 0

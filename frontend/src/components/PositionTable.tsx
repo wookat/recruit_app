@@ -208,8 +208,8 @@ export const PositionTable = memo(function PositionTable({
                       key={h.id}
                       className={cn(
                         'whitespace-nowrap',
-                        (h.column.id === 'exam_time' || h.column.id === 'exam_type') &&
-                          'hidden 2xl:table-cell',
+                        h.column.id === 'exam_time' && 'hidden 2xl:table-cell',
+                        h.column.id === 'exam_type' && 'hidden min-[1750px]:table-cell',
                       )}
                       style={{ width: h.column.getSize(), minWidth: h.column.getSize() }}
                     >
@@ -264,10 +264,9 @@ export const PositionTable = memo(function PositionTable({
                         key={cell.id}
                         className={cn(
                           'max-w-xs truncate text-sm',
-                          (cell.column.id === 'exam_time' ||
-                            cell.column.id === 'created_at' ||
-                            cell.column.id === 'exam_type') &&
+                          (cell.column.id === 'exam_time' || cell.column.id === 'created_at') &&
                             'hidden 2xl:table-cell',
+                          cell.column.id === 'exam_type' && 'hidden min-[1750px]:table-cell',
                           cell.column.id === 'employer' &&
                             'max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:max-w-[150px] max-sm:border-r max-sm:bg-card max-sm:shadow-[8px_0_12px_-6px_rgba(0,0,0,0.18)] group-hover:max-sm:bg-muted',
                         )}

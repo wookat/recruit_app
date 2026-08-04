@@ -35,6 +35,7 @@ import {
 import { pinyinMatch } from '@/lib/pinyin'
 import { markSavedFilterSeen, removeSavedFilterBaseline, useSavedNews } from '@/lib/savedNews'
 import {
+  ArrowUpRight,
   Search,
   Filter,
   X,
@@ -752,7 +753,7 @@ export function ListPage({
     setSaveHint(
       dropped
         ? `已达 10 组上限，删除了最旧的「${dropped}」`
-        : '已保存并订阅：有匹配新岗位会在 chip 上显示「+N 新」，今日速览同步提示',
+        : '已保存并订阅，上新时 chip 显示「+N 新」',
     )
     setTimeout(() => setSaveHint(null), 6000)
   }
@@ -1322,7 +1323,7 @@ export function ListPage({
       {showStats && !deadlineView && <DeadlinesCard />}
 
       <div className="relative">
-      <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5">
+      <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5 sm:flex-wrap">
         {PRESET_VIEWS.map((preset) => {
           const active = isPresetActive(preset)
           return (
@@ -1368,14 +1369,16 @@ export function ListPage({
         {crossPresets && crossPresets.length > 0 && onCrossPreset && (
           <>
             <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+            <span className="shrink-0 text-xs text-muted-foreground">去其他板块</span>
             {crossPresets.map((p) => (
               <button
                 key={p.key}
                 type="button"
                 onClick={() => onCrossPreset(p.key)}
-                className="min-h-11 shrink-0 cursor-pointer rounded-full border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground sm:min-h-0"
+                className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-full border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground sm:min-h-0"
               >
                 {p.label}
+                <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
               </button>
             ))}
           </>
@@ -1539,7 +1542,7 @@ export function ListPage({
       {loading && view !== 'list' && (data?.items.length ?? 0) > 0 && (
         <div
           className={cn(
-            'pointer-events-none absolute inset-x-0 z-10 flex justify-center',
+            'pointer-events-none sticky inset-x-0 z-10 -mb-7 flex h-7 justify-center',
             view === 'table' ? 'top-14' : 'top-2',
           )}
         >

@@ -64,12 +64,40 @@ function parseMajors(raw: string): string[] {
     .filter((s) => s.length > 0 && s.length <= 30)
 }
 
-function Field({ label, value }: { label: string; value?: string | number | null }) {
+function Field({
+  label,
+  value,
+  linkify,
+}: {
+  label: string
+  value?: string | number | null
+  /** 识别文本中的 http(s) 链接并渲染为可点击链接。 */
+  linkify?: boolean
+}) {
   if (!value) return null
+  const text = String(value)
   return (
     <div>
       <div className="text-xs font-medium text-muted-foreground">{label}</div>
-      <div className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">{String(value)}</div>
+      <div className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">
+        {linkify
+          ? text.split(/(https?:\/\/[^\s，。；]+)/g).map((part, i) =>
+              /^https?:\/\//.test(part) ? (
+                <a
+                  key={i}
+                  href={part}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="break-all text-primary hover:underline"
+                >
+                  {part}
+                </a>
+              ) : (
+                part
+              ),
+            )
+          : text}
+      </div>
     </div>
   )
 }
@@ -147,7 +175,7 @@ export function PositionSheet({
     if (!item) return
     const t =
       item.employer?.trim() ||
-      stripOrgPrefix(item.position_example ?? '', item.employer) ||
+      stripOrgPrefix(item.position_example ?? '', item.employer, item.exam_type_norm || item.exam_type) ||
       item.exam_type ||
       item.job_type ||
       '体制内岗位'
@@ -358,7 +386,7 @@ export function PositionSheet({
                 label="岗位示例"
                 value={
                   item.position_example
-                    ? stripOrgPrefix(item.position_example, item.employer)
+                    ? stripOrgPrefix(item.position_example, item.employer, item.exam_type_norm || item.exam_type)
                     : item.position_example
                 }
               />
@@ -421,11 +449,16 @@ export function PositionSheet({
               <>
                 <Separator />
                 <Section icon={Info} title="备注与来源">
-                  <Field label="备注" value={item.notes} />
+                  <Field label="备注" value={item.notes} linkify />
                   {safeUrl(item.source_url) && (
                     <div>
                       <div className="text-xs font-medium text-muted-foreground">信息来源</div>
                       <ExtLinkAnchor url={safeUrl(item.source_url)!} />
+                      {!item.signup_time?.trim() && !item.exam_time?.trim() && (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          来源页未提供报名/考试时间，请打开信息来源原文核实。
+                        </div>
+                      )}
                     </div>
                   )}
                 </Section>
@@ -446,7 +479,7 @@ export function PositionSheet({
                         >
                           <span className="font-medium">
                             {p.position_example
-                              ? stripOrgPrefix(p.position_example, p.employer)
+                              ? stripOrgPrefix(p.position_example, p.employer, p.exam_type_norm || p.exam_type || p.job_type)
                               : p.job_type || p.exam_type || '-'}
                           </span>
                           <span className="line-clamp-1 text-xs text-muted-foreground">
@@ -480,13 +513,13 @@ export function PositionSheet({
                           <span className="font-medium">
                             {p.employer?.trim() ||
                               (p.position_example
-                                ? stripOrgPrefix(p.position_example, p.employer)
+                                ? stripOrgPrefix(p.position_example, p.employer, p.exam_type_norm || p.exam_type || p.job_type)
                                 : p.job_type || '-')}
                           </span>
                           <span className="line-clamp-1 text-xs text-muted-foreground">
                             {[
                               p.employer?.trim() && p.position_example
-                                ? stripOrgPrefix(p.position_example, p.employer)
+                                ? stripOrgPrefix(p.position_example, p.employer, p.exam_type_norm || p.exam_type)
                                 : null,
                               p.work_location,
                               p.edu_level_norm,
@@ -508,7 +541,7 @@ export function PositionSheet({
               province={(item.work_location || '').split(/[-—·，,]/)[0] || null}
               deadline={parseSignupDeadline(item)}
               icsUid={`pos-${item.id}`}
-              icsSummary={`报名截止：${item.employer?.trim() || stripOrgPrefix(item.position_example ?? '', item.employer) || item.job_type || '岗位'}`}
+              icsSummary={`报名截止：${item.employer?.trim() || stripOrgPrefix(item.position_example ?? '', item.employer, item.exam_type_norm || item.exam_type) || item.job_type || '岗位'}`}
               examDate={(() => {
                 const d = parseDeadlineText(item.exam_time, item.year || undefined)
                 const dl = parseSignupDeadline(item)

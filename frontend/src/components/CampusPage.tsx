@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
+import { ArrowUpRight, ExternalLink, LayoutGrid, Search, Table2, Ticket } from 'lucide-react'
 import { BoardExportButton } from '@/components/BoardExportButton'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { SeenBadge } from '@/components/SeenBadge'
@@ -859,7 +859,7 @@ export function CampusPage({
     <div className="space-y-4">
       {/* 预设视图 chips */}
       <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-        <div className="flex w-max gap-2">
+        <div className="flex w-max gap-2 sm:w-full sm:flex-wrap">
           {PRESETS.map((v) => (
             <button
               key={v.key}
@@ -882,14 +882,16 @@ export function CampusPage({
           {crossPresets && crossPresets.length > 0 && onCrossPreset && (
             <>
               <span className="my-auto h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+              <span className="my-auto shrink-0 text-xs text-muted-foreground">去其他板块</span>
               {crossPresets.map((p) => (
                 <button
                   key={p.key}
                   type="button"
                   onClick={() => onCrossPreset(p.key)}
-                  className="min-h-11 whitespace-nowrap rounded-full border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-9"
+                  className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-9"
                 >
                   {p.label}
+                  <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               ))}
             </>

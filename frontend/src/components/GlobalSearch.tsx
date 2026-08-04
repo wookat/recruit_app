@@ -372,7 +372,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">
                       {p.position_example
-                        ? stripOrgPrefix(p.position_example, p.employer)
+                        ? stripOrgPrefix(p.position_example, p.employer, p.exam_type_norm || p.exam_type)
                         : p.exam_type || '-'}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground group-data-selected/command-item:text-foreground/75">

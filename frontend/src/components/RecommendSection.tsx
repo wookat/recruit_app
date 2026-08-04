@@ -169,7 +169,7 @@ export function RecommendSection() {
               </div>
               {p.position_example && (
                 <span className="line-clamp-1 text-xs text-muted-foreground">
-                  {stripOrgPrefix(p.position_example, p.employer)}
+                  {stripOrgPrefix(p.position_example, p.employer, p.exam_type_norm || p.exam_type)}
                 </span>
               )}
               <div className="mt-auto flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">

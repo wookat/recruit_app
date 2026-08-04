@@ -165,7 +165,14 @@ export function BoardJobSheet({
   applyWindow,
   prep,
 }: Props) {
-  const validLinks = (links ?? []).filter((l) => safeUrl(l.url))
+  const validLinks = (links ?? [])
+    .filter((l) => safeUrl(l.url))
+    .reduce<SheetLink[]>((acc, l) => {
+      const dup = acc.find((x) => x.url === l.url)
+      if (dup) dup.label = `${dup.label}（同公告链接）`
+      else acc.push({ ...l })
+      return acc
+    }, [])
   const [deadUrls, setDeadUrls] = useState<Record<string, boolean>>({})
   const queriedUrls = useRef(new Set<string>())
 

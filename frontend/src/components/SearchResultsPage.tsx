@@ -214,7 +214,7 @@ export function SearchResultsPage({ keyword, onSearch, onOpenBoard, onOpenJob }:
             keyword={kw}
             items={hits.positions.items.map((p) => ({
               key: String(p.id),
-              title: p.position_example ? stripOrgPrefix(p.position_example, p.employer) : p.exam_type || '-',
+              title: p.position_example ? stripOrgPrefix(p.position_example, p.employer, p.exam_type_norm || p.exam_type) : p.exam_type || '-',
               sub: [p.employer, p.work_location].filter(Boolean).join(' · '),
             }))}
             onMore={() => onOpenBoard('positions', kw)}

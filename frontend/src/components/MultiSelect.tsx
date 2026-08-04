@@ -117,9 +117,9 @@ export function MultiSelect({
                     aria-label="清除已选"
                     title="清除已选"
                     onClick={clear}
-                    className="-my-1 rounded-full p-1 hover:bg-destructive/10 hover:text-destructive"
+                    className="group/clear -my-1 rounded-full p-1 hover:bg-destructive/10"
                   >
-                    <X className="h-3.5 w-3.5 text-muted-foreground" />
+                    <X className="h-3.5 w-3.5 text-muted-foreground group-hover/clear:text-destructive" />
                   </span>
                 )}
                 <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />

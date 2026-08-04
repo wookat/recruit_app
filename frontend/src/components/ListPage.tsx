@@ -19,7 +19,7 @@ import { useSeenSet } from '@/lib/viewHistory'
 import { markBoardVisit } from '@/lib/lastVisit'
 import { expandKeyword } from '@/lib/synonyms'
 import { MultiSelect } from './MultiSelect'
-import { getProfile, saveProfile, clearProfile } from '@/lib/profile'
+import { getProfile, saveProfile } from '@/lib/profile'
 import { ValuePropBanner } from './ValuePropBanner'
 import type { RecommendQuery } from './RecommendPanel'
 import { buildExportUrl, createExport, exportDownloadUrl, fetchExportStatus } from '@/api'
@@ -639,7 +639,6 @@ export function ListPage({
     setHideSeen(false)
     setRecommendQuery(null)
     setMajorInput('')
-    clearProfile()
   }
 
   function applyRecommend() {

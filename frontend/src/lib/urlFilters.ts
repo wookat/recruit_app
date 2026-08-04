@@ -42,7 +42,8 @@ export function paramsFromQueryString(search: string): Partial<SearchParams> {
   const q = new URLSearchParams(search)
   const out: Partial<SearchParams> = {}
   for (const key of ARRAY_KEYS) {
-    const values = q.getAll(key).filter(Boolean)
+    // 过滤纯符号/空白等非法值（如 ?edu_level=/），避免产生无意义筛选 chip
+    const values = q.getAll(key).filter((v) => v && /[\u4e00-\u9fa5A-Za-z0-9]/.test(v))
     if (values.length === 0) continue
     if (key === 'year') {
       const years = values.map(Number).filter((n) => !isNaN(n))

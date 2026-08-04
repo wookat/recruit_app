@@ -22,6 +22,7 @@ from normalizer import (
     ALL_PROVINCES,
     ALL_CITIES,
     CITY_TO_PROVINCE,
+    PROVINCE_DISPLAY_ORDER,
 )
 
 
@@ -603,6 +604,8 @@ def get_filter_options(db: Session, limit: int = 120):
         .distinct()
         .all()
     )
+    _prefecture_cities = set(ALL_CITIES)
+
     def _norm_district(prov: str, city: str, dist: str):
         d = dist.strip()
         for pre in (f"{prov}省", f"{prov}市", f"{prov}自治区", prov):
@@ -614,8 +617,15 @@ def get_filter_options(db: Session, limit: int = 120):
                 d = d[len(pre):]
                 break
         d = d.strip()
-        if len(d) < 2 or d == "辖区" or "省" in d:
+        if len(d) < 2 or d in ("辖区", "市辖区") or "省" in d or "自治区" in d:
             return None
+        base = d[:-1] if len(d) > 2 and d.endswith("市") else d
+        if base != city and base in _prefecture_cities:
+            return None
+        for ln in (2, 3, 4):
+            head = d[:ln]
+            if head != city and head in _prefecture_cities and d[ln:].startswith("市"):
+                return None
         return d
 
     dt_map: dict = {}
@@ -636,7 +646,7 @@ def get_filter_options(db: Session, limit: int = 120):
         "exam_types": distinct_values(Position.exam_type),
         "edu_levels": edu_levels,
         "categories": list(CATEGORY_KEYWORDS.keys()),
-        "provinces": ALL_PROVINCES,
+        "provinces": PROVINCE_DISPLAY_ORDER,
         "location_tree": location_tree(),
         "hot_locations": hot_locations,
         "districts": districts,

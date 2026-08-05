@@ -331,7 +331,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                   <ArrowRight className="text-muted-foreground" />
                   <span className="min-w-0 flex-1 truncate">
                     {s}
-                    <span className="ml-1.5 text-xs text-muted-foreground">{t("拼音匹配「")}{kw}」</span>
+                    <span className="ml-1.5 text-xs text-muted-foreground">{tt`拼音匹配「${kw}」`}</span>
                   </span>
                 </CommandItem>
               ))}

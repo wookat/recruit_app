@@ -1,4 +1,4 @@
-import { t, tt } from '@/lib/i18n'
+import { getLang, t, tt } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { BriefcaseBusiness, ChevronRight, Landmark, Sparkles } from 'lucide-react'
 import {
@@ -31,7 +31,9 @@ function fmtDate(iso: string): string {
       new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) /
       86400000,
   )
-  const week = t(['日', '一', '二', '三', '四', '五', '六'][d.getDay()])
+  const week = (getLang() === 'en'
+    ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    : ['日', '一', '二', '三', '四', '五', '六'])[d.getDay()]
   const base = tt`${d.getMonth() + 1} 月 ${d.getDate()} 日（周${week}）`
   if (days === 0) return tt`今天 · ${base}`
   if (days === 1) return tt`昨天 · ${base}`
@@ -268,7 +270,7 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
                       className="mt-1.5 inline-flex min-h-11 items-center gap-1 text-xs text-primary underline-offset-4 hover:underline sm:min-h-0"
                       onClick={() => onOpenBoard(board)}
                     >
-                      {t("查看")}{meta.label}{t("板块全部")}{' '}<ChevronRight className="h-3 w-3" />
+                      {tt`查看${meta.label}板块全部`}{' '}<ChevronRight className="h-3 w-3" />
                     </button>
                   )}
                 </div>

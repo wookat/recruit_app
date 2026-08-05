@@ -95,7 +95,7 @@ function SectionBlock({
           className="mt-2 h-auto min-h-11 w-full gap-1.5 text-xs sm:min-h-8"
           onClick={onMore}
         >
-          {t("查看全部")}{' '}{formatTotal(total, capped)} {' '}{t("条")}{boardLabel}{t("结果")}{' '}<ArrowRight className="h-3.5 w-3.5" />
+          {tt`查看全部 ${formatTotal(total, capped)} 条${boardLabel}结果`}{' '}<ArrowRight className="h-3.5 w-3.5" />
         </Button>
       )}
     </section>

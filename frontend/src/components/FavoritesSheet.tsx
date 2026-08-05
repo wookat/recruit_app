@@ -604,7 +604,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
       <div className="mt-1 w-full text-[11px] text-muted-foreground">
         {history
           .slice(-4)
-          .map((e) => `${fmt(e.at)} ${e.status}`.trim())
+          .map((e) => `${fmt(e.at)} ${t(e.status)}`.trim())
           .join(' → ')}
       </div>
     )
@@ -1582,7 +1582,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     <div key={g.status}>
                       <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-popover px-4 py-1.5 sm:px-6">
                         <span className={`rounded-sm px-2 py-0.5 text-[11px] font-medium ${STATUS_COLORS[g.status]}`}>
-                          {g.status}
+                          {t(g.status)}
                         </span>
                         <span className="text-xs text-muted-foreground">{g.items.length} {' '}{t("个岗位")}</span>
                       </div>

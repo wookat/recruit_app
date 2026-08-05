@@ -1,4 +1,4 @@
-import { t, tt } from '@/lib/i18n'
+import { getLang, t, tt } from '@/lib/i18n'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchBianzhiJobs,
@@ -29,7 +29,10 @@ import { CalendarDays, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { jobShareUrl } from '@/lib/clipboard'
 import { normalizeDateStr } from '@/lib/tableSort'
 
-const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
+const WEEKDAYS =
+  getLang() === 'en'
+    ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    : ['一', '二', '三', '四', '五', '六', '日']
 
 function isoOf(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -434,7 +437,7 @@ export function CalendarPage() {
               >
                 <h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
                   {d.getMonth() + 1} {' '}{t("月")}{' '}{d.getDate()} {' '}{t("日")}{' '}<span className="text-xs font-normal text-muted-foreground">
-                    {t("周")}{t(WEEKDAYS[(d.getDay() + 6) % 7])}
+                    {t("周")}{WEEKDAYS[(d.getDay() + 6) % 7]}
                   </span>
                   {isToday && (
                     <Badge className="border-0 bg-primary/15 text-primary">{t("今天")}</Badge>
@@ -522,7 +525,7 @@ export function CalendarPage() {
           <div className="grid grid-cols-7 border-b bg-muted/40 text-center text-xs text-muted-foreground">
             {WEEKDAYS.map((w) => (
               <div key={w} className="py-2">
-                {t(w)}
+                {w}
               </div>
             ))}
           </div>

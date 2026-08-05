@@ -98,7 +98,7 @@ def collect_iguopin_jobs(self):
         raise self.retry(exc=exc)
 
 
-@celery_app.task(bind=True, max_retries=2, default_retry_delay=300)
+@celery_app.task(bind=True, max_retries=2, default_retry_delay=300, time_limit=14400, soft_time_limit=13800)
 def collect_ncss_jobs(self):
     """每日增量采集 NCSS 教育部大学生就业平台校招职位（幂等可重跑）。"""
     self.update_state(state="PROGRESS", meta={"step": "collecting ncss jobs"})

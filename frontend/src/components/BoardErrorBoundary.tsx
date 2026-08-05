@@ -1,4 +1,5 @@
 import { t } from '@/lib/i18n'
+import { purgeReloadOnce } from '@/lib/lazyRetry'
 import { Component, type ReactNode } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,10 @@ export class BoardErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(): Partial<State> {
     return { hasError: true }
+  }
+
+  componentDidCatch() {
+    purgeReloadOnce() // 旧缓存 chunk 与新代码不匹配时清缓存自愈一次；已刷过则留在错误卡
   }
 
   static getDerivedStateFromProps(props: Props, state: State): Partial<State> | null {

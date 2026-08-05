@@ -1,4 +1,5 @@
 import { t } from '@/lib/i18n'
+import { purgeReloadOnce } from '@/lib/lazyRetry'
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { RefreshCw, TriangleAlert } from 'lucide-react'
 
@@ -20,6 +21,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('ErrorBoundary caught:', error, info.componentStack)
+    purgeReloadOnce() // 旧缓存 chunk 与新代码不匹配时清缓存自愈一次；已刷过则留在兜底页
   }
 
   render() {

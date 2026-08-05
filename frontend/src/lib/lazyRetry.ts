@@ -33,6 +33,17 @@ function isEmptyModule(mod: unknown): boolean {
   )
 }
 
+/**
+ * 渲染崩溃时的自愈入口：清 caches+注销 SW 后整页刷新一次（防死循环标记），
+ * 覆盖旧缓存 chunk 与新代码不匹配导致的运行时异常；已刷过则返回 false 交给错误卡。
+ */
+export function purgeReloadOnce(): boolean {
+  if (sessionStorage.getItem(RELOAD_FLAG) === '1') return false
+  sessionStorage.setItem(RELOAD_FLAG, '1')
+  void purgeSwCaches().finally(() => window.location.reload())
+  return true
+}
+
 function purgeAndReload<T>(): Promise<T> {
   sessionStorage.setItem(RELOAD_FLAG, '1')
   void purgeSwCaches().finally(() => window.location.reload())

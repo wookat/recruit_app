@@ -732,9 +732,7 @@ export default function App() {
                 onOpenJob={openSearchJob}
               />
             )}
-            {tab !== 'admin' && section.mode === 'all' && (
-              <UnifiedJobsPage onOpenJob={(board, id) => openSearchJob(board, id, '')} />
-            )}
+            {tab !== 'admin' && section.mode === 'all' && <UnifiedJobsPage />}
             {tab !== 'admin' && section.mode === 'calendar' && <CalendarPage />}
             {tab !== 'admin' && section.mode === 'updates' && (
               <RecentUpdatesPage

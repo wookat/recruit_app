@@ -337,7 +337,7 @@ export interface UnifiedJobParams {
   deadline_from?: string
   deadline_to?: string
   hide_expired?: boolean
-  sort?: 'created_desc' | 'deadline_asc'
+  sort?: 'recommended' | 'created_desc' | 'deadline_asc'
   page?: number
   page_size?: number
 }

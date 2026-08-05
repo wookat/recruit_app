@@ -17,7 +17,7 @@
         major 从 postdes_show 正文正则提取，deadline 留空。
     社招 (worknature='社招') 且公司性质为央国企/机关事业单位
         （中央企业/国有企业/事业单位/政府机关/央管协会单位）-> bianzhi_jobs（category='央国企社招'）；
-    其余社招（民营/外资/合资等）不入库，仅计入 skipped 统计。
+    其余社招（民营/外资/合资等）-> campus_jobs（source_table='中智'，batch='社招'）。
 
 去重与更新：
     沿用 content_hash（import_campus/import_bianzhi 的 row_hash）跨源唯一约束，重复跳过；
@@ -186,12 +186,12 @@ def detail_url(item: dict) -> str:
             or f"https://www.ciiczhaopin.com/position/detail?uuid={item.get('id', '')}")
 
 
-def to_campus_row(item: dict) -> dict:
+def to_campus_row(item: dict, batch: str = "校园招聘") -> dict:
     return {
         "company": (item.get("orgname_show") or "").strip(),
         "positions": (item.get("jobname_show") or "").strip(),
         "company_type": (item.get("qualitative") or "").strip() or "央国企",
-        "batch": "校园招聘",
+        "batch": batch,
         "grad_years": grad_years_of(item),
         "edu_requirement": (item.get("education_show") or "").strip(),
         "major_requirement": extract_major(item),
@@ -258,12 +258,12 @@ class Ingestor:
             if (item.get("qualitative") or "").strip() in CENTRAL_SOE_NATURES:
                 self._ingest_bianzhi(item, dry_run)
             else:
-                self.stats["skipped"] += 1
+                self._ingest_campus(item, dry_run, batch="社招")
         else:
             self.stats["skipped"] += 1
 
-    def _ingest_campus(self, item: dict, dry_run: bool):
-        d = to_campus_row(item)
+    def _ingest_campus(self, item: dict, dry_run: bool, batch: str = "校园招聘"):
+        d = to_campus_row(item, batch=batch)
         if not d["company"]:
             self.stats["skipped"] += 1
             return

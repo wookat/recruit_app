@@ -1,4 +1,15 @@
-const RELOAD_FLAG = 'recruit.chunkReloaded'
+const RELOAD_AT_KEY = 'recruit.chunkReloadedAt'
+const RELOAD_COOLDOWN_MS = 10 * 60 * 1000
+
+/** 冷却期内只自愈刷新一次，避免持久性崩溃导致刷新死循环；过期后下次部署仍可自愈 */
+function inReloadCooldown(): boolean {
+  const ts = Number(sessionStorage.getItem(RELOAD_AT_KEY))
+  return ts > 0 && Date.now() - ts < RELOAD_COOLDOWN_MS
+}
+
+function markReloaded(): void {
+  sessionStorage.setItem(RELOAD_AT_KEY, String(Date.now()))
+}
 
 function isChunkLoadError(e: unknown): boolean {
   const msg = e instanceof Error ? e.message : String(e)
@@ -38,14 +49,14 @@ function isEmptyModule(mod: unknown): boolean {
  * 覆盖旧缓存 chunk 与新代码不匹配导致的运行时异常；已刷过则返回 false 交给错误卡。
  */
 export function purgeReloadOnce(): boolean {
-  if (sessionStorage.getItem(RELOAD_FLAG) === '1') return false
-  sessionStorage.setItem(RELOAD_FLAG, '1')
+  if (inReloadCooldown()) return false
+  markReloaded()
   void purgeSwCaches().finally(() => window.location.reload())
   return true
 }
 
 function purgeAndReload<T>(): Promise<T> {
-  sessionStorage.setItem(RELOAD_FLAG, '1')
+  markReloaded()
   void purgeSwCaches().finally(() => window.location.reload())
   return new Promise<T>(() => {}) // 刷新中，挂起避免闪 ErrorBoundary
 }
@@ -59,14 +70,13 @@ function purgeAndReload<T>(): Promise<T> {
 export function lazyRetry<T>(factory: () => Promise<T>): Promise<T> {
   return factory().then(
     (mod) => {
-      if (isEmptyModule(mod) && sessionStorage.getItem(RELOAD_FLAG) !== '1') {
+      if (isEmptyModule(mod) && !inReloadCooldown()) {
         return purgeAndReload<T>()
       }
-      sessionStorage.removeItem(RELOAD_FLAG) // 加载成功后重置，下次部署仍可自动恢复一次
       return mod
     },
     (e: unknown) => {
-      if (isChunkLoadError(e) && sessionStorage.getItem(RELOAD_FLAG) !== '1') {
+      if (isChunkLoadError(e) && !inReloadCooldown()) {
         return purgeAndReload<T>()
       }
       throw e

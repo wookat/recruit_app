@@ -29,6 +29,7 @@ from pywebpush import webpush, WebPushException
 import refresh_feishu
 import collect_ciic
 from seo import EXAM_TYPES, PROVINCES, SITE
+import digest
 import collect_iguopin
 import collect_ncss
 import import_guopin_2027
@@ -141,6 +142,21 @@ def submit_indexnow(self):
         return {"status": resp.status_code, "urls": len(urls)}
     except Exception as exc:
         raise self.retry(exc=exc)
+
+
+@celery_app.task(bind=True, max_retries=1, default_retry_delay=600)
+def generate_daily_digest(self):
+    """每日生成岗位精选文案 markdown（写入 exports/，供运营渠道发布取用）。"""
+    db = SessionLocal()
+    try:
+        md = digest.render_digest(db)
+        day = datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
+        path = os.path.join(EXPORTS_DIR, f"digest-{day}.md")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(md)
+        return {"path": path, "bytes": len(md.encode())}
+    finally:
+        db.close()
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)

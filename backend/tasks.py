@@ -126,6 +126,10 @@ def submit_indexnow(self):
     try:
         resp = requests.post(
             "https://api.indexnow.org/indexnow",
+            headers={
+                "Content-Type": "application/json; charset=utf-8",
+                "User-Agent": "Mozilla/5.0 (compatible; shangan-leida; +https://jobs.zalize.com)",
+            },
             json={
                 "host": "jobs.zalize.com",
                 "key": key,

@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { ArrowRight, Briefcase, GraduationCap, Landmark, Search, SearchX } from 'lucide-react'
 import {
@@ -65,7 +66,7 @@ function SectionBlock({
       <div className="mb-3 flex items-center gap-2">
         <Icon className="h-4 w-4 text-primary" />
         <h2 className="text-sm font-semibold">{title}</h2>
-        <span className="text-xs text-muted-foreground">{formatTotal(total, capped)} 条命中</span>
+        <span className="text-xs text-muted-foreground">{formatTotal(total, capped)} {' '}{t("条命中")}</span>
       </div>
       <ul className="divide-y">
         {items.map((it) => (
@@ -94,8 +95,7 @@ function SectionBlock({
           className="mt-2 h-auto min-h-11 w-full gap-1.5 text-xs sm:min-h-8"
           onClick={onMore}
         >
-          查看全部 {formatTotal(total, capped)} 条{boardLabel}结果
-          <ArrowRight className="h-3.5 w-3.5" />
+          {t("查看全部")}{' '}{formatTotal(total, capped)} {' '}{t("条")}{boardLabel}{t("结果")}{' '}<ArrowRight className="h-3.5 w-3.5" />
         </Button>
       )}
     </section>
@@ -157,11 +157,11 @@ export function SearchResultsPage({ keyword, onSearch, onOpenBoard, onOpenJob }:
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-lg font-bold">「{kw}」的搜索结果</h1>
+        <h1 className="text-lg font-bold">「{kw}{t("」的搜索结果")}</h1>
         <p className="mt-0.5 text-xs text-muted-foreground">
           {loading
-            ? '正在搜索三个板块…'
-            : `三板块共命中 ${anyCapped ? `${grandTotal.toLocaleString()}+` : grandTotal.toLocaleString()} 条 · 链接可直接分享`}
+            ? t("正在搜索三个板块…")
+            : tt`三板块共命中 ${anyCapped ? `${grandTotal.toLocaleString()}+` : grandTotal.toLocaleString()} 条 · 链接可直接分享`}
         </p>
       </div>
       <div className="relative max-w-md">
@@ -173,8 +173,8 @@ export function SearchResultsPage({ keyword, onSearch, onOpenBoard, onOpenJob }:
           onKeyDown={(e) => {
             if (e.key === 'Enter') submit()
           }}
-          placeholder="换个关键词再搜…"
-          aria-label="聚合搜索关键词"
+          placeholder={t("换个关键词再搜…")}
+          aria-label={t("聚合搜索关键词")}
           className="h-11 w-full rounded-lg border bg-background pl-9 pr-16 text-sm outline-none focus:ring-2 focus:ring-primary/40 sm:h-10"
         />
         <Button
@@ -183,8 +183,7 @@ export function SearchResultsPage({ keyword, onSearch, onOpenBoard, onOpenJob }:
           disabled={!input.trim() || input.trim() === kw}
           onClick={submit}
         >
-          搜索
-        </Button>
+          {t("搜索")}{' '}</Button>
       </div>
       {loading && (
         <div className="space-y-4">
@@ -196,8 +195,7 @@ export function SearchResultsPage({ keyword, onSearch, onOpenBoard, onOpenJob }:
       {!loading && hits && grandTotal === 0 && (
         <div className="rounded-xl border bg-background px-4 py-10 text-center text-sm text-muted-foreground">
           <SearchX className="mx-auto mb-2 h-8 w-8 opacity-50" />
-          三个板块均无「{kw}」的相关结果
-          <span className="mt-1 block text-xs">建议：换更短的关键词（如只搜单位名或岗位名），或试试同义词</span>
+          {t("三个板块均无「")}{kw}{t("」的相关结果")}{' '}<span className="mt-1 block text-xs">{t("建议：换更短的关键词（如只搜单位名或岗位名），或试试同义词")}</span>
           <div className="mt-4">
             <HotSearchPills onPick={(w) => onSearch(w)} />
           </div>
@@ -207,8 +205,8 @@ export function SearchResultsPage({ keyword, onSearch, onOpenBoard, onOpenJob }:
         <>
           <SectionBlock
             icon={Landmark}
-            title="体制内岗位"
-            boardLabel="体制内"
+            title={t("体制内岗位")}
+            boardLabel={t("体制内")}
             total={hits.positions.total}
             capped={hits.positions.capped}
             keyword={kw}
@@ -222,8 +220,8 @@ export function SearchResultsPage({ keyword, onSearch, onOpenBoard, onOpenJob }:
           />
           <SectionBlock
             icon={GraduationCap}
-            title="校招信息"
-            boardLabel="校招"
+            title={t("校招信息")}
+            boardLabel={t("校招")}
             total={hits.campus.total}
             capped={hits.campus.capped}
             keyword={kw}
@@ -237,8 +235,8 @@ export function SearchResultsPage({ keyword, onSearch, onOpenBoard, onOpenJob }:
           />
           <SectionBlock
             icon={Briefcase}
-            title="编制公告"
-            boardLabel="编制"
+            title={t("编制公告")}
+            boardLabel={t("编制")}
             total={hits.bianzhi.total}
             capped={hits.bianzhi.capped}
             keyword={kw}

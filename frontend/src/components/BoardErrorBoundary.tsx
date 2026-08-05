@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { Component, type ReactNode } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -32,7 +33,7 @@ export class BoardErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center">
-          <p className="text-sm text-muted-foreground">板块加载出错了，请重试</p>
+          <p className="text-sm text-muted-foreground">{t("板块加载出错了，请重试")}</p>
           <Button
             variant="outline"
             size="sm"
@@ -40,8 +41,7 @@ export class BoardErrorBoundary extends Component<Props, State> {
             onClick={() => this.setState({ hasError: false })}
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            重试
-          </Button>
+            {t("重试")}{' '}</Button>
         </div>
       )
     }

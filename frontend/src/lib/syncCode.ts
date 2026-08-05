@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import { buildBackup, restoreBackup, type RestoreResult } from '@/lib/backup'
 
 const PREFIX = 'SC1:'
@@ -75,21 +76,21 @@ export interface SyncImportResult extends RestoreResult {
 /** 导入同步码并合并：收藏走备份合并语义；画像/偏好仅填充本机缺失项。 */
 export async function importSyncCode(code: string): Promise<SyncImportResult> {
   const trimmed = code.trim()
-  if (!trimmed.startsWith(PREFIX)) throw new Error('不是有效的同步码（应以 SC1: 开头）')
+  if (!trimmed.startsWith(PREFIX)) throw new Error(t('不是有效的同步码（应以 SC1: 开头）'))
   let json: string
   try {
     json = await gunzipBytes(base64ToBytes(trimmed.slice(PREFIX.length)))
   } catch {
-    throw new Error('同步码解码失败，请确认完整复制')
+    throw new Error(t('同步码解码失败，请确认完整复制'))
   }
   let payload: SyncPayload
   try {
     payload = JSON.parse(json) as SyncPayload
   } catch {
-    throw new Error('同步码内容损坏')
+    throw new Error(t('同步码内容损坏'))
   }
   if (payload.app !== 'recruit-sync' || typeof payload.version !== 'number') {
-    throw new Error('不是上岸雷达的同步码')
+    throw new Error(t('不是上岸雷达的同步码'))
   }
   const restored = restoreBackup(JSON.stringify(payload.backup))
 

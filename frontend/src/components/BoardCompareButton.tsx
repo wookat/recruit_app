@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { Scale } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -23,8 +24,8 @@ export function BoardCompareButton({ item, className }: Props) {
     <Button
       variant="ghost"
       size="icon"
-      aria-label={active ? '移出对比' : '加入对比'}
-      title={full ? `最多对比 ${BOARD_COMPARE_MAX} 条` : active ? '移出对比' : '加入对比'}
+      aria-label={active ? t("移出对比") : t("加入对比")}
+      title={full ? tt`最多对比 ${BOARD_COMPARE_MAX} 条` : active ? t("移出对比") : t("加入对比")}
       className={cn('h-11 w-11 sm:h-8 sm:w-8', full && 'opacity-50', className)}
       onClick={(e) => {
         e.stopPropagation()

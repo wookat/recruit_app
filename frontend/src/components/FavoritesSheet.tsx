@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useMemo, useRef, useState } from 'react'
 import type { BianzhiJob, CampusJob, Position } from '@/api'
 import { daysUntil, formatDayLabel, getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
@@ -181,11 +182,11 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
       return
     }
     if (compareSel.length > 0 && compareSel[0].kind !== kind) {
-      setCompareHint('仅支持同板块收藏对比，请先移除已选或在同一板块内勾选')
+      setCompareHint(t("仅支持同板块收藏对比，请先移除已选或在同一板块内勾选"))
       return
     }
     if (compareSel.length >= 3) {
-      setCompareHint('最多同时对比 3 条')
+      setCompareHint(t("最多同时对比 3 条"))
       return
     }
     setCompareHint(null)
@@ -208,7 +209,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
   }
 
   const compareColumns: FavCompareColumn[] = compareSel.flatMap((s): FavCompareColumn[] => {
-    const priorityText = (v: boolean) => (v ? '优先' : '一般')
+    const priorityText = (v: boolean) => (v ? t("优先") : t("一般"))
     if (s.kind === 'positions') {
       const p = favorites.find((x) => x.id === s.id)
       if (!p) return []
@@ -226,16 +227,16 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             setSelected(p)
           },
           fields: [
-            { label: '单位', value: p.employer || '-' },
-            { label: '考试类型', value: p.exam_type || '-' },
-            { label: '工作地点', value: p.work_location || '-' },
-            { label: '学历要求', value: p.edu_level_norm || p.edu_requirement || '-' },
-            { label: '本科专业', value: p.undergrad_major || '-' },
-            { label: '研究生专业', value: p.grad_major || '-' },
-            { label: '报名时间', value: p.signup_time || '-' },
-            { label: '状态', value: statusOf('positions', p.id) },
-            { label: '优先级', value: priorityText(!!priorities[p.id]) },
-            { label: '备注', value: notes[p.id] || '-' },
+            { label: t("单位"), value: p.employer || '-' },
+            { label: t("考试类型"), value: p.exam_type || '-' },
+            { label: t("工作地点"), value: p.work_location || '-' },
+            { label: t("学历要求"), value: p.edu_level_norm || p.edu_requirement || '-' },
+            { label: t("本科专业"), value: p.undergrad_major || '-' },
+            { label: t("研究生专业"), value: p.grad_major || '-' },
+            { label: t("报名时间"), value: p.signup_time || '-' },
+            { label: t("状态"), value: t(statusOf('positions', p.id)) },
+            { label: t("优先级"), value: priorityText(!!priorities[p.id]) },
+            { label: t("备注"), value: notes[p.id] || '-' },
           ],
         },
       ]
@@ -254,15 +255,15 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             setCampusDetail(j)
           },
           fields: [
-            { label: '岗位', value: j.positions || '-' },
-            { label: '行业', value: j.industry || '-' },
-            { label: '工作地点', value: j.locations || '-' },
-            { label: '学历要求', value: j.edu_requirement || '-' },
-            { label: '专业要求', value: j.major_requirement || '-' },
-            { label: '截止', value: j.deadline_text || '-' },
-            { label: '状态', value: statusOf('campus', j.id) },
-            { label: '优先级', value: priorityText(!!campusMeta[j.id]?.priority) },
-            { label: '备注', value: campusMeta[j.id]?.note || '-' },
+            { label: t("岗位"), value: j.positions || '-' },
+            { label: t("行业"), value: j.industry || '-' },
+            { label: t("工作地点"), value: j.locations || '-' },
+            { label: t("学历要求"), value: j.edu_requirement || '-' },
+            { label: t("专业要求"), value: j.major_requirement || '-' },
+            { label: t("截止"), value: j.deadline_text || '-' },
+            { label: t("状态"), value: t(statusOf('campus', j.id)) },
+            { label: t("优先级"), value: priorityText(!!campusMeta[j.id]?.priority) },
+            { label: t("备注"), value: campusMeta[j.id]?.note || '-' },
           ],
         },
       ]
@@ -280,16 +281,16 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           setBianzhiDetail(j)
         },
         fields: [
-          { label: '省份', value: j.province || '-' },
-          { label: '岗位类型', value: j.job_type || '-' },
-          { label: '招聘人数', value: j.headcount || '-' },
-          { label: '工作地点', value: j.work_location || '-' },
-          { label: '学历要求', value: j.edu_requirement || '-' },
-          { label: '专业要求', value: j.major_requirement || '-' },
-          { label: '截止', value: j.deadline_text || '-' },
-          { label: '状态', value: statusOf('bianzhi', j.id) },
-          { label: '优先级', value: priorityText(!!bianzhiMeta[j.id]?.priority) },
-          { label: '备注', value: bianzhiMeta[j.id]?.note || '-' },
+          { label: t("省份"), value: j.province || '-' },
+          { label: t("岗位类型"), value: j.job_type || '-' },
+          { label: t("招聘人数"), value: j.headcount || '-' },
+          { label: t("工作地点"), value: j.work_location || '-' },
+          { label: t("学历要求"), value: j.edu_requirement || '-' },
+          { label: t("专业要求"), value: j.major_requirement || '-' },
+          { label: t("截止"), value: j.deadline_text || '-' },
+          { label: t("状态"), value: t(statusOf('bianzhi', j.id)) },
+          { label: t("优先级"), value: priorityText(!!bianzhiMeta[j.id]?.priority) },
+          { label: t("备注"), value: bianzhiMeta[j.id]?.note || '-' },
         ],
       },
     ]
@@ -303,7 +304,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
         type="button"
         role="checkbox"
         aria-checked={checked}
-        aria-label={checked ? '移出对比' : '加入对比'}
+        aria-label={checked ? t("移出对比") : t("加入对比")}
         className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center sm:min-h-8 sm:min-w-8"
         onClick={() => toggleCompareSel(kind, id)}
       >
@@ -403,17 +404,15 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
     return (
       <div className="mt-1.5 flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-amber-50 px-2 py-1.5 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
         <AlarmClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <span>{fu.days} 天未更新，是否跟进？</span>
+        <span>{fu.days} {' '}{t("天未更新，是否跟进？")}</span>
         <button
           type="button"
           className={btnCls}
           onClick={() => (kind === 'positions' ? appendFollowUp(id) : appendBoardFollowUp(kind, id))}
         >
-          已跟进
-        </button>
+          {t("已跟进")}{' '}</button>
         <button type="button" className={btnCls} onClick={() => dismissFollowUp(`${kind}:${id}`, fu.lastAt)}>
-          忽略
-        </button>
+          {t("忽略")}{' '}</button>
       </div>
     )
   }
@@ -422,19 +421,18 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
     if (!isStale(status, history)) return null
     return (
       <span
-        title="该条目超过 7 天未更新状态，记得跟进下一步"
+        title={t("该条目超过 7 天未更新状态，记得跟进下一步")}
         className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-yellow-100 px-1.5 py-0.5 text-[11px] font-medium text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-yellow-500" aria-hidden="true" />
-        7天未更新
-      </span>
+        {t("7天未更新")}{' '}</span>
     )
   }
 
   const FUNNEL_STAGES: { label: string; statuses: AppStatus[] }[] = [
-    { label: '已投递', statuses: ['已投递'] },
-    { label: '笔试/面试', statuses: ['待笔试', '待面试'] },
-    { label: 'OC/录用', statuses: ['OC/录用'] },
+    { label: t("已投递"), statuses: ['已投递'] },
+    { label: t("笔试/面试"), statuses: ['待笔试', '待面试'] },
+    { label: t("OC/录用"), statuses: ['OC/录用'] },
   ]
   const stageCount = (sts: AppStatus[]) => sts.reduce((n, s) => n + (statusCounts[s] || 0), 0)
   const stageActive = (sts: AppStatus[]) =>
@@ -531,7 +529,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
       evts.push({
         uid: `recruit-positions-${p.id}@jobs.zalize.com`,
         date: d,
-        summary: `报名截止：${p.employer}${p.position_example ? ` ${p.position_example}` : ''}`,
+        summary: tt`报名截止：${p.employer}${p.position_example ? ` ${p.position_example}` : ''}`,
         description: p.source_url || undefined,
       })
     }
@@ -541,7 +539,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
       evts.push({
         uid: `recruit-campus-${j.id}@jobs.zalize.com`,
         date: d,
-        summary: `投递截止：${j.company || '未知公司'}${j.positions ? ` ${j.positions}` : ''}`,
+        summary: tt`投递截止：${j.company || '未知公司'}${j.positions ? ` ${j.positions}` : ''}`,
         description: j.apply_url || j.announce_url || undefined,
       })
     }
@@ -551,7 +549,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
       evts.push({
         uid: `recruit-bianzhi-${j.id}@jobs.zalize.com`,
         date: d,
-        summary: `报名截止：${j.employer || '未知单位'}`,
+        summary: tt`报名截止：${j.employer || '未知单位'}`,
         description: j.announce_url || j.apply_url || undefined,
       })
     }
@@ -633,13 +631,13 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           onClick={() => toggleBoardPriority(kind, id)}
         >
           <Flag className="h-3 w-3" />
-          {meta?.priority ? '优先' : '一般'}
+          {meta?.priority ? t("优先") : t("一般")}
         </button>
         {noteEditing === noteKey ? (
           <Input
             autoFocus
             defaultValue={meta?.note || ''}
-            placeholder="添加备注，回车保存"
+            placeholder={t("添加备注，回车保存")}
             className="h-7 flex-1 text-xs"
             onBlur={(e) => {
               setBoardNote(kind, id, e.target.value)
@@ -661,7 +659,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             onClick={() => setNoteEditing(noteKey)}
           >
             <StickyNote className="h-3 w-3 shrink-0" />
-            {meta?.note ? <span className="truncate">{meta.note}</span> : '备注'}
+            {meta?.note ? <span className="truncate">{meta.note}</span> : t("备注")}
           </button>
         )}
         {renderTimeline(meta?.history)}
@@ -683,15 +681,15 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
       >
         <SelectTrigger
           size="sm"
-          aria-label="投递状态"
+          aria-label={t("投递状态")}
           className={`h-7 w-auto gap-1 border-none px-2 text-[11px] font-medium shadow-none ${STATUS_COLORS[current]}`}
         >
-          {current}
+          {t(current)}
         </SelectTrigger>
         <SelectContent>
           {APP_STATUSES.map((s) => (
             <SelectItem key={s} value={s} className="text-xs">
-              {s}
+              {t(s)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -723,7 +721,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
               {j.positions && <span className="line-clamp-1">{j.positions}</span>}
             </div>
             <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-              {j.deadline_text && <span>截止：{normalizeDateStr(j.deadline_text)}</span>}
+              {j.deadline_text && <span>{t("截止：")}{normalizeDateStr(j.deadline_text)}</span>}
               {j.apply_url && j.apply_url.startsWith('http') && (
                 <a
                   href={j.apply_url}
@@ -732,7 +730,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   onClick={(e) => e.stopPropagation()}
                   className="inline-flex items-center gap-0.5 text-primary hover:underline"
                 >
-                  投递链接 <ExternalLink className="h-3 w-3" />
+                  {t("投递链接")}{' '}<ExternalLink className="h-3 w-3" />
                 </a>
               )}
             </div>
@@ -743,7 +741,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            aria-label={campusMeta[j.id]?.pinned ? '取消置顶' : '置顶'}
+            aria-label={campusMeta[j.id]?.pinned ? t("取消置顶") : t("置顶")}
             aria-pressed={!!campusMeta[j.id]?.pinned}
             onClick={() => toggleBoardPinned('campus', j.id)}
           >
@@ -758,7 +756,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            aria-label="取消收藏"
+            aria-label={t("取消收藏")}
             onClick={() => toggleCampusFavorite(j)}
           >
             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
@@ -796,7 +794,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   {j.province}
                 </span>
               )}
-              {j.deadline_text && <span>截止：{normalizeDateStr(j.deadline_text)}</span>}
+              {j.deadline_text && <span>{t("截止：")}{normalizeDateStr(j.deadline_text)}</span>}
               {j.announce_url && j.announce_url.startsWith('http') && (
                 <a
                   href={j.announce_url}
@@ -805,7 +803,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   onClick={(e) => e.stopPropagation()}
                   className="inline-flex items-center gap-0.5 text-primary hover:underline"
                 >
-                  公告链接 <ExternalLink className="h-3 w-3" />
+                  {t("公告链接")}{' '}<ExternalLink className="h-3 w-3" />
                 </a>
               )}
             </div>
@@ -816,7 +814,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            aria-label={bianzhiMeta[j.id]?.pinned ? '取消置顶' : '置顶'}
+            aria-label={bianzhiMeta[j.id]?.pinned ? t("取消置顶") : t("置顶")}
             aria-pressed={!!bianzhiMeta[j.id]?.pinned}
             onClick={() => toggleBoardPinned('bianzhi', j.id)}
           >
@@ -831,7 +829,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            aria-label="取消收藏"
+            aria-label={t("取消收藏")}
             onClick={() => toggleBianzhiFavorite(j)}
           >
             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
@@ -883,7 +881,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           variant="ghost"
           size="icon"
           className="h-8 w-8"
-          aria-label={pinnedMap[p.id] ? '取消置顶' : '置顶'}
+          aria-label={pinnedMap[p.id] ? t("取消置顶") : t("置顶")}
           aria-pressed={!!pinnedMap[p.id]}
           onClick={() => toggleAppPinned(p.id)}
         >
@@ -898,7 +896,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           variant="ghost"
           size="icon"
           className="h-8 w-8"
-          aria-label="取消收藏"
+          aria-label={t("取消收藏")}
           onClick={() => toggleFavorite(p)}
         >
           <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
@@ -917,7 +915,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           onClick={() => toggleAppPriority(p.id)}
         >
           <Flag className="h-3 w-3" />
-          {priorities[p.id] ? '优先' : '一般'}
+          {priorities[p.id] ? t("优先") : t("一般")}
         </button>
         <Select
           value={channels[p.id] || ''}
@@ -925,7 +923,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
         >
           <SelectTrigger
             size="sm"
-            aria-label="投递渠道"
+            aria-label={t("投递渠道")}
             className={cn(
               'h-6 w-auto gap-1 border-none px-2 text-[11px] font-medium shadow-none',
               channels[p.id]
@@ -933,7 +931,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                 : 'bg-muted/60 text-muted-foreground',
             )}
           >
-            {channels[p.id] || '渠道'}
+            {channels[p.id] || t("渠道")}
           </SelectTrigger>
           <SelectContent>
             {APP_CHANNELS.map((c) => (
@@ -947,7 +945,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           <Input
             autoFocus
             defaultValue={notes[p.id] || ''}
-            placeholder="添加备注，回车保存"
+            placeholder={t("添加备注，回车保存")}
             className="h-7 flex-1 text-xs"
             onBlur={(e) => {
               setAppNote(p.id, e.target.value)
@@ -972,7 +970,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             {notes[p.id] ? (
               <span className="truncate">{notes[p.id]}</span>
             ) : (
-              '备注'
+              t("备注")
             )}
           </button>
         )}
@@ -1035,44 +1033,44 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
   function exportCsv() {
     const esc = (v: string | number | null | undefined) =>
       `"${String(v ?? '').replace(/"/g, '""')}"`
-    const header = ['板块', '单位/公司', '岗位', '地点', '截止', '投递状态', '渠道', '优先级', '备注', '链接']
+    const header = [t("板块"), t("单位/公司"), t("岗位"), t("地点"), t("截止"), t("投递状态"), t("渠道"), t("优先级"), t("备注"), t("链接")]
     let rows: (string | number | null | undefined)[][]
     if (board === 'positions') {
       rows = exportPositions.map((p) => [
-        '体制内',
+        t("体制内"),
         p.employer,
         p.position_example || p.exam_type,
         p.work_location,
         p.signup_time,
         statusOf('positions', p.id),
         channels[p.id] || '',
-        priorities[p.id] ? '优先' : '',
+        priorities[p.id] ? t("优先") : '',
         notes[p.id] || '',
         p.source_url || '',
       ])
     } else if (board === 'campus') {
       rows = exportCampus.map((j) => [
-        '校招',
+        t("校招"),
         j.company,
         j.positions,
         j.locations,
         j.deadline_text,
         statusOf('campus', j.id),
         '',
-        campusMeta[j.id]?.priority ? '优先' : '',
+        campusMeta[j.id]?.priority ? t("优先") : '',
         campusMeta[j.id]?.note || '',
         j.apply_url || j.announce_url || '',
       ])
     } else {
       rows = exportBianzhi.map((j) => [
-        '编制',
+        t("编制"),
         j.employer || j.category,
         j.job_type,
         j.province || j.work_location,
         j.deadline_text,
         statusOf('bianzhi', j.id),
         '',
-        bianzhiMeta[j.id]?.priority ? '优先' : '',
+        bianzhiMeta[j.id]?.priority ? t("优先") : '',
         bianzhiMeta[j.id]?.note || '',
         j.announce_url || j.apply_url || '',
       ])
@@ -1082,7 +1080,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `收藏_${board === 'positions' ? '体制内' : board === 'campus' ? '校招' : '编制'}_${new Date().toISOString().slice(0, 10)}.csv`
+    a.download = tt`收藏_${board === 'positions' ? t("体制内") : board === 'campus' ? t("校招") : t("编制")}_${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -1094,20 +1092,20 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
         const r = restoreBackup(String(reader.result))
         setRestoreMsg({
           ok: true,
-          text: `已恢复：体制内 ${r.positions} · 校招 ${r.campus} · 编制 ${r.bianzhi}（新增 ${r.added} · 更新 ${r.updated}）`,
+          text: tt`已恢复：体制内 ${r.positions} · 校招 ${r.campus} · 编制 ${r.bianzhi}（新增 ${r.added} · 更新 ${r.updated}）`,
         })
       } catch (e) {
-        setRestoreMsg({ ok: false, text: e instanceof Error ? e.message : '恢复失败' })
+        setRestoreMsg({ ok: false, text: e instanceof Error ? e.message : t("恢复失败") })
       }
     }
-    reader.onerror = () => setRestoreMsg({ ok: false, text: '文件读取失败' })
+    reader.onerror = () => setRestoreMsg({ ok: false, text: t("文件读取失败") })
     reader.readAsText(file)
   }
 
   const BOARD_TABS: { key: Board; label: string; count: number }[] = [
-    { key: 'positions', label: '体制内', count: favorites.length },
-    { key: 'campus', label: '校招', count: campusFavs.length },
-    { key: 'bianzhi', label: '编制', count: bianzhiFavs.length },
+    { key: 'positions', label: t("体制内"), count: favorites.length },
+    { key: 'campus', label: t("校招"), count: campusFavs.length },
+    { key: 'bianzhi', label: t("编制"), count: bianzhiFavs.length },
   ]
 
   return (
@@ -1117,8 +1115,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           <SheetHeader className="space-y-1.5 px-4 pt-6 sm:px-6">
             <SheetTitle className="flex items-center gap-2 pr-8 text-lg">
               <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
-              我的收藏
-              <Badge variant="secondary">{totalCount}</Badge>
+              {t("我的收藏")}{' '}<Badge variant="secondary">{totalCount}</Badge>
             </SheetTitle>
             <div className="flex flex-wrap items-center gap-1">
               {onOpenHistory && (
@@ -1129,8 +1126,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   onClick={onOpenHistory}
                 >
                   <HistoryIcon className="mr-1 h-3.5 w-3.5" />
-                  最近浏览
-                </Button>
+                  {t("最近浏览")}{' '}</Button>
               )}
               <Button
                 variant="ghost"
@@ -1140,8 +1136,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                 onClick={() => setDigestOpen((v) => !v)}
               >
                 <Sparkles className="mr-1 h-3.5 w-3.5" />
-                本周小结
-              </Button>
+                {t("本周小结")}{' '}</Button>
               {boardCount > 0 && (
                 <>
                   <Button
@@ -1152,7 +1147,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     disabled={exportCount === 0}
                   >
                     <Download className="mr-1 h-3.5 w-3.5" />
-                    {q ? `导出 CSV (${exportCount})` : '导出 CSV'}
+                    {q ? tt`导出 CSV (${exportCount})` : t("导出 CSV")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -1164,13 +1159,11 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     {listCopied ? (
                       <>
                         <Check className="mr-1 h-3.5 w-3.5 text-green-600" />
-                        已复制
-                      </>
+                        {t("已复制")}{' '}</>
                     ) : (
                       <>
                         <ClipboardList className="mr-1 h-3.5 w-3.5" />
-                        复制收藏清单
-                      </>
+                        {t("复制收藏清单")}{' '}</>
                     )}
                   </Button>
                   {board === 'positions' && (
@@ -1183,13 +1176,11 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                       {copied ? (
                         <>
                           <Check className="mr-1 h-3.5 w-3.5 text-green-600" />
-                          已复制
-                        </>
+                          {t("已复制")}{' '}</>
                       ) : (
                         <>
                           <Link2 className="mr-1 h-3.5 w-3.5" />
-                          分享收藏夹
-                        </>
+                          {t("分享收藏夹")}{' '}</>
                       )}
                     </Button>
                   )}
@@ -1204,28 +1195,23 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                       className="h-auto min-h-11 text-xs text-muted-foreground sm:h-7 sm:min-h-0"
                     >
                       <MoreHorizontal className="mr-1 h-3.5 w-3.5" />
-                      更多
-                    </Button>
+                      {t("更多")}{' '}</Button>
                   }
                 />
                 <DropdownMenuContent align="start">
                   <DropdownMenuItem onClick={downloadBackup} disabled={totalCount === 0}>
                     <DatabaseBackup className="mr-1.5 h-3.5 w-3.5" />
-                    备份数据
-                  </DropdownMenuItem>
+                    {t("备份数据")}{' '}</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
                     <FileUp className="mr-1.5 h-3.5 w-3.5" />
-                    恢复备份
-                  </DropdownMenuItem>
+                    {t("恢复备份")}{' '}</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setSyncOpen(true)}>
                     <MonitorSmartphone className="mr-1.5 h-3.5 w-3.5" />
-                    多设备同步码
-                  </DropdownMenuItem>
+                    {t("多设备同步码")}{' '}</DropdownMenuItem>
                   {board === 'positions' && boardCount > 0 && (
                     <DropdownMenuItem onClick={clearFavorites}>
                       <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                      清空收藏
-                    </DropdownMenuItem>
+                      {t("清空收藏")}{' '}</DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1269,8 +1255,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                 )}
               >
                 <AlarmClock className="h-4 w-4 shrink-0" />
-                {dueAlert.count} 条收藏{dueAlert.level === 'red' ? ' 3 天内截止' : `将于 ${remindDays} 天内截止`}，点击查看
-              </button>
+                {dueAlert.count} {' '}{t("条收藏")}{dueAlert.level === 'red' ? t(" 3 天内截止") : tt`将于 ${remindDays} 天内截止`}{t("，点击查看")}{' '}</button>
             )}
             <button
               type="button"
@@ -1279,14 +1264,12 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
               className="flex min-h-11 w-full cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground sm:hidden"
             >
               <AlarmClock className="h-3.5 w-3.5 shrink-0" />
-              提醒与通知设置
-              <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', settingsOpen && 'rotate-180')} />
+              {t("提醒与通知设置")}{' '}<ChevronDown className={cn('h-3.5 w-3.5 transition-transform', settingsOpen && 'rotate-180')} />
             </button>
             <div className={cn('space-y-2', !settingsOpen && 'hidden sm:block sm:space-y-2')}>
             <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
               <AlarmClock className="h-3.5 w-3.5 shrink-0" />
-              提前提醒
-              {REMIND_OPTIONS.map((n) => (
+              {t("提前提醒")}{' '}{REMIND_OPTIONS.map((n) => (
                 <button
                   key={n}
                   type="button"
@@ -1299,10 +1282,9 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                       : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >
-                  {n} 天
-                </button>
+                  {n} {' '}{t("天")}{' '}</button>
               ))}
-              <span className="hidden sm:inline">顶栏红点与横幅按此计算</span>
+              <span className="hidden sm:inline">{t("顶栏红点与横幅按此计算")}</span>
             </div>
             <NotifyToggleRow />
             <PushToggleRow />
@@ -1337,7 +1319,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="搜单位 / 公司 / 岗位 / 备注…"
+                  placeholder={t("搜单位 / 公司 / 岗位 / 备注…")}
                   className="h-9 pl-8 text-xs"
                 />
               </div>
@@ -1351,8 +1333,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   onClick={() => setView('track')}
                 >
                   <ListChecks className="h-3.5 w-3.5" />
-                  投递追踪
-                </Button>
+                  {t("投递追踪")}{' '}</Button>
                 <Button
                   variant={view === 'calendar' ? 'secondary' : 'ghost'}
                   size="sm"
@@ -1360,8 +1341,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   onClick={() => setView('calendar')}
                 >
                   <CalendarDays className="h-3.5 w-3.5" />
-                  截止日历
-                </Button>
+                  {t("截止日历")}{' '}</Button>
                 {view === 'track' && (
                   <Button
                     variant={compareMode ? 'secondary' : 'ghost'}
@@ -1371,8 +1351,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     onClick={() => (compareMode ? exitCompare() : setCompareMode(true))}
                   >
                     <Scale className="h-3.5 w-3.5" />
-                    对比
-                  </Button>
+                    {t("对比")}{' '}</Button>
                 )}
               </div>
             )}
@@ -1393,7 +1372,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     setFollowupOnly(false)
                   }}
                 >
-                  收藏 <span className="font-semibold">{boardCount}</span>
+                  {t("收藏")}{' '}<span className="font-semibold">{boardCount}</span>
                 </button>
                 {FUNNEL_STAGES.map((st) => (
                   <span key={st.label} className="flex shrink-0 items-center gap-1">
@@ -1434,18 +1413,18 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     }}
                   >
                     <AlarmClock className="h-3 w-3" aria-hidden="true" />
-                    需跟进 <span className="font-semibold">{followUpCount}</span>
+                    {t("需跟进")}{' '}<span className="font-semibold">{followUpCount}</span>
                   </button>
                 )}
               </div>
             )}
             {boardCount > 0 && view === 'track' && (
               <div className="flex items-center gap-1 text-[11px]">
-                <span className="text-muted-foreground">排序</span>
+                <span className="text-muted-foreground">{t("排序")}</span>
                 {(
                   [
-                    ['added', '按加入时间'],
-                    ['deadline', '按截止日'],
+                    ['added', t("按加入时间")],
+                    ['deadline', t("按截止日")],
                   ] as const
                 ).map(([m, label]) => (
                   <button
@@ -1481,7 +1460,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     setFollowupOnly(false)
                   }}
                 >
-                  全部 {boardCount}
+                  {t("全部")}{' '}{boardCount}
                 </button>
                 {APP_STATUSES.filter((s) => statusCounts[s]).map((s) => (
                   <button
@@ -1496,7 +1475,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                       setStatusFilter((cur) => (cur === s ? null : s))
                     }}
                   >
-                    {s} <span data-count>{statusCounts[s]}</span>
+                    {t(s)} <span data-count>{statusCounts[s]}</span>
                   </button>
                 ))}
                 {statusFilter && (
@@ -1508,8 +1487,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                       setStageFilter(null)
                     }}
                   >
-                    清除筛选
-                  </button>
+                    {t("清除筛选")}{' '}</button>
                 )}
               </div>
             )}
@@ -1521,20 +1499,19 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   <div>
                     <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-popover px-4 py-1.5 sm:px-6">
                       <AlarmClock className="h-3.5 w-3.5 text-red-500" aria-hidden="true" />
-                      <span className="text-xs font-semibold">即将截止（7 天内）</span>
+                      <span className="text-xs font-semibold">{t("即将截止（7 天内）")}</span>
                       <span className="rounded-sm bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
-                        {dueSoon.length} 条
-                      </span>
+                        {dueSoon.length} {' '}{t("条")}{' '}</span>
                     </div>
                     <div className="divide-y">
                       {dueSoon.map(({ entry: e, daysLeft }) => {
                         const item = (e.position ?? e.campus ?? e.bianzhi)!
                         const title =
                           e.kind === 'positions'
-                            ? e.position!.employer?.trim() || e.position!.position_example || '体制内岗位'
+                            ? e.position!.employer?.trim() || e.position!.position_example || t("体制内岗位")
                             : e.kind === 'campus'
-                              ? [e.campus!.company, e.campus!.positions].filter(Boolean).join(' · ') || '校招岗位'
-                              : e.bianzhi!.employer || e.bianzhi!.job_type || '编制公告'
+                              ? [e.campus!.company, e.campus!.positions].filter(Boolean).join(' · ') || t("校招岗位")
+                              : e.bianzhi!.employer || e.bianzhi!.job_type || t("编制公告")
                         return (
                           <button
                             key={`due-${e.kind}-${item.id}`}
@@ -1547,7 +1524,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                             }}
                           >
                             <span className={cn(PILL_BASE, 'shrink-0 bg-muted/60 text-muted-foreground')}>
-                              {e.kind === 'positions' ? '体制内' : e.kind === 'campus' ? '校招' : '编制'}
+                              {e.kind === 'positions' ? t("体制内") : e.kind === 'campus' ? t("校招") : t("编制")}
                             </span>
                             <span className="min-w-0 flex-1 truncate font-medium">{title}</span>
                             <span
@@ -1559,7 +1536,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                                     : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
                               }`}
                             >
-                              {daysLeft === 0 ? '今日截止' : `剩 ${daysLeft} 天`}
+                              {daysLeft === 0 ? t("今日截止") : tt`剩 ${daysLeft} 天`}
                             </span>
                           </button>
                         )
@@ -1573,12 +1550,12 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   className="m-4 sm:m-6"
                   title={
                     board === 'positions'
-                      ? '还没有收藏岗位'
+                      ? t("还没有收藏岗位")
                       : board === 'campus'
-                      ? '还没有收藏校招信息'
-                      : '还没有收藏编制公告'
+                      ? t("还没有收藏校招信息")
+                      : t("还没有收藏编制公告")
                   }
-                  description="点击列表里的星标即可收藏，之后在这里管理投递全流程"
+                  description={t("点击列表里的星标即可收藏，之后在这里管理投递全流程")}
                   action={
                     <div className="flex flex-col items-center gap-2">
                       <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -1595,8 +1572,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                         </span>
                       </div>
                       <div className="text-[11px] text-muted-foreground">
-                        星标收藏 → 投递状态追踪 → 截止自动提醒
-                      </div>
+                        {t("星标收藏 → 投递状态追踪 → 截止自动提醒")}{' '}</div>
                     </div>
                   }
                 />
@@ -1608,7 +1584,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                         <span className={`rounded-sm px-2 py-0.5 text-[11px] font-medium ${STATUS_COLORS[g.status]}`}>
                           {g.status}
                         </span>
-                        <span className="text-xs text-muted-foreground">{g.items.length} 个岗位</span>
+                        <span className="text-xs text-muted-foreground">{g.items.length} {' '}{t("个岗位")}</span>
                       </div>
                       <div className="divide-y">
                         {g.items.map((item) =>
@@ -1624,9 +1600,9 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   {groups.length === 0 && (
                     <EmptyState
                       className="m-4 sm:m-6"
-                      title={q ? '无匹配收藏' : '该状态下暂无岗位'}
+                      title={q ? t("无匹配收藏") : t("该状态下暂无岗位")}
                       description={
-                        q ? '换个关键词试试，或清空搜索框' : '点击上方状态徽章可切换筛选'
+                        q ? t("换个关键词试试，或清空搜索框") : t("点击上方状态徽章可切换筛选")
                       }
                     />
                   )}
@@ -1642,11 +1618,11 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     className="h-11 gap-1 text-xs sm:h-7"
                     disabled={icsEvents.length === 0}
                     onClick={() =>
-                      downloadIcs(icsEvents, `上岸雷达截止日历_${new Date().toISOString().slice(0, 10)}.ics`)
+                      downloadIcs(icsEvents, tt`上岸雷达截止日历_${new Date().toISOString().slice(0, 10)}.ics`)
                     }
                   >
                     <CalendarDays className="h-3.5 w-3.5" />
-                    导出到日历 (.ics{icsEvents.length ? ` · ${icsEvents.length}` : ''})
+                    {t("导出到日历 (.ics")}{icsEvents.length ? ` · ${icsEvents.length}` : ''})
                   </Button>
                 </div>
                 {filteredCalendarDays.map(({ date, entries }, idx) => {
@@ -1672,7 +1648,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                               : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
                           }`}
                         >
-                          {expired ? '已截止' : n === 0 ? '今日截止' : `剩 ${n} 天`}
+                          {expired ? t("已截止") : n === 0 ? t("今日截止") : tt`剩 ${n} 天`}
                         </span>
                       </div>
                       <div className="divide-y">
@@ -1680,7 +1656,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                           <div key={`${e.kind}-${(e.position ?? e.campus ?? e.bianzhi)!.id}`}>
                             <div className="flex items-center gap-1 px-4 pt-2 sm:px-6">
                               <span className={cn(PILL_BASE, 'bg-muted/60 text-muted-foreground')}>
-                                {e.kind === 'positions' ? '体制内' : e.kind === 'campus' ? '校招' : '编制'}
+                                {e.kind === 'positions' ? t("体制内") : e.kind === 'campus' ? t("校招") : t("编制")}
                               </span>
                             </div>
                             {renderEntry(e)}
@@ -1693,17 +1669,16 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                 {filteredUndated.length > 0 && (
                   <div>
                     <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-popover px-4 py-1.5 sm:px-6">
-                      <span className="text-xs font-semibold">无固定截止日期</span>
+                      <span className="text-xs font-semibold">{t("无固定截止日期")}</span>
                       <span className="rounded-sm bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
-                        {filteredUndated.length} 条（招满为止/详见公告等）
-                      </span>
+                        {filteredUndated.length} {' '}{t("条（招满为止/详见公告等）")}{' '}</span>
                     </div>
                     <div className="divide-y">
                       {filteredUndated.map(({ kind, label, entry }) => (
                         <div key={`u-${kind}-${(entry.position ?? entry.campus ?? entry.bianzhi)!.id}`}>
                           <div className="flex flex-wrap items-center gap-1 px-4 pt-2 sm:px-6">
                             <span className={cn(PILL_BASE, 'bg-muted/60 text-muted-foreground')}>
-                              {kind === 'positions' ? '体制内' : kind === 'campus' ? '校招' : '编制'}
+                              {kind === 'positions' ? t("体制内") : kind === 'campus' ? t("校招") : t("编制")}
                             </span>
                             <span className="text-[11px] text-muted-foreground">{label}</span>
                           </div>
@@ -1717,11 +1692,11 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                   <EmptyState
                     icon={CalendarDays}
                     className="m-4 sm:m-6"
-                    title={q ? '无匹配收藏' : '近 14 天内没有即将截止的收藏岗位'}
+                    title={q ? t("无匹配收藏") : t("近 14 天内没有即将截止的收藏岗位")}
                     description={
                       q
-                        ? '换个关键词试试，或清空搜索框'
-                        : '收藏更多岗位后，这里会按截止日期提醒你报名'
+                        ? t("换个关键词试试，或清空搜索框")
+                        : t("收藏更多岗位后，这里会按截止日期提醒你报名")
                     }
                   />
                 )}
@@ -1735,8 +1710,8 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
               )}
               <div className="flex flex-wrap items-center gap-2">
                 <Scale className="h-4 w-4 shrink-0 text-primary" />
-                <span className="text-sm font-medium">已选 {compareSel.length}/3</span>
-                <span className="text-xs text-muted-foreground">勾选同板块 2-3 条收藏</span>
+                <span className="text-sm font-medium">{t("已选")}{' '}{compareSel.length}/3</span>
+                <span className="text-xs text-muted-foreground">{t("勾选同板块 2-3 条收藏")}</span>
                 <div className="ml-auto flex items-center gap-2">
                   <Button
                     variant="ghost"
@@ -1744,15 +1719,14 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
                     className="h-auto min-h-11 text-xs text-muted-foreground sm:h-8 sm:min-h-0"
                     onClick={exitCompare}
                   >
-                    退出对比
-                  </Button>
+                    {t("退出对比")}{' '}</Button>
                   <Button
                     size="sm"
                     className="h-auto min-h-11 text-xs sm:h-8 sm:min-h-0"
                     disabled={compareSel.length < 2}
                     onClick={() => setCompareOpen(true)}
                   >
-                    开始对比{compareSel.length < 2 ? '（至少 2 条）' : ''}
+                    {t("开始对比")}{compareSel.length < 2 ? t("（至少 2 条）") : ''}
                   </Button>
                 </div>
               </div>
@@ -1788,30 +1762,30 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           onFavToggle={() => toggleCampusFavorite(campusDetail)}
           snapshotNote
           basics={[
-            { label: '公司', value: campusDetail.company },
-            { label: '招聘岗位', value: campusDetail.positions },
-            { label: '企业类型', value: campusDetail.company_type },
-            { label: '行业', value: campusDetail.industry },
-            { label: '批次', value: campusDetail.batch },
-            { label: '届别', value: campusDetail.grad_years },
-            { label: '免笔试', value: campusDetail.no_exam },
-            { label: '内推码', value: campusDetail.referral_code },
-            { label: '工作地点', value: campusDetail.locations },
-            { label: '来源', value: campusDetail.source_table },
-            { label: '备注', value: campusDetail.notes },
+            { label: t("公司"), value: campusDetail.company },
+            { label: t("招聘岗位"), value: campusDetail.positions },
+            { label: t("企业类型"), value: campusDetail.company_type },
+            { label: t("行业"), value: campusDetail.industry },
+            { label: t("批次"), value: campusDetail.batch },
+            { label: t("届别"), value: campusDetail.grad_years },
+            { label: t("免笔试"), value: campusDetail.no_exam },
+            { label: t("内推码"), value: campusDetail.referral_code },
+            { label: t("工作地点"), value: campusDetail.locations },
+            { label: t("来源"), value: campusDetail.source_table },
+            { label: t("备注"), value: campusDetail.notes },
           ]}
           requirements={[
-            { label: '学历要求', value: campusDetail.edu_requirement },
-            { label: '专业要求', value: campusDetail.major_requirement },
+            { label: t("学历要求"), value: campusDetail.edu_requirement },
+            { label: t("专业要求"), value: campusDetail.major_requirement },
           ]}
           schedule={[
-            { label: '开始时间', value: normalizeDateStr(campusDetail.start_date) },
-            { label: '截止时间', value: normalizeDateStr(campusDetail.deadline_text) },
-            { label: '更新时间', value: normalizeDateStr(campusDetail.updated_at_src) },
+            { label: t("开始时间"), value: normalizeDateStr(campusDetail.start_date) },
+            { label: t("截止时间"), value: normalizeDateStr(campusDetail.deadline_text) },
+            { label: t("更新时间"), value: normalizeDateStr(campusDetail.updated_at_src) },
           ]}
           links={[
-            { label: '投递入口', url: campusDetail.apply_url, checkDead: true },
-            { label: '公告链接', url: campusDetail.announce_url },
+            { label: t("投递入口"), url: campusDetail.apply_url, checkDead: true },
+            { label: t("公告链接"), url: campusDetail.announce_url },
           ]}
         />
       )}
@@ -1822,7 +1796,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           title={
             bianzhiDetail.employer ||
             (bianzhiDetail.category === '大型联考'
-              ? `${bianzhiDetail.province ?? ''}${bianzhiDetail.job_type ?? ''}联考`
+              ? tt`${bianzhiDetail.province ?? ''}${bianzhiDetail.job_type ?? ''}联考`
               : '-')
           }
           badges={[bianzhiDetail.category, bianzhiDetail.province].filter(
@@ -1832,7 +1806,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             org:
               bianzhiDetail.employer ||
               (bianzhiDetail.category === '大型联考'
-                ? `${bianzhiDetail.province ?? ''}${bianzhiDetail.job_type ?? ''}联考`
+                ? tt`${bianzhiDetail.province ?? ''}${bianzhiDetail.job_type ?? ''}联考`
                 : null),
             title: bianzhiDetail.job_type,
             location: bianzhiDetail.work_location || bianzhiDetail.province,
@@ -1844,27 +1818,27 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           onFavToggle={() => toggleBianzhiFavorite(bianzhiDetail)}
           snapshotNote
           basics={[
-            { label: '招聘单位', value: bianzhiDetail.employer },
-            { label: '分类', value: bianzhiDetail.category },
-            { label: '省份', value: bianzhiDetail.province },
-            { label: '岗位类型', value: bianzhiDetail.job_type },
-            { label: '招聘人数', value: bianzhiDetail.headcount },
-            { label: '工作地点', value: bianzhiDetail.work_location },
-            { label: '备注', value: bianzhiDetail.notes },
+            { label: t("招聘单位"), value: bianzhiDetail.employer },
+            { label: t("分类"), value: bianzhiDetail.category },
+            { label: t("省份"), value: bianzhiDetail.province },
+            { label: t("岗位类型"), value: bianzhiDetail.job_type },
+            { label: t("招聘人数"), value: bianzhiDetail.headcount },
+            { label: t("工作地点"), value: bianzhiDetail.work_location },
+            { label: t("备注"), value: bianzhiDetail.notes },
           ]}
           requirements={[
-            { label: '学历要求', value: bianzhiDetail.edu_requirement },
-            { label: '专业要求', value: bianzhiDetail.major_requirement },
+            { label: t("学历要求"), value: bianzhiDetail.edu_requirement },
+            { label: t("专业要求"), value: bianzhiDetail.major_requirement },
           ]}
           schedule={[
-            { label: '报名开始', value: normalizeDateStr(bianzhiDetail.signup_start) },
-            { label: '报名截止', value: normalizeDateStr(bianzhiDetail.deadline_text) },
-            { label: '考试时间', value: bianzhiDetail.exam_time },
-            { label: '更新时间', value: normalizeDateStr(bianzhiDetail.updated_at_src) },
+            { label: t("报名开始"), value: normalizeDateStr(bianzhiDetail.signup_start) },
+            { label: t("报名截止"), value: normalizeDateStr(bianzhiDetail.deadline_text) },
+            { label: t("考试时间"), value: bianzhiDetail.exam_time },
+            { label: t("更新时间"), value: normalizeDateStr(bianzhiDetail.updated_at_src) },
           ]}
           links={[
-            { label: '公告链接', url: bianzhiDetail.announce_url, checkDead: true },
-            { label: '报名入口', url: bianzhiDetail.apply_url, checkDead: true },
+            { label: t("公告链接"), url: bianzhiDetail.announce_url, checkDead: true },
+            { label: t("报名入口"), url: bianzhiDetail.apply_url, checkDead: true },
           ]}
         />
       )}
@@ -1878,12 +1852,11 @@ function ExtLinkConfirmToggleRow() {
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
       <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-      外链打开前确认
-      <button
+      {t("外链打开前确认")}{' '}<button
         type="button"
         role="switch"
         aria-checked={enabled}
-        aria-label="外链打开前确认"
+        aria-label={t("外链打开前确认")}
         onClick={() => setConfirmExtLink(!enabled)}
         className="relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:h-6 sm:w-10"
       >
@@ -1902,7 +1875,7 @@ function ExtLinkConfirmToggleRow() {
         </span>
       </button>
       <span className="hidden sm:inline">
-        {enabled ? '点击详情外链时先确认目标网站' : '默认直接跳转，详情内已显示链接域名'}
+        {enabled ? t("点击详情外链时先确认目标网站") : t("默认直接跳转，详情内已显示链接域名")}
       </span>
     </div>
   )
@@ -1930,9 +1903,9 @@ function PushToggleRow() {
       }
       const items = buildPushItems(favorites, campusFavs, bianzhiFavs)
       const result = await enablePush(remindDays, items)
-      if (result === 'denied') setError('浏览器已拒绝通知权限（可在地址栏站点设置中重新允许）')
-      else if (result === 'unconfigured') setError('开启失败：网络异常或推送服务未就绪，请再点一次开关重试')
-      else if (result !== 'granted') setError('开启失败，请再点一次开关重试')
+      if (result === 'denied') setError(t("浏览器已拒绝通知权限（可在地址栏站点设置中重新允许）"))
+      else if (result === 'unconfigured') setError(t("开启失败：网络异常或推送服务未就绪，请再点一次开关重试"))
+      else if (result !== 'granted') setError(t("开启失败，请再点一次开关重试"))
     } finally {
       setBusy(false)
     }
@@ -1941,12 +1914,11 @@ function PushToggleRow() {
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
       <MonitorSmartphone className="h-3.5 w-3.5 shrink-0" />
-      关站推送提醒
-      <button
+      {t("关站推送提醒")}{' '}<button
         type="button"
         role="switch"
         aria-checked={enabled}
-        aria-label="关站推送提醒"
+        aria-label={t("关站推送提醒")}
         aria-busy={busy}
         onClick={toggle}
         className="relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:h-6 sm:w-10"
@@ -1967,8 +1939,8 @@ function PushToggleRow() {
       </button>
       <span className="hidden sm:inline">
         {enabled
-          ? '不打开站点也会在每天早上推送临近截止的收藏与保存筛选的上新'
-          : '默认关闭，开启后关站也能收到截止提醒与订阅上新推送'}
+          ? t("不打开站点也会在每天早上推送临近截止的收藏与保存筛选的上新")
+          : t("默认关闭，开启后关站也能收到截止提醒与订阅上新推送")}
       </span>
       {error && (
         <span
@@ -2001,12 +1973,11 @@ function NewsNotifyToggleRow() {
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
       <Bookmark className="h-3.5 w-3.5 shrink-0" />
-      订阅上新浏览器通知
-      <button
+      {t("订阅上新浏览器通知")}{' '}<button
         type="button"
         role="switch"
         aria-checked={enabled}
-        aria-label="订阅上新浏览器通知"
+        aria-label={t("订阅上新浏览器通知")}
         onClick={toggle}
         className={cn(
           'relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:h-6 sm:w-10',
@@ -2027,12 +1998,11 @@ function NewsNotifyToggleRow() {
         </span>
       </button>
       <span className="hidden sm:inline">
-        {enabled ? '常用筛选有上新时每日至多提醒一条' : '默认关闭，仅用站内红点提示上新'}
+        {enabled ? t("常用筛选有上新时每日至多提醒一条") : t("默认关闭，仅用站内红点提示上新")}
       </span>
       {denied && (
         <span className="w-full text-amber-700 dark:text-amber-300">
-          浏览器已拒绝通知权限（可在地址栏站点设置中重新允许），已回退为站内红点提示
-        </span>
+          {t("浏览器已拒绝通知权限（可在地址栏站点设置中重新允许），已回退为站内红点提示")}{' '}</span>
       )}
     </div>
   )
@@ -2056,12 +2026,11 @@ function NotifyToggleRow() {
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
       <AlarmClock className="h-3.5 w-3.5 shrink-0" />
-      截止提醒浏览器通知
-      <button
+      {t("截止提醒浏览器通知")}{' '}<button
         type="button"
         role="switch"
         aria-checked={enabled}
-        aria-label="截止提醒浏览器通知"
+        aria-label={t("截止提醒浏览器通知")}
         onClick={toggle}
         className={cn(
           'relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:h-6 sm:w-10',
@@ -2082,12 +2051,11 @@ function NotifyToggleRow() {
         </span>
       </button>
       <span className="hidden sm:inline">
-        {enabled ? '打开站点时若有临近截止的收藏，每日至多提醒一条' : '默认关闭，仅用站内红点提醒'}
+        {enabled ? t("打开站点时若有临近截止的收藏，每日至多提醒一条") : t("默认关闭，仅用站内红点提醒")}
       </span>
       {denied && (
         <span className="w-full text-amber-700 dark:text-amber-300">
-          浏览器已拒绝通知权限（可在地址栏站点设置中重新允许），已回退为站内红点提醒
-        </span>
+          {t("浏览器已拒绝通知权限（可在地址栏站点设置中重新允许），已回退为站内红点提醒")}{' '}</span>
       )}
     </div>
   )

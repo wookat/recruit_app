@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 import { fetchBianzhiJobs, fetchCampusJobs, fetchPositions } from '@/api'
@@ -5,9 +6,9 @@ import { fetchBianzhiJobs, fetchCampusJobs, fetchPositions } from '@/api'
 type Board = 'positions' | 'campus' | 'bianzhi'
 
 const BOARD_LABELS: Record<Board, string> = {
-  positions: '体制内岗位',
-  campus: '校招信息',
-  bianzhi: '编制公告',
+  positions: t("体制内岗位"),
+  campus: t("校招信息"),
+  bianzhi: t("编制公告"),
 }
 
 const FETCH_TOTAL: Record<Board, (kw: string) => Promise<number>> = {
@@ -65,12 +66,11 @@ export function CrossBoardZeroHint({
         >
           <Search className="h-4 w-4 shrink-0" />
           <span>
-            {BOARD_LABELS[b]}中另有{' '}
+            {BOARD_LABELS[b]}{t("中另有")}{' '}
             <span className="font-semibold text-foreground">
               {(totals[b] ?? 0).toLocaleString()}
             </span>{' '}
-            条与「{kw}」相关，点击查看 →
-          </span>
+            {t("条与「")}{kw}{t("」相关，点击查看 →")}{' '}</span>
         </button>
       ))}
     </div>

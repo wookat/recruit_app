@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
 import { daysUntil } from '@/lib/deadline'
 import { useRemindDays } from '@/lib/reminderPref'
@@ -12,21 +13,20 @@ export function DueBadge({ date }: { date: string | null | undefined }) {
   if (n < 0) {
     return (
       <Badge className="whitespace-nowrap border-0 bg-muted text-foreground/80 dark:text-muted-foreground">
-        已截止
-      </Badge>
+        {t("已截止")}{' '}</Badge>
     )
   }
   if (n <= 3) {
     return (
       <Badge className="whitespace-nowrap border-0 bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
-        {n === 0 ? '今天截止' : `剩${n}天`}
+        {n === 0 ? t("今天截止") : tt`剩${n}天`}
       </Badge>
     )
   }
   if (n <= Math.max(7, remindDays)) {
     return (
       <Badge className="whitespace-nowrap border-0 bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-        {`剩${n}天`}
+        {tt`剩${n}天`}
       </Badge>
     )
   }

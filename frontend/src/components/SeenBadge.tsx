@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { useSeenSet, type HistoryBoard } from '@/lib/viewHistory'
 
@@ -19,9 +20,8 @@ export function SeenBadge({
         'inline-flex shrink-0 items-center rounded-sm bg-muted px-1.5 py-px align-middle text-[10px] font-normal text-muted-foreground',
         className,
       )}
-      aria-label="已浏览过"
+      aria-label={t("已浏览过")}
     >
-      已看
-    </span>
+      {t("已看")}{' '}</span>
   )
 }

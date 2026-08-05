@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Position, PositionList, SearchParams } from '@/api'
@@ -111,8 +112,8 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
   if (!loading && items.length === 0) {
     return (
       <EmptyState
-        title="没有找到匹配的岗位"
-        description="试试减少筛选条件、更换关键词，或使用一键匹配推荐岗位"
+        title={t("没有找到匹配的岗位")}
+        description={t("试试减少筛选条件、更换关键词，或使用一键匹配推荐岗位")}
       />
     )
   }
@@ -121,9 +122,8 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
     <div className="rounded-xl border bg-card shadow-sm">
       <div className="flex items-center justify-between border-b px-4 py-2 text-xs text-muted-foreground">
         <span>
-          已加载 <span className="font-medium text-foreground">{items.length.toLocaleString()}</span> /{' '}
-          {formatTotal(total, totalCapped)} 条 · 滚动自动加载
-        </span>
+          {t("已加载")}{' '}<span className="font-medium text-foreground">{items.length.toLocaleString()}</span> /{' '}
+          {formatTotal(total, totalCapped)} {' '}{t("条 · 滚动自动加载")}{' '}</span>
         {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
       </div>
       <div ref={parentRef} className="h-[70vh] overflow-y-auto overscroll-contain">
@@ -175,7 +175,7 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <GraduationCap className="h-3.5 w-3.5 shrink-0" />
-                        {item.edu_level_norm || item.edu_requirement || '不限'}
+                        {item.edu_level_norm || item.edu_requirement || t("不限")}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <MapPin className="h-3.5 w-3.5 shrink-0" />
@@ -191,8 +191,7 @@ export function VirtualPositionList({ fetcher, params, pageSize = 100 }: Props) 
                 ) : (
                   <div className="flex items-center justify-center gap-2 px-4 py-4 text-xs text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    加载中…
-                  </div>
+                    {t("加载中…")}{' '}</div>
                 )}
               </div>
             )

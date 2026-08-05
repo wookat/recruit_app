@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as echarts from 'echarts/core'
 import { BarChart } from 'echarts/charts'
@@ -63,7 +64,7 @@ export function TimelinePanel({ days, range, onApplyRange, onClearRange }: Props
       tooltip: {
         trigger: 'axis',
         formatter: (ps: { name: string; value: number }[]) =>
-          `${ps[0].name}：更新 ${ps[0].value.toLocaleString()} 个岗位`,
+          tt`${ps[0].name}：更新 ${ps[0].value.toLocaleString()} 个岗位`,
       },
       grid: { left: 44, right: 16, top: 16, bottom: 56 },
       xAxis: {
@@ -121,9 +122,8 @@ export function TimelinePanel({ days, range, onApplyRange, onClearRange }: Props
       <div className="flex flex-wrap items-center gap-2 px-1 text-sm">
         {window_ && (
           <span className="text-muted-foreground">
-            {window_.from} ~ {window_.to}：更新{' '}
-            <span className="font-medium text-foreground">{windowTotal.toLocaleString()}</span> 个岗位
-          </span>
+            {window_.from} ~ {window_.to}{t("：更新")}{' '}
+            <span className="font-medium text-foreground">{windowTotal.toLocaleString()}</span> {' '}{t("个岗位")}{' '}</span>
         )}
         <Button
           size="sm"
@@ -131,12 +131,10 @@ export function TimelinePanel({ days, range, onApplyRange, onClearRange }: Props
           disabled={!window_}
           onClick={() => window_ && onApplyRange(window_.from, window_.to)}
         >
-          按该时间段筛选列表
-        </Button>
+          {t("按该时间段筛选列表")}{' '}</Button>
         {range && (
           <Button variant="ghost" size="sm" className="min-h-9 sm:min-h-8" onClick={onClearRange}>
-            清除时间段筛选
-          </Button>
+            {t("清除时间段筛选")}{' '}</Button>
         )}
       </div>
     </div>

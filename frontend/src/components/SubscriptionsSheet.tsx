@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { Bookmark } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
@@ -10,9 +11,9 @@ import { getSavedFilters, getSavedQueries } from '@/lib/storage'
 import { paramsToQueryString } from '@/lib/urlFilters'
 
 const SCOPE_LABELS: Record<string, string> = {
-  positions: '体制内',
-  campus: '校招',
-  bianzhi: '编制',
+  positions: t("体制内"),
+  campus: t("校招"),
+  bianzhi: t("编制"),
 }
 
 interface Entry {
@@ -54,17 +55,14 @@ export function SubscriptionsSheet() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <Bookmark className="h-4 w-4 text-primary" />
-            我的订阅（常用筛选）
-          </DialogTitle>
+            {t("我的订阅（常用筛选）")}{' '}</DialogTitle>
         </DialogHeader>
         <p className="text-xs text-muted-foreground">
-          「上新」= 当前结果数对比你保存该筛选时的结果数；每次打开站点会自动检查。
-        </p>
+          {t("「上新」= 当前结果数对比你保存该筛选时的结果数；每次打开站点会自动检查。")}{' '}</p>
         {entries.length === 0 ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              还没有订阅。去任一板块设置好筛选条件（如省份+关键词），点「保存当前筛选」即可订阅，之后有匹配的新岗位会在这里和今日速览提示。
-            </p>
+              {t("还没有订阅。去任一板块设置好筛选条件（如省份+关键词），点「保存当前筛选」即可订阅，之后有匹配的新岗位会在这里和今日速览提示。")}{' '}</p>
             <div className="flex flex-wrap gap-2">
               {(['positions', 'campus', 'bianzhi'] as const).map((scope) => (
                 <button
@@ -79,8 +77,7 @@ export function SubscriptionsSheet() {
                         : `${window.location.pathname}?board=${scope}`
                   }}
                 >
-                  去{SCOPE_LABELS[scope]}板块设置 →
-                </button>
+                  {t("去")}{SCOPE_LABELS[scope]}{t("板块设置 →")}{' '}</button>
               ))}
             </div>
           </div>
@@ -106,11 +103,10 @@ export function SubscriptionsSheet() {
                       <span className="min-w-0 flex-1 truncate">{e.name}</span>
                       {n > 0 && (
                         <span className="shrink-0 rounded-sm bg-red-500/15 px-1.5 text-[11px] font-medium text-red-600 dark:text-red-400">
-                          +{n} 新
-                        </span>
+                          +{n} {' '}{t("新")}{' '}</span>
                       )}
                       <span className="shrink-0 text-[11px] text-primary">
-                        {n > 0 ? '查看新增 →' : '查看 →'}
+                        {n > 0 ? t("查看新增 →") : t("查看 →")}
                       </span>
                     </button>
                   </li>
@@ -118,8 +114,7 @@ export function SubscriptionsSheet() {
               })}
             </ul>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border pt-2 text-xs text-muted-foreground">
-              管理（重命名/删除）在各板块筛选区：
-              {(['positions', 'campus', 'bianzhi'] as const).map((scope) => (
+              {t("管理（重命名/删除）在各板块筛选区：")}{' '}{(['positions', 'campus', 'bianzhi'] as const).map((scope) => (
                 <button
                   key={scope}
                   type="button"

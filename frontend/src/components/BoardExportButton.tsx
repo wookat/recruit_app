@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useEffect, useRef, useState } from 'react'
 import { Download, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -54,12 +55,12 @@ export function BoardExportButton({ total, buildSyncUrl, startAsync, className }
         } else if (st.status === 'FAILURE' || st.status === 'REVOKED') {
           stopPolling()
           setTask(null)
-          showError(`导出失败：${st.error || '服务端处理出错，请重试'}`)
+          showError(tt`导出失败：${st.error || t("服务端处理出错，请重试")}`)
         }
       } catch {
         stopPolling()
         setTask(null)
-        showError('导出状态查询失败，请重试')
+        showError(t("导出状态查询失败，请重试"))
       }
     }, 3000)
   }
@@ -78,7 +79,7 @@ export function BoardExportButton({ total, buildSyncUrl, startAsync, className }
       poll(task_id)
     } catch {
       setTask(null)
-      showError('导出任务创建失败，请稍后重试（频率限制：每分钟 3 次）')
+      showError(t("导出任务创建失败，请稍后重试（频率限制：每分钟 3 次）"))
     }
   }
 
@@ -90,11 +91,11 @@ export function BoardExportButton({ total, buildSyncUrl, startAsync, className }
         size="sm"
         className="min-h-11 gap-1.5 sm:min-h-8"
         disabled={total <= 0 || !!task}
-        title={total > SYNC_EXPORT_MAX ? `结果超过 ${SYNC_EXPORT_MAX.toLocaleString()} 条，走后台任务导出` : '导出当前筛选结果'}
+        title={total > SYNC_EXPORT_MAX ? tt`结果超过 ${SYNC_EXPORT_MAX.toLocaleString()} 条，走后台任务导出` : t("导出当前筛选结果")}
         onClick={handleExport}
       >
         {task ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-        {task ? '导出中…' : '导出 CSV'}
+        {task ? t("导出中…") : t("导出 CSV")}
       </Button>
       {error && (
         <span role="alert" className="ml-2 text-xs text-red-600 dark:text-red-400">

@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { fetchRecommend, type RecommendResult } from '@/api'
 import { Card, CardContent } from '@/components/ui/card'
@@ -21,9 +22,9 @@ interface RecommendPanelProps {
 }
 
 const SCORE_LABEL: Record<number, string> = {
-  3: '精确匹配',
-  2: '同类专业',
-  1: '专业不限',
+  3: t("精确匹配"),
+  2: t("同类专业"),
+  1: t("专业不限"),
 }
 
 export function RecommendPanel({ query, onClose }: RecommendPanelProps) {
@@ -65,26 +66,23 @@ export function RecommendPanel({ query, onClose }: RecommendPanelProps) {
             </div>
             <div>
               <h2 className="text-base font-semibold">
-                “{query.major}” 专业智能推荐
-                {result && (
+                “{query.major}{t("” 专业智能推荐")}{' '}{result && (
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    共 {result.total} 条
-                  </span>
+                    {t("共")}{' '}{result.total} {' '}{t("条")}{' '}</span>
                 )}
               </h2>
               <p className="text-xs text-muted-foreground">
-                按 精确匹配 &gt; 同类专业 &gt; 专业不限 排序，自动扩展同大类相关专业
-              </p>
+                {t("按 精确匹配 &gt; 同类专业 &gt; 专业不限 排序，自动扩展同大类相关专业")}{' '}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose} aria-label="关闭推荐">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose} aria-label={t("关闭推荐")}>
             <X className="h-4 w-4" />
           </Button>
         </div>
 
         {result && result.expanded_terms.length > 1 && (
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-muted-foreground">相关专业：</span>
+            <span className="text-muted-foreground">{t("相关专业：")}</span>
             {result.expanded_terms.map((t) => (
               <Badge key={t} variant={t === query.major ? 'default' : 'outline'} className="text-xs">
                 {t}
@@ -95,7 +93,7 @@ export function RecommendPanel({ query, onClose }: RecommendPanelProps) {
 
         {result && scoreCounts.size > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="text-muted-foreground">匹配度：</span>
+            <span className="text-muted-foreground">{t("匹配度：")}</span>
             {[3, 2, 1]
               .filter((s) => scoreCounts.has(s))
               .map((s) => (
@@ -113,9 +111,9 @@ export function RecommendPanel({ query, onClose }: RecommendPanelProps) {
             ))}
           </div>
         )}
-        {error && <p className="text-sm text-destructive">推荐加载失败，请稍后重试。</p>}
+        {error && <p className="text-sm text-destructive">{t("推荐加载失败，请稍后重试。")}</p>}
         {!loading && !error && result && result.items.length === 0 && (
-          <p className="text-sm text-muted-foreground">没有找到匹配的岗位，试试换个专业关键词。</p>
+          <p className="text-sm text-muted-foreground">{t("没有找到匹配的岗位，试试换个专业关键词。")}</p>
         )}
         {!loading && result && result.items.length > 0 && (
           <PositionCardGrid data={result.items} loading={false} />

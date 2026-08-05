@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useState } from 'react'
 import { Flag } from 'lucide-react'
 import { submitFeedback, type FeedbackIssueType } from '@/api'
@@ -7,10 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea'
 
 const ISSUE_TYPES: { key: FeedbackIssueType; label: string }[] = [
-  { key: 'link_broken', label: '链接失效' },
-  { key: 'wrong_info', label: '信息错误' },
-  { key: 'expired', label: '已过期' },
-  { key: 'other', label: '其他' },
+  { key: 'link_broken', label: t("链接失效") },
+  { key: 'wrong_info', label: t("信息错误") },
+  { key: 'expired', label: t("已过期") },
+  { key: 'other', label: t("其他") },
 ]
 
 /** 岗位详情「举报数据有误」入口：问题类型 + 可选备注，提交到 /api/feedback。 */
@@ -50,8 +51,8 @@ export function ReportIssueButton({
       <Button
         variant="ghost"
         size="icon"
-        aria-label="举报数据有误"
-        title="举报数据有误"
+        aria-label={t("举报数据有误")}
+        title={t("举报数据有误")}
         className={cn('h-11 w-11 sm:h-8 sm:w-8', className)}
         onClick={() => {
           reset()
@@ -63,14 +64,13 @@ export function ReportIssueButton({
       <Dialog open={open} onOpenChange={(o) => !o && setOpen(false)}>
         <DialogContent className="max-w-sm gap-0 p-0">
           <DialogHeader className="border-b px-4 py-3">
-            <DialogTitle>举报数据有误</DialogTitle>
+            <DialogTitle>{t("举报数据有误")}</DialogTitle>
           </DialogHeader>
           {state === 'done' ? (
             <div className="space-y-3 p-4">
-              <p className="text-sm">已提交，感谢反馈！我们会尽快核实处理。</p>
+              <p className="text-sm">{t("已提交，感谢反馈！我们会尽快核实处理。")}</p>
               <Button className="min-h-11 w-full sm:min-h-9" onClick={() => setOpen(false)}>
-                关闭
-              </Button>
+                {t("关闭")}{' '}</Button>
             </div>
           ) : (
             <div className="space-y-3 p-4">
@@ -95,19 +95,19 @@ export function ReportIssueButton({
               <Textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value.slice(0, 500))}
-                placeholder="补充说明（选填，如：报名链接打不开）"
+                placeholder={t("补充说明（选填，如：报名链接打不开）")}
                 rows={3}
                 className="text-sm"
               />
               {state === 'error' && (
-                <p className="text-xs text-destructive">提交失败，请稍后再试</p>
+                <p className="text-xs text-destructive">{t("提交失败，请稍后再试")}</p>
               )}
               <Button
                 className="min-h-11 w-full sm:min-h-9"
                 disabled={!issueType || state === 'sending'}
                 onClick={submit}
               >
-                {state === 'sending' ? '提交中…' : '提交反馈'}
+                {state === 'sending' ? t("提交中…") : t("提交反馈")}
               </Button>
             </div>
           )}

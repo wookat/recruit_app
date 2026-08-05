@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Scale, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -22,9 +23,9 @@ const FavCompareDialog = lazy(() =>
 )
 
 const BOARD_NAMES: Record<BoardCompareBoard, string> = {
-  positions: '体制内',
-  campus: '校招',
-  bianzhi: '编制',
+  positions: t("体制内"),
+  campus: t("校招"),
+  bianzhi: t("编制"),
 }
 
 /** 跨板块通用字段映射：三板块字段名不同，统一到同一组标签，缺失显示 —。 */
@@ -34,39 +35,39 @@ function unifiedFields(s: BoardCompareItem): { label: string; value: string }[] 
     const j = s.job
     const major = [j.undergrad_major, j.grad_major].filter(Boolean).join(' / ')
     return [
-      { label: '来源板块', value: BOARD_NAMES.positions },
-      { label: '单位', value: j.employer || dash },
-      { label: '岗位', value: j.position_example ? stripOrgPrefix(j.position_example, j.employer, j.exam_type_norm || j.exam_type) : dash },
-      { label: '工作地点', value: j.work_location || dash },
-      { label: '学历要求', value: j.edu_level_norm || j.edu_requirement || dash },
-      { label: '专业要求', value: major || j.raw_major || dash },
-      { label: '截止/报名', value: j.signup_deadline?.slice(0, 10) || j.signup_time || dash },
-      { label: '批次/类型', value: j.exam_type || j.job_type || dash },
+      { label: t("来源板块"), value: BOARD_NAMES.positions },
+      { label: t("单位"), value: j.employer || dash },
+      { label: t("岗位"), value: j.position_example ? stripOrgPrefix(j.position_example, j.employer, j.exam_type_norm || j.exam_type) : dash },
+      { label: t("工作地点"), value: j.work_location || dash },
+      { label: t("学历要求"), value: j.edu_level_norm || j.edu_requirement || dash },
+      { label: t("专业要求"), value: major || j.raw_major || dash },
+      { label: t("截止/报名"), value: j.signup_deadline?.slice(0, 10) || j.signup_time || dash },
+      { label: t("批次/类型"), value: j.exam_type || j.job_type || dash },
     ]
   }
   if (s.board === 'campus') {
     const j = s.job
     return [
-      { label: '来源板块', value: BOARD_NAMES.campus },
-      { label: '单位', value: j.company || dash },
-      { label: '岗位', value: j.positions ? stripOrgPrefix(j.positions, j.company) : dash },
-      { label: '工作地点', value: j.locations || dash },
-      { label: '学历要求', value: j.edu_requirement || dash },
-      { label: '专业要求', value: j.major_requirement || dash },
-      { label: '截止/报名', value: j.deadline_text || dash },
-      { label: '批次/类型', value: j.batch || j.industry || dash },
+      { label: t("来源板块"), value: BOARD_NAMES.campus },
+      { label: t("单位"), value: j.company || dash },
+      { label: t("岗位"), value: j.positions ? stripOrgPrefix(j.positions, j.company) : dash },
+      { label: t("工作地点"), value: j.locations || dash },
+      { label: t("学历要求"), value: j.edu_requirement || dash },
+      { label: t("专业要求"), value: j.major_requirement || dash },
+      { label: t("截止/报名"), value: j.deadline_text || dash },
+      { label: t("批次/类型"), value: j.batch || j.industry || dash },
     ]
   }
   const j = s.job
   return [
-    { label: '来源板块', value: BOARD_NAMES.bianzhi },
-    { label: '单位', value: j.employer || dash },
-    { label: '岗位', value: j.job_type ? stripOrgPrefix(j.job_type, j.employer) : dash },
-    { label: '工作地点', value: j.work_location || j.province || dash },
-    { label: '学历要求', value: j.edu_requirement || dash },
-    { label: '专业要求', value: j.major_requirement || dash },
-    { label: '截止/报名', value: j.deadline_text || dash },
-    { label: '批次/类型', value: j.category || dash },
+    { label: t("来源板块"), value: BOARD_NAMES.bianzhi },
+    { label: t("单位"), value: j.employer || dash },
+    { label: t("岗位"), value: j.job_type ? stripOrgPrefix(j.job_type, j.employer) : dash },
+    { label: t("工作地点"), value: j.work_location || j.province || dash },
+    { label: t("学历要求"), value: j.edu_requirement || dash },
+    { label: t("专业要求"), value: j.major_requirement || dash },
+    { label: t("截止/报名"), value: j.deadline_text || dash },
+    { label: t("批次/类型"), value: j.category || dash },
   ]
 }
 
@@ -116,7 +117,7 @@ export function BoardCompareBar({
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-2.5">
           <Scale className="h-4 w-4 shrink-0 text-primary" />
           <span className="shrink-0 text-sm font-medium">
-            <span className="hidden sm:inline">对比栏</span>（{items.length}/{BOARD_COMPARE_MAX}）
+            <span className="hidden sm:inline">{t("对比栏")}</span>（{items.length}/{BOARD_COMPARE_MAX}）
           </span>
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
             {items.map((s) => (
@@ -128,7 +129,7 @@ export function BoardCompareBar({
                 <span className="truncate">{itemTitle(s)}</span>
                 <button
                   type="button"
-                  aria-label="移出对比"
+                  aria-label={t("移出对比")}
                   className="cursor-pointer text-muted-foreground hover:text-foreground"
                   onClick={() => toggleBoardCompare(s)}
                 >
@@ -140,17 +141,16 @@ export function BoardCompareBar({
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" className="h-8 text-muted-foreground" onClick={clearBoardCompare}>
-              清空
-            </Button>
+              {t("清空")}{' '}</Button>
             <Button size="sm" className="h-8" disabled={items.length < 2} onClick={() => setOpen(true)}>
-              开始对比{items.length < 2 ? '（至少2条）' : ''}
+              {t("开始对比")}{items.length < 2 ? t("（至少2条）") : ''}
             </Button>
           </div>
         </div>
       </div>
       <Suspense fallback={null}>
         {open && (
-          <FavCompareDialog open={open} onClose={() => setOpen(false)} columns={columns} title="岗位对比" />
+          <FavCompareDialog open={open} onClose={() => setOpen(false)} columns={columns} title={t("岗位对比")} />
         )}
       </Suspense>
     </>

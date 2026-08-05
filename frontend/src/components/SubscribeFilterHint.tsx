@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useState } from 'react'
 import { BellPlus, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -16,8 +17,7 @@ export function SubscribeFilterHint({
     return (
       <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
         <Check className="h-3.5 w-3.5 text-primary" />
-        已存为常用筛选，有匹配新岗位时会在筛选 chip 上提示「+N 新」
-      </p>
+        {t("已存为常用筛选，有匹配新岗位时会在筛选 chip 上提示「+N 新」")}{' '}</p>
     )
   return (
     <div className="flex flex-col items-center gap-1.5">
@@ -31,9 +31,8 @@ export function SubscribeFilterHint({
         }}
       >
         <BellPlus className="h-3.5 w-3.5" />
-        订阅此筛选
-      </Button>
-      <span className="text-xs text-muted-foreground">存为常用筛选，之后有匹配的新岗位会自动提示</span>
+        {t("订阅此筛选")}{' '}</Button>
+      <span className="text-xs text-muted-foreground">{t("存为常用筛选，之后有匹配的新岗位会自动提示")}</span>
     </div>
   )
 }

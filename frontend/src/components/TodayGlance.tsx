@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { fetchBianzhiJobs, fetchCampusJobs, fetchDeadlines } from '@/api'
 import { AlarmClock, Bookmark, BriefcaseBusiness, Landmark, Sparkles, ChevronRight } from 'lucide-react'
@@ -79,30 +80,27 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
     savedNews.sum > 0 ? (
       <button key="subs" type="button" className={PILL} onClick={openSubscriptionsPanel}>
         <Bookmark className="h-3.5 w-3.5 text-primary" />
-        我的订阅上新 <span className="font-semibold text-red-600 dark:text-red-400">+{savedNews.sum}</span>
+        {t("我的订阅上新")}{' '}<span className="font-semibold text-red-600 dark:text-red-400">+{savedNews.sum}</span>
         <ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ) : (
       hasSubscriptions && (
         <button key="subs" type="button" className={PILL} onClick={openSubscriptionsPanel}>
           <Bookmark className="h-3.5 w-3.5 text-primary" />
-          我的订阅
-          <ChevronRight className="h-3 w-3 text-muted-foreground" />
+          {t("我的订阅")}{' '}<ChevronRight className="h-3 w-3 text-muted-foreground" />
         </button>
       )
     ),
     onUpdates && (
       <button key="updates" type="button" className={PILL} onClick={onUpdates}>
         <Sparkles className="h-3.5 w-3.5 text-primary" />
-        近 7 天更新
-        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+        {t("近 7 天更新")}{' '}<ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ),
     campusNew !== null && campusNew > 0 && (
       <button key="campus" type="button" className={PILL} onClick={onCampus}>
         <Sparkles className="h-3.5 w-3.5 text-primary" />
-        校招近 7 天新增 <span className="font-semibold text-primary">{campusNew.toLocaleString()}</span> 条
-        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+        {t("校招近 7 天新增")}{' '}<span className="font-semibold text-primary">{campusNew.toLocaleString()}</span> {' '}{t("条")}{' '}<ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ),
     bianzhiDue !== null && bianzhiDue > 0 ? (
@@ -118,14 +116,12 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
         }}
       >
         <Landmark className="h-3.5 w-3.5 text-primary" />
-        编制即将截止 <span className="font-semibold text-primary">{bianzhiDue.toLocaleString()}</span> 条
-        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+        {t("编制即将截止")}{' '}<span className="font-semibold text-primary">{bianzhiDue.toLocaleString()}</span> {' '}{t("条")}{' '}<ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ) : bianzhiTotal !== null && bianzhiTotal > 0 ? (
       <button key="bianzhi" type="button" className={PILL} onClick={onBianzhi}>
         <Landmark className="h-3.5 w-3.5 text-primary" />
-        编制公告 <span className="font-semibold text-primary">{bianzhiTotal.toLocaleString()}</span> 条
-        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+        {t("编制公告")}{' '}<span className="font-semibold text-primary">{bianzhiTotal.toLocaleString()}</span> {' '}{t("条")}{' '}<ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ) : null,
     campusActive !== null && campusActive > 0 && (
@@ -141,8 +137,7 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
         }}
       >
         <BriefcaseBusiness className="h-3.5 w-3.5 text-primary" />
-        校招有效岗位 <span className="font-semibold text-primary">{campusActive.toLocaleString()}</span> 条
-        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+        {t("校招有效岗位")}{' '}<span className="font-semibold text-primary">{campusActive.toLocaleString()}</span> {' '}{t("条")}{' '}<ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ),
     bianzhiActive !== null && bianzhiActive > 0 && (
@@ -158,19 +153,17 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
         }}
       >
         <Landmark className="h-3.5 w-3.5 text-primary" />
-        编制有效岗位 <span className="font-semibold text-primary">{bianzhiActive.toLocaleString()}</span> 条
-        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+        {t("编制有效岗位")}{' '}<span className="font-semibold text-primary">{bianzhiActive.toLocaleString()}</span> {' '}{t("条")}{' '}<ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ),
     deadlineCount !== null && deadlineCount > 0 && (
       <button key="deadline" type="button" className={PILL} onClick={onDeadline}>
         <AlarmClock className="h-3.5 w-3.5 text-primary" />
-        体制内即将截止{' '}
+        {t("体制内即将截止")}{' '}
         <span className="font-semibold text-primary">
           {deadlineCount >= 100 ? '100+' : deadlineCount.toLocaleString()}
         </span>{' '}
-        条
-        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+        {t("条")}{' '}<ChevronRight className="h-3 w-3 text-muted-foreground" />
       </button>
     ),
   ].filter(Boolean)
@@ -185,8 +178,7 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
             'shrink-0 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground',
           )}
         >
-          今日速览
-        </span>
+          {t("今日速览")}{' '}</span>
         {items}
       </div>
       <div

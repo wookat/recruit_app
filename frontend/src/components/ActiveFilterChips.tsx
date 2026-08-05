@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { X } from 'lucide-react'
 
 export interface RemovableFilter {
@@ -16,7 +17,7 @@ export function FilterSummaryBar({
   if (filters.length === 0) return null
   return (
     <div className="flex flex-wrap items-center gap-1.5 rounded-xl border bg-muted/30 px-3 py-2">
-      <span className="text-xs text-muted-foreground">已选筛选：</span>
+      <span className="text-xs text-muted-foreground">{t("已选筛选：")}</span>
       {filters.map((f) => (
         <button
           key={f.label}
@@ -33,8 +34,7 @@ export function FilterSummaryBar({
         onClick={onClearAll}
         className="ml-auto inline-flex min-h-11 items-center rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-destructive hover:underline sm:min-h-0"
       >
-        清除全部
-      </button>
+        {t("清除全部")}{' '}</button>
     </div>
   )
 }
@@ -44,7 +44,7 @@ export function ActiveFilterChips({ filters }: { filters: RemovableFilter[] }) {
   if (filters.length === 0) return null
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="text-xs text-muted-foreground">已选筛选（点击移除）：</div>
+      <div className="text-xs text-muted-foreground">{t("已选筛选（点击移除）：")}</div>
       <div className="flex max-w-md flex-wrap justify-center gap-1.5">
         {filters.map((f) => (
           <button

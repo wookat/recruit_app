@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useCallback, useEffect, useState } from 'react'
 import {
   adminCheckSource,
@@ -105,7 +106,7 @@ export function AdminPage() {
         localStorage.setItem(TOKEN_KEY, tk)
       } catch {
         setAuthed(false)
-        setError('令牌无效或后台未配置')
+        setError(t("令牌无效或后台未配置"))
       }
     },
     [annFilter, runPage],
@@ -141,19 +142,17 @@ export function AdminPage() {
     return (
       <div className="mx-auto max-w-sm space-y-4 py-16">
         <div className="flex items-center gap-2 text-lg font-semibold">
-          <ShieldCheck className="h-5 w-5" /> 管理后台登录
-        </div>
+          <ShieldCheck className="h-5 w-5" /> {' '}{t("管理后台登录")}{' '}</div>
         <Input
           type="password"
-          placeholder="输入管理令牌"
+          placeholder={t("输入管理令牌")}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && setToken(input)}
         />
         {error && <p className="text-sm text-red-500">{error}</p>}
         <Button className="w-full" onClick={() => setToken(input)} disabled={!input}>
-          登录
-        </Button>
+          {t("登录")}{' '}</Button>
       </div>
     )
   }
@@ -161,11 +160,10 @@ export function AdminPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">管理后台</h2>
+        <h2 className="text-lg font-semibold">{t("管理后台")}</h2>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => load(token)}>
-            <RefreshCw className="mr-1 h-3.5 w-3.5" /> 刷新
-          </Button>
+            <RefreshCw className="mr-1 h-3.5 w-3.5" /> {' '}{t("刷新")}{' '}</Button>
           <Button
             size="sm"
             variant="outline"
@@ -174,42 +172,41 @@ export function AdminPage() {
               void load(token)
             }}
           >
-            导入默认来源
-          </Button>
+            {t("导入默认来源")}{' '}</Button>
         </div>
       </div>
 
       {overview && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="岗位总量" value={overview.positions.total} />
-          <StatCard label="清洗后岗位" value={overview.positions.clean} />
+          <StatCard label={t("岗位总量")} value={overview.positions.total} />
+          <StatCard label={t("清洗后岗位")} value={overview.positions.clean} />
           <StatCard
-            label="监控来源"
+            label={t("监控来源")}
             value={overview.watch_sources.enabled}
-            sub={`共 ${overview.watch_sources.total} · 异常 ${overview.watch_sources.error}`}
+            sub={tt`共 ${overview.watch_sources.total} · 异常 ${overview.watch_sources.error}`}
           />
           <StatCard
-            label="待处理公告"
+            label={t("待处理公告")}
             value={overview.announcements.new}
-            sub={`累计 ${overview.announcements.total}`}
+            sub={tt`累计 ${overview.announcements.total}`}
           />
         </div>
       )}
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">采集来源</CardTitle>
+          <CardTitle className="text-base">{t("采集来源")}</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="py-2 pr-3">名称</th>
-                <th className="py-2 pr-3">分类</th>
-                <th className="py-2 pr-3">间隔</th>
-                <th className="py-2 pr-3">最近检查</th>
-                <th className="py-2 pr-3">状态</th>
-                <th className="py-2">操作</th>
+                <th className="py-2 pr-3">{t("名称")}</th>
+                <th className="py-2 pr-3">{t("分类")}</th>
+                <th className="py-2 pr-3">{t("间隔")}</th>
+                <th className="py-2 pr-3">{t("最近检查")}</th>
+                <th className="py-2 pr-3">{t("状态")}</th>
+                <th className="py-2">{t("操作")}</th>
               </tr>
             </thead>
             <tbody>
@@ -227,23 +224,21 @@ export function AdminPage() {
                     </a>
                   </td>
                   <td className="py-2 pr-3">{s.category || '-'}</td>
-                  <td className="py-2 pr-3">{s.interval_minutes} 分</td>
+                  <td className="py-2 pr-3">{s.interval_minutes} {' '}{t("分")}</td>
                   <td className="whitespace-nowrap py-2 pr-3 text-xs">
-                    {s.last_checked_at ? new Date(s.last_checked_at).toLocaleString('zh-CN') : '未检查'}
+                    {s.last_checked_at ? new Date(s.last_checked_at).toLocaleString('zh-CN') : t("未检查")}
                   </td>
                   <td className="py-2 pr-3">
                     {s.last_status === 'error' ? (
                       <Badge variant="destructive" title={s.last_message || ''}>
-                        异常
-                      </Badge>
+                        {t("异常")}{' '}</Badge>
                     ) : s.last_status === 'ok' ? (
                       <Badge variant="secondary" title={s.last_message || ''}>
-                        正常
-                      </Badge>
+                        {t("正常")}{' '}</Badge>
                     ) : (
-                      <Badge variant="outline">待检查</Badge>
+                      <Badge variant="outline">{t("待检查")}</Badge>
                     )}
-                    {!s.enabled && <Badge variant="outline" className="ml-1">停用</Badge>}
+                    {!s.enabled && <Badge variant="outline" className="ml-1">{t("停用")}</Badge>}
                   </td>
                   <td className="whitespace-nowrap py-2">
                     <Button
@@ -261,7 +256,7 @@ export function AdminPage() {
                         }
                       }}
                     >
-                      {busy === s.id ? '检查中...' : '立即检查'}
+                      {busy === s.id ? t("检查中...") : t("立即检查")}
                     </Button>
                     <Button
                       size="sm"
@@ -280,7 +275,7 @@ export function AdminPage() {
                         void load(token)
                       }}
                     >
-                      {s.enabled ? '停用' : '启用'}
+                      {s.enabled ? t("停用") : t("启用")}
                     </Button>
                   </td>
                 </tr>
@@ -288,8 +283,7 @@ export function AdminPage() {
               {sources.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-6 text-center text-muted-foreground">
-                    暂无来源，点击「导入默认来源」初始化
-                  </td>
+                    {t("暂无来源，点击「导入默认来源」初始化")}{' '}</td>
                 </tr>
               )}
             </tbody>
@@ -303,7 +297,7 @@ export function AdminPage() {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">抓取任务</CardTitle>
+          <CardTitle className="text-base">{t("抓取任务")}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-2">
           {[2027, 2026, 2025].map((y) => (
@@ -318,8 +312,7 @@ export function AdminPage() {
                 setTaskStatus('PENDING')
               }}
             >
-              抓取 {y} 年
-            </Button>
+              {t("抓取")}{' '}{y} {' '}{t("年")}{' '}</Button>
           ))}
           {taskStatus && (
             <Badge
@@ -335,14 +328,13 @@ export function AdminPage() {
             </Badge>
           )}
           <span className="text-xs text-muted-foreground">
-            采集调度：每天 6:00 自动检查全部来源
-          </span>
+            {t("采集调度：每天 6:00 自动检查全部来源")}{' '}</span>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base">采集运行历史</CardTitle>
+          <CardTitle className="text-base">{t("采集运行历史")}</CardTitle>
           {runs && runs.total > runs.page_size && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Button
@@ -352,8 +344,7 @@ export function AdminPage() {
                 disabled={runPage <= 1}
                 onClick={() => setRunPage((p) => Math.max(1, p - 1))}
               >
-                上一页
-              </Button>
+                {t("上一页")}{' '}</Button>
               <span>
                 {runs.page}/{Math.max(1, Math.ceil(runs.total / runs.page_size))}
               </span>
@@ -364,8 +355,7 @@ export function AdminPage() {
                 disabled={runs.page >= Math.ceil(runs.total / runs.page_size)}
                 onClick={() => setRunPage((p) => p + 1)}
               >
-                下一页
-              </Button>
+                {t("下一页")}{' '}</Button>
             </div>
           )}
         </CardHeader>
@@ -374,14 +364,14 @@ export function AdminPage() {
             <thead>
               <tr className="border-b text-left text-xs text-muted-foreground">
                 <th className="py-2 pr-3">#</th>
-                <th className="py-2 pr-3">来源</th>
-                <th className="py-2 pr-3">开始时间</th>
-                <th className="py-2 pr-3">耗时</th>
-                <th className="py-2 pr-3">状态</th>
-                <th className="py-2 pr-3">公告</th>
-                <th className="py-2 pr-3">附件</th>
-                <th className="py-2 pr-3">解析</th>
-                <th className="py-2">入库</th>
+                <th className="py-2 pr-3">{t("来源")}</th>
+                <th className="py-2 pr-3">{t("开始时间")}</th>
+                <th className="py-2 pr-3">{t("耗时")}</th>
+                <th className="py-2 pr-3">{t("状态")}</th>
+                <th className="py-2 pr-3">{t("公告")}</th>
+                <th className="py-2 pr-3">{t("附件")}</th>
+                <th className="py-2 pr-3">{t("解析")}</th>
+                <th className="py-2">{t("入库")}</th>
               </tr>
             </thead>
             <tbody>
@@ -397,8 +387,7 @@ export function AdminPage() {
               {(!runs || runs.items.length === 0) && (
                 <tr>
                   <td colSpan={9} className="py-6 text-center text-muted-foreground">
-                    暂无采集运行记录
-                  </td>
+                    {t("暂无采集运行记录")}{' '}</td>
                 </tr>
               )}
             </tbody>
@@ -408,7 +397,7 @@ export function AdminPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base">公告审核</CardTitle>
+          <CardTitle className="text-base">{t("公告审核")}</CardTitle>
           <div className="flex gap-1">
             {['new', 'processed', 'ignored', 'all'].map((f) => (
               <Button
@@ -418,7 +407,7 @@ export function AdminPage() {
                 className="h-7 px-2 text-xs"
                 onClick={() => setAnnFilter(f)}
               >
-                {{ new: '待处理', processed: '已处理', ignored: '已忽略', all: '全部' }[f]}
+                {{ new: t("待处理"), processed: t("已处理"), ignored: t("已忽略"), all: t("全部") }[f]}
               </Button>
             ))}
           </div>
@@ -453,8 +442,7 @@ export function AdminPage() {
                       void load(token)
                     }}
                   >
-                    标记已处理
-                  </Button>
+                    {t("标记已处理")}{' '}</Button>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -464,14 +452,13 @@ export function AdminPage() {
                       void load(token)
                     }}
                   >
-                    忽略
-                  </Button>
+                    {t("忽略")}{' '}</Button>
                 </div>
               )}
             </div>
           ))}
           {anns.length === 0 && (
-            <p className="py-6 text-center text-sm text-muted-foreground">暂无公告</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">{t("暂无公告")}</p>
           )}
         </CardContent>
       </Card>
@@ -488,11 +475,11 @@ const RUN_STATUS_STYLES: Record<string, string> = {
 }
 
 const RUN_STATUS_LABELS: Record<string, string> = {
-  success: '成功',
-  partial: '部分成功',
-  error: '失败',
-  running: '运行中',
-  alert: '告警',
+  success: t("成功"),
+  partial: t("部分成功"),
+  error: t("失败"),
+  running: t("运行中"),
+  alert: t("告警"),
 }
 
 const HEALTH_BADGE_STYLES: Record<'green' | 'yellow' | 'red', string> = {
@@ -502,9 +489,9 @@ const HEALTH_BADGE_STYLES: Record<'green' | 'yellow' | 'red', string> = {
 }
 
 function formatTtl(seconds: number): string {
-  if (seconds <= 0) return '缺失'
-  if (seconds < 3600) return `${Math.round(seconds / 60)} 分`
-  return `${(seconds / 3600).toFixed(1)} 小时`
+  if (seconds <= 0) return t("缺失")
+  if (seconds < 3600) return tt`${Math.round(seconds / 60)} 分`
+  return tt`${(seconds / 3600).toFixed(1)} 小时`
 }
 
 function HealthBadge({ level, label }: { level: 'green' | 'yellow' | 'red'; label: string }) {
@@ -512,9 +499,9 @@ function HealthBadge({ level, label }: { level: 'green' | 'yellow' | 'red'; labe
 }
 
 const TABLE_LABELS: Record<string, string> = {
-  positions: '公职岗位',
-  campus_jobs: '校招岗位',
-  bianzhi_jobs: '编制岗位',
+  positions: t("公职岗位"),
+  campus_jobs: t("校招岗位"),
+  bianzhi_jobs: t("编制岗位"),
 }
 
 function formatClock(d: Date): string {
@@ -529,16 +516,16 @@ function sampleHref(board: 'positions' | 'campus' | 'bianzhi', id: number): stri
 }
 
 const ISSUE_TYPE_LABELS: Record<string, string> = {
-  link_broken: '链接失效',
-  wrong_info: '信息错误',
-  expired: '已过期',
-  other: '其他',
+  link_broken: t("链接失效"),
+  wrong_info: t("信息错误"),
+  expired: t("已过期"),
+  other: t("其他"),
 }
 
 const BOARD_LABELS: Record<string, string> = {
-  positions: '体制内',
-  campus: '校招',
-  bianzhi: '编制',
+  positions: t("体制内"),
+  campus: t("校招"),
+  bianzhi: t("编制"),
 }
 
 function FeedbackSection({ token }: { token: string }) {
@@ -567,16 +554,15 @@ function FeedbackSection({ token }: { token: string }) {
           ) : (
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
           )}
-          用户反馈（最近 50 条）
-        </span>
+          {t("用户反馈（最近 50 条）")}{' '}</span>
         <Badge variant={feedback.pending > 0 ? 'destructive' : 'secondary'}>
-          待处理 {feedback.pending}
+          {t("待处理")}{' '}{feedback.pending}
         </Badge>
       </button>
       {open && (
         <div className="space-y-1 border-t px-3 py-2">
           {feedback.items.length === 0 && (
-            <p className="py-3 text-center text-xs text-muted-foreground">暂无用户反馈</p>
+            <p className="py-3 text-center text-xs text-muted-foreground">{t("暂无用户反馈")}</p>
           )}
           {feedback.items.map((f) => (
             <div
@@ -628,7 +614,7 @@ function FeedbackSection({ token }: { token: string }) {
                   }
                 }}
               >
-                {f.handled ? '恢复待处理' : '标记已处理'}
+                {f.handled ? t("恢复待处理") : t("标记已处理")}
               </Button>
             </div>
           ))}
@@ -653,10 +639,10 @@ function QualityCard({
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">数据质量</CardTitle>
+          <CardTitle className="text-base">{t("数据质量")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <div className="text-sm text-muted-foreground">扫描中，约 1 分钟…</div>
+          <div className="text-sm text-muted-foreground">{t("扫描中，约 1 分钟…")}</div>
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-9 animate-pulse rounded-lg bg-muted" />
           ))}
@@ -668,17 +654,15 @@ function QualityCard({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-base">数据质量</CardTitle>
+        <CardTitle className="text-base">{t("数据质量")}</CardTitle>
         <span className="text-xs text-muted-foreground">
-          问题数据共 {quality.total.toLocaleString()} 条 · 扫描于{' '}
-          {new Date(quality.generated_at).toLocaleString('zh-CN')} · 1h 缓存 · 只读展示
-        </span>
+          {t("问题数据共")}{' '}{quality.total.toLocaleString()} {' '}{t("条 · 扫描于")}{' '}
+          {new Date(quality.generated_at).toLocaleString('zh-CN')} {' '}{t("· 1h 缓存 · 只读展示")}{' '}</span>
       </CardHeader>
       <CardContent className="space-y-1.5">
         {found.length === 0 && (
           <div className="py-4 text-center text-sm text-muted-foreground">
-            未扫描到已知类型的脏数据
-          </div>
+            {t("未扫描到已知类型的脏数据")}{' '}</div>
         )}
         {found.map((issue) => (
           <div key={issue.key} className={issue.count === 0 ? 'rounded-lg border border-dashed opacity-60' : 'rounded-lg border'}>
@@ -697,7 +681,7 @@ function QualityCard({
                 <span className={issue.count === 0 ? 'text-muted-foreground' : undefined}>{issue.label}</span>
               </span>
               {issue.count === 0 ? (
-                <span className="shrink-0 text-xs text-muted-foreground">0 条 ✓</span>
+                <span className="shrink-0 text-xs text-muted-foreground">{t("0 条 ✓")}</span>
               ) : (
                 <Badge variant="secondary">{issue.count.toLocaleString()}</Badge>
               )}
@@ -708,8 +692,7 @@ function QualityCard({
                   <div className="mb-1 text-xs text-amber-700 dark:text-amber-300">{issue.note}</div>
                 )}
                 <div className="mb-1 text-xs text-muted-foreground">
-                  样例（最多 {issue.samples.length} 条，点 id 直达详情）
-                </div>
+                  {t("样例（最多")}{' '}{issue.samples.length} {' '}{t("条，点 id 直达详情）")}{' '}</div>
                 <ul className="space-y-0.5 text-xs">
                   {issue.samples.map((s) => (
                     <li key={s.id} className="flex items-baseline gap-2">
@@ -721,7 +704,7 @@ function QualityCard({
                       >
                         #{s.id}
                       </a>
-                      <span className="truncate text-muted-foreground">{s.value || '（空）'}</span>
+                      <span className="truncate text-muted-foreground">{s.value || t("（空）")}</span>
                     </li>
                   ))}
                 </ul>
@@ -744,22 +727,21 @@ function HealthCard({ health, updatedAt, token }: { health: HealthSummary; updat
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Activity className="h-4 w-4" /> 系统健康
-          {updatedAt && (
+          <Activity className="h-4 w-4" /> {' '}{t("系统健康")}{' '}{updatedAt && (
             <span className="text-xs font-normal text-muted-foreground">
-              更新于 {formatClock(updatedAt)}
+              {t("更新于")}{' '}{formatClock(updatedAt)}
             </span>
           )}
         </CardTitle>
         <HealthBadge
           level={overall}
-          label={overall === 'green' ? '正常' : overall === 'yellow' ? '有失败' : '缓存缺失'}
+          label={overall === 'green' ? t("正常") : overall === 'yellow' ? t("有失败") : t("缓存缺失")}
         />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div>
-            <div className="text-xs text-muted-foreground">24h 采集成功/失败</div>
+            <div className="text-xs text-muted-foreground">{t("24h 采集成功/失败")}</div>
             <div className="text-lg font-bold tabular-nums">
               <span className="text-green-600 dark:text-green-400">{health.crawl_24h.success}</span>
               {' / '}
@@ -767,19 +749,19 @@ function HealthCard({ health, updatedAt, token }: { health: HealthSummary; updat
                 {health.crawl_24h.failed}
               </span>
             </div>
-            <div className="text-xs text-muted-foreground">共 {health.crawl_24h.total} 次</div>
+            <div className="text-xs text-muted-foreground">{t("共")}{' '}{health.crawl_24h.total} {' '}{t("次")}</div>
           </div>
           {(['stats', 'filters', 'dq_report'] as const).map((k) => (
             <div key={k}>
               <div className="text-xs text-muted-foreground">
-                {{ stats: '统计缓存', filters: '筛选缓存', dq_report: '质量报告' }[k]} TTL
+                {{ stats: t("统计缓存"), filters: t("筛选缓存"), dq_report: t("质量报告") }[k]} TTL
               </div>
               <div className="text-lg font-bold tabular-nums">
                 {formatTtl(health.cache_ttl_seconds[k])}
               </div>
               <HealthBadge
                 level={health.cache_ttl_seconds[k] > 0 ? 'green' : k === 'dq_report' ? 'yellow' : 'red'}
-                label={health.cache_ttl_seconds[k] > 0 ? '热' : '缺失'}
+                label={health.cache_ttl_seconds[k] > 0 ? t("热") : t("缺失")}
               />
             </div>
           ))}
@@ -797,7 +779,7 @@ function HealthCard({ health, updatedAt, token }: { health: HealthSummary; updat
         {health.failed_sources_yesterday.sources.length > 0 && (
           <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-950/30">
             <div className="mb-1 text-xs font-medium text-yellow-800 dark:text-yellow-300">
-              昨日失败来源（{health.failed_sources_yesterday.sources.length}）
+              {t("昨日失败来源（")}{health.failed_sources_yesterday.sources.length}）
             </div>
             <div className="flex flex-wrap gap-1">
               {health.failed_sources_yesterday.sources.map((s) => (
@@ -812,14 +794,12 @@ function HealthCard({ health, updatedAt, token }: { health: HealthSummary; updat
         {health.stale_sources && health.stale_sources.length > 0 && (
           <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-950/30">
             <div className="mb-1 text-xs font-medium text-yellow-800 dark:text-yellow-300">
-              源可能失效（连续 2 天同步 0 新增，历史均值 &gt;0）
-            </div>
+              {t("源可能失效（连续 2 天同步 0 新增，历史均值 &gt;0）")}{' '}</div>
             <ul className="space-y-0.5 text-xs text-yellow-800 dark:text-yellow-300">
               {health.stale_sources.map((s) => (
                 <li key={s.name}>
-                  {s.name} · 历史日均 +{s.hist_avg_added} · 最近成功：
-                  {s.last_success_at ? s.last_success_at.slice(0, 16).replace('T', ' ') : '—'}
-                  {s.last_ingest_at && ` · 最近有新增：${s.last_ingest_at.slice(0, 10)}`}
+                  {s.name} {' '}{t("· 历史日均 +")}{s.hist_avg_added} {' '}{t("· 最近成功：")}{' '}{s.last_success_at ? s.last_success_at.slice(0, 16).replace('T', ' ') : '—'}
+                  {s.last_ingest_at && tt` · 最近有新增：${s.last_ingest_at.slice(0, 10)}`}
                 </li>
               ))}
             </ul>
@@ -837,11 +817,11 @@ function HealthCard({ health, updatedAt, token }: { health: HealthSummary; updat
             <table className="w-full min-w-[520px] text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
-                  <th className="py-1.5 pr-3">来源最近一次</th>
-                  <th className="py-1.5 pr-3">状态</th>
-                  <th className="py-1.5 pr-3">时间</th>
-                  <th className="py-1.5 pr-3">耗时</th>
-                  <th className="py-1.5">入库</th>
+                  <th className="py-1.5 pr-3">{t("来源最近一次")}</th>
+                  <th className="py-1.5 pr-3">{t("状态")}</th>
+                  <th className="py-1.5 pr-3">{t("时间")}</th>
+                  <th className="py-1.5 pr-3">{t("耗时")}</th>
+                  <th className="py-1.5">{t("入库")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -857,7 +837,7 @@ function HealthCard({ health, updatedAt, token }: { health: HealthSummary; updat
                       {s.started_at ? new Date(s.started_at).toLocaleString('zh-CN') : '-'}
                     </td>
                     <td className="whitespace-nowrap py-1.5 pr-3 text-xs tabular-nums">
-                      {s.duration_seconds != null ? `${s.duration_seconds} 秒` : '-'}
+                      {s.duration_seconds != null ? tt`${s.duration_seconds} 秒` : '-'}
                     </td>
                     <td className="py-1.5 text-xs tabular-nums">{s.rows_ingested}</td>
                   </tr>
@@ -869,13 +849,13 @@ function HealthCard({ health, updatedAt, token }: { health: HealthSummary; updat
 
         {health.data_quality?.rows && (
           <div className="text-xs text-muted-foreground">
-            质量审计：clean {health.data_quality.rows.clean.toLocaleString()} / 总{' '}
-            {health.data_quality.rows.total.toLocaleString()}，近 7 天新增{' '}
+            {t("质量审计：clean")}{' '}{health.data_quality.rows.clean.toLocaleString()} {' '}{t("/ 总")}{' '}
+            {health.data_quality.rows.total.toLocaleString()}{t("，近 7 天新增")}{' '}
             {health.data_quality.rows.added_last_7d.toLocaleString()}
             {health.data_quality.deadline_parse_rate != null &&
-              `，截止日期可解析率 ${(health.data_quality.deadline_parse_rate * 100).toFixed(1)}%`}
+              tt`，截止日期可解析率 ${(health.data_quality.deadline_parse_rate * 100).toFixed(1)}%`}
             {health.data_quality.generated_at &&
-              ` · 生成于 ${new Date(health.data_quality.generated_at).toLocaleString('zh-CN')}`}
+              tt` · 生成于 ${new Date(health.data_quality.generated_at).toLocaleString('zh-CN')}`}
           </div>
         )}
       </CardContent>
@@ -911,20 +891,20 @@ function SyncTodaySection({ token }: { token: string }) {
         await new Promise((r) => setTimeout(r, 3000))
         const s = await fetchSyncStatus(token, task_id)
         if (s.state === 'SUCCESS') {
-          setSyncMsg({ ok: true, text: '同步完成，明细已刷新' })
+          setSyncMsg({ ok: true, text: t("同步完成，明细已刷新") })
           break
         }
         if (s.state === 'FAILURE') {
-          setSyncMsg({ ok: false, text: `同步失败：${s.error || '未知错误'}` })
+          setSyncMsg({ ok: false, text: tt`同步失败：${s.error || '未知错误'}` })
           break
         }
         if (Date.now() > deadline) {
-          setSyncMsg({ ok: false, text: '同步仍在后台进行（超 3 分钟），稍后刷新查看明细' })
+          setSyncMsg({ ok: false, text: t("同步仍在后台进行（超 3 分钟），稍后刷新查看明细") })
           break
         }
       }
     } catch (e) {
-      setSyncMsg({ ok: false, text: e instanceof Error ? e.message : '触发失败' })
+      setSyncMsg({ ok: false, text: e instanceof Error ? e.message : t("触发失败") })
     } finally {
       setRunning(false)
       loadDetail()
@@ -934,16 +914,13 @@ function SyncTodaySection({ token }: { token: string }) {
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium">今日同步结果{detail ? `（${detail.date}）` : ''}</span>
+        <span className="text-xs font-medium">{t("今日同步结果")}{detail ? `（${detail.date}）` : ''}</span>
         {confirming ? (
           <span className="inline-flex items-center gap-1 text-xs">
-            确认立即触发飞书数据同步？
-            <Button size="sm" variant="destructive" className="h-auto min-h-11 text-xs sm:min-h-7" onClick={trigger}>
-              确认触发
-            </Button>
+            {t("确认立即触发飞书数据同步？")}{' '}<Button size="sm" variant="destructive" className="h-auto min-h-11 text-xs sm:min-h-7" onClick={trigger}>
+              {t("确认触发")}{' '}</Button>
             <Button size="sm" variant="ghost" className="h-auto min-h-11 text-xs sm:min-h-7" onClick={() => setConfirming(false)}>
-              取消
-            </Button>
+              {t("取消")}{' '}</Button>
           </span>
         ) : (
           <Button
@@ -954,7 +931,7 @@ function SyncTodaySection({ token }: { token: string }) {
             onClick={() => setConfirming(true)}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${running ? 'animate-spin' : ''}`} />
-            {running ? '同步进行中…' : '立即触发同步'}
+            {running ? t("同步进行中…") : t("立即触发同步")}
           </Button>
         )}
         {syncMsg && (
@@ -964,17 +941,17 @@ function SyncTodaySection({ token }: { token: string }) {
         )}
       </div>
       {detail && detail.items.length === 0 && (
-        <p className="text-xs text-muted-foreground">今日暂无同步记录（每日 6:20 自动同步，或点上方按钮立即触发）</p>
+        <p className="text-xs text-muted-foreground">{t("今日暂无同步记录（每日 6:20 自动同步，或点上方按钮立即触发）")}</p>
       )}
       {detail && detail.items.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[520px] text-sm">
             <thead>
               <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="py-1.5 pr-3">来源</th>
-                <th className="py-1.5 pr-3">状态</th>
-                <th className="py-1.5 pr-3">新增</th>
-                <th className="py-1.5">失败原因</th>
+                <th className="py-1.5 pr-3">{t("来源")}</th>
+                <th className="py-1.5 pr-3">{t("状态")}</th>
+                <th className="py-1.5 pr-3">{t("新增")}</th>
+                <th className="py-1.5">{t("失败原因")}</th>
               </tr>
             </thead>
             <tbody>
@@ -1020,13 +997,11 @@ function VisitsSection({ visits: rawVisits }: { visits: HealthVisitDay[] }) {
   return (
     <div>
       <div className="mb-2 flex items-center gap-3 text-xs text-muted-foreground">
-        近 14 天访问趋势（自建统计 · 无第三方跟踪）
-        <span className="inline-flex items-center gap-1">
+        {t("近 14 天访问趋势（自建统计 · 无第三方跟踪）")}{' '}<span className="inline-flex items-center gap-1">
           <span className="h-2 w-2 rounded-sm bg-sky-500" /> PV
         </span>
         <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-sm bg-emerald-500" /> 独立会话（估算）
-        </span>
+          <span className="h-2 w-2 rounded-sm bg-emerald-500" /> {' '}{t("独立会话（估算）")}{' '}</span>
       </div>
       <div className="overflow-x-auto pb-1">
         <div className="flex min-w-[420px] items-end gap-1">
@@ -1036,7 +1011,7 @@ function VisitsSection({ visits: rawVisits }: { visits: HealthVisitDay[] }) {
             return (
               <div
                 key={d.date}
-                title={`${d.date}：PV ${d.pv}，独立会话 ${d.sessions}`}
+                title={tt`${d.date}：PV ${d.pv}，独立会话 ${d.sessions}`}
                 className="flex flex-1 flex-col items-center gap-1 rounded-md px-0.5 pb-1 pt-1"
               >
                 <span className="flex h-12 w-full max-w-6 items-end justify-center gap-px">
@@ -1076,19 +1051,14 @@ function TrendSection({ trend: rawTrend }: { trend: HealthTrendDay[] }) {
   return (
     <div>
       <div className="mb-2 flex items-center gap-3 text-xs text-muted-foreground">
-        近 14 天趋势
+        {t("近 14 天趋势")}{' '}<span className="inline-flex items-center gap-1">
+          <span className="h-2 w-2 rounded-sm bg-green-500" /> {' '}{t("采集成功")}{' '}</span>
         <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-sm bg-green-500" /> 采集成功
-        </span>
+          <span className="h-2 w-2 rounded-sm bg-red-500" /> {' '}{t("失败")}{' '}</span>
         <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-sm bg-red-500" /> 失败
-        </span>
+          <span className="h-2 w-2 rounded-sm bg-primary" /> {' '}{t("校招新增")}{' '}</span>
         <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-sm bg-primary" /> 校招新增
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-sm bg-violet-500" /> 编制新增
-        </span>
+          <span className="h-2 w-2 rounded-sm bg-violet-500" /> {' '}{t("编制新增")}{' '}</span>
       </div>
       <div className="overflow-x-auto pb-1">
         <div className="flex min-w-[420px] items-end gap-1">
@@ -1101,7 +1071,7 @@ function TrendSection({ trend: rawTrend }: { trend: HealthTrendDay[] }) {
               <button
                 key={d.date}
                 type="button"
-                title={`${d.date}：成功 ${d.crawl_success} / 失败 ${d.crawl_fail}，校招 +${d.campus_added}，编制 +${d.bianzhi_added}`}
+                title={tt`${d.date}：成功 ${d.crawl_success} / 失败 ${d.crawl_fail}，校招 +${d.campus_added}，编制 +${d.bianzhi_added}`}
                 onClick={() => setSelected((s) => (s === i ? null : i))}
                 className={`flex flex-1 flex-col items-center gap-1 rounded-md px-0.5 pb-1 pt-1 transition-colors hover:bg-muted ${
                   selected === i ? 'bg-muted' : ''
@@ -1137,12 +1107,12 @@ function TrendSection({ trend: rawTrend }: { trend: HealthTrendDay[] }) {
       </div>
       {day && (
         <div className="mt-1 rounded-md bg-muted px-2.5 py-1.5 text-xs tabular-nums">
-          {day.date}：采集成功{' '}
-          <span className="font-medium text-green-600 dark:text-green-400">{day.crawl_success}</span> / 失败{' '}
+          {day.date}{t("：采集成功")}{' '}
+          <span className="font-medium text-green-600 dark:text-green-400">{day.crawl_success}</span> {' '}{t("/ 失败")}{' '}
           <span className={day.crawl_fail > 0 ? 'font-medium text-red-600 dark:text-red-400' : 'font-medium'}>
             {day.crawl_fail}
           </span>
-          ，校招新增 <span className="font-medium text-primary">{day.campus_added}</span>，编制新增{' '}
+          {t("，校招新增")}{' '}<span className="font-medium text-primary">{day.campus_added}</span>{t("，编制新增")}{' '}
           <span className="font-medium text-violet-600 dark:text-violet-400">{day.bianzhi_added}</span>
         </div>
       )}
@@ -1155,8 +1125,8 @@ function runDuration(started: string | null, finished: string | null): string {
   const ms = new Date(finished).getTime() - new Date(started).getTime()
   if (isNaN(ms) || ms < 0) return '-'
   const s = Math.round(ms / 1000)
-  if (s < 60) return `${s} 秒`
-  return `${Math.floor(s / 60)} 分 ${s % 60} 秒`
+  if (s < 60) return tt`${s} 秒`
+  return tt`${Math.floor(s / 60)} 分 ${s % 60} 秒`
 }
 
 function RunRow({

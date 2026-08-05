@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import type { Position } from '@/api'
 import { ExternalLink } from 'lucide-react'
 import {
@@ -20,24 +21,24 @@ export function PositionModal({ item, onClose }: Props) {
   if (!item) return null
 
   const fields = [
-    { label: '年份', value: item.year },
-    { label: '岗位类型', value: item.job_type },
-    { label: '考试/招聘类型', value: item.exam_type_norm || item.exam_type },
-    { label: '用人单位/系统', value: item.employer },
+    { label: t("年份"), value: item.year },
+    { label: t("岗位类型"), value: item.job_type },
+    { label: t("考试/招聘类型"), value: item.exam_type_norm || item.exam_type },
+    { label: t("用人单位/系统"), value: item.employer },
     {
-      label: '岗位示例',
+      label: t("岗位示例"),
       value: item.position_example ? stripOrgPrefix(item.position_example, item.employer) : item.position_example,
     },
-    { label: '学历要求', value: item.edu_requirement },
-    { label: '本科生专业要求', value: item.undergrad_major },
-    { label: '研究生专业要求', value: item.grad_major },
-    { label: '专业要求（原始）', value: item.raw_major },
-    { label: '考试/招聘形式', value: item.exam_form },
-    { label: '报名时间', value: item.signup_time },
-    { label: '笔试/考试时间', value: item.exam_time },
-    { label: '特殊要求', value: item.special_requirements },
-    { label: '工作地点', value: item.work_location },
-    { label: '备注', value: item.notes },
+    { label: t("学历要求"), value: item.edu_requirement },
+    { label: t("本科生专业要求"), value: item.undergrad_major },
+    { label: t("研究生专业要求"), value: item.grad_major },
+    { label: t("专业要求（原始）"), value: item.raw_major },
+    { label: t("考试/招聘形式"), value: item.exam_form },
+    { label: t("报名时间"), value: item.signup_time },
+    { label: t("笔试/考试时间"), value: item.exam_time },
+    { label: t("特殊要求"), value: item.special_requirements },
+    { label: t("工作地点"), value: item.work_location },
+    { label: t("备注"), value: item.notes },
   ]
 
   return (
@@ -45,8 +46,7 @@ export function PositionModal({ item, onClose }: Props) {
       <DialogContent className="max-h-[90vh] max-w-3xl p-0">
         <DialogHeader className="px-6 pt-6">
           <DialogTitle className="flex items-center gap-2 text-lg">
-            岗位详情
-            <Badge variant="secondary">{item.year}</Badge>
+            {t("岗位详情")}{' '}<Badge variant="secondary">{item.year}</Badge>
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="max-h-[calc(90vh-8rem)] px-6">
@@ -63,7 +63,7 @@ export function PositionModal({ item, onClose }: Props) {
             )}
             {item.source_url && (
               <div>
-                <div className="text-xs font-medium text-muted-foreground">信息来源</div>
+                <div className="text-xs font-medium text-muted-foreground">{t("信息来源")}</div>
                 <a
                   href={item.source_url}
                   target="_blank"
@@ -83,8 +83,7 @@ export function PositionModal({ item, onClose }: Props) {
             onClick={onClose}
             className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            关闭
-          </button>
+            {t("关闭")}{' '}</button>
         </div>
       </DialogContent>
     </Dialog>

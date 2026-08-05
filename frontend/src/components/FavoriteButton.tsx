@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import type { Position } from '@/api'
 import { Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -17,8 +18,8 @@ export function FavoriteButton({ item, className }: Props) {
       variant="ghost"
       size="icon"
       className={cn('h-11 w-11 sm:h-8 sm:w-8', className)}
-      aria-label={active ? '取消收藏' : '收藏岗位'}
-      title={active ? '取消收藏' : '收藏岗位'}
+      aria-label={active ? t("取消收藏") : t("收藏岗位")}
+      title={active ? t("取消收藏") : t("收藏岗位")}
       onClick={(e) => {
         e.stopPropagation()
         toggleFavorite(item)

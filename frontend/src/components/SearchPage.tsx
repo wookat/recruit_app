@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { ListPage } from './ListPage'
 import { fetchPositions } from '@/api'
 
@@ -17,5 +18,5 @@ interface SearchPageProps {
 }
 
 export function SearchPage(props: SearchPageProps) {
-  return <ListPage title="岗位检索" fetcher={fetchPositions} showStats syncUrl {...props} />
+  return <ListPage title={t("岗位检索")} fetcher={fetchPositions} showStats syncUrl {...props} />
 }

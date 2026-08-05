@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { memo, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import type { Position } from '@/api'
@@ -74,8 +75,8 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, 
   if (data.length === 0 && !loading) {
     return (
       <EmptyState
-        title="没有找到匹配的岗位"
-        description="建议优先移除关键词，其次地区、类型筛选"
+        title={t("没有找到匹配的岗位")}
+        description={t("建议优先移除关键词，其次地区、类型筛选")}
         action={emptyAction}
       />
     )

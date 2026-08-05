@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useState } from 'react'
 import { BadgeCheck, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -42,15 +43,14 @@ export function ExtLinkAnchor({ url }: { url: string }) {
       </a>
       {domain && (
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-          <span>跳转至：{domain}</span>
+          <span>{t("跳转至：")}{domain}</span>
           {trust === 'official' && (
             <span className="inline-flex items-center gap-0.5 rounded-sm bg-emerald-50 px-1.5 py-px font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
               <BadgeCheck className="h-3 w-3" aria-hidden="true" />
-              官方来源
-            </span>
+              {t("官方来源")}{' '}</span>
           )}
           {trust === 'third-party' && (
-            <span className="rounded-sm bg-muted px-1.5 py-px">第三方来源 · 请以官方公告为准</span>
+            <span className="rounded-sm bg-muted px-1.5 py-px">{t("第三方来源 · 请以官方公告为准")}</span>
           )}
         </div>
       )}
@@ -58,20 +58,18 @@ export function ExtLinkAnchor({ url }: { url: string }) {
         <Dialog open={pending} onOpenChange={(o) => !o && setPending(false)}>
           <DialogContent className="max-w-xs shadow-lg sm:max-w-sm">
             <DialogHeader>
-              <DialogTitle>即将打开外部链接</DialogTitle>
+              <DialogTitle>{t("即将打开外部链接")}</DialogTitle>
               <DialogDescription>
-                目标网站：<span className="font-medium text-foreground">{domain || url}</span>
+                {t("目标网站：")}<span className="font-medium text-foreground">{domain || url}</span>
                 {domain && <span className="mt-1 block truncate text-xs opacity-70">{url}</span>}
-                <span className="mt-1 block">外部网站内容与本站无关，请注意甄别信息与保护个人信息安全。</span>
+                <span className="mt-1 block">{t("外部网站内容与本站无关，请注意甄别信息与保护个人信息安全。")}</span>
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2">
               <Button variant="outline" size="sm" className="min-h-11 sm:min-h-9" onClick={() => setPending(false)}>
-                取消
-              </Button>
+                {t("取消")}{' '}</Button>
               <Button size="sm" className="min-h-11 sm:min-h-9" onClick={openNow}>
-                继续打开
-              </Button>
+                {t("继续打开")}{' '}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

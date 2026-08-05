@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchBianzhiJobs,
@@ -49,7 +50,7 @@ function bianzhiDateIso(j: BianzhiJob): string | null {
 function bianzhiTitle(j: BianzhiJob): string {
   return (
     j.employer ||
-    (j.category === '大型联考' ? `${j.province ?? ''}${j.job_type ?? ''}联考` : '-')
+    (j.category === '大型联考' ? tt`${j.province ?? ''}${j.job_type ?? ''}联考` : '-')
   )
 }
 
@@ -63,10 +64,10 @@ type CalView = 'month' | 'week'
 type CalBoard = 'all' | 'campus' | 'bianzhi' | 'fav'
 
 const CAL_BOARDS: { key: CalBoard; label: string }[] = [
-  { key: 'all', label: '全部' },
-  { key: 'campus', label: '校招' },
-  { key: 'bianzhi', label: '编制' },
-  { key: 'fav', label: '收藏' },
+  { key: 'all', label: t("全部") },
+  { key: 'campus', label: t("校招") },
+  { key: 'bianzhi', label: t("编制") },
+  { key: 'fav', label: t("收藏") },
 ]
 
 function initialView(): CalView {
@@ -253,7 +254,7 @@ export function CalendarPage() {
       events.push({
         uid: `campus-${j.id}@recruit`,
         date: new Date(`${iso}T00:00:00`),
-        summary: `【截止】${j.company || '-'}${j.positions ? ` ${j.positions}` : ''}`,
+        summary: tt`【截止】${j.company || '-'}${j.positions ? ` ${j.positions}` : ''}`,
         description: j.apply_url || j.announce_url || undefined,
       })
     }
@@ -263,7 +264,7 @@ export function CalendarPage() {
       events.push({
         uid: `bianzhi-${j.id}@recruit`,
         date: new Date(`${iso}T00:00:00`),
-        summary: `【截止】${bianzhiTitle(j)}${j.job_type ? ` ${j.job_type}` : ''}`,
+        summary: tt`【截止】${bianzhiTitle(j)}${j.job_type ? ` ${j.job_type}` : ''}`,
         description: j.announce_url || j.apply_url || undefined,
       })
     }
@@ -271,8 +272,8 @@ export function CalendarPage() {
     downloadIcs(
       events,
       view === 'month'
-        ? `截止日历-${periodRange.start.slice(0, 7)}.ics`
-        : `截止日历-${periodRange.start}至${periodRange.end}.ics`,
+        ? tt`截止日历-${periodRange.start.slice(0, 7)}.ics`
+        : tt`截止日历-${periodRange.start}至${periodRange.end}.ics`,
     )
   }
 
@@ -301,10 +302,8 @@ export function CalendarPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-lg font-bold">
           <CalendarDays className="h-5 w-5 text-primary" />
-          截止日历
-          <span className="text-xs font-normal text-muted-foreground">
-            未来 60 天校招 / 编制截止汇总
-          </span>
+          {t("截止日历")}{' '}<span className="text-xs font-normal text-muted-foreground">
+            {t("未来 60 天校招 / 编制截止汇总")}{' '}</span>
         </h2>
         <div className="flex flex-wrap items-center gap-1.5">
           <div className="flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
@@ -321,7 +320,7 @@ export function CalendarPage() {
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {v === 'month' ? '月' : '周'}
+                {v === 'month' ? t("月") : t("周")}
               </button>
             ))}
           </div>
@@ -329,7 +328,7 @@ export function CalendarPage() {
             variant="outline"
             size="sm"
             className="h-8 w-8 p-0"
-            aria-label={view === 'month' ? '上个月' : '上一周'}
+            aria-label={view === 'month' ? t("上个月") : t("上一周")}
             onClick={() =>
               view === 'month' ? setMonthOffset((m) => m - 1) : setWeekOffset((w) => w - 1)
             }
@@ -338,14 +337,14 @@ export function CalendarPage() {
           </Button>
           <span className="min-w-24 text-center text-sm font-medium">
             {view === 'month'
-              ? `${monthStart.getFullYear()} 年 ${monthStart.getMonth() + 1} 月`
-              : `${weekDays[0].getMonth() + 1}月${weekDays[0].getDate()}日 – ${weekDays[6].getMonth() + 1}月${weekDays[6].getDate()}日`}
+              ? tt`${monthStart.getFullYear()} 年 ${monthStart.getMonth() + 1} 月`
+              : tt`${weekDays[0].getMonth() + 1}月${weekDays[0].getDate()}日 – ${weekDays[6].getMonth() + 1}月${weekDays[6].getDate()}日`}
           </span>
           <Button
             variant="outline"
             size="sm"
             className="h-8 w-8 p-0"
-            aria-label={view === 'month' ? '下个月' : '下一周'}
+            aria-label={view === 'month' ? t("下个月") : t("下一周")}
             onClick={() =>
               view === 'month' ? setMonthOffset((m) => m + 1) : setWeekOffset((w) => w + 1)
             }
@@ -363,14 +362,13 @@ export function CalendarPage() {
                 setSelectedIso(todayIso)
               }}
             >
-              回今天
-            </Button>
+              {t("回今天")}{' '}</Button>
           )}
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="flex items-center gap-1.5" role="group" aria-label="按板块过滤">
+        <div className="flex items-center gap-1.5" role="group" aria-label={t("按板块过滤")}>
           {CAL_BOARDS.map((b) => (
             <button
               key={b.key}
@@ -390,23 +388,19 @@ export function CalendarPage() {
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
-            <span className="h-2.5 w-2.5 rounded-sm bg-blue-500" /> 校招
-          </span>
+            <span className="h-2.5 w-2.5 rounded-sm bg-blue-500" /> {' '}{t("校招")}{' '}</span>
           <span className="inline-flex items-center gap-1">
-            <span className="h-2.5 w-2.5 rounded-sm bg-violet-500" /> 编制
-          </span>
+            <span className="h-2.5 w-2.5 rounded-sm bg-violet-500" /> {' '}{t("编制")}{' '}</span>
           <span className="inline-flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-amber-400" /> 我的收藏截止
-          </span>
+            <span className="h-2 w-2 rounded-full bg-amber-400" /> {' '}{t("我的收藏截止")}{' '}</span>
         </div>
       </div>
 
       {!loading && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-muted-foreground">
-            {view === 'month' ? '本月截止' : '本周截止'}{' '}
-            <span className="font-semibold text-foreground">{periodEntries.total}</span> 条
-          </span>
+            {view === 'month' ? t("本月截止") : t("本周截止")}{' '}
+            <span className="font-semibold text-foreground">{periodEntries.total}</span> {' '}{t("条")}{' '}</span>
           <Button
             variant="outline"
             size="sm"
@@ -415,7 +409,7 @@ export function CalendarPage() {
             onClick={exportPeriodIcs}
           >
             <Download className="h-3.5 w-3.5" />
-            {view === 'month' ? '导出本月 .ics' : '导出本周 .ics'}
+            {view === 'month' ? t("导出本月 .ics") : t("导出本周 .ics")}
           </Button>
         </div>
       )}
@@ -439,21 +433,20 @@ export function CalendarPage() {
                 )}
               >
                 <h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-                  {d.getMonth() + 1} 月 {d.getDate()} 日
-                  <span className="text-xs font-normal text-muted-foreground">
-                    周{WEEKDAYS[(d.getDay() + 6) % 7]}
+                  {d.getMonth() + 1} {' '}{t("月")}{' '}{d.getDate()} {' '}{t("日")}{' '}<span className="text-xs font-normal text-muted-foreground">
+                    {t("周")}{t(WEEKDAYS[(d.getDay() + 6) % 7])}
                   </span>
                   {isToday && (
-                    <Badge className="border-0 bg-primary/15 text-primary">今天</Badge>
+                    <Badge className="border-0 bg-primary/15 text-primary">{t("今天")}</Badge>
                   )}
                   {favDates.has(iso) && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="收藏岗位截止" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title={t("收藏岗位截止")} />
                   )}
                   {entries > 0 && (
-                    <span className="text-xs font-normal text-muted-foreground">{entries} 条截止</span>
+                    <span className="text-xs font-normal text-muted-foreground">{entries} {' '}{t("条截止")}</span>
                   )}
                   {entries === 0 && !isToday && (
-                    <span className="text-xs font-normal text-muted-foreground sm:hidden">无截止</span>
+                    <span className="text-xs font-normal text-muted-foreground sm:hidden">{t("无截止")}</span>
                   )}
                 </h3>
                 {entries === 0 ? (
@@ -463,8 +456,7 @@ export function CalendarPage() {
                       !isToday && 'max-sm:hidden',
                     )}
                   >
-                    无截止岗位
-                  </p>
+                    {t("无截止岗位")}{' '}</p>
                 ) : (
                   <ul className="mt-1 divide-y">
                     {(day?.campus ?? []).map((j) => (
@@ -477,7 +469,7 @@ export function CalendarPage() {
                             setCampusDetail(j)
                           }}
                         >
-                          <Badge className="border-0 bg-blue-500/15 text-blue-700 dark:text-blue-400">校招</Badge>
+                          <Badge className="border-0 bg-blue-500/15 text-blue-700 dark:text-blue-400">{t("校招")}</Badge>
                           <span className="text-sm font-medium">{j.company || '-'}</span>
                           {j.positions && (
                             <span className="line-clamp-1 text-xs text-muted-foreground">{j.positions}</span>
@@ -502,7 +494,7 @@ export function CalendarPage() {
                             setBianzhiDetail(j)
                           }}
                         >
-                          <Badge className="border-0 bg-violet-500/15 text-violet-600 dark:bg-purple-500/25 dark:text-purple-300">编制</Badge>
+                          <Badge className="border-0 bg-violet-500/15 text-violet-600 dark:bg-purple-500/25 dark:text-purple-300">{t("编制")}</Badge>
                           <span className="text-sm font-medium">{bianzhiTitle(j)}</span>
                           {j.job_type && (
                             <span className="line-clamp-1 text-xs text-muted-foreground">{j.job_type}</span>
@@ -530,7 +522,7 @@ export function CalendarPage() {
           <div className="grid grid-cols-7 border-b bg-muted/40 text-center text-xs text-muted-foreground">
             {WEEKDAYS.map((w) => (
               <div key={w} className="py-2">
-                {w}
+                {t(w)}
               </div>
             ))}
           </div>
@@ -562,7 +554,7 @@ export function CalendarPage() {
                     {d.getDate()}
                   </span>
                   {favDates.has(iso) && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="收藏岗位截止" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title={t("收藏岗位截止")} />
                   )}
                   {day && day.campus.length > 0 && (
                     <span className="rounded bg-blue-500/15 px-1 text-[10px] font-medium leading-4 text-blue-700 dark:text-blue-400">
@@ -584,11 +576,10 @@ export function CalendarPage() {
       {view === 'month' && selectedIso && (
         <section className="rounded-xl border bg-card p-4 shadow-sm">
           <h3 className="text-sm font-semibold">
-            {Number(selectedIso.slice(5, 7))} 月 {Number(selectedIso.slice(8, 10))} 日截止
-          </h3>
+            {Number(selectedIso.slice(5, 7))} {' '}{t("月")}{' '}{Number(selectedIso.slice(8, 10))} {' '}{t("日截止")}{' '}</h3>
           {(!selectedDay || (selectedDay.campus.length === 0 && selectedDay.bianzhi.length === 0)) &&
           (favPositionsByDate[selectedIso]?.length ?? 0) === 0 ? (
-            <EmptyState title="当日无截止岗位" description="换个日期看看，或关注收藏截止提醒" />
+            <EmptyState title={t("当日无截止岗位")} description={t("换个日期看看，或关注收藏截止提醒")} />
           ) : (
             <ul className="mt-2 divide-y">
               {(favPositionsByDate[selectedIso] ?? []).map((p) => (
@@ -597,7 +588,7 @@ export function CalendarPage() {
                     href={jobShareUrl('positions', p.id)}
                     className="flex min-h-11 w-full flex-wrap items-center gap-2 py-2 text-left hover:bg-muted/50"
                   >
-                    <Badge className="border-0 bg-amber-500/15 text-amber-700 dark:text-amber-400">收藏·体制内</Badge>
+                    <Badge className="border-0 bg-amber-500/15 text-amber-700 dark:text-amber-400">{t("收藏·体制内")}</Badge>
                     <span className="text-sm font-medium">{p.employer || p.position_example || '-'}</span>
                     {p.employer && p.position_example && (
                       <span className="line-clamp-1 text-xs text-muted-foreground">{p.position_example}</span>
@@ -612,7 +603,7 @@ export function CalendarPage() {
                     className="flex w-full min-h-11 flex-wrap items-center gap-2 py-2 text-left hover:bg-muted/50"
                     onClick={() => setCampusDetail(j)}
                   >
-                    <Badge className="border-0 bg-blue-500/15 text-blue-700 dark:text-blue-400">校招</Badge>
+                    <Badge className="border-0 bg-blue-500/15 text-blue-700 dark:text-blue-400">{t("校招")}</Badge>
                     <span className="text-sm font-medium">{j.company || '-'}</span>
                     {j.positions && (
                       <span className="line-clamp-1 text-xs text-muted-foreground">{j.positions}</span>
@@ -631,7 +622,7 @@ export function CalendarPage() {
                     className="flex w-full min-h-11 flex-wrap items-center gap-2 py-2 text-left hover:bg-muted/50"
                     onClick={() => setBianzhiDetail(j)}
                   >
-                    <Badge className="border-0 bg-violet-500/15 text-violet-600 dark:bg-purple-500/25 dark:text-purple-300">编制</Badge>
+                    <Badge className="border-0 bg-violet-500/15 text-violet-600 dark:bg-purple-500/25 dark:text-purple-300">{t("编制")}</Badge>
                     <span className="text-sm font-medium">{bianzhiTitle(j)}</span>
                     {j.job_type && (
                       <span className="line-clamp-1 text-xs text-muted-foreground">{j.job_type}</span>
@@ -662,30 +653,30 @@ export function CalendarPage() {
           jobKey={`campus:${campusDetail.id}`}
           {...sheetNavProps(selectedDay?.campus ?? [], campusDetail, setCampusDetail)}
           basics={[
-            { label: '公司', value: campusDetail.company },
-            { label: '招聘岗位', value: campusDetail.positions },
-            { label: '企业类型', value: campusDetail.company_type },
-            { label: '行业', value: campusDetail.industry },
-            { label: '批次', value: campusDetail.batch },
-            { label: '届别', value: campusDetail.grad_years },
-            { label: '免笔试', value: campusDetail.no_exam },
-            { label: '内推码', value: campusDetail.referral_code },
-            { label: '工作地点', value: campusDetail.locations },
-            { label: '来源', value: campusDetail.source_table },
-            { label: '备注', value: campusDetail.notes },
+            { label: t("公司"), value: campusDetail.company },
+            { label: t("招聘岗位"), value: campusDetail.positions },
+            { label: t("企业类型"), value: campusDetail.company_type },
+            { label: t("行业"), value: campusDetail.industry },
+            { label: t("批次"), value: campusDetail.batch },
+            { label: t("届别"), value: campusDetail.grad_years },
+            { label: t("免笔试"), value: campusDetail.no_exam },
+            { label: t("内推码"), value: campusDetail.referral_code },
+            { label: t("工作地点"), value: campusDetail.locations },
+            { label: t("来源"), value: campusDetail.source_table },
+            { label: t("备注"), value: campusDetail.notes },
           ]}
           requirements={[
-            { label: '学历要求', value: campusDetail.edu_requirement },
-            { label: '专业要求', value: campusDetail.major_requirement },
+            { label: t("学历要求"), value: campusDetail.edu_requirement },
+            { label: t("专业要求"), value: campusDetail.major_requirement },
           ]}
           schedule={[
-            { label: '开始时间', value: normalizeDateStr(campusDetail.start_date) },
-            { label: '截止时间', value: normalizeDateStr(campusDetail.deadline_text) },
-            { label: '更新时间', value: normalizeDateStr(campusDetail.updated_at_src) },
+            { label: t("开始时间"), value: normalizeDateStr(campusDetail.start_date) },
+            { label: t("截止时间"), value: normalizeDateStr(campusDetail.deadline_text) },
+            { label: t("更新时间"), value: normalizeDateStr(campusDetail.updated_at_src) },
           ]}
           links={[
-            { label: '投递入口', url: campusDetail.apply_url, checkDead: true },
-            { label: '公告链接', url: campusDetail.announce_url },
+            { label: t("投递入口"), url: campusDetail.apply_url, checkDead: true },
+            { label: t("公告链接"), url: campusDetail.announce_url },
           ]}
         />
       )}
@@ -703,27 +694,27 @@ export function CalendarPage() {
           jobKey={`bianzhi:${bianzhiDetail.id}`}
           {...sheetNavProps(selectedDay?.bianzhi ?? [], bianzhiDetail, setBianzhiDetail)}
           basics={[
-            { label: '招聘单位', value: bianzhiDetail.employer },
-            { label: '分类', value: bianzhiDetail.category },
-            { label: '省份', value: bianzhiDetail.province },
-            { label: '岗位类型', value: bianzhiDetail.job_type },
-            { label: '招聘人数', value: bianzhiDetail.headcount },
-            { label: '工作地点', value: bianzhiDetail.work_location },
-            { label: '备注', value: bianzhiDetail.notes },
+            { label: t("招聘单位"), value: bianzhiDetail.employer },
+            { label: t("分类"), value: bianzhiDetail.category },
+            { label: t("省份"), value: bianzhiDetail.province },
+            { label: t("岗位类型"), value: bianzhiDetail.job_type },
+            { label: t("招聘人数"), value: bianzhiDetail.headcount },
+            { label: t("工作地点"), value: bianzhiDetail.work_location },
+            { label: t("备注"), value: bianzhiDetail.notes },
           ]}
           requirements={[
-            { label: '学历要求', value: bianzhiDetail.edu_requirement },
-            { label: '专业要求', value: bianzhiDetail.major_requirement },
+            { label: t("学历要求"), value: bianzhiDetail.edu_requirement },
+            { label: t("专业要求"), value: bianzhiDetail.major_requirement },
           ]}
           schedule={[
-            { label: '报名开始', value: normalizeDateStr(bianzhiDetail.signup_start) },
-            { label: '报名截止', value: normalizeDateStr(bianzhiDetail.deadline_text) },
-            { label: '考试时间', value: bianzhiDetail.exam_time },
-            { label: '更新时间', value: normalizeDateStr(bianzhiDetail.updated_at_src) },
+            { label: t("报名开始"), value: normalizeDateStr(bianzhiDetail.signup_start) },
+            { label: t("报名截止"), value: normalizeDateStr(bianzhiDetail.deadline_text) },
+            { label: t("考试时间"), value: bianzhiDetail.exam_time },
+            { label: t("更新时间"), value: normalizeDateStr(bianzhiDetail.updated_at_src) },
           ]}
           links={[
-            { label: '公告链接', url: bianzhiDetail.announce_url, checkDead: true },
-            { label: '报名入口', url: bianzhiDetail.apply_url, checkDead: true },
+            { label: t("公告链接"), url: bianzhiDetail.announce_url, checkDead: true },
+            { label: t("报名入口"), url: bianzhiDetail.apply_url, checkDead: true },
           ]}
         />
       )}

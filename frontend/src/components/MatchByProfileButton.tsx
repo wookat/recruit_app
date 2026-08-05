@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { Loader2, Pencil, Sparkles, X } from 'lucide-react'
 import {
@@ -41,9 +42,9 @@ function levelBadge(label: string, level: MatchLevel | 'ok' | 'unset') {
     level === 'exact' || level === 'ok'
       ? '✓'
       : level === 'semantic'
-        ? '≈同类'
+        ? t("≈同类")
         : level === 'unlimited'
-          ? '不限'
+          ? t("不限")
           : '✗'
   return (
     <span key={label} className={cn('rounded-md border px-1.5 py-0.5 text-[11px] leading-none', style)}>
@@ -56,11 +57,11 @@ function levelBadge(label: string, level: MatchLevel | 'ok' | 'unset') {
 function ReasonBadges({ r, board }: { r: MatchReasons; board: 'campus' | 'bianzhi' }) {
   return (
     <span className="flex flex-wrap items-center gap-1">
-      {levelBadge('专业', r.major)}
-      {levelBadge('学历', r.edu)}
-      {levelBadge('地点', r.location)}
-      {board === 'campus' && levelBadge('届次', r.grad_year)}
-      {levelBadge('单位', r.unit_type)}
+      {levelBadge(t("专业"), r.major)}
+      {levelBadge(t("学历"), r.edu)}
+      {levelBadge(t("地点"), r.location)}
+      {board === 'campus' && levelBadge(t("届次"), r.grad_year)}
+      {levelBadge(t("单位"), r.unit_type)}
     </span>
   )
 }
@@ -158,11 +159,9 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
           }}
         >
           <Sparkles className="h-3.5 w-3.5" />
-          智能匹配
-        </Button>
+          {t("智能匹配")}{' '}</Button>
         <span className="text-xs text-muted-foreground">
-          按学历+专业(AI 语义)+地点{board === 'campus' ? '+届次' : ''}+单位类型逐维打分
-        </span>
+          {t("按学历+专业(AI 语义)+地点")}{board === 'campus' ? t("+届次") : ''}{t("+单位类型逐维打分")}{' '}</span>
         {profileUsable(profile) && !editing && (
           <Button
             variant="ghost"
@@ -174,8 +173,7 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
             }}
           >
             <Pencil className="h-3.5 w-3.5" />
-            修改条件
-          </Button>
+            {t("修改条件")}{' '}</Button>
         )}
         {active && (
           <Button
@@ -188,19 +186,17 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
             }}
           >
             <X className="h-3.5 w-3.5" />
-            收起匹配
-          </Button>
+            {t("收起匹配")}{' '}</Button>
         )}
       </div>
 
       {editing && (
         <div className="space-y-3 rounded-xl border border-primary/15 bg-gradient-to-br from-primary/[0.03] to-muted/30 p-3 sm:p-4">
           <p className="text-xs text-muted-foreground">
-            填写你的画像（全站共用一份，填一次三板块可用）；专业支持多个，AI 会自动扩展同大类相关专业
-          </p>
+            {t("填写你的画像（全站共用一份，填一次三板块可用）；专业支持多个，AI 会自动扩展同大类相关专业")}{' '}</p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">学历</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("学历")}</label>
               <div className="flex flex-wrap gap-1.5">
                 {EDU_LEVELS.map((e) => (
                   <Badge
@@ -213,15 +209,15 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
                       )
                     }
                   >
-                    {e}
+                    {t(e)}
                   </Badge>
                 ))}
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">专业（可多个，顿号分隔）</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("专业（可多个，顿号分隔）")}</label>
               <Input
-                placeholder="如：计算机科学与技术、软件工程"
+                placeholder={t("如：计算机科学与技术、软件工程")}
                 value={majorsText}
                 onChange={(e) => setMajorsText(e.target.value)}
                 className="h-9"
@@ -231,9 +227,9 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">意向城市/省份（可多个）</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("意向城市/省份（可多个）")}</label>
               <Input
-                placeholder="如：山东、济南"
+                placeholder={t("如：山东、济南")}
                 value={locationText}
                 onChange={(e) => setLocationText(e.target.value)}
                 className="h-9"
@@ -244,7 +240,7 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
             </div>
             {board === 'campus' && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">应届年份</label>
+                <label className="text-xs font-medium text-muted-foreground">{t("应届年份")}</label>
                 <div className="flex flex-wrap gap-1.5">
                   {GRAD_YEARS.map((y) => (
                     <Badge
@@ -260,7 +256,7 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
               </div>
             )}
             <div className="flex flex-col gap-1.5 sm:col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">意向单位类型（可多选）</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("意向单位类型（可多选）")}</label>
               <div className="flex flex-wrap gap-1.5">
                 {unitOptions.map((u) => (
                   <Badge
@@ -273,7 +269,7 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
                       )
                     }
                   >
-                    {u}
+                    {t(u)}
                   </Badge>
                 ))}
               </div>
@@ -286,16 +282,14 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
               onClick={saveAndApply}
               disabled={!parseList(majorsText).length && !parseList(locationText).length}
             >
-              保存并匹配
-            </Button>
+              {t("保存并匹配")}{' '}</Button>
             <Button
               variant="ghost"
               size="sm"
               className="min-h-11 sm:min-h-8"
               onClick={() => setEditing(false)}
             >
-              取消
-            </Button>
+              {t("取消")}{' '}</Button>
           </div>
         </div>
       )}
@@ -305,31 +299,28 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
           {loading && (
             <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
               <Loader2 className="h-4 w-4 animate-spin" />
-              AI 正在按你的画像匹配岗位…
-            </p>
+              {t("AI 正在按你的画像匹配岗位…")}{' '}</p>
           )}
           {error && (
             <p className="text-sm text-destructive" role="alert">
-              匹配失败，请稍后重试
-            </p>
+              {t("匹配失败，请稍后重试")}{' '}</p>
           )}
           {result && (
             <>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">
-                  匹配结果 {result.items.length} 条（按匹配度排序）
-                </span>
-                {result.categories.length > 0 && <span>专业大类：{result.categories.join('、')}</span>}
+                  {t("匹配结果")}{' '}{result.items.length} {' '}{t("条（按匹配度排序）")}{' '}</span>
+                {result.categories.length > 0 && <span>{t("专业大类：")}{result.categories.join('、')}</span>}
                 {result.expanded_terms.length > 0 && (
                   <span>
-                    {result.semantic_source === 'ai' ? 'AI 扩展' : '同类扩展'}：
+                    {result.semantic_source === 'ai' ? t("AI 扩展") : t("同类扩展")}：
                     {result.expanded_terms.slice(0, 8).join('、')}
                     {result.expanded_terms.length > 8 ? '…' : ''}
                   </span>
                 )}
               </div>
               {result.items.length === 0 && (
-                <p className="text-sm text-muted-foreground">没有匹配到岗位，试试放宽画像条件</p>
+                <p className="text-sm text-muted-foreground">{t("没有匹配到岗位，试试放宽画像条件")}</p>
               )}
               <ul className="divide-y divide-border/60">
                 {result.items.slice(0, showCount).map((it) => {
@@ -380,8 +371,7 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
                   className="w-full text-xs text-muted-foreground"
                   onClick={() => setShowCount((n) => n + 10)}
                 >
-                  展开更多（还有 {result.items.length - showCount} 条）
-                </Button>
+                  {t("展开更多（还有")}{' '}{result.items.length - showCount} {' '}{t("条）")}{' '}</Button>
               )}
             </>
           )}

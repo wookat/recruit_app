@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useMemo } from 'react'
 import { MultiSelect, type OptionGroup } from './MultiSelect'
 import type { FilterOptions } from '@/api'
@@ -99,26 +100,26 @@ export function LocationFilter({ filters, value, onChange }: LocationFilterProps
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <MultiSelect
-        label="省份"
+        label={t("省份")}
         options={f.provinces}
         selected={selectedProvinces}
         onChange={handleProvinceChange}
-        placeholder="选择省份"
+        placeholder={t("选择省份")}
       />
       <MultiSelect
-        label="城市"
+        label={t("城市")}
         groups={cityGroups}
         selected={selectedCities}
         onChange={handleCityChange}
-        placeholder={selectedProvinces.length === 0 ? '可先选省份' : '选择城市'}
+        placeholder={selectedProvinces.length === 0 ? t("可先选省份") : t("选择城市")}
       />
       <MultiSelect
-        label="区县"
+        label={t("区县")}
         options={districtGroups ? undefined : f.districts}
         groups={districtGroups || undefined}
         selected={selectedDistricts}
         onChange={handleDistrictChange}
-        placeholder={selectedProvinces.length === 0 && selectedCities.length === 0 ? '可先选省份/城市' : '选择区县'}
+        placeholder={selectedProvinces.length === 0 && selectedCities.length === 0 ? t("可先选省份/城市") : t("选择区县")}
       />
     </div>
   )

@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useState, useSyncExternalStore } from 'react'
 import { MonitorDown, Share, SquarePlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -43,9 +44,9 @@ function isIos(): boolean {
 }
 
 const IOS_STEPS = [
-  { icon: Share, text: '用 Safari 打开本站，点击底部工具栏的「分享」按钮' },
-  { icon: SquarePlus, text: '在分享菜单中向下找到「添加到主屏幕」并点击' },
-  { icon: MonitorDown, text: '点击右上角「添加」，桌面即出现上岸雷达图标，像 App 一样打开' },
+  { icon: Share, text: t("用 Safari 打开本站，点击底部工具栏的「分享」按钮") },
+  { icon: SquarePlus, text: t("在分享菜单中向下找到「添加到主屏幕」并点击") },
+  { icon: MonitorDown, text: t("点击右上角「添加」，桌面即出现上岸雷达图标，像 App 一样打开") },
 ]
 
 /** 「安装到桌面」入口：安卓 beforeinstallprompt 直接调起，iOS 显示分步引导弹层，
@@ -75,22 +76,20 @@ export function InstallAppEntry() {
     <>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5">
         <MonitorDown className="h-4 w-4 shrink-0 text-primary" />
-        <span className="min-w-0 flex-1 text-sm">把上岸雷达安装到桌面，像 App 一样一键打开，支持离线查看收藏</span>
+        <span className="min-w-0 flex-1 text-sm">{t("把上岸雷达安装到桌面，像 App 一样一键打开，支持离线查看收藏")}</span>
         <Button size="sm" className="min-h-11 sm:min-h-8" onClick={handleClick}>
-          安装到桌面
-        </Button>
+          {t("安装到桌面")}{' '}</Button>
       </div>
       <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
         <DialogContent className="max-w-xs sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <MonitorDown className="h-4 w-4 text-primary" />
-              安装到主屏幕
-            </DialogTitle>
+              {t("安装到主屏幕")}{' '}</DialogTitle>
           </DialogHeader>
           {ios ? (
             <>
-              <p className="text-xs text-muted-foreground">iPhone / iPad 上按以下步骤添加：</p>
+              <p className="text-xs text-muted-foreground">{t("iPhone / iPad 上按以下步骤添加：")}</p>
               <ol className="space-y-3">
                 {IOS_STEPS.map((s, i) => (
                   <li key={i} className="flex items-start gap-2.5 text-sm">
@@ -107,13 +106,11 @@ export function InstallAppEntry() {
             </>
           ) : (
             <p className="text-sm leading-relaxed">
-              当前浏览器未提供一键安装。请用手机浏览器打开本站，通过浏览器菜单选择「添加到主屏幕 / 安装应用」即可。
-            </p>
+              {t("当前浏览器未提供一键安装。请用手机浏览器打开本站，通过浏览器菜单选择「添加到主屏幕 / 安装应用」即可。")}{' '}</p>
           )}
           <Button variant="outline" className="min-h-11 w-full sm:min-h-9" onClick={() => setGuideOpen(false)}>
             <X className="h-4 w-4" />
-            知道了
-          </Button>
+            {t("知道了")}{' '}</Button>
         </DialogContent>
       </Dialog>
     </>

@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Briefcase, Clock, Filter, GraduationCap, Landmark, LayoutList, X } from 'lucide-react'
 import {
@@ -196,18 +197,18 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
     if (!kw || !places || !onQuickFilter) return []
     const m = matchPlace(kw, places.provinces, places.cities)
     if (!m) return []
-    const restLabel = m.rest ? `并搜「${m.rest}」` : ''
+    const restLabel = m.rest ? tt`并搜「${m.rest}」` : ''
     const out: QuickSuggestion[] = []
     if (m.type === 'province') {
       out.push(
-        { key: 'qf-pos', board: 'positions', label: `在体制内按省份『${m.name}』筛选${restLabel}`, filter: { province: m.name }, rest: m.rest },
-        { key: 'qf-bz', board: 'bianzhi', label: `在编制按省份『${m.name}』筛选${restLabel}`, filter: { province: m.name }, rest: m.rest },
-        { key: 'qf-camp', board: 'campus', label: `在校招按地点『${m.name}』筛选${restLabel}`, filter: { city: m.name }, rest: m.rest },
+        { key: 'qf-pos', board: 'positions', label: tt`在体制内按省份『${m.name}』筛选${restLabel}`, filter: { province: m.name }, rest: m.rest },
+        { key: 'qf-bz', board: 'bianzhi', label: tt`在编制按省份『${m.name}』筛选${restLabel}`, filter: { province: m.name }, rest: m.rest },
+        { key: 'qf-camp', board: 'campus', label: tt`在校招按地点『${m.name}』筛选${restLabel}`, filter: { city: m.name }, rest: m.rest },
       )
     } else {
       out.push(
-        { key: 'qf-pos', board: 'positions', label: `在体制内按城市『${m.name}』筛选${restLabel}`, filter: { city: m.name }, rest: m.rest },
-        { key: 'qf-camp', board: 'campus', label: `在校招按地点『${m.name}』筛选${restLabel}`, filter: { city: m.name }, rest: m.rest },
+        { key: 'qf-pos', board: 'positions', label: tt`在体制内按城市『${m.name}』筛选${restLabel}`, filter: { city: m.name }, rest: m.rest },
+        { key: 'qf-camp', board: 'campus', label: tt`在校招按地点『${m.name}』筛选${restLabel}`, filter: { city: m.name }, rest: m.rest },
       )
     }
     return out.slice(0, 3)
@@ -247,23 +248,23 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
     <CommandDialog
       open={open}
       onOpenChange={(v) => !v && onClose()}
-      title="全站搜索"
-      description="同时搜索体制内、校招、编制三个板块"
+      title={t("全站搜索")}
+      description={t("同时搜索体制内、校招、编制三个板块")}
       showCloseButton
       className="max-sm:inset-0 max-sm:top-0 max-sm:h-dvh max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none!"
     >
       <Command shouldFilter={false} loop className="max-sm:h-full">
         <CommandInput
-          placeholder="搜索岗位 / 单位 / 公司…（同时搜三板块）"
+          placeholder={t("搜索岗位 / 单位 / 公司…（同时搜三板块）")}
           value={q}
           onValueChange={setQ}
         />
         {kw && synAdded.length > 0 && (
           <div className="flex items-center gap-1 border-b bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
-            <span className="min-w-0 flex-1 truncate">已同时匹配：{synAdded.join('、')}</span>
+            <span className="min-w-0 flex-1 truncate">{t("已同时匹配：")}{synAdded.join('、')}</span>
             <button
               type="button"
-              aria-label="关闭同义扩展"
+              aria-label={t("关闭同义扩展")}
               className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground hover:text-foreground sm:h-7 sm:w-7"
               onClick={() => setSynOff(true)}
             >
@@ -273,23 +274,20 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
         )}
         {!kw && (
           <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-            输入关键词，同时搜索 体制内 / 校招 / 编制 三个板块
-            <span className="mt-1 block text-xs">Ctrl K 随时打开 · 上下键选择 · 回车直达详情</span>
+            {t("输入关键词，同时搜索 体制内 / 校招 / 编制 三个板块")}{' '}<span className="mt-1 block text-xs">{t("Ctrl K 随时打开 · 上下键选择 · 回车直达详情")}</span>
           </div>
         )}
         {!kw && recent.length > 0 && (
           <div className="border-t px-3 pb-3 pt-2">
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                <Clock className="h-3 w-3" /> 最近搜索
-              </span>
+                <Clock className="h-3 w-3" /> {' '}{t("最近搜索")}{' '}</span>
               <button
                 type="button"
                 className="min-h-9 cursor-pointer px-1 text-xs text-muted-foreground hover:text-foreground sm:min-h-0"
                 onClick={() => setRecent(clearRecentSearches())}
               >
-                清空
-              </button>
+                {t("清空")}{' '}</button>
             </div>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {recent.slice(0, 8).map((k) => (
@@ -306,7 +304,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                   </button>
                   <button
                     type="button"
-                    aria-label={`删除最近搜索 ${k}`}
+                    aria-label={tt`删除最近搜索 ${k}`}
                     className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
                     onClick={() => setRecent(removeRecentSearch(k))}
                   >
@@ -318,11 +316,11 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           </div>
         )}
         {kw && loading && !hits && (
-          <div className="px-3 py-6 text-center text-sm text-muted-foreground">搜索中…</div>
+          <div className="px-3 py-6 text-center text-sm text-muted-foreground">{t("搜索中…")}</div>
         )}
         <CommandList className="sm:max-h-96 max-sm:max-h-[calc(100dvh-64px)]">
           {kw && pinyinSuggestions.length > 0 && (
-            <CommandGroup heading="拼音联想">
+            <CommandGroup heading={t("拼音联想")}>
               {pinyinSuggestions.map((s) => (
                 <CommandItem
                   key={`py-${s}`}
@@ -333,7 +331,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                   <ArrowRight className="text-muted-foreground" />
                   <span className="min-w-0 flex-1 truncate">
                     {s}
-                    <span className="ml-1.5 text-xs text-muted-foreground">拼音匹配「{kw}」</span>
+                    <span className="ml-1.5 text-xs text-muted-foreground">{t("拼音匹配「")}{kw}」</span>
                   </span>
                 </CommandItem>
               ))}
@@ -342,7 +340,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           {kw && quickSuggestions.length > 0 && (
             <>
             {pinyinSuggestions.length > 0 && <CommandSeparator />}
-            <CommandGroup heading="快捷筛选">
+            <CommandGroup heading={t("快捷筛选")}>
               {quickSuggestions.map((s) => (
                 <CommandItem
                   key={s.key}
@@ -361,7 +359,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           {kw && hits && hits.positions.total > 0 && (
             <>
             {(quickSuggestions.length > 0 || pinyinSuggestions.length > 0) && <CommandSeparator />}
-            <CommandGroup heading={`体制内岗位 · ${formatTotal(hits.positions.total, hits.positions.capped)} 条`}>
+            <CommandGroup heading={tt`体制内岗位 · ${formatTotal(hits.positions.total, hits.positions.capped)} 条`}>
               {hits.positions.items.map((p) => (
                 <CommandItem
                   key={`positions-${p.id}`}
@@ -385,8 +383,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                 <CommandItem value="positions-all" className="max-sm:min-h-11" onSelect={() => pickAll('positions')}>
                   <ArrowRight className="text-muted-foreground" />
                   <span className="text-muted-foreground group-data-selected/command-item:text-foreground/75">
-                    查看全部 {formatTotal(hits.positions.total, hits.positions.capped)} 条体制内结果
-                  </span>
+                    {t("查看全部")}{' '}{formatTotal(hits.positions.total, hits.positions.capped)} {' '}{t("条体制内结果")}{' '}</span>
                 </CommandItem>
               )}
             </CommandGroup>
@@ -395,7 +392,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           {kw && hits && hits.campus.total > 0 && (
             <>
               <CommandSeparator />
-              <CommandGroup heading={`校招信息 · ${formatTotal(hits.campus.total, hits.campus.capped)} 条`}>
+              <CommandGroup heading={tt`校招信息 · ${formatTotal(hits.campus.total, hits.campus.capped)} 条`}>
                 {hits.campus.items.map((j) => (
                   <CommandItem
                     key={`campus-${j.id}`}
@@ -415,8 +412,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                   <CommandItem value="campus-all" className="max-sm:min-h-11" onSelect={() => pickAll('campus')}>
                     <ArrowRight className="text-muted-foreground" />
                     <span className="text-muted-foreground group-data-selected/command-item:text-foreground/75">
-                      查看全部 {formatTotal(hits.campus.total, hits.campus.capped)} 条校招结果
-                    </span>
+                      {t("查看全部")}{' '}{formatTotal(hits.campus.total, hits.campus.capped)} {' '}{t("条校招结果")}{' '}</span>
                   </CommandItem>
                 )}
               </CommandGroup>
@@ -425,7 +421,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           {kw && hits && hits.bianzhi.total > 0 && (
             <>
               <CommandSeparator />
-              <CommandGroup heading={`编制公告 · ${formatTotal(hits.bianzhi.total, hits.bianzhi.capped)} 条`}>
+              <CommandGroup heading={tt`编制公告 · ${formatTotal(hits.bianzhi.total, hits.bianzhi.capped)} 条`}>
                 {hits.bianzhi.items.map((j) => (
                   <CommandItem
                     key={`bianzhi-${j.id}`}
@@ -445,8 +441,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                   <CommandItem value="bianzhi-all" className="max-sm:min-h-11" onSelect={() => pickAll('bianzhi')}>
                     <ArrowRight className="text-muted-foreground" />
                     <span className="text-muted-foreground group-data-selected/command-item:text-foreground/75">
-                      查看全部 {formatTotal(hits.bianzhi.total, hits.bianzhi.capped)} 条编制结果
-                    </span>
+                      {t("查看全部")}{' '}{formatTotal(hits.bianzhi.total, hits.bianzhi.capped)} {' '}{t("条编制结果")}{' '}</span>
                   </CommandItem>
                 )}
               </CommandGroup>
@@ -462,10 +457,9 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                   <CommandItem value="aggregate-all" className="max-sm:min-h-11" onSelect={pickAggregate}>
                     <LayoutList className="text-primary" />
                     <span>
-                      查看全部结果（三板块聚合 ·{' '}
+                      {t("查看全部结果（三板块聚合 ·")}{' '}
                       {(hits.positions.total + hits.campus.total + hits.bianzhi.total).toLocaleString()}
-                      {hits.positions.capped || hits.campus.capped || hits.bianzhi.capped ? '+' : ''} 条）
-                    </span>
+                      {hits.positions.capped || hits.campus.capped || hits.bianzhi.capped ? '+' : ''} {' '}{t("条）")}{' '}</span>
                     <ArrowRight className="ml-auto text-muted-foreground" />
                   </CommandItem>
                 </CommandGroup>
@@ -474,17 +468,15 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
         </CommandList>
         {empty && (
           <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-            三个板块均无「{kw}」的相关结果
-            <span className="mt-1 block text-xs">
-              建议：换更短的关键词（如只搜单位名或岗位名）；若在板块列表页有筛选，可清除筛选后再试
-            </span>
+            {t("三个板块均无「")}{kw}{t("」的相关结果")}{' '}<span className="mt-1 block text-xs">
+              {t("建议：换更短的关键词（如只搜单位名或岗位名）；若在板块列表页有筛选，可清除筛选后再试")}{' '}</span>
             {/\s/.test(kw) && (
               <button
                 type="button"
                 className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-md border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
                 onClick={() => setQ(kw.replace(/\s+/g, ''))}
               >
-                试试去掉空格：「{kw.replace(/\s+/g, '')}」
+                {t("试试去掉空格：「")}{kw.replace(/\s+/g, '')}」
               </button>
             )}
             {getSynonyms(kw).map((syn) => (
@@ -494,7 +486,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                 className="ml-1.5 mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-md border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
                 onClick={() => setQ(syn)}
               >
-                试试同义词：「{syn}」
+                {t("试试同义词：「")}{syn}」
               </button>
             ))}
             {synOff && expandKeyword(kw).added.length > 0 && (
@@ -503,10 +495,10 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                 className="ml-1.5 mt-1.5 inline-flex min-h-11 cursor-pointer items-center rounded-md border border-primary/30 bg-primary/5 px-3 text-xs text-foreground/80 hover:bg-primary/10 sm:min-h-7"
                 onClick={() => setSynOff(false)}
               >
-                重新开启同义匹配（{expandKeyword(kw).added.join('、')}）
+                {t("重新开启同义匹配（")}{expandKeyword(kw).added.join('、')}）
               </button>
             )}
-            <span className="mt-3 block text-xs font-medium text-foreground/70">热门搜索</span>
+            <span className="mt-3 block text-xs font-medium text-foreground/70">{t("热门搜索")}</span>
             <span className="mt-1.5 flex flex-wrap justify-center gap-1.5">
               {HOT_SEARCHES.map((w) => (
                 <button

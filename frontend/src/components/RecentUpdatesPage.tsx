@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { BriefcaseBusiness, ChevronRight, Landmark, Sparkles } from 'lucide-react'
 import {
@@ -14,9 +15,9 @@ import { FreshnessNote } from '@/components/FreshnessNote'
 type Board = 'positions' | 'campus' | 'bianzhi'
 
 const BOARD_META: Record<Board, { label: string; icon: typeof Sparkles }> = {
-  positions: { label: '体制内', icon: Landmark },
-  campus: { label: '校招', icon: BriefcaseBusiness },
-  bianzhi: { label: '编制', icon: Sparkles },
+  positions: { label: t("体制内"), icon: Landmark },
+  campus: { label: t("校招"), icon: BriefcaseBusiness },
+  bianzhi: { label: t("编制"), icon: Sparkles },
 }
 
 const BOARD_ORDER: Board[] = ['positions', 'campus', 'bianzhi']
@@ -30,10 +31,10 @@ function fmtDate(iso: string): string {
       new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) /
       86400000,
   )
-  const week = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()]
-  const base = `${d.getMonth() + 1} 月 ${d.getDate()} 日（周${week}）`
-  if (days === 0) return `今天 · ${base}`
-  if (days === 1) return `昨天 · ${base}`
+  const week = t(['日', '一', '二', '三', '四', '五', '六'][d.getDay()])
+  const base = tt`${d.getMonth() + 1} 月 ${d.getDate()} 日（周${week}）`
+  if (days === 0) return tt`今天 · ${base}`
+  if (days === 1) return tt`昨天 · ${base}`
   return base
 }
 
@@ -100,7 +101,7 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
     const count = hit
       ? BOARD_ORDER.reduce((s, b) => s + (hit.boards[b]?.count ?? 0), 0)
       : 0
-    return { iso, label: i === 0 ? '今天' : i === 1 ? '昨天' : `${d.getMonth() + 1}/${d.getDate()}`, count }
+    return { iso, label: i === 0 ? t("今天") : i === 1 ? t("昨天") : `${d.getMonth() + 1}/${d.getDate()}`, count }
   })
 
   useEffect(() => {
@@ -126,15 +127,14 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold">近 7 天更新</h2>
+          <h2 className="text-lg font-bold">{t("近 7 天更新")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            三板块新增岗位按日聚合，每日 6:20 自动同步入库
-          </p>
+            {t("三板块新增岗位按日聚合，每日 6:20 自动同步入库")}{' '}</p>
         </div>
         <FreshnessNote board="positions" />
       </div>
 
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="按日期切换">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("按日期切换")}>
         <button
           type="button"
           aria-pressed={dateFilter === 'all'}
@@ -146,15 +146,14 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
               : 'border-border bg-background text-foreground hover:bg-muted',
           )}
         >
-          近 7 天
-        </button>
+          {t("近 7 天")}{' '}</button>
         {dayOptions.map((opt) => (
           <button
             key={opt.iso}
             type="button"
             disabled={days !== null && opt.count === 0}
             aria-pressed={dateFilter === opt.iso}
-            title={opt.count === 0 ? '当日无新增' : undefined}
+            title={opt.count === 0 ? t("当日无新增") : undefined}
             onClick={() => selectDate(opt.iso)}
             className={cn(
               'min-h-11 rounded-md border px-3 py-1 text-xs transition-colors sm:min-h-0',
@@ -169,7 +168,7 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="按板块过滤">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("按板块过滤")}>
         {(['all', ...BOARD_ORDER] as const).map((b) => (
           <button
             key={b}
@@ -183,7 +182,7 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
                 : 'border-border bg-background text-foreground hover:bg-muted',
             )}
           >
-            {b === 'all' ? '全部' : BOARD_META[b].label}
+            {b === 'all' ? t("全部") : BOARD_META[b].label}
           </button>
         ))}
       </div>
@@ -195,17 +194,17 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
           ))}
         </div>
       )}
-      {failed && <EmptyState title="加载失败" description="请稍后刷新重试" />}
+      {failed && <EmptyState title={t("加载失败")} description={t("请稍后刷新重试")} />}
       {days !== null && visibleDays.length === 0 && (
         <EmptyState
           title={
             dateFilter !== 'all'
-              ? '当日暂无新增'
+              ? t("当日暂无新增")
               : boardFilter === 'all'
-                ? '近 7 天暂无新增'
-                : `${BOARD_META[boardFilter].label}近 7 天暂无新增`
+                ? t("近 7 天暂无新增")
+                : tt`${BOARD_META[boardFilter].label}近 7 天暂无新增`
           }
-          description="数据每日自动同步，欢迎明天再来看看"
+          description={t("数据每日自动同步，欢迎明天再来看看")}
         />
       )}
 
@@ -227,13 +226,12 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
                     </Badge>
                     {b.bulk ? (
                       <span className="whitespace-nowrap rounded-sm bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                        <span className="sm:hidden">全量同步日 · 不逐条展示</span>
-                        <span className="hidden sm:inline">数据全量同步日 · 非新增岗位数，不逐条展示</span>
+                        <span className="sm:hidden">{t("全量同步日 · 不逐条展示")}</span>
+                        <span className="hidden sm:inline">{t("数据全量同步日 · 非新增岗位数，不逐条展示")}</span>
                       </span>
                     ) : (
                       <span className="text-xs font-semibold text-primary">
-                        +{b.count.toLocaleString()} 条
-                      </span>
+                        +{b.count.toLocaleString()} {' '}{t("条")}{' '}</span>
                     )}
                   </div>
                   {b.items.length > 0 && (
@@ -270,8 +268,7 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
                       className="mt-1.5 inline-flex min-h-11 items-center gap-1 text-xs text-primary underline-offset-4 hover:underline sm:min-h-0"
                       onClick={() => onOpenBoard(board)}
                     >
-                      查看{meta.label}板块全部
-                      <ChevronRight className="h-3 w-3" />
+                      {t("查看")}{meta.label}{t("板块全部")}{' '}<ChevronRight className="h-3 w-3" />
                     </button>
                   )}
                 </div>

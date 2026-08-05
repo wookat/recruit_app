@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Clock, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -168,11 +169,10 @@ export function SearchSuggestInput({
                 <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               )}
               <span className="flex-1 truncate">{it.text}</span>
-              {it.recent && <span className="text-[11px] text-muted-foreground">最近</span>}
+              {it.recent && <span className="text-[11px] text-muted-foreground">{t("最近")}</span>}
               {it.count !== undefined && (
                 <span className="text-xs tabular-nums text-muted-foreground">
-                  {it.count.toLocaleString()} 条
-                </span>
+                  {it.count.toLocaleString()} {' '}{t("条")}{' '}</span>
               )}
             </button>
           ))}

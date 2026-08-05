@@ -1,3 +1,4 @@
+import { t, tt } from './i18n'
 import type { BianzhiJob, CampusJob, Position } from '@/api'
 import {
   exportPositionData,
@@ -41,7 +42,7 @@ export function downloadBackup() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `上岸雷达收藏备份_${new Date().toISOString().slice(0, 10)}.json`
+  a.download = tt`上岸雷达收藏备份_${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -73,13 +74,13 @@ export function restoreBackup(text: string): RestoreResult {
   try {
     parsed = JSON.parse(text)
   } catch {
-    throw new Error('文件不是有效的 JSON')
+    throw new Error(t('文件不是有效的 JSON'))
   }
   if (!isRecord(parsed) || parsed.app !== 'recruit' || typeof parsed.version !== 'number') {
-    throw new Error('不是上岸雷达的收藏备份文件')
+    throw new Error(t('不是上岸雷达的收藏备份文件'))
   }
   if (parsed.version > BACKUP_VERSION) {
-    throw new Error(`备份版本 ${parsed.version} 过新，请更新页面后重试`)
+    throw new Error(tt`备份版本 ${parsed.version} 过新，请更新页面后重试`)
   }
   const pos = isRecord(parsed.positions) ? parsed.positions : {}
   const campus = isRecord(parsed.campus) ? parsed.campus : {}

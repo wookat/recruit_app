@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import { useSyncExternalStore } from 'react'
 import axios from 'axios'
 import { API_BASE, type BianzhiJob, type CampusJob, type Position } from '@/api'
@@ -27,15 +28,15 @@ export function buildPushItems(
   const out: PushDueItem[] = []
   for (const p of favorites) {
     const d = parseSignupDeadline(p)
-    if (d) out.push({ t: p.employer?.trim() || p.position_example?.trim() || p.job_type || '体制内岗位', d: fmtDate(d) })
+    if (d) out.push({ t: p.employer?.trim() || p.position_example?.trim() || p.job_type || t('体制内岗位'), d: fmtDate(d) })
   }
   for (const j of campusFavorites) {
     const d = getEffectiveDeadline(j)
-    if (d) out.push({ t: j.company?.trim() || '校招岗位', d: fmtDate(d) })
+    if (d) out.push({ t: j.company?.trim() || t('校招岗位'), d: fmtDate(d) })
   }
   for (const j of bianzhiFavorites) {
     const d = getEffectiveDeadline(j)
-    if (d) out.push({ t: j.employer?.trim() || j.job_type || '编制岗位', d: fmtDate(d) })
+    if (d) out.push({ t: j.employer?.trim() || j.job_type || t('编制岗位'), d: fmtDate(d) })
   }
   return out
 }

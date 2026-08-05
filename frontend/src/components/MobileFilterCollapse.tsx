@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -13,7 +14,7 @@ interface Props {
 }
 
 /** 移动端（<768px）筛选区：内容超过约两行时自动折叠为「筛选 (N)」按钮，点击弹出底部 Sheet。 */
-export function MobileFilterCollapse({ count, title = '全部筛选', onReset, children }: Props) {
+export function MobileFilterCollapse({ count, title = t("全部筛选"), onReset, children }: Props) {
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const measureRef = useRef<HTMLDivElement>(null)
@@ -52,7 +53,7 @@ export function MobileFilterCollapse({ count, title = '全部筛选', onReset, c
             onClick={() => setOpen(true)}
           >
             <SlidersHorizontal className="h-4 w-4" />
-            筛选{count > 0 ? ` (${count})` : ''}
+            {t("筛选")}{count > 0 ? ` (${count})` : ''}
           </Button>
           <Sheet open={open} onOpenChange={(v) => !v && setOpen(false)}>
             <SheetContent
@@ -71,11 +72,9 @@ export function MobileFilterCollapse({ count, title = '全部筛选', onReset, c
                     disabled={count === 0}
                     onClick={onReset}
                   >
-                    重置
-                  </Button>
+                    {t("重置")}{' '}</Button>
                   <Button className="h-11 flex-1" onClick={() => setOpen(false)}>
-                    完成
-                  </Button>
+                    {t("完成")}{' '}</Button>
                 </div>
               )}
             </SheetContent>

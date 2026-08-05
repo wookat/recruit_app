@@ -113,7 +113,8 @@ def parse_deadline(raw: str):
         return None
 
 
-def enrich(dry_run: bool = False, limit: int = 0, audit_path: str = "") -> dict:
+def enrich(dry_run: bool = False, limit: int = 0, audit_path: str = "",
+           days: int = 0) -> dict:
     db = SessionLocal()
     audit_path = audit_path or (
         f"enrich_ciic_audit_{datetime.now():%Y%m%d_%H%M%S}.jsonl")
@@ -124,9 +125,13 @@ def enrich(dry_run: bool = False, limit: int = 0, audit_path: str = "") -> dict:
             "SELECT id, announce_url, deadline_date, industry FROM campus_jobs "
             "WHERE source_table = :st AND (deadline_date IS NULL "
             "OR industry IS NULL OR industry = '') "
-            "AND announce_url LIKE 'https://www.ciiczhaopin.com/%' ORDER BY id"
+            "AND announce_url LIKE 'https://www.ciiczhaopin.com/%'"
+            + (" AND created_at >= now() - make_interval(days => :days)" if days else "")
+            + " ORDER BY id"
             + (" LIMIT :lim" if limit else "")),
-            {"st": SOURCE_TABLE, **({"lim": limit} if limit else {})}).fetchall()
+            {"st": SOURCE_TABLE,
+             **({"lim": limit} if limit else {}),
+             **({"days": days} if days else {})}).fetchall()
         print(f"待补全 {len(rows)} 条（deadline_date 或 industry 为空）", flush=True)
         with open(audit_path, "a", encoding="utf-8") as audit:
             for i, row in enumerate(rows, 1):
@@ -209,8 +214,9 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="只抓取解析不写库")
     parser.add_argument("--limit", type=int, default=0, help="最多处理 N 条")
     parser.add_argument("--audit", default="", help="JSONL 审计文件路径")
+    parser.add_argument("--days", type=int, default=0, help="只处理最近 N 天入库的行")
     args = parser.parse_args()
-    enrich(dry_run=args.dry_run, limit=args.limit, audit_path=args.audit)
+    enrich(dry_run=args.dry_run, limit=args.limit, audit_path=args.audit, days=args.days)
 
 
 if __name__ == "__main__":

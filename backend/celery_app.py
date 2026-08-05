@@ -31,6 +31,10 @@ celery_app.conf.update(
             "task": "tasks.collect_ncss_jobs",
             "schedule": crontab(hour=5, minute=50),  # 每天采集 NCSS 教育部大学生就业平台校招增量
         },
+        "collect-ciic-jobs": {
+            "task": "tasks.collect_ciic_jobs",
+            "schedule": crontab(hour=6, minute=10),  # 每天采集中智招聘校招/央国企社招增量
+        },
         "check-watch-sources": {
             "task": "tasks.check_watch_sources",
             "schedule": crontab(hour=6, minute=0),  # 每天 6:00 检查全部来源

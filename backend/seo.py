@@ -7,11 +7,12 @@ FastAPI 层输出一组可收录的路径型页面 /zhaokao/...，含 JobPosting
 
 import html
 import json
+import os
 from urllib.parse import quote
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -268,6 +269,16 @@ def seo_province_et(slug: str, et_slug: str, db: Session = Depends(get_db)):
     if slug not in PROV_BY_SLUG or et_slug not in ET_BY_SLUG:
         raise HTTPException(status_code=404)
     return HTMLResponse(_render_province_et(slug, et_slug, db=db))
+
+
+# IndexNow 站点验证密钥文件（https://www.indexnow.org/）：仅在配置了密钥时注册精确路径，
+# 避免动态 /{key}.txt 模式截获 robots.txt 等静态文件
+INDEXNOW_KEY = os.environ.get("INDEXNOW_KEY", "")
+
+if INDEXNOW_KEY:
+    @router.get(f"/{INDEXNOW_KEY}.txt", response_class=PlainTextResponse, include_in_schema=False)
+    def indexnow_key():
+        return PlainTextResponse(INDEXNOW_KEY)
 
 
 @router.get("/sitemap.xml")

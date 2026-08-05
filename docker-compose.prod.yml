@@ -42,6 +42,7 @@ services:
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUB: ${VAPID_SUB:-mailto:admin@zalize.com}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      INDEXNOW_KEY: ${INDEXNOW_KEY:-}
     volumes:
       - ./exports:/app/exports
     ports:
@@ -70,6 +71,7 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUB: ${VAPID_SUB:-mailto:admin@zalize.com}
+      INDEXNOW_KEY: ${INDEXNOW_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

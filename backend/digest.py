@@ -32,19 +32,34 @@ def _pick_campus(db: Session, day: date, limit: int = 10):
     )
     rows = q.order_by(CampusJob.deadline_date.asc().nullslast(), CampusJob.id.desc()).limit(200).all()
     rows.sort(key=lambda r: (0 if any(t in (r.company_type or "") for t in _PRIORITY_TYPES) else 1,))
-    return rows[:limit]
+    return _dedup(rows, lambda r: r.company, limit)
+
+
+def _dedup(rows, key_fn, limit):
+    """同一主体只保留一条，提升文案主体多样性。"""
+    seen, out = set(), []
+    for r in rows:
+        k = (key_fn(r) or "").strip()
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(r)
+        if len(out) >= limit:
+            break
+    return out
 
 
 def _pick_bianzhi(db: Session, day: date, limit: int = 8):
     start, end = _day_range_utc(day)
-    return (
+    rows = (
         db.query(BianzhiJob)
         .filter(BianzhiJob.created_at >= start, BianzhiJob.created_at < end)
         .filter(BianzhiJob.employer.isnot(None))
         .order_by(BianzhiJob.deadline_date.asc().nullslast(), BianzhiJob.id.desc())
-        .limit(limit)
+        .limit(100)
         .all()
     )
+    return _dedup(rows, lambda r: r.employer, limit)
 
 
 def _fmt_deadline(deadline_date, deadline_text):

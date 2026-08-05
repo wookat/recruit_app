@@ -30,6 +30,7 @@ from campus import router as campus_router
 from bianzhi import router as bianzhi_router
 from match import router as match_router
 from push import router as push_router
+from seo import router as seo_router
 from tasks import EXPORTS_DIR, export_board_task, export_positions_task, scrape_year
 import precompute
 
@@ -71,6 +72,7 @@ app.include_router(campus_router)
 app.include_router(bianzhi_router)
 app.include_router(match_router)
 app.include_router(push_router)
+app.include_router(seo_router)
 
 SYNC_EXPORT_MAX_ROWS = 2000  # 同步导出快路径上限，更大请走 POST /api/export 异步任务
 

@@ -1,3 +1,4 @@
+import { t, tt } from './i18n'
 /** 本周求职小结分享卡：纯 canvas 渲染品牌风格图片，无额外依赖。 */
 
 export interface WeeklyCardData {
@@ -61,10 +62,10 @@ export function renderWeeklyCard(data: WeeklyCardData): HTMLCanvasElement {
   // 标题
   ctx.fillStyle = '#ffffff'
   ctx.font = 'bold 44px "PingFang SC","Microsoft YaHei",sans-serif'
-  ctx.fillText('本周求职小结', 56, 110)
+  ctx.fillText(t('本周求职小结'), 56, 110)
   ctx.font = '26px "PingFang SC","Microsoft YaHei",sans-serif'
   ctx.fillStyle = 'rgba(255,255,255,0.75)'
-  ctx.fillText(`${data.rangeText} · 近 7 天`, 56, 156)
+  ctx.fillText(tt`${data.rangeText} · 近 7 天`, 56, 156)
 
   // 白色内容卡
   roundRect(ctx, 40, 200, W - 80, 520, 28)
@@ -109,7 +110,7 @@ export function renderWeeklyCard(data: WeeklyCardData): HTMLCanvasElement {
   ctx.fillText('jobs.zalize.com', W / 2, 880)
   ctx.font = '26px "PingFang SC","Microsoft YaHei",sans-serif'
   ctx.fillStyle = 'rgba(255,255,255,0.8)'
-  ctx.fillText('体制内 · 校招 · 编制岗位一站检索', W / 2, 916)
+  ctx.fillText(t('体制内 · 校招 · 编制岗位一站检索'), W / 2, 916)
   ctx.textAlign = 'left'
 
   return canvas

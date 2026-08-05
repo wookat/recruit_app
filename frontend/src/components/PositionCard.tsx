@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { memo } from 'react'
 import type { Position } from '@/api'
 import { Button } from '@/components/ui/button'
@@ -90,7 +91,7 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
         </div>
         <div className="flex items-center gap-2">
           <GraduationCap className="h-4 w-4 shrink-0" />
-          <span className="line-clamp-1">{item.edu_level_norm || item.edu_requirement || '学历不限'}</span>
+          <span className="line-clamp-1">{item.edu_level_norm || item.edu_requirement || t("学历不限")}</span>
         </div>
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 shrink-0" />
@@ -111,8 +112,7 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
           className="h-11 px-2 text-primary hover:bg-primary/10 hover:text-primary sm:h-8"
           onClick={() => onDetail(item)}
         >
-          查看详情 →
-        </Button>
+          {t("查看详情 →")}{' '}</Button>
       </CardFooter>
     </Card>
   )

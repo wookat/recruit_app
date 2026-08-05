@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import axios from 'axios'
 import {
@@ -122,16 +123,16 @@ interface ListPageProps {
 }
 
 const HOT_SEARCH = [
-  { label: '北京', type: 'location' as const, value: '北京' },
-  { label: '上海', type: 'location' as const, value: '上海' },
-  { label: '广州', type: 'location' as const, value: '广州' },
-  { label: '深圳', type: 'location' as const, value: '深圳' },
-  { label: '杭州', type: 'location' as const, value: '杭州' },
-  { label: '计算机', type: 'major' as const, value: '计算机' },
-  { label: '法学', type: 'major' as const, value: '法学' },
-  { label: '会计', type: 'major' as const, value: '会计' },
-  { label: '国考', type: 'keyword' as const, value: '国考' },
-  { label: '央企校招', type: 'keyword' as const, value: '央企校招' },
+  { label: t("北京"), type: 'location' as const, value: t("北京") },
+  { label: t("上海"), type: 'location' as const, value: t("上海") },
+  { label: t("广州"), type: 'location' as const, value: t("广州") },
+  { label: t("深圳"), type: 'location' as const, value: t("深圳") },
+  { label: t("杭州"), type: 'location' as const, value: t("杭州") },
+  { label: t("计算机"), type: 'major' as const, value: t("计算机") },
+  { label: t("法学"), type: 'major' as const, value: t("法学") },
+  { label: t("会计"), type: 'major' as const, value: t("会计") },
+  { label: t("国考"), type: 'keyword' as const, value: t("国考") },
+  { label: t("央企校招"), type: 'keyword' as const, value: t("央企校招") },
 ]
 
 const POSITION_INDUSTRY_WORDS = [
@@ -188,14 +189,14 @@ interface PresetView {
 }
 
 const PRESET_VIEWS: PresetView[] = [
-  { key: 'all', label: '全部' },
-  { key: 'gwy', label: '公务员', category: ['公务员'] },
-  { key: 'sye', label: '事业编', category: ['事业单位/事业编'] },
-  { key: 'jdwz', label: '军队文职', category: ['军队文职'] },
-  { key: 'gqyq', label: '国企央企', category: ['国企/央企'] },
-  { key: 'xds', label: '选调生', category: ['选调生'] },
-  { key: 'y2027', label: '2027 最新', year: [2027] },
-  { key: 'deadline', label: '即将截止', deadline: true },
+  { key: 'all', label: t("全部") },
+  { key: 'gwy', label: t("公务员"), category: [t("公务员")] },
+  { key: 'sye', label: t("事业编"), category: [t("事业单位/事业编")] },
+  { key: 'jdwz', label: t("军队文职"), category: [t("军队文职")] },
+  { key: 'gqyq', label: t("国企央企"), category: [t("国企/央企")] },
+  { key: 'xds', label: t("选调生"), category: [t("选调生")] },
+  { key: 'y2027', label: t("2027 最新"), year: [2027] },
+  { key: 'deadline', label: t("即将截止"), deadline: true },
 ]
 
 type ViewMode = 'table' | 'card' | 'list'
@@ -522,42 +523,42 @@ export function ListPage({
   const activeFilters: RemovableFilter[] = useMemo(() => {
     const out: RemovableFilter[] = []
     if (params.keyword)
-    out.push({ label: `关键词：${params.keyword}`, onRemove: () => updateParam('keyword', '') })
+    out.push({ label: tt`关键词：${params.keyword}`, onRemove: () => updateParam('keyword', '') })
   if (params.major)
-    out.push({ label: `专业：${params.major}`, onRemove: () => updateParam('major', undefined) })
+    out.push({ label: tt`专业：${params.major}`, onRemove: () => updateParam('major', undefined) })
   for (const l of params.location ?? [])
     out.push({
-      label: `地区：${l}`,
+      label: tt`地区：${l}`,
       onRemove: () => updateParam('location', (params.location ?? []).filter((x) => x !== l)),
     })
   for (const p of params.province ?? [])
     out.push({
-      label: `省份：${p}`,
+      label: tt`省份：${p}`,
       onRemove: () => updateParam('province', (params.province ?? []).filter((x) => x !== p)),
     })
   for (const w of params.work_location ?? [])
     out.push({
-      label: `地点：${w}`,
+      label: tt`地点：${w}`,
       onRemove: () => updateParam('work_location', (params.work_location ?? []).filter((x) => x !== w)),
     })
   for (const c of params.category ?? [])
     out.push({
-      label: `类型：${c}`,
+      label: tt`类型：${c}`,
       onRemove: () => updateParam('category', (params.category ?? []).filter((x) => x !== c)),
     })
   for (const e of params.edu_level ?? [])
     out.push({
-      label: `学历：${e}`,
+      label: tt`学历：${e}`,
       onRemove: () => updateParam('edu_level', (params.edu_level ?? []).filter((x) => x !== e)),
     })
   for (const y of params.year ?? [])
     out.push({
-      label: `年份：${y}`,
+      label: tt`年份：${y}`,
       onRemove: () => updateParam('year', (params.year ?? []).filter((x) => x !== y)),
     })
     if (params.hide_expired)
-      out.push({ label: '隐藏已截止', onRemove: () => updateParam('hide_expired', undefined) })
-    if (hideSeen) out.push({ label: '隐藏已看过', onRemove: () => setHideSeen(false) })
+      out.push({ label: t("隐藏已截止"), onRemove: () => updateParam('hide_expired', undefined) })
+    if (hideSeen) out.push({ label: t("隐藏已看过"), onRemove: () => setHideSeen(false) })
     return out
   }, [params, updateParam, hideSeen])
 
@@ -600,26 +601,26 @@ export function ListPage({
       filters
         ? {
             year: {
-              label: '年份',
+              label: t("年份"),
               options: filters.years.map(String),
               selected: (params.year ?? []).map(String),
               onChange: (v: string[]) =>
                 updateParam('year', v.map(Number).filter((n) => !isNaN(n))),
             },
             job_type: {
-              label: '类型',
+              label: t("类型"),
               options: filters.categories,
               selected: params.category ?? [],
               onChange: (v: string[]) => updateParam('category', v),
             },
             edu_level_norm: {
-              label: '学历',
+              label: t("学历"),
               options: filters.edu_levels,
               selected: params.edu_level ?? [],
               onChange: (v: string[]) => updateParam('edu_level', v),
             },
             work_location: {
-              label: '省份',
+              label: t("省份"),
               options: filters.provinces,
               selected: (params.location ?? []).filter((l) => filters.provinces.includes(l)),
               onChange: (v: string[]) => {
@@ -657,7 +658,7 @@ export function ListPage({
   /** 导出文件名：板块+筛选摘要+日期 */
   function exportFname(): string {
     const parts = [
-      '体制内',
+      t("体制内"),
       ...(params.province ?? []),
       ...(params.location ?? []),
       ...(params.exam_type_norm ?? []),
@@ -689,7 +690,7 @@ export function ListPage({
       pollExport(task_id)
     } catch {
       setExportTask(null)
-      showExportError('导出任务创建失败，请稍后重试（频率限制：每分钟 3 次）')
+      showExportError(t("导出任务创建失败，请稍后重试（频率限制：每分钟 3 次）"))
     }
   }
 
@@ -705,12 +706,12 @@ export function ListPage({
         } else if (st.status === 'FAILURE' || st.status === 'REVOKED') {
           stopExportPolling()
           setExportTask(null)
-          showExportError(`导出失败：${st.error || '服务端处理出错，请重试'}`)
+          showExportError(tt`导出失败：${st.error || t("服务端处理出错，请重试")}`)
         }
       } catch {
         stopExportPolling()
         setExportTask(null)
-        showExportError('导出状态查询失败，请重试')
+        showExportError(t("导出状态查询失败，请重试"))
       }
     }, 3000)
   }
@@ -736,18 +737,18 @@ export function ListPage({
             ? params.province
             : params.work_location ?? []
         if (locs.length === 0) return null
-        return locs.length <= 3 ? locs.join('+') : `${locs.slice(0, 3).join('+')}等${locs.length}地`
+        return locs.length <= 3 ? locs.join('+') : tt`${locs.slice(0, 3).join('+')}等${locs.length}地`
       })(),
       params.job_type?.[0],
       params.exam_type_norm?.[0],
       params.category?.[0],
       params.edu_level?.[0],
       params.year?.[0],
-      deadlineView ? '即将截止' : null,
+      deadlineView ? t("即将截止") : null,
       (params.keyword || '').trim() || null,
     ]
       .filter(Boolean)
-      .join('·') || '岗位筛选'
+      .join('·') || t("岗位筛选")
 
   function subscribeCurrentFilter() {
     const { list } = saveFilter(defaultFilterName, params)
@@ -763,8 +764,8 @@ export function ListPage({
     setSaveOpen(false)
     setSaveHint(
       dropped
-        ? `已达 10 组上限，删除了最旧的「${dropped}」`
-        : '已保存并订阅，上新时 chip 显示「+N 新」',
+        ? tt`已达 10 组上限，删除了最旧的「${dropped}」`
+        : t("已保存并订阅，上新时 chip 显示「+N 新」"),
     )
     setTimeout(() => setSaveHint(null), 6000)
   }
@@ -826,21 +827,21 @@ export function ListPage({
         <>
           <MultiSelect
             label=""
-            triggerLabel="年份"
+            triggerLabel={t("年份")}
             options={filters.years.map(String)}
             selected={(params.year || []).map(String)}
             onChange={(v) => updateParam('year', v.map(Number).filter((n) => !isNaN(n)))}
           />
           <MultiSelect
             label=""
-            triggerLabel="岗位类型"
+            triggerLabel={t("岗位类型")}
             options={filters.job_types}
             selected={params.job_type || []}
             onChange={(v) => updateParam('job_type', v)}
           />
           <MultiSelect
             label=""
-            triggerLabel="省份"
+            triggerLabel={t("省份")}
             options={filters.provinces}
             selected={(params.location || []).filter((v) => filters.provinces.includes(v))}
             onChange={(v) => {
@@ -850,7 +851,7 @@ export function ListPage({
           />
           <MultiSelect
             label=""
-            triggerLabel="学历"
+            triggerLabel={t("学历")}
             options={filters.edu_levels}
             selected={params.edu_level || []}
             onChange={(v) => updateParam('edu_level', v)}
@@ -871,7 +872,7 @@ export function ListPage({
       {filters ? (
         <>
           <MultiSelect
-            label="考试/招聘类型"
+            label={t("考试/招聘类型")}
             options={filters.exam_type_norms || []}
             selected={params.exam_type_norm || []}
             onChange={(v) => updateParam('exam_type_norm', v)}
@@ -884,17 +885,17 @@ export function ListPage({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">排序</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("排序")}</label>
             <Select value={params.sort || 'year_desc'} onValueChange={(v) => updateParam('sort', v || undefined)}>
-              <SelectTrigger className="h-9" aria-label="排序方式">
-                <SelectValue placeholder="排序方式">
-                  {{ year_desc: '最新优先（默认）', year_asc: '年份从旧到新', id_desc: '最新收录优先' }[params.sort || 'year_desc']}
+              <SelectTrigger className="h-9" aria-label={t("排序方式")}>
+                <SelectValue placeholder={t("排序方式")}>
+                  {{ year_desc: t("最新优先（默认）"), year_asc: t("年份从旧到新"), id_desc: t("最新收录优先") }[params.sort || 'year_desc']}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="year_desc">最新优先（默认）</SelectItem>
-                <SelectItem value="year_asc">年份从旧到新</SelectItem>
-                <SelectItem value="id_desc">最新收录优先</SelectItem>
+                <SelectItem value="year_desc">{t("最新优先（默认）")}</SelectItem>
+                <SelectItem value="year_asc">{t("年份从旧到新")}</SelectItem>
+                <SelectItem value="id_desc">{t("最新收录优先")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -909,24 +910,23 @@ export function ListPage({
       <div className="flex items-end">
         <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
           <RotateCcw className="mr-1 h-4 w-4" />
-          清空筛选
-        </Button>
+          {t("清空筛选")}{' '}</Button>
       </div>
     </div>
   )
 
   const activeChips = []
-  for (const v of params.exam_type_norm || []) activeChips.push({ label: `考试类型：${v}`, onRemove: () => updateParam('exam_type_norm', (params.exam_type_norm || []).filter((x) => x !== v)) })
-  for (const v of params.province || []) activeChips.push({ label: `省份：${v}`, onRemove: () => updateParam('province', (params.province || []).filter((x) => x !== v)) })
-  if (params.keyword) activeChips.push({ label: `关键词：${params.keyword}`, onRemove: () => updateParam('keyword', '') })
-  if (params.major) activeChips.push({ label: `专业：${params.major}`, onRemove: () => updateParam('major', '') })
-  for (const y of params.year || []) activeChips.push({ label: `年份：${y}`, onRemove: () => updateParam('year', (params.year || []).filter((v) => v !== y)) })
-  for (const v of params.edu_level || []) activeChips.push({ label: `学历层级：${v}`, onRemove: () => updateParam('edu_level', (params.edu_level || []).filter((x) => x !== v)) })
-  for (const v of params.location || []) activeChips.push({ label: `地点：${v}`, onRemove: () => updateParam('location', (params.location || []).filter((x) => x !== v)) })
-  for (const v of params.category || []) activeChips.push({ label: `类型：${v}`, onRemove: () => updateParam('category', (params.category || []).filter((x) => x !== v)) })
-  for (const v of params.job_type || []) activeChips.push({ label: `岗位类型：${v}`, onRemove: () => updateParam('job_type', (params.job_type || []).filter((x) => x !== v)) })
-  for (const v of params.exam_type || []) activeChips.push({ label: `考试类型：${v}`, onRemove: () => updateParam('exam_type', (params.exam_type || []).filter((x) => x !== v)) })
-  for (const v of params.work_location || []) activeChips.push({ label: `精确地点：${v}`, onRemove: () => updateParam('work_location', (params.work_location || []).filter((x) => x !== v)) })
+  for (const v of params.exam_type_norm || []) activeChips.push({ label: tt`考试类型：${v}`, onRemove: () => updateParam('exam_type_norm', (params.exam_type_norm || []).filter((x) => x !== v)) })
+  for (const v of params.province || []) activeChips.push({ label: tt`省份：${v}`, onRemove: () => updateParam('province', (params.province || []).filter((x) => x !== v)) })
+  if (params.keyword) activeChips.push({ label: tt`关键词：${params.keyword}`, onRemove: () => updateParam('keyword', '') })
+  if (params.major) activeChips.push({ label: tt`专业：${params.major}`, onRemove: () => updateParam('major', '') })
+  for (const y of params.year || []) activeChips.push({ label: tt`年份：${y}`, onRemove: () => updateParam('year', (params.year || []).filter((v) => v !== y)) })
+  for (const v of params.edu_level || []) activeChips.push({ label: tt`学历层级：${v}`, onRemove: () => updateParam('edu_level', (params.edu_level || []).filter((x) => x !== v)) })
+  for (const v of params.location || []) activeChips.push({ label: tt`地点：${v}`, onRemove: () => updateParam('location', (params.location || []).filter((x) => x !== v)) })
+  for (const v of params.category || []) activeChips.push({ label: tt`类型：${v}`, onRemove: () => updateParam('category', (params.category || []).filter((x) => x !== v)) })
+  for (const v of params.job_type || []) activeChips.push({ label: tt`岗位类型：${v}`, onRemove: () => updateParam('job_type', (params.job_type || []).filter((x) => x !== v)) })
+  for (const v of params.exam_type || []) activeChips.push({ label: tt`考试类型：${v}`, onRemove: () => updateParam('exam_type', (params.exam_type || []).filter((x) => x !== v)) })
+  for (const v of params.work_location || []) activeChips.push({ label: tt`精确地点：${v}`, onRemove: () => updateParam('work_location', (params.work_location || []).filter((x) => x !== v)) })
 
   return (
     <div className={showStats ? 'xl:grid xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start xl:gap-5' : undefined}>
@@ -961,29 +961,28 @@ export function ListPage({
                   .map((s) => ({ text: s.text, count: s.count })),
                 ...pinyinSuggestions.map((s) => ({ text: s })),
               ]}
-              placeholder="搜索岗位、单位、专业、地点…"
+              placeholder={t("搜索岗位、单位、专业、地点…")}
             />
             <div className="flex items-center gap-2">
               <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
                 <SheetTrigger
                   render={
-                    <Button variant="outline" size="sm" className="relative h-11 shrink-0 gap-1.5 sm:h-9 lg:hidden" aria-label="筛选">
+                    <Button variant="outline" size="sm" className="relative h-11 shrink-0 gap-1.5 sm:h-9 lg:hidden" aria-label={t("筛选")}>
                       <Filter className="h-4 w-4" />
-                      筛选
-                      {positionsNewSum > 0 && (
-                        <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label="常用筛选有上新" />
+                      {t("筛选")}{' '}{positionsNewSum > 0 && (
+                        <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label={t("常用筛选有上新")} />
                       )}
                     </Button>
                   }
                 />
                 <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-2xl px-4 pb-8 pt-4">
                   <SheetHeader>
-                    <SheetTitle>高级筛选</SheetTitle>
+                    <SheetTitle>{t("高级筛选")}</SheetTitle>
                   </SheetHeader>
                   <div className="mt-4 space-y-4">{advancedFilterPanel}</div>
                   <div className="sticky bottom-0 mt-4 flex gap-2 bg-popover pt-2">
                     <Button className="flex-1" onClick={() => setFilterOpen(false)}>
-                      查看结果{data ? `（${data.total_partial ? '至少 ' : ''}${formatTotal(data.total, data.total_capped)} 条）` : ''}
+                      {t("查看结果")}{data ? tt`（${data.total_partial ? t("至少 ") : ''}${formatTotal(data.total, data.total_capped)} 条）` : ''}
                     </Button>
                   </div>
                 </SheetContent>
@@ -995,9 +994,8 @@ export function ListPage({
                 onClick={() => setAdvancedOpen((v) => !v)}
               >
                 <SlidersHorizontal className="h-4 w-4" />
-                高级筛选
-                {positionsNewSum > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label="常用筛选有上新" />
+                {t("高级筛选")}{' '}{positionsNewSum > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label={t("常用筛选有上新")} />
                 )}
                 {advancedOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               </Button>
@@ -1005,8 +1003,8 @@ export function ListPage({
                 variant="outline"
                 size="icon"
                 className={cn('h-11 w-11 sm:h-9 sm:w-9', view === 'card' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
-                aria-label="卡片视图"
-                title="卡片视图"
+                aria-label={t("卡片视图")}
+                title={t("卡片视图")}
                 aria-pressed={view === 'card'}
                 onClick={() => setView('card')}
               >
@@ -1016,8 +1014,8 @@ export function ListPage({
                 variant="outline"
                 size="icon"
                 className={cn('h-11 w-11 sm:h-9 sm:w-9', view === 'table' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
-                aria-label="表格视图"
-                title="表格视图"
+                aria-label={t("表格视图")}
+                title={t("表格视图")}
                 aria-pressed={view === 'table'}
                 onClick={() => setView('table')}
               >
@@ -1027,8 +1025,8 @@ export function ListPage({
                 variant="outline"
                 size="icon"
                 className={cn('h-11 w-11 sm:h-9 sm:w-9', view === 'list' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
-                aria-label="无限滚动列表"
-                title="无限滚动列表（大数据量浏览）"
+                aria-label={t("无限滚动列表")}
+                title={t("无限滚动列表（大数据量浏览）")}
                 aria-pressed={view === 'list'}
                 onClick={() => setView('list')}
               >
@@ -1044,8 +1042,7 @@ export function ListPage({
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-muted/30 px-3 py-2">
             <div className="flex items-center gap-1.5 text-sm font-medium">
               <Sparkles className="h-4 w-4 text-primary" />
-              一键匹配
-            </div>
+              {t("一键匹配")}{' '}</div>
             <Input
               ref={quickMatchRef}
               value={majorInput}
@@ -1053,28 +1050,26 @@ export function ListPage({
               onKeyDown={(e) => {
                 if (e.key === 'Enter') applyQuickMatch()
               }}
-              placeholder="你的专业，如：计算机科学与技术"
+              placeholder={t("你的专业，如：计算机科学与技术")}
               className="h-9 w-full min-w-0 flex-1 sm:w-auto sm:min-w-[200px] sm:max-w-[280px]"
-              aria-label="专业"
+              aria-label={t("专业")}
             />
             <div className="flex items-center gap-2">
               <Button size="sm" className="h-9" onClick={applyQuickMatch}>
                 <Search className="mr-1 h-3.5 w-3.5" />
-                匹配筛选
-              </Button>
+                {t("匹配筛选")}{' '}</Button>
               <Button size="sm" variant="outline" className="h-9" onClick={applyRecommend} disabled={!majorInput.trim()}>
                 <Wand2 className="mr-1 h-3.5 w-3.5" />
-                为我推荐
-              </Button>
+                {t("为我推荐")}{' '}</Button>
             </div>
-            <span className="text-xs text-muted-foreground">学历/地区/岗位类型直接用上方筛选，不再单独选</span>
+            <span className="text-xs text-muted-foreground">{t("学历/地区/岗位类型直接用上方筛选，不再单独选")}</span>
           </div>
 
           {advancedOpen && <div className="hidden lg:block">{advancedFilterPanel}</div>}
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-muted-foreground">热门搜索：</span>
+            <span className="text-muted-foreground">{t("热门搜索：")}</span>
             {HOT_SEARCH.map((item) => (
               <Badge
                 key={item.label}
@@ -1091,7 +1086,7 @@ export function ListPage({
           {recent.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <History className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-muted-foreground">最近搜索：</span>
+              <span className="text-muted-foreground">{t("最近搜索：")}</span>
               {recent.map((kw) => (
                 <Badge
                   key={kw}
@@ -1109,14 +1104,13 @@ export function ListPage({
                 className="h-auto min-h-11 min-w-11 px-2 py-1 text-xs text-muted-foreground sm:min-h-0 sm:min-w-0 sm:p-0"
                 onClick={() => setRecent(clearRecentSearches())}
               >
-                清除
-              </Button>
+                {t("清除")}{' '}</Button>
             </div>
           )}
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <Bookmark className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-muted-foreground">保存的筛选：</span>
+            <span className="text-muted-foreground">{t("保存的筛选：")}</span>
             {saved.map((f) => (
               <Badge key={f.name} variant="secondary" className="gap-1 font-normal">
                 <span className="cursor-pointer" onClick={() => applySavedFilter(f)}>
@@ -1124,12 +1118,11 @@ export function ListPage({
                 </span>
                 {(savedNews.counts[`positions|${f.name}`] ?? 0) > 0 && (
                   <span className="shrink-0 rounded-sm bg-red-500/15 px-1.5 text-[10px] font-medium text-red-600 dark:text-red-400">
-                    +{savedNews.counts[`positions|${f.name}`]} 新
-                  </span>
+                    +{savedNews.counts[`positions|${f.name}`]} {' '}{t("新")}{' '}</span>
                 )}
                 <button
                   type="button"
-                  aria-label={`删除筛选 ${f.name}`}
+                  aria-label={tt`删除筛选 ${f.name}`}
                   className="cursor-pointer text-muted-foreground hover:text-foreground"
                   onClick={() => {
                     removeSavedFilterBaseline('positions', f.name)
@@ -1154,7 +1147,7 @@ export function ListPage({
                   placeholder={defaultFilterName}
                   className="h-7 w-32 text-xs"
                 />
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSaveFilter} aria-label="确认保存">
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSaveFilter} aria-label={t("确认保存")}>
                   <Check className="h-3.5 w-3.5" />
                 </Button>
                 <Button
@@ -1165,13 +1158,13 @@ export function ListPage({
                     setSaveOpen(false)
                     setSaveName('')
                   }}
-                  aria-label="取消保存"
+                  aria-label={t("取消保存")}
                 >
                   <X className="h-3.5 w-3.5" />
                 </Button>
               </span>
             ) : (
-              <span title={activeFilters.length === 0 && !deadlineView ? '先设置筛选条件后可保存' : undefined}>
+              <span title={activeFilters.length === 0 && !deadlineView ? t("先设置筛选条件后可保存") : undefined}>
                 <Button
                   variant="link"
                   size="sm"
@@ -1183,16 +1176,14 @@ export function ListPage({
                   }}
                 >
                   <BookmarkPlus className="mr-0.5 h-3.5 w-3.5" />
-                  保存当前筛选
-                </Button>
+                  {t("保存当前筛选")}{' '}</Button>
               </span>
             )}
             {saveHint && <span className="text-muted-foreground">{saveHint}</span>}
             {exportTask ? (
               <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                正在导出…完成后自动下载
-              </span>
+                {t("正在导出…完成后自动下载")}{' '}</span>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -1203,23 +1194,20 @@ export function ListPage({
                       className="hidden h-auto p-0 text-xs sm:inline-flex"
                     >
                       <Download className="mr-0.5 h-3.5 w-3.5" />
-                      导出
-                    </Button>
+                      {t("导出")}{' '}</Button>
                   }
                 />
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => handleExport('csv')}>
-                    导出 CSV{data && data.total > SYNC_EXPORT_MAX ? '（异步）' : ''}
+                    {t("导出 CSV")}{data && data.total > SYNC_EXPORT_MAX ? t("（异步）") : ''}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExport('xlsx')}>
-                    导出 Excel{data && data.total > SYNC_EXPORT_MAX ? '（异步）' : ''}
+                    {t("导出 Excel")}{data && data.total > SYNC_EXPORT_MAX ? t("（异步）") : ''}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExport('csv', true)}>
-                    全部导出 CSV（最多 5 万行）
-                  </DropdownMenuItem>
+                    {t("全部导出 CSV（最多 5 万行）")}{' '}</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleExport('xlsx', true)}>
-                    全部导出 Excel（最多 5 万行）
-                  </DropdownMenuItem>
+                    {t("全部导出 Excel（最多 5 万行）")}{' '}</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -1232,16 +1220,13 @@ export function ListPage({
               {copied ? (
                 <>
                   <Check className="mr-0.5 h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-                  已复制
-                  <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-0.5 text-[11px] text-background shadow">
-                    链接已复制，可直接粘贴分享
-                  </span>
+                  {t("已复制")}{' '}<span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-0.5 text-[11px] text-background shadow">
+                    {t("链接已复制，可直接粘贴分享")}{' '}</span>
                 </>
               ) : (
                 <>
                   <Link2 className="mr-0.5 h-3.5 w-3.5" />
-                  复制筛选链接
-                </>
+                  {t("复制筛选链接")}{' '}</>
               )}
             </Button>
             <DropdownMenu>
@@ -1249,41 +1234,36 @@ export function ListPage({
                 render={
                   <Button variant="link" size="sm" className="h-11 p-0 text-xs sm:hidden">
                     <Download className="mr-0.5 h-3.5 w-3.5" />
-                    导出
-                  </Button>
+                    {t("导出")}{' '}</Button>
                 }
               />
               <DropdownMenuContent align="end" className="min-w-52">
                 <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('csv')}>
                   <Download className="h-4 w-4" />
                   <span className="flex flex-col whitespace-nowrap">
-                    导出 CSV
-                    {data && data.total > SYNC_EXPORT_MAX && (
-                      <span className="text-[11px] text-muted-foreground">数据量大，转异步任务</span>
+                    {t("导出 CSV")}{' '}{data && data.total > SYNC_EXPORT_MAX && (
+                      <span className="text-[11px] text-muted-foreground">{t("数据量大，转异步任务")}</span>
                     )}
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('xlsx')}>
                   <Download className="h-4 w-4" />
                   <span className="flex flex-col whitespace-nowrap">
-                    导出 Excel
-                    {data && data.total > SYNC_EXPORT_MAX && (
-                      <span className="text-[11px] text-muted-foreground">数据量大，转异步任务</span>
+                    {t("导出 Excel")}{' '}{data && data.total > SYNC_EXPORT_MAX && (
+                      <span className="text-[11px] text-muted-foreground">{t("数据量大，转异步任务")}</span>
                     )}
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('csv', true)}>
                   <Download className="h-4 w-4" />
                   <span className="flex flex-col whitespace-nowrap">
-                    全部导出 CSV
-                    <span className="text-[11px] text-muted-foreground">最多 5 万行</span>
+                    {t("全部导出 CSV")}{' '}<span className="text-[11px] text-muted-foreground">{t("最多 5 万行")}</span>
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled={!!exportTask} onClick={() => handleExport('xlsx', true)}>
                   <Download className="h-4 w-4" />
                   <span className="flex flex-col whitespace-nowrap">
-                    全部导出 Excel
-                    <span className="text-[11px] text-muted-foreground">最多 5 万行</span>
+                    {t("全部导出 Excel")}{' '}<span className="text-[11px] text-muted-foreground">{t("最多 5 万行")}</span>
                   </span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -1292,13 +1272,13 @@ export function ListPage({
 
           {activeChips.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground">已选筛选：</span>
+              <span className="text-xs text-muted-foreground">{t("已选筛选：")}</span>
               {activeChips.map((chip, idx) => (
                 <Badge key={idx} variant="secondary" className="gap-1 text-xs font-normal">
                   {chip.label}
                   <button
                     type="button"
-                    aria-label={`移除 ${chip.label}`}
+                    aria-label={tt`移除 ${chip.label}`}
                     className="cursor-pointer text-muted-foreground hover:text-foreground"
                     onClick={chip.onRemove}
                   >
@@ -1307,8 +1287,7 @@ export function ListPage({
                 </Badge>
               ))}
               <Button variant="link" size="sm" className="h-auto min-h-11 p-0 text-xs sm:min-h-0" onClick={clearFilters}>
-                清除全部
-              </Button>
+                {t("清除全部")}{' '}</Button>
             </div>
           )}
         </CardContent>
@@ -1352,8 +1331,7 @@ export function ListPage({
               : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
           )}
         >
-          隐藏已截止
-        </button>
+          {t("隐藏已截止")}{' '}</button>
         <button
           type="button"
           onClick={() => setHideSeen((v) => !v)}
@@ -1364,12 +1342,11 @@ export function ListPage({
               : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
           )}
         >
-          隐藏已看过
-        </button>
+          {t("隐藏已看过")}{' '}</button>
         {crossPresets && crossPresets.length > 0 && onCrossPreset && (
           <>
             <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
-            <span className="shrink-0 text-xs text-muted-foreground">去其他板块</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{t("去其他板块")}</span>
             {crossPresets.map((p) => (
               <button
                 key={p.key}
@@ -1410,10 +1387,8 @@ export function ListPage({
         >
           <Search className="h-4 w-4 shrink-0" />
           <span>
-            换个板块看看：{crossLabel || '另一板块'}中另有{' '}
-            <span className="font-semibold">{crossTotal.toLocaleString()}</span> 条与「
-            {(params.keyword || '').trim()}」相关 →
-          </span>
+            {t("换个板块看看：")}{crossLabel || t("另一板块")}{t("中另有")}{' '}
+            <span className="font-semibold">{crossTotal.toLocaleString()}</span> {' '}{t("条与「")}{' '}{(params.keyword || '').trim()}{t("」相关 →")}{' '}</span>
         </button>
       )}
 
@@ -1423,10 +1398,9 @@ export function ListPage({
       <>
       {loadError && !loading && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          <span>加载失败，服务器可能正忙，请重试</span>
+          <span>{t("加载失败，服务器可能正忙，请重试")}</span>
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => load()}>
-            重试
-          </Button>
+            {t("重试")}{' '}</Button>
         </div>
       )}
       {!loading &&
@@ -1436,10 +1410,8 @@ export function ListPage({
         ((params.location?.length ?? 0) > 0 || (params.province?.length ?? 0) > 0) && (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
             <span>
-              没有结果，可能是地域筛选（
-              {[...(params.province ?? []), ...(params.location ?? [])].join('、')}
-              ）与其他条件冲突
-            </span>
+              {t("没有结果，可能是地域筛选（")}{' '}{[...(params.province ?? []), ...(params.location ?? [])].join('、')}
+              {t("）与其他条件冲突")}{' '}</span>
             <Button
               variant="outline"
               size="sm"
@@ -1448,8 +1420,7 @@ export function ListPage({
                 setParams((p) => ({ ...p, location: [], province: undefined, page: 1 }))
               }}
             >
-              清除地域筛选
-            </Button>
+              {t("清除地域筛选")}{' '}</Button>
             {onCrossPreset &&
               (() => {
                 const provs = new Set(filters?.provinces ?? [])
@@ -1466,8 +1437,7 @@ export function ListPage({
                     className="h-7 text-xs"
                     onClick={() => onCrossPreset(`bzp:${preset}:${prov}`)}
                   >
-                    去编制板找{prov}{preset === 'edu' ? '教师' : preset === 'med' ? '医疗' : ''}岗位
-                  </Button>
+                    {t("去编制板找")}{prov}{preset === 'edu' ? t("教师") : preset === 'med' ? t("医疗") : ''}{t("岗位")}{' '}</Button>
                 )
               })()}
           </div>
@@ -1482,16 +1452,15 @@ export function ListPage({
               className="text-sm font-medium"
               title={
                 data.total_partial
-                  ? '计数超时，仅统计岗位名/单位名命中，精确值正在后台补算'
+                  ? t("计数超时，仅统计岗位名/单位名命中，精确值正在后台补算")
                   : data.total_capped
-                    ? '结果超过 10,000 条，计数已达统计上限'
+                    ? t("结果超过 10,000 条，计数已达统计上限")
                     : undefined
               }
             >
-              {data.total_partial ? '至少 ' : '共 '}
-              {formatTotal(data.total, data.total_capped)} 条
-              {!data.total_partial && data.total_capped && (
-                <span className="hidden sm:inline">（已达统计上限）</span>
+              {data.total_partial ? t("至少 ") : t("共 ")}
+              {formatTotal(data.total, data.total_capped)} {' '}{t("条")}{' '}{!data.total_partial && data.total_capped && (
+                <span className="hidden sm:inline">{t("（已达统计上限）")}</span>
               )}
             </Badge>
             {data.total_partial && !loading && (
@@ -1500,8 +1469,7 @@ export function ListPage({
                 onClick={() => load()}
                 className="min-h-11 text-xs text-primary underline underline-offset-2 sm:min-h-0"
               >
-                结果不完整，点击重试
-              </button>
+                {t("结果不完整，点击重试")}{' '}</button>
             )}
             </>
           )}
@@ -1512,7 +1480,7 @@ export function ListPage({
       <FilterSummaryBar filters={activeFilters} onClearAll={clearFilters} />
 
       {hideSeen && hiddenSeenCount > 0 && view !== 'list' && (
-        <div className="text-xs text-muted-foreground">本页已隐藏 {hiddenSeenCount} 条已看过的岗位</div>
+        <div className="text-xs text-muted-foreground">{t("本页已隐藏")}{' '}{hiddenSeenCount} {' '}{t("条已看过的岗位")}</div>
       )}
 
       {data && !loading && data.total === 0 && (params.keyword || '').trim() && onOpenBoardKw && (
@@ -1524,8 +1492,7 @@ export function ListPage({
           role="status"
           className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-200"
         >
-          结果较多，正在统计中，请稍候…如长时间无响应可减少筛选条件后重试
-        </div>
+          {t("结果较多，正在统计中，请稍候…如长时间无响应可减少筛选条件后重试")}{' '}</div>
       )}
       {data?.timed_out && (
         <div
@@ -1533,8 +1500,8 @@ export function ListPage({
           className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
         >
           {data.items.length > 0
-            ? '搜索部分超时，当前仅显示岗位名/单位名命中的结果，稍后重试可获得完整结果'
-            : '搜索超时，请换关键词（更具体的词或加筛选条件）'}
+            ? t("搜索部分超时，当前仅显示岗位名/单位名命中的结果，稍后重试可获得完整结果")
+            : t("搜索超时，请换关键词（更具体的词或加筛选条件）")}
         </div>
       )}
 
@@ -1551,8 +1518,7 @@ export function ListPage({
             className="flex items-center gap-1.5 rounded-md border bg-background/95 px-3 py-1 text-xs text-muted-foreground shadow-sm"
           >
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            正在更新结果…
-          </span>
+            {t("正在更新结果…")}{' '}</span>
         </div>
       )}
       <PullToRefresh onRefresh={load} refreshing={loading} disabled={view === 'list'}>
@@ -1599,13 +1565,12 @@ export function ListPage({
       {view === 'card' && data && data.total > 0 && (
         <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-3">
           <div className="text-sm text-muted-foreground">
-            {data.total_partial ? '至少 ' : '共 '}
-            <span className="font-medium text-foreground">{formatTotal(data.total, data.total_capped)}</span> 条 · 第{' '}
+            {data.total_partial ? t("至少 ") : t("共 ")}
+            <span className="font-medium text-foreground">{formatTotal(data.total, data.total_capped)}</span> {' '}{t("条 · 第")}{' '}
             <span className="font-medium text-foreground">
               {data.page}/{Math.max(1, Math.ceil(data.total / data.page_size))}
             </span>{' '}
-            页
-          </div>
+            {t("页")}{' '}</div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -1614,8 +1579,7 @@ export function ListPage({
               onClick={() => updateParam('page', Math.max(1, data.page - 1))}
               disabled={data.page <= 1}
             >
-              上一页
-            </Button>
+              {t("上一页")}{' '}</Button>
             <Button
               variant="outline"
               size="sm"
@@ -1623,8 +1587,7 @@ export function ListPage({
               onClick={() => updateParam('page', data.page + 1)}
               disabled={data.page >= Math.ceil(data.total / data.page_size)}
             >
-              下一页
-            </Button>
+              {t("下一页")}{' '}</Button>
           </div>
         </div>
       )}
@@ -1634,8 +1597,7 @@ export function ListPage({
       {exportTask && (
         <div className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg border bg-popover px-4 py-2 text-sm shadow-lg">
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          正在导出…完成后自动下载
-        </div>
+          {t("正在导出…完成后自动下载")}{' '}</div>
       )}
       {exportError && (
         <div className="fixed bottom-20 left-1/2 z-50 max-w-[90vw] -translate-x-1/2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 shadow-lg dark:border-red-900 dark:bg-red-950 dark:text-red-300">

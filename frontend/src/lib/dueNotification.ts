@@ -1,3 +1,4 @@
+import { t, tt } from './i18n'
 import { useSyncExternalStore } from 'react'
 
 const ENABLED_KEY = 'recruit.dueNotifyEnabled'
@@ -71,8 +72,8 @@ export function maybeNotifyDue(count: number, remindDays: number, onOpenFavorite
   } catch {
     return
   }
-  const n = new Notification('上岸雷达 · 截止提醒', {
-    body: `你有 ${count} 条收藏岗位将在 ${remindDays} 天内截止报名，点击查看`,
+  const n = new Notification(t('上岸雷达 · 截止提醒'), {
+    body: tt`你有 ${count} 条收藏岗位将在 ${remindDays} 天内截止报名，点击查看`,
     tag: 'recruit-due-daily',
     icon: '/favicon.svg',
   })

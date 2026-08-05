@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { TableSwipeHint } from './TableSwipeHint'
 import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -96,7 +97,7 @@ function bianzhiShareText(job: BianzhiJob): string {
   return buildShareText({
     org:
       job.employer ||
-      (job.category === '大型联考' ? `${job.province ?? ''}${job.job_type ?? ''}联考` : null),
+      (job.category === '大型联考' ? tt`${job.province ?? ''}${job.job_type ?? ''}联考` : null),
     title: job.job_type,
     location: job.work_location || job.province,
     deadline: job.deadline_text || job.deadline_date,
@@ -113,14 +114,14 @@ interface PresetView {
 }
 
 const PRESETS: PresetView[] = [
-  { key: 'all', label: '全部', icon: LayoutList },
-  { key: 'gwy', label: '公务员事业单位', category: '公务员事业单位', icon: Landmark },
-  { key: 'edu', label: '教育系统', category: '教育系统', icon: School },
-  { key: 'med', label: '医疗系统', category: '医疗系统', icon: Stethoscope },
-  { key: 'univ', label: '高校高职大专', category: '高校高职大专', icon: Library },
-  { key: 'sci', label: '科研院所', category: '科研院所', icon: FlaskConical },
-  { key: 'soe', label: '央国企社招', category: '央国企社招', icon: Building2 },
-  { key: 'lk', label: '大型联考', category: '大型联考', icon: PenLine },
+  { key: 'all', label: t("全部"), icon: LayoutList },
+  { key: 'gwy', label: t("公务员事业单位"), category: t("公务员事业单位"), icon: Landmark },
+  { key: 'edu', label: t("教育系统"), category: t("教育系统"), icon: School },
+  { key: 'med', label: t("医疗系统"), category: t("医疗系统"), icon: Stethoscope },
+  { key: 'univ', label: t("高校高职大专"), category: t("高校高职大专"), icon: Library },
+  { key: 'sci', label: t("科研院所"), category: t("科研院所"), icon: FlaskConical },
+  { key: 'soe', label: t("央国企社招"), category: t("央国企社招"), icon: Building2 },
+  { key: 'lk', label: t("大型联考"), category: t("大型联考"), icon: PenLine },
 ]
 
 const PAGE_SIZE = 20
@@ -399,15 +400,15 @@ export function BianzhiPage({
   const exportFname = useMemo(() => {
     const presetLabel = PRESETS.find((v) => v.key === preset)?.label
     const parts = [
-      '编制',
+      t("编制"),
       preset !== 'all' ? presetLabel : undefined,
       ...provinces,
       ...cities,
       keyword || undefined,
       eduFilter || undefined,
-      recentOnly ? '近7天' : undefined,
-      dueOnly ? '7天内截止' : undefined,
-      !dueOnly && hideExpired ? '未过期' : undefined,
+      recentOnly ? t("近7天") : undefined,
+      dueOnly ? t("7天内截止") : undefined,
+      !dueOnly && hideExpired ? t("未过期") : undefined,
       new Date().toISOString().slice(0, 10).replace(/-/g, ''),
     ]
     return parts.filter(Boolean).join('-')
@@ -435,20 +436,20 @@ export function BianzhiPage({
         ? null
         : provinces.length <= 3
           ? provinces.join('+')
-          : `${provinces.slice(0, 3).join('+')}等${provinces.length}地`,
+          : tt`${provinces.slice(0, 3).join('+')}等${provinces.length}地`,
       cities.length === 0
         ? null
         : cities.length <= 3
           ? cities.join('+')
-          : `${cities.slice(0, 3).join('+')}等${cities.length}城`,
+          : tt`${cities.slice(0, 3).join('+')}等${cities.length}城`,
       preset !== 'all' ? PRESETS.find((p) => p.key === preset)?.label : null,
       eduFilter || null,
-      recentOnly ? '近7天更新' : null,
-      dueOnly ? '即将截止' : null,
+      recentOnly ? t("近7天更新") : null,
+      dueOnly ? t("即将截止") : null,
       keyword.trim() || null,
     ]
       .filter(Boolean)
-      .join('·') || '编制筛选'
+      .join('·') || t("编制筛选")
   const filterCanSave =
     preset !== 'all' ||
     recentOnly ||
@@ -462,7 +463,7 @@ export function BianzhiPage({
   const activeFilters: RemovableFilter[] = []
   if (keyword)
     activeFilters.push({
-      label: `关键词：${keyword}`,
+      label: tt`关键词：${keyword}`,
       onRemove: () => {
         setKeyword('')
         setSearchInput('')
@@ -470,10 +471,10 @@ export function BianzhiPage({
       },
     })
   for (const p of provinces)
-    activeFilters.push({ label: `省份：${p}`, onRemove: () => toggleProvince(p) })
+    activeFilters.push({ label: tt`省份：${p}`, onRemove: () => toggleProvince(p) })
   for (const c of cities)
     activeFilters.push({
-      label: `城市：${c}`,
+      label: tt`城市：${c}`,
       onRemove: () => {
         setCities((prev) => prev.filter((x) => x !== c))
         setPage(1)
@@ -482,11 +483,11 @@ export function BianzhiPage({
   if (preset !== 'all') {
     const presetLabel = PRESETS.find((v) => v.key === preset)?.label
     if (presetLabel)
-      activeFilters.push({ label: `分类：${presetLabel}`, onRemove: () => selectPreset('all') })
+      activeFilters.push({ label: tt`分类：${presetLabel}`, onRemove: () => selectPreset('all') })
   }
   if (eduFilter)
     activeFilters.push({
-      label: `学历：${eduFilter}`,
+      label: tt`学历：${eduFilter}`,
       onRemove: () => {
         setEduFilter('')
         setPage(1)
@@ -494,7 +495,7 @@ export function BianzhiPage({
     })
   if (dueOnly)
     activeFilters.push({
-      label: '即将截止',
+      label: t("即将截止"),
       onRemove: () => {
         setDueOnly(false)
         setPage(1)
@@ -502,7 +503,7 @@ export function BianzhiPage({
     })
   if (recentOnly)
     activeFilters.push({
-      label: '近7天更新',
+      label: t("近7天更新"),
       onRemove: () => {
         setRecentOnly(false)
         setPage(1)
@@ -510,7 +511,7 @@ export function BianzhiPage({
     })
   if (timeRange)
     activeFilters.push({
-      label: `更新时段：${timeRange.from}~${timeRange.to}`,
+      label: tt`更新时段：${timeRange.from}~${timeRange.to}`,
       onRemove: () => {
         setTimeRange(null)
         setPage(1)
@@ -518,7 +519,7 @@ export function BianzhiPage({
     })
   if (hideExpired)
     activeFilters.push({
-      label: '隐藏已截止',
+      label: t("隐藏已截止"),
       onRemove: () => {
         setHideExpired(false)
         setPage(1)
@@ -526,7 +527,7 @@ export function BianzhiPage({
     })
   if (hideSeen)
     activeFilters.push({
-      label: '隐藏已看过',
+      label: t("隐藏已看过"),
       onRemove: () => setHideSeen(false),
     })
   function clearAllFilters() {
@@ -575,8 +576,8 @@ export function BianzhiPage({
     const days = Math.round((upcoming.d.getTime() - today.getTime()) / 86400000)
     const name =
       upcoming.j.employer ||
-      `${upcoming.j.province ?? ''}${upcoming.j.job_type ?? ''}联考`.trim() ||
-      '联考'
+      tt`${upcoming.j.province ?? ''}${upcoming.j.job_type ?? ''}联考`.trim() ||
+      t("联考")
     return { items, banner: { name, days } }
   }, [isLiankao, data])
 
@@ -705,7 +706,7 @@ export function BianzhiPage({
     if (!cityChoices.length || !Object.keys(cityProvinces).length) return null
     const byProv = new Map<string, string[]>()
     for (const c of cityChoices) {
-      const prov = cityProvinces[c] ?? '其他地区'
+      const prov = cityProvinces[c] ?? t("其他地区")
       const arr = byProv.get(prov)
       if (arr) arr.push(c)
       else byProv.set(prov, [c])
@@ -720,7 +721,7 @@ export function BianzhiPage({
   const cityRow =
     cityOptions.length > 0 ? (
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-xs text-muted-foreground">城市（可多选）：</span>
+        <span className="text-xs text-muted-foreground">{t("城市（可多选）：")}</span>
         <div className="w-60">
           <MultiSelect
             label=""
@@ -731,13 +732,13 @@ export function BianzhiPage({
               setCities(v)
               setPage(1)
             }}
-            placeholder="搜索城市（支持拼音）…"
+            placeholder={t("搜索城市（支持拼音）…")}
             triggerLabel={
               cities.length
-                ? `城市 · ${cities.length}`
+                ? tt`城市 · ${cities.length}`
                 : provinces.length
-                  ? '已选省份内城市'
-                  : '全部城市'
+                  ? t("已选省份内城市")
+                  : t("全部城市")
             }
           />
         </div>
@@ -746,7 +747,7 @@ export function BianzhiPage({
 
   const eduRow = (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-xs text-muted-foreground">我的学历（含可投的「及以上/不限」）：</span>
+      <span className="text-xs text-muted-foreground">{t("我的学历（含可投的「及以上/不限」）：")}</span>
       {EDU_OPTIONS.map((e) => (
         <button
           key={e}
@@ -761,7 +762,7 @@ export function BianzhiPage({
               : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
           )}
         >
-          {e}
+          {t(e)}
         </button>
       ))}
     </div>
@@ -809,8 +810,7 @@ export function BianzhiPage({
                 : 'border-border bg-background text-foreground hover:bg-muted',
             )}
           >
-            近7天更新
-          </button>
+            {t("近7天更新")}{' '}</button>
           <button
             type="button"
             onClick={() => {
@@ -824,8 +824,7 @@ export function BianzhiPage({
                 : 'border-border bg-background text-foreground hover:bg-muted',
             )}
           >
-            即将截止
-          </button>
+            {t("即将截止")}{' '}</button>
           <button
             type="button"
             onClick={() => {
@@ -839,8 +838,7 @@ export function BianzhiPage({
                 : 'border-border bg-background text-foreground hover:bg-muted',
             )}
           >
-            隐藏已截止
-          </button>
+            {t("隐藏已截止")}{' '}</button>
           <button
             type="button"
             onClick={() => setHideSeen((v) => !v)}
@@ -851,12 +849,11 @@ export function BianzhiPage({
                 : 'border-border bg-background text-foreground hover:bg-muted',
             )}
           >
-            隐藏已看过
-          </button>
+            {t("隐藏已看过")}{' '}</button>
           {crossPresets && crossPresets.length > 0 && onCrossPreset && (
             <>
               <span className="my-auto h-4 w-px shrink-0 bg-border" aria-hidden="true" />
-              <span className="my-auto shrink-0 text-xs text-muted-foreground">去其他板块</span>
+              <span className="my-auto shrink-0 text-xs text-muted-foreground">{t("去其他板块")}</span>
               {crossPresets.map((p) => (
                 <button
                   key={p.key}
@@ -886,10 +883,8 @@ export function BianzhiPage({
         >
           <Search className="h-4 w-4 shrink-0" />
           <span>
-            {crossLabel || '另一板块'}中另有{' '}
-            <span className="font-semibold text-foreground">{crossTotal.toLocaleString()}</span> 条与「
-            {keyword.trim()}」相关，点击查看 →
-          </span>
+            {crossLabel || t("另一板块")}{t("中另有")}{' '}
+            <span className="font-semibold text-foreground">{crossTotal.toLocaleString()}</span> {' '}{t("条与「")}{' '}{keyword.trim()}{t("」相关，点击查看 →")}{' '}</span>
         </button>
       )}
 
@@ -923,13 +918,13 @@ export function BianzhiPage({
             if (text.length >= 2) addRecentSearch(text)
           }}
           words={bianzhiSuggestWords}
-          placeholder="搜索招聘单位 / 工作地 / 专业…"
+          placeholder={t("搜索招聘单位 / 工作地 / 专业…")}
           inputClassName="h-10"
         />
         <div className="flex gap-1">
           <button
             type="button"
-            aria-label="卡片视图"
+            aria-label={t("卡片视图")}
             onClick={() => selectView('card')}
             className={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
@@ -942,7 +937,7 @@ export function BianzhiPage({
           </button>
           <button
             type="button"
-            aria-label="表格视图"
+            aria-label={t("表格视图")}
             onClick={() => selectView('table')}
             className={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
@@ -955,8 +950,8 @@ export function BianzhiPage({
           </button>
           <button
             type="button"
-            aria-label="地图分布"
-            title="岗位城市分布地图"
+            aria-label={t("地图分布")}
+            title={t("岗位城市分布地图")}
             aria-pressed={mapOpen}
             onClick={() => setMapOpen((v) => !v)}
             className={cn(
@@ -970,8 +965,8 @@ export function BianzhiPage({
           </button>
           <button
             type="button"
-            aria-label="时间线"
-            title="岗位更新时间线"
+            aria-label={t("时间线")}
+            title={t("岗位更新时间线")}
             aria-pressed={timelineOpen}
             onClick={() => setTimelineOpen((v) => !v)}
             className={cn(
@@ -987,8 +982,7 @@ export function BianzhiPage({
         <div className="flex gap-1.5">
           <Button variant="outline" size="sm" className="h-11 gap-1.5 sm:h-10" onClick={() => setGuideOpen(true)}>
             <GraduationCap className="h-4 w-4" />
-            专业就业方向
-          </Button>
+            {t("专业就业方向")}{' '}</Button>
           <Button
             variant="outline"
             size="sm"
@@ -996,8 +990,7 @@ export function BianzhiPage({
             onClick={() => setShowHrSites((v) => !v)}
           >
             <Landmark className="h-4 w-4" />
-            各省人社官网
-          </Button>
+            {t("各省人社官网")}{' '}</Button>
         </div>
       </div>
 
@@ -1006,14 +999,13 @@ export function BianzhiPage({
       {timelineOpen && (
         <div className="rounded-lg border border-border bg-card p-2 sm:p-3">
           <div className="flex items-center justify-between px-1 pb-1">
-            <span className="text-sm font-medium">岗位更新时间线（每日更新岗位数，拖动下方滑块选时间段）</span>
+            <span className="text-sm font-medium">{t("岗位更新时间线（每日更新岗位数，拖动下方滑块选时间段）")}</span>
             <button
               type="button"
               className="text-xs text-muted-foreground hover:text-foreground"
               onClick={() => setTimelineOpen(false)}
             >
-              收起
-            </button>
+              {t("收起")}{' '}</button>
           </div>
           <Suspense fallback={<Skeleton className="h-[280px] w-full" />}>
             {timeline ? (
@@ -1040,14 +1032,13 @@ export function BianzhiPage({
       {mapOpen && (
         <div className="rounded-lg border border-border bg-card p-2 sm:p-3">
           <div className="flex items-center justify-between px-1 pb-1">
-            <span className="text-sm font-medium">岗位城市分布（气泡大小=岗位数，点击气泡筛选该城市，可拖拽/缩放）</span>
+            <span className="text-sm font-medium">{t("岗位城市分布（气泡大小=岗位数，点击气泡筛选该城市，可拖拽/缩放）")}</span>
             <button
               type="button"
               className="text-xs text-muted-foreground hover:text-foreground"
               onClick={() => setMapOpen(false)}
             >
-              收起
-            </button>
+              {t("收起")}{' '}</button>
           </div>
           <Suspense fallback={<Skeleton className="h-[420px] w-full sm:h-[520px]" />}>
             <CityMapPanel
@@ -1064,7 +1055,7 @@ export function BianzhiPage({
 
       {showHrSites && (
         <div className="rounded-xl border bg-background p-3">
-          <p className="mb-2 text-xs text-muted-foreground">各省份人力资源和社会保障厅官方招聘页（{hrSites.length} 个）</p>
+          <p className="mb-2 text-xs text-muted-foreground">{t("各省份人力资源和社会保障厅官方招聘页（")}{hrSites.length} {' '}{t("个）")}</p>
           <div className="flex flex-wrap gap-1.5">
             {hrSites.map((s) => (
               <a
@@ -1098,7 +1089,7 @@ export function BianzhiPage({
       {provinceRow && (
         <MobileFilterCollapse
           count={provinces.length + cities.length + (eduFilter ? 1 : 0)}
-          title="编制筛选"
+          title={t("编制筛选")}
         >
           {provinceRow}
           {cityRow}
@@ -1110,8 +1101,7 @@ export function BianzhiPage({
       {data && (
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span>
-            共 <span className="font-medium text-foreground">{data.total.toLocaleString()}</span> 条
-          </span>
+            {t("共")}{' '}<span className="font-medium text-foreground">{data.total.toLocaleString()}</span> {' '}{t("条")}{' '}</span>
           <FreshnessNote board="bianzhi" />
           <BoardExportButton
             className="ml-auto"
@@ -1132,15 +1122,15 @@ export function BianzhiPage({
           )}
         >
           <Landmark className="h-4 w-4 shrink-0" />
-          距 {liankaoInfo.banner.name} 还有{' '}
-          {liankaoInfo.banner.days === 0 ? '不到 1 天（今日开考）' : `${liankaoInfo.banner.days} 天`}
+          {t("距")}{' '}{liankaoInfo.banner.name} {' '}{t("还有")}{' '}
+          {liankaoInfo.banner.days === 0 ? t("不到 1 天（今日开考）") : tt`${liankaoInfo.banner.days} 天`}
         </div>
       )}
 
       <FilterSummaryBar filters={activeFilters} onClearAll={clearAllFilters} />
 
       {hideSeen && hiddenSeenCount > 0 && (
-        <div className="text-xs text-muted-foreground">本页已隐藏 {hiddenSeenCount} 条已看过的岗位</div>
+        <div className="text-xs text-muted-foreground">{t("本页已隐藏")}{' '}{hiddenSeenCount} {' '}{t("条已看过的岗位")}</div>
       )}
 
       {/* 列表 */}
@@ -1188,8 +1178,8 @@ export function BianzhiPage({
       ) : data && data.items.length === 0 ? (
         <div className="space-y-3">
           <EmptyState
-            title="没有匹配的编制公告"
-            description="建议优先移除关键词，其次省份、分类筛选"
+            title={t("没有匹配的编制公告")}
+            description={t("建议优先移除关键词，其次省份、分类筛选")}
             action={
               <div className="flex flex-col items-center gap-3">
                 <ActiveFilterChips filters={activeFilters} />
@@ -1249,7 +1239,7 @@ export function BianzhiPage({
                     text={
                       job.employer ||
                       (job.category === '大型联考'
-                        ? `${job.province ?? ''}${job.job_type ?? ''}联考`
+                        ? tt`${job.province ?? ''}${job.job_type ?? ''}联考`
                         : '-')
                     }
                     query={keyword}
@@ -1263,7 +1253,7 @@ export function BianzhiPage({
                   </Badge>
                 )}
                 {job.updated_at_src && (
-                  <span className="ml-auto text-xs text-muted-foreground">更新：{normalizeDateStr(job.updated_at_src)}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{t("更新：")}{normalizeDateStr(job.updated_at_src)}</span>
                 )}
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
@@ -1274,8 +1264,8 @@ export function BianzhiPage({
                 {job.job_type && <span className="text-muted-foreground">{job.job_type}</span>}
                 {job.headcount && (
                   <span className="text-muted-foreground">
-                    招 {job.headcount}
-                    {/[人名]$/.test(String(job.headcount)) ? '' : ' 人'}
+                    {t("招")}{' '}{job.headcount}
+                    {/[人名]$/.test(String(job.headcount)) ? '' : t(" 人")}
                   </span>
                 )}
                 {job.edu_requirement && (
@@ -1288,15 +1278,15 @@ export function BianzhiPage({
                 {isLiankao ? (
                   <>
                     {job.signup_start && (
-                      <span className="text-muted-foreground">报名：{normalizeDateStr(job.signup_start)}</span>
+                      <span className="text-muted-foreground">{t("报名：")}{normalizeDateStr(job.signup_start)}</span>
                     )}
                     {job.exam_time && (
-                      <span className="text-muted-foreground">考试：{normalizeDateStr(job.exam_time)}</span>
+                      <span className="text-muted-foreground">{t("考试：")}{normalizeDateStr(job.exam_time)}</span>
                     )}
                   </>
                 ) : (
                   job.deadline_text && (
-                    <span className="text-muted-foreground">截止：{normalizeDateStr(job.deadline_text)}</span>
+                    <span className="text-muted-foreground">{t("截止：")}{normalizeDateStr(job.deadline_text)}</span>
                   )
                 )}
                 {!isLiankao && <DueBadge date={job.deadline_date} />}
@@ -1311,7 +1301,7 @@ export function BianzhiPage({
                   title={job.major_requirement}
                   className={cn('mt-1.5 text-xs text-muted-foreground', cardMore.has(job.id) ? 'block whitespace-pre-wrap' : 'hidden sm:line-clamp-2')}
                 >
-                  专业：{job.major_requirement}
+                  {t("专业：")}{job.major_requirement}
                 </p>
               )}
               {job.notes && job.notes.trim() !== '/' && (
@@ -1319,7 +1309,7 @@ export function BianzhiPage({
                   title={job.notes}
                   className={cn('mt-1 text-xs text-muted-foreground', cardMore.has(job.id) ? 'block whitespace-pre-wrap' : 'hidden sm:line-clamp-2')}
                 >
-                  备注：{job.notes}
+                  {t("备注：")}{job.notes}
                 </p>
               )}
               {((job.major_requirement && job.major_requirement.trim() !== '/') ||
@@ -1332,7 +1322,7 @@ export function BianzhiPage({
                     toggleCardMore(job.id)
                   }}
                 >
-                  {cardMore.has(job.id) ? '收起' : '展开全文'}
+                  {cardMore.has(job.id) ? t("收起") : t("展开全文")}
                 </button>
               )}
               {(job.announce_url || job.apply_url) && (
@@ -1344,7 +1334,7 @@ export function BianzhiPage({
                       rel="noopener noreferrer"
                       className="inline-flex h-11 items-center gap-1 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:h-8"
                     >
-                      查看公告 <ExternalLink className="h-3.5 w-3.5" />
+                      {t("查看公告")}{' '}<ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}
                   {job.apply_url && job.apply_url.startsWith('http') && (
@@ -1354,7 +1344,7 @@ export function BianzhiPage({
                       rel="noopener noreferrer"
                       className="inline-flex h-11 items-center gap-1 rounded-md border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted sm:h-8"
                     >
-                      报名入口 <ExternalLink className="h-3.5 w-3.5" />
+                      {t("报名入口")}{' '}<ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}
                 </div>
@@ -1375,40 +1365,39 @@ export function BianzhiPage({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
-                  <span className="sr-only">收藏</span>
+                  <span className="sr-only">{t("收藏")}</span>
                 </TableHead>
                 <SortableHead
-                  label="招聘单位 / 公告"
+                  label={t("招聘单位 / 公告")}
                   sortKey="employer"
                   sort={sort}
                   onToggle={toggleSort}
                   className="min-w-[260px]"
                 />
-                <TableHead>分类</TableHead>
-                <TableHead>省份</TableHead>
-                <TableHead className="min-w-[110px]">工作地</TableHead>
-                <TableHead>类型</TableHead>
-                <TableHead className="hidden 2xl:table-cell">人数</TableHead>
-                <TableHead>学历要求</TableHead>
-                <TableHead className="min-w-[160px]">专业/学科</TableHead>
+                <TableHead>{t("分类")}</TableHead>
+                <TableHead>{t("省份")}</TableHead>
+                <TableHead className="min-w-[110px]">{t("工作地")}</TableHead>
+                <TableHead>{t("类型")}</TableHead>
+                <TableHead className="hidden 2xl:table-cell">{t("人数")}</TableHead>
+                <TableHead>{t("学历要求")}</TableHead>
+                <TableHead className="min-w-[160px]">{t("专业/学科")}</TableHead>
                 {isLiankao ? (
                   <>
-                    <TableHead>报名开始</TableHead>
-                    <TableHead>考试时间</TableHead>
+                    <TableHead>{t("报名开始")}</TableHead>
+                    <TableHead>{t("考试时间")}</TableHead>
                   </>
                 ) : (
                   <SortableHead
-                    label="截止时间"
+                    label={t("截止时间")}
                     sortKey="deadline"
                     sort={sort}
                     onToggle={toggleSort}
                     className="min-w-[140px]"
                   />
                 )}
-                <SortableHead label="更新时间" sortKey="updated" sort={sort} onToggle={toggleSort} className="hidden 2xl:table-cell" />
+                <SortableHead label={t("更新时间")} sortKey="updated" sort={sort} onToggle={toggleSort} className="hidden 2xl:table-cell" />
                 <TableHead className="sticky right-0 z-10 border-l bg-card shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
-                  链接
-                </TableHead>
+                  {t("链接")}{' '}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1450,7 +1439,7 @@ export function BianzhiPage({
                         text={
                           job.employer ||
                           (job.category === '大型联考'
-                            ? `${job.province ?? ''}${job.job_type ?? ''}联考`
+                            ? tt`${job.province ?? ''}${job.job_type ?? ''}联考`
                             : '-')
                         }
                         query={keyword}
@@ -1548,7 +1537,7 @@ export function BianzhiPage({
                           rel="noopener noreferrer"
                           className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md border border-border bg-background px-2 text-xs font-medium text-primary transition-colors hover:bg-muted"
                         >
-                          公告 <ExternalLink className="h-3 w-3" />
+                          {t("公告")}{' '}<ExternalLink className="h-3 w-3" />
                         </a>
                       )}
                       {job.apply_url && job.apply_url.startsWith('http') && (
@@ -1558,7 +1547,7 @@ export function BianzhiPage({
                           rel="noopener noreferrer"
                           className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md border border-border bg-background px-2 text-xs font-medium text-primary transition-colors hover:bg-muted"
                         >
-                          报名 <ExternalLink className="h-3 w-3" />
+                          {t("报名")}{' '}<ExternalLink className="h-3 w-3" />
                         </a>
                       )}
                     </div>
@@ -1576,20 +1565,17 @@ export function BianzhiPage({
       {data && data.total > PAGE_SIZE && (
         <div className="flex items-center justify-between pt-1">
           <span className="text-sm text-muted-foreground">
-            第 {page} / {totalPages} 页
-          </span>
+            {t("第")}{' '}{page} / {totalPages} {' '}{t("页")}{' '}</span>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => setPage((p) => p - 1)}>
-              上一页
-            </Button>
+              {t("上一页")}{' '}</Button>
             <Button
               variant="outline"
               size="sm"
               disabled={page >= totalPages || loading}
               onClick={() => setPage((p) => p + 1)}
             >
-              下一页
-            </Button>
+              {t("下一页")}{' '}</Button>
           </div>
         </div>
       )}
@@ -1601,7 +1587,7 @@ export function BianzhiPage({
           title={
             detail.employer ||
             (detail.category === '大型联考'
-              ? `${detail.province ?? ''}${detail.job_type ?? ''}联考`
+              ? tt`${detail.province ?? ''}${detail.job_type ?? ''}联考`
               : '-')
           }
           badges={[detail.category, detail.province].filter((b): b is string => !!b)}
@@ -1627,39 +1613,39 @@ export function BianzhiPage({
             deadline:
               getEffectiveDeadline(detail),
             icsUid: `bz-${detail.id}`,
-            icsSummary: `报名截止：${detail.employer?.trim() || detail.job_type || '编制岗位'}`,
+            icsSummary: tt`报名截止：${detail.employer?.trim() || detail.job_type || t("编制岗位")}`,
           }}
           {...sheetNavProps(pageItems, detail, setDetail)}
           basics={[
-            { label: '分类', value: detail.category },
-            { label: '省份', value: detail.province },
-            { label: '岗位类型', value: detail.job_type },
-            { label: '招聘人数', value: detail.headcount },
-            { label: '工作地点', value: detail.work_location },
-            { label: '备注', value: detail.notes },
+            { label: t("分类"), value: detail.category },
+            { label: t("省份"), value: detail.province },
+            { label: t("岗位类型"), value: detail.job_type },
+            { label: t("招聘人数"), value: detail.headcount },
+            { label: t("工作地点"), value: detail.work_location },
+            { label: t("备注"), value: detail.notes },
           ]}
           requirements={[
-            { label: '学历要求', value: detail.edu_requirement },
-            { label: '专业要求', value: detail.major_requirement },
+            { label: t("学历要求"), value: detail.edu_requirement },
+            { label: t("专业要求"), value: detail.major_requirement },
           ]}
           schedule={[
-            { label: '报名开始', value: normalizeDateStr(detail.signup_start) },
-            { label: '报名截止', value: normalizeDateStr(detail.deadline_text) },
-            { label: '考试时间', value: normalizeDateStr(detail.exam_time) },
-            { label: '更新时间', value: normalizeDateStr(detail.updated_at_src) },
+            { label: t("报名开始"), value: normalizeDateStr(detail.signup_start) },
+            { label: t("报名截止"), value: normalizeDateStr(detail.deadline_text) },
+            { label: t("考试时间"), value: normalizeDateStr(detail.exam_time) },
+            { label: t("更新时间"), value: normalizeDateStr(detail.updated_at_src) },
           ]}
           links={[
-            { label: '公告链接', url: detail.announce_url, checkDead: true },
-            { label: '报名入口', url: detail.apply_url, checkDead: true },
+            { label: t("公告链接"), url: detail.announce_url, checkDead: true },
+            { label: t("报名入口"), url: detail.apply_url, checkDead: true },
           ]}
           related={
             relatedJobs.length > 0
               ? {
-                  title: '同单位其他公告',
+                  title: t("同单位其他公告"),
                   items: relatedJobs.map((j) => ({
                     key: String(j.id),
                     label: [j.job_type, j.category].filter(Boolean).join(' · ') || j.employer || '-',
-                    sub: [j.work_location || j.province, j.deadline_text ? `截止：${normalizeDateStr(j.deadline_text)}` : null]
+                    sub: [j.work_location || j.province, j.deadline_text ? tt`截止：${normalizeDateStr(j.deadline_text)}` : null]
                       .filter(Boolean)
                       .join(' · '),
                   })),
@@ -1673,11 +1659,11 @@ export function BianzhiPage({
           similar={
             similarJobs.length > 0
               ? {
-                  title: '相似岗位（同分类·同省）',
+                  title: t("相似岗位（同分类·同省）"),
                   items: similarJobs.map((j) => ({
                     key: String(j.id),
                     label: [j.employer, j.job_type].filter(Boolean).join(' · ') || '-',
-                    sub: [j.work_location || j.province, j.deadline_text ? `截止：${normalizeDateStr(j.deadline_text)}` : null]
+                    sub: [j.work_location || j.province, j.deadline_text ? tt`截止：${normalizeDateStr(j.deadline_text)}` : null]
                       .filter(Boolean)
                       .join(' · '),
                   })),

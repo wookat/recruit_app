@@ -1,3 +1,4 @@
+import { getLang, setLang, t, tt } from '@/lib/i18n'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchCampusJobs, fetchPosition, fetchPositions, type Position } from '@/api'
 import { importFavorites } from '@/lib/positionStore'
@@ -5,7 +6,7 @@ import { LazyPositionSheet } from '@/components/LazyPositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BookOpen, Briefcase, CalendarDays, History, Moon, Search, Settings, Sparkles, Star, Sun } from 'lucide-react'
+import { BookOpen, Briefcase, CalendarDays, History, Languages, Moon, Search, Settings, Sparkles, Star, Sun } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
@@ -70,33 +71,33 @@ const SearchResultsPage = lazy(() =>
 const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
 
 const CAMPUS_CROSS = [
-  { key: 'all', label: '校招' },
-  { key: 'noexam', label: '免笔试' },
-  { key: 'referral', label: '内推码' },
-  { key: 'intern', label: '实习' },
-  { key: 'autumn', label: '秋招' },
-  { key: 'bz:all', label: '编制公告' },
-  { key: 'bz:edu', label: '教师招聘' },
-  { key: 'bz:med', label: '医疗招聘' },
+  { key: 'all', label: t("校招") },
+  { key: 'noexam', label: t("免笔试") },
+  { key: 'referral', label: t("内推码") },
+  { key: 'intern', label: t("实习") },
+  { key: 'autumn', label: t("秋招") },
+  { key: 'bz:all', label: t("编制公告") },
+  { key: 'bz:edu', label: t("教师招聘") },
+  { key: 'bz:med', label: t("医疗招聘") },
 ]
 
 const POSITION_CROSS = [
-  { key: 'all', label: '体制内全部' },
-  { key: 'gwy', label: '公务员' },
-  { key: 'sye', label: '事业编' },
-  { key: 'jdwz', label: '军队文职' },
-  { key: 'gqyq', label: '国企央企' },
-  { key: 'xds', label: '选调生' },
-  { key: 'bz:all', label: '编制公告' },
-  { key: 'bz:edu', label: '教师招聘' },
-  { key: 'bz:med', label: '医疗招聘' },
+  { key: 'all', label: t("体制内全部") },
+  { key: 'gwy', label: t("公务员") },
+  { key: 'sye', label: t("事业编") },
+  { key: 'jdwz', label: t("军队文职") },
+  { key: 'gqyq', label: t("国企央企") },
+  { key: 'xds', label: t("选调生") },
+  { key: 'bz:all', label: t("编制公告") },
+  { key: 'bz:edu', label: t("教师招聘") },
+  { key: 'bz:med', label: t("医疗招聘") },
 ]
 
 const BIANZHI_CROSS = [
-  { key: 'pos:all', label: '体制内岗位' },
-  { key: 'pos:gwy', label: '公务员' },
-  { key: 'campus:all', label: '校招信息' },
-  { key: 'campus:noexam', label: '免笔试' },
+  { key: 'pos:all', label: t("体制内岗位") },
+  { key: 'pos:gwy', label: t("公务员") },
+  { key: 'campus:all', label: t("校招信息") },
+  { key: 'campus:noexam', label: t("免笔试") },
 ]
 
 interface Section {
@@ -216,7 +217,7 @@ function setTheme(v: 'light' | 'dark' | 'system') {
 
 function BrandMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 64 64" className={className} role="img" aria-label="上岸雷达">
+    <svg viewBox="0 0 64 64" className={className} role="img" aria-label={t("上岸雷达")}>
       <defs>
         <linearGradient id="brand-bg" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#2563EB" />
@@ -501,10 +502,9 @@ export default function App() {
           <div className="flex items-center gap-2.5">
             <BrandMark className="h-9 w-9 shrink-0" />
             <div className="flex flex-col leading-none">
-              <h1 className="whitespace-nowrap text-lg font-bold tracking-tight">上岸雷达</h1>
+              <h1 className="whitespace-nowrap text-lg font-bold tracking-tight">{t("上岸雷达")}</h1>
               <span className="mt-0.5 hidden text-[11px] tracking-widest text-muted-foreground sm:block">
-                体制内岗位 · 校招信息 一站检索
-              </span>
+                {t("体制内岗位 · 校招信息 一站检索")}{' '}</span>
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-1.5">
@@ -512,13 +512,13 @@ export default function App() {
             variant="ghost"
             size="sm"
             className="relative min-h-11 gap-1.5 px-2 sm:min-h-8"
-            aria-label="全站搜索"
-            title="全站搜索（Ctrl K）"
+            aria-label={t("全站搜索")}
+            title={t("全站搜索（Ctrl K）")}
             onClick={() => setSearchOpen(true)}
           >
             <Search className="h-4 w-4" />
             {savedNews.sum > 0 && (
-              <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label="常用筛选有上新" />
+              <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label={t("常用筛选有上新")} />
             )}
             <kbd className="hidden rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-foreground/80 lg:inline">
               Ctrl K
@@ -529,62 +529,71 @@ export default function App() {
             size="sm"
             className="min-h-11 min-w-11 gap-1.5 px-2 sm:min-h-8 sm:min-w-0"
             onClick={cycleTheme}
-            title={theme === 'system' ? '主题：跟随系统' : theme === 'dark' ? '主题：暗色' : '主题：亮色'}
-            aria-label="切换主题"
+            title={theme === 'system' ? t("主题：跟随系统") : theme === 'dark' ? t("主题：暗色") : t("主题：亮色")}
+            aria-label={t("切换主题")}
           >
             {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-            {theme === 'system' && <span className="hidden text-[11px] text-muted-foreground lg:inline">自动</span>}
+            {theme === 'system' && <span className="hidden text-[11px] text-muted-foreground lg:inline">{t("自动")}</span>}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-11 gap-1 px-2 sm:min-h-8"
+            onClick={() => setLang(getLang() === 'en' ? 'zh' : 'en')}
+            title={getLang() === 'en' ? '切换到中文' : 'Switch to English'}
+            aria-label={getLang() === 'en' ? '切换到中文' : 'Switch to English'}
+          >
+            <Languages className="h-4 w-4" />
+            <span className="text-[11px] font-medium">{getLang() === 'en' ? '中文' : 'EN'}</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
             className={`hidden min-h-11 gap-1.5 px-2 sm:min-h-8 md:inline-flex ${section.mode === 'updates' ? 'text-primary' : ''}`}
-            aria-label="今日更新"
-            title="近 7 天新增岗位"
+            aria-label={t("今日更新")}
+            title={t("近 7 天新增岗位")}
             onClick={() => {
               setSection(section.mode === 'updates' ? { mode: 'positions' } : { mode: 'updates' })
               window.scrollTo({ top: 0 })
             }}
           >
             <Sparkles className="h-4 w-4" />
-            <span className="hidden sm:inline">今日更新</span>
+            <span className="hidden sm:inline">{t("今日更新")}</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
             className={`hidden min-h-11 gap-1.5 px-2 sm:min-h-8 md:inline-flex ${section.mode === 'calendar' ? 'text-primary' : ''}`}
-            aria-label="截止日历"
-            title="截止日历"
+            aria-label={t("截止日历")}
+            title={t("截止日历")}
             onClick={() => {
               setSection(section.mode === 'calendar' ? { mode: 'positions' } : { mode: 'calendar' })
               window.scrollTo({ top: 0 })
             }}
           >
             <CalendarDays className="h-4 w-4" />
-            <span className="hidden sm:inline">日历</span>
+            <span className="hidden sm:inline">{t("日历")}</span>
           </Button>
           <Button variant="ghost" size="sm" className="hidden min-h-11 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setGuideOpen(true)}>
             <BookOpen className="h-4 w-4" />
-            求职攻略
-          </Button>
+            {t("求职攻略")}{' '}</Button>
           <Button
             variant="ghost"
             size="sm"
             className="min-h-11 gap-1.5 px-2 sm:min-h-8"
-            aria-label="最近浏览"
-            title="最近浏览"
+            aria-label={t("最近浏览")}
+            title={t("最近浏览")}
             onClick={() => setHistoryOpen(true)}
           >
             <History className="h-4 w-4" />
-            <span className="hidden lg:inline">最近浏览</span>
+            <span className="hidden lg:inline">{t("最近浏览")}</span>
           </Button>
           <Button variant="outline" size="sm" className="relative hidden min-h-11 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setFavOpen(true)}>
             <Star className="h-4 w-4 text-amber-400" />
-            我的收藏
-            {dueSoon > 0 && (
+            {t("我的收藏")}{' '}{dueSoon > 0 && (
               <span
                 className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
-                title={`${dueSoon} 个收藏岗位 ${remindDays} 天内截止`}
+                title={tt`${dueSoon} 个收藏岗位 ${remindDays} 天内截止`}
               >
                 {dueSoon}
               </span>
@@ -603,12 +612,10 @@ export default function App() {
               <TabsList className="grid h-10 w-full max-w-xs grid-cols-2">
                 <TabsTrigger value="search" className="gap-1.5">
                   <Briefcase className="h-4 w-4" />
-                  岗位检索
-                </TabsTrigger>
+                  {t("岗位检索")}{' '}</TabsTrigger>
                 <TabsTrigger value="admin" className="gap-1.5">
                   <Settings className="h-4 w-4" />
-                  管理
-                </TabsTrigger>
+                  {t("管理")}{' '}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -645,7 +652,7 @@ export default function App() {
                 } else if (k.startsWith('bz:')) goBianzhi(k.slice(3))
                 else goCampus(k)
               }}
-              crossLabel="校招信息"
+              crossLabel={t("校招信息")}
               crossFetchTotal={campusTotal}
               onCrossOpen={(kw) => goCampus('all', kw)}
               onOpenBoardKw={openBoardKw}
@@ -666,7 +673,7 @@ export default function App() {
                 initialKeyword={section.keyword}
                 crossPresets={POSITION_CROSS}
                 onCrossPreset={(k) => (k.startsWith('bz:') ? goBianzhi(k.slice(3)) : goPositions(k))}
-                crossLabel="体制内岗位"
+                crossLabel={t("体制内岗位")}
                 crossFetchTotal={positionsTotal}
                 onCrossOpen={(kw) => goPositions('all', kw)}
                 onOpenBoardKw={openBoardKw}
@@ -681,7 +688,7 @@ export default function App() {
                 onCrossPreset={(k) =>
                   k.startsWith('pos:') ? goPositions(k.slice(4)) : goCampus(k.slice(7))
                 }
-                crossLabel="校招信息"
+                crossLabel={t("校招信息")}
                 crossFetchTotal={campusTotal}
                 onCrossOpen={(kw) => goCampus('all', kw)}
                 onOpenBoardKw={openBoardKw}
@@ -724,8 +731,7 @@ export default function App() {
             }}
           >
             <Sparkles className="h-3.5 w-3.5" />
-            今日更新
-          </button>
+            {t("今日更新")}{' '}</button>
           <button
             type="button"
             className="inline-flex min-h-11 items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:min-h-0"
@@ -735,18 +741,16 @@ export default function App() {
             }}
           >
             <CalendarDays className="h-3.5 w-3.5" />
-            日历
-          </button>
+            {t("日历")}{' '}</button>
           <button
             type="button"
             className="inline-flex min-h-11 items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:min-h-0"
             onClick={() => setGuideOpen(true)}
           >
             <BookOpen className="h-3.5 w-3.5" />
-            求职攻略
-          </button>
+            {t("求职攻略")}{' '}</button>
         </div>
-        数据来源：国家公务员局、军队人才网、国聘网及各省官方/汇总页面 · 仅供参考 ·{' '}
+        {t("数据来源：国家公务员局、军队人才网、国聘网及各省官方/汇总页面 · 仅供参考 ·")}{' '}
         <button
           type="button"
           className="underline underline-offset-4 hover:text-foreground"
@@ -759,8 +763,7 @@ export default function App() {
             setGuideOpen(true)
           }}
         >
-          数据说明
-        </button>
+          {t("数据说明")}{' '}</button>
       </footer>
 
       <MobileBottomNav

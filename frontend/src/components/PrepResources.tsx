@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useRef, useState } from 'react'
 import { BookOpen, CalendarPlus, Check, ExternalLink } from 'lucide-react'
 import hrSites from '@/data/hrSites.json'
@@ -10,13 +11,13 @@ interface GuideLink {
 }
 
 const GUIDE_LINKS: Record<string, GuideLink> = {
-  timeline: { key: 'timeline', label: '秋招/春招时间线' },
-  biancal: { key: 'biancal', label: '编制考试日历' },
-  resume: { key: 'resume', label: '简历制作' },
-  interview: { key: 'interview', label: '面试攻略' },
-  company: { key: 'company', label: '企业类型特点' },
-  choose: { key: 'choose', label: '编制 vs 校招怎么选' },
-  tips: { key: 'tips', label: '实用技巧' },
+  timeline: { key: 'timeline', label: t("秋招/春招时间线") },
+  biancal: { key: 'biancal', label: t("编制考试日历") },
+  resume: { key: 'resume', label: t("简历制作") },
+  interview: { key: 'interview', label: t("面试攻略") },
+  company: { key: 'company', label: t("企业类型特点") },
+  choose: { key: 'choose', label: t("编制 vs 校招怎么选") },
+  tips: { key: 'tips', label: t("实用技巧") },
 }
 
 /** 按考试类型/分类静态映射站内攻略锚点；无匹配走编制默认组合。 */
@@ -66,8 +67,7 @@ export function PrepResources({ examType, province, deadline, icsUid, icsSummary
     <section className="space-y-3">
       <div className="flex items-center gap-1.5 text-sm font-semibold">
         <BookOpen className="h-4 w-4 text-primary" />
-        备考资源
-      </div>
+        {t("备考资源")}{' '}</div>
       <div className="space-y-2 pl-0.5">
         <div className="flex flex-wrap gap-1.5">
           {links.map((l) => (
@@ -98,8 +98,7 @@ export function PrepResources({ examType, province, deadline, icsUid, icsSummary
             className="inline-flex min-h-11 items-center gap-1.5 text-sm text-primary underline-offset-4 hover:underline sm:min-h-0"
           >
             <ExternalLink className="h-3.5 w-3.5" />
-            {site.province}人社/考试院官方招聘页
-          </a>
+            {site.province}{t("人社/考试院官方招聘页")}{' '}</a>
         )}
         {deadline && (
           <div>
@@ -111,10 +110,10 @@ export function PrepResources({ examType, province, deadline, icsUid, icsSummary
                   [
                     { uid: icsUid, date: deadline, summary: icsSummary },
                     ...(examDate
-                      ? [{ uid: `${icsUid}-exam`, date: examDate, summary: examSummary || '笔试/考试' }]
+                      ? [{ uid: `${icsUid}-exam`, date: examDate, summary: examSummary || t("笔试/考试") }]
                       : []),
                   ],
-                  `报名截止提醒_${icsUid}.ics`,
+                  tt`报名截止提醒_${icsUid}.ics`,
                 )
                 setIcsDone(true)
                 if (icsTimer.current) clearTimeout(icsTimer.current)
@@ -124,13 +123,11 @@ export function PrepResources({ examType, province, deadline, icsUid, icsSummary
               {icsDone ? (
                 <>
                   <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  已生成日历文件，打开即可添加提醒
-                </>
+                  {t("已生成日历文件，打开即可添加提醒")}{' '}</>
               ) : (
                 <>
                   <CalendarPlus className="h-4 w-4" />
-                  加入日历提醒（{deadline.getMonth() + 1}/{deadline.getDate()} 截止
-                  {examDate ? `，${examDate.getMonth() + 1}/${examDate.getDate()} 考试` : ''}）
+                  {t("加入日历提醒（")}{deadline.getMonth() + 1}/{deadline.getDate()} {' '}{t("截止")}{' '}{examDate ? tt`，${examDate.getMonth() + 1}/${examDate.getDate()} 考试` : ''}）
                 </>
               )}
             </button>

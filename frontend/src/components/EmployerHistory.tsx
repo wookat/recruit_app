@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { History } from 'lucide-react'
 import { fetchEmployerHistory, type EmployerHistoryYear } from '@/api'
@@ -38,16 +39,15 @@ export function EmployerHistory({ employer, currentYear }: { employer?: string |
     <div className="flex items-start gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
       <History className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
       <div>
-        <div className="text-xs font-medium text-muted-foreground">该单位历年岗位数</div>
+        <div className="text-xs font-medium text-muted-foreground">{t("该单位历年岗位数")}</div>
         <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-sm">
           {years.map((y) => (
             <span key={y.year}>
-              {y.year} 年{' '}
+              {y.year} {' '}{t("年")}{' '}
               <span className={y.year === currentYear ? 'font-semibold text-primary' : 'font-medium'}>
                 {y.total.toLocaleString()}
               </span>{' '}
-              条
-            </span>
+              {t("条")}{' '}</span>
           ))}
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle, Building2, CalendarClock, ChevronLeft, ChevronRight, Filter, GraduationCap, Info, Link2, Sparkles, TimerOff } from 'lucide-react'
 import {
@@ -169,7 +170,7 @@ export function BoardJobSheet({
     .filter((l) => safeUrl(l.url))
     .reduce<SheetLink[]>((acc, l) => {
       const dup = acc.find((x) => x.url === l.url)
-      if (dup) dup.label = `${dup.label}（同公告链接）`
+      if (dup) dup.label = tt`${dup.label}（同公告链接）`
       else acc.push({ ...l })
       return acc
     }, [])
@@ -229,7 +230,7 @@ export function BoardJobSheet({
           {expiredNotice && (
             <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-foreground/80 dark:text-muted-foreground">
               <TimerOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              该岗位报名已截止，信息仅供参考{similar && similar.items.length > 0 ? '；可查看下方相似岗位' : ''}
+              {t("该岗位报名已截止，信息仅供参考")}{similar && similar.items.length > 0 ? t("；可查看下方相似岗位") : ''}
             </div>
           )}
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
@@ -242,24 +243,24 @@ export function BoardJobSheet({
           </SheetTitle>
           {(tags ?? []).length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {(tags ?? []).map((t) =>
-                t.onClick ? (
+              {(tags ?? []).map((tag) =>
+                tag.onClick ? (
                   <button
-                    key={t.key}
+                    key={tag.key}
                     type="button"
                     className="cursor-pointer"
-                    title="点击按此标签筛选"
-                    aria-label={`按「${t.label}」筛选`}
-                    onClick={t.onClick}
+                    title={t("点击按此标签筛选")}
+                    aria-label={tt`按「${tag.label}」筛选`}
+                    onClick={tag.onClick}
                   >
                     <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary transition-colors hover:bg-primary/20">
                       <Filter className="h-3 w-3" aria-hidden="true" />
-                      {t.label}
+                      {tag.label}
                     </Badge>
                   </button>
                 ) : (
-                  <Badge key={t.key} variant="secondary" className="font-normal">
-                    {t.label}
+                  <Badge key={tag.key} variant="secondary" className="font-normal">
+                    {tag.label}
                   </Badge>
                 ),
               )}
@@ -289,8 +290,7 @@ export function BoardJobSheet({
                   onClick={onPrev}
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
-                  上一条
-                </Button>
+                  {t("上一条")}{' '}</Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -298,15 +298,13 @@ export function BoardJobSheet({
                   disabled={nextDisabled}
                   onClick={onNext}
                 >
-                  下一条
-                  <ChevronRight className="h-3.5 w-3.5" />
+                  {t("下一条")}{' '}<ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </span>
             )}
             {snapshotNote && (
               <Badge variant="outline" className="text-[11px] font-normal text-muted-foreground">
-                收藏时快照
-              </Badge>
+                {t("收藏时快照")}{' '}</Badge>
             )}
           </div>
         </SheetHeader>
@@ -315,8 +313,7 @@ export function BoardJobSheet({
             <section className="space-y-3">
               <div className="flex items-center gap-1.5 text-sm font-semibold">
                 <Info className="h-4 w-4 text-primary" />
-                基本信息
-              </div>
+                {t("基本信息")}{' '}</div>
               <div className="space-y-3 pl-0.5">
                 {basics.map((f) => (
                   <Field key={f.label} {...f} />
@@ -325,9 +322,9 @@ export function BoardJobSheet({
             </section>
 
             {requirements && (
-              <Section icon={GraduationCap} title="要求" fields={requirements} />
+              <Section icon={GraduationCap} title={t("要求")} fields={requirements} />
             )}
-            {schedule && <Section icon={CalendarClock} title="时间" fields={schedule} />}
+            {schedule && <Section icon={CalendarClock} title={t("时间")} fields={schedule} />}
             {applyWindow && <ApplyTimeline start={applyWindow.start} end={applyWindow.end} />}
 
             {validLinks.length > 0 && (
@@ -336,8 +333,7 @@ export function BoardJobSheet({
                 <section className="space-y-3">
                   <div className="flex items-center gap-1.5 text-sm font-semibold">
                     <Link2 className="h-4 w-4 text-primary" />
-                    链接
-                  </div>
+                    {t("链接")}{' '}</div>
                   <div className="space-y-2 pl-0.5">
                     {validLinks.map((l) => (
                       <div key={l.label}>
@@ -346,8 +342,7 @@ export function BoardJobSheet({
                         {l.url && deadUrls[l.url] && (
                           <p className="mt-1 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-400">
                             <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
-                            检测到该链接可能已失效，建议前往公司官方招聘渠道核实
-                          </p>
+                            {t("检测到该链接可能已失效，建议前往公司官方招聘渠道核实")}{' '}</p>
                         )}
                       </div>
                     ))}

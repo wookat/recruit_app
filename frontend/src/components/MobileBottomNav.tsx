@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { BookOpen, Briefcase, CalendarDays, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -28,18 +29,16 @@ export function MobileBottomNav({
     )
   return (
     <nav
-      aria-label="底部导航"
+      aria-label={t("底部导航")}
       className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
       <div className="flex items-stretch">
         <button type="button" className={itemClass(active === 'jobs')} onClick={onJobs} aria-current={active === 'jobs' ? 'page' : undefined}>
           <Briefcase className="h-5 w-5" />
-          岗位
-        </button>
+          {t("岗位")}{' '}</button>
         <button type="button" className={itemClass(active === 'calendar')} onClick={onCalendar} aria-current={active === 'calendar' ? 'page' : undefined}>
           <CalendarDays className="h-5 w-5" />
-          日历
-        </button>
+          {t("日历")}{' '}</button>
         <button type="button" className={itemClass(false)} onClick={onFavorites}>
           <span className="relative">
             <Star className="h-5 w-5" />
@@ -54,12 +53,10 @@ export function MobileBottomNav({
               </span>
             )}
           </span>
-          收藏
-        </button>
+          {t("收藏")}{' '}</button>
         <button type="button" className={itemClass(false)} onClick={onGuide}>
           <BookOpen className="h-5 w-5" />
-          攻略
-        </button>
+          {t("攻略")}{' '}</button>
       </div>
     </nav>
   )

@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { daysUntil } from '@/lib/deadline'
 
@@ -12,8 +13,7 @@ export function isExpiredDate(date: string | null | undefined): boolean {
 function DividerContent({ onHide }: { onHide: () => void }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
-      以下为已截止岗位
-      <button
+      {t("以下为已截止岗位")}{' '}<button
         type="button"
         onClick={(e) => {
           e.stopPropagation()
@@ -21,8 +21,7 @@ function DividerContent({ onHide }: { onHide: () => void }) {
         }}
         className="min-h-11 rounded-md border border-border bg-background px-3 py-0.5 text-[11px] text-foreground transition-colors hover:bg-muted sm:min-h-0 sm:px-2"
       >
-        隐藏已截止
-      </button>
+        {t("隐藏已截止")}{' '}</button>
     </span>
   )
 }

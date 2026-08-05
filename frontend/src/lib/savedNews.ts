@@ -1,3 +1,4 @@
+import { t, tt } from './i18n'
 import { useSyncExternalStore } from 'react'
 import {
   fetchBianzhiJobs,
@@ -273,8 +274,8 @@ export function maybeNotifySavedNews(onOpen: () => void) {
   } catch {
     return
   }
-  const n = new Notification('上岸雷达 · 订阅上新', {
-    body: `你订阅的 ${filterCount} 个筛选共新增 ${state.sum} 条，点击查看`,
+  const n = new Notification(t('上岸雷达 · 订阅上新'), {
+    body: tt`你订阅的 ${filterCount} 个筛选共新增 ${state.sum} 条，点击查看`,
     tag: 'recruit-news-daily',
     icon: '/favicon.svg',
   })

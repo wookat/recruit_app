@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { CalendarDays, ClipboardList, LayoutGrid, SlidersHorizontal, Star, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -24,20 +25,20 @@ function markSeen() {
 const STEPS = [
   {
     icon: LayoutGrid,
-    title: '① 三板块一站切换',
-    desc: '体制内 / 校招 / 编制公告随时切换，顶栏日历看全站截止',
+    title: t("① 三板块一站切换"),
+    desc: t("体制内 / 校招 / 编制公告随时切换，顶栏日历看全站截止"),
     extraIcon: CalendarDays,
   },
   {
     icon: SlidersHorizontal,
-    title: '② 一键匹配与筛选保存',
-    desc: '按专业学历地区快速匹配，常用筛选可保存为一键恢复',
+    title: t("② 一键匹配与筛选保存"),
+    desc: t("按专业学历地区快速匹配，常用筛选可保存为一键恢复"),
     extraIcon: null,
   },
   {
     icon: Star,
-    title: '③ 收藏 → 投递追踪',
-    desc: '星标收藏岗位，记录投递状态与备注，截止自动提醒',
+    title: t("③ 收藏 → 投递追踪"),
+    desc: t("星标收藏岗位，记录投递状态与备注，截止自动提醒"),
     extraIcon: ClipboardList,
   },
 ]
@@ -65,13 +66,13 @@ export function OnboardingCard({ onOpenTips }: { onOpenTips: () => void }) {
     <section className="relative mb-4 animate-fade-in-up rounded-xl border bg-gradient-to-br from-primary/5 to-transparent p-4 shadow-sm sm:p-5">
       <button
         type="button"
-        aria-label="关闭引导"
+        aria-label={t("关闭引导")}
         className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground sm:h-8 sm:w-8"
         onClick={dismiss}
       >
         <X className="h-4 w-4" />
       </button>
-      <h2 className="pr-10 text-sm font-bold">👋 欢迎使用上岸雷达 · 3 步开始</h2>
+      <h2 className="pr-10 text-sm font-bold">{t("👋 欢迎使用上岸雷达 · 3 步开始")}</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         {STEPS.map((s) => (
           <div key={s.title} className="flex items-start gap-2.5">
@@ -87,8 +88,7 @@ export function OnboardingCard({ onOpenTips }: { onOpenTips: () => void }) {
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button size="sm" className="min-h-11 sm:min-h-8" onClick={dismiss}>
-          知道了
-        </Button>
+          {t("知道了")}{' '}</Button>
         <Button
           variant="outline"
           size="sm"
@@ -99,8 +99,7 @@ export function OnboardingCard({ onOpenTips }: { onOpenTips: () => void }) {
             onOpenTips()
           }}
         >
-          查看使用技巧
-        </Button>
+          {t("查看使用技巧")}{' '}</Button>
       </div>
     </section>
   )

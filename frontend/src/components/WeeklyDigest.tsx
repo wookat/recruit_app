@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
 import { CalendarClock, Check, ClipboardCopy, Download, ImageIcon, Send, Sparkles, Star, TrendingUp, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -83,36 +84,36 @@ export function WeeklyDigest({ onClose }: { onClose: () => void }) {
   const empty = newFavs === 0 && applied === 0 && advanced === 0 && dueSoon === 0
 
   const cheer = advanced > 0
-    ? '状态在往前走，稳住节奏，上岸在望！'
+    ? t("状态在往前走，稳住节奏，上岸在望！")
     : applied > 0
-      ? '已投出去了，接下来准备笔试面试，加油！'
+      ? t("已投出去了，接下来准备笔试面试，加油！")
       : newFavs > 0
-        ? '心仪岗位已入库，别忘了按截止日期投出去！'
+        ? t("心仪岗位已入库，别忘了按截止日期投出去！")
         : dueSoon > 0
-          ? '收藏里有岗位快截止了，抓紧投递！'
+          ? t("收藏里有岗位快截止了，抓紧投递！")
           : ''
 
   const fmt = (d: Date) => `${d.getMonth() + 1}.${d.getDate()}`
   const rangeText = `${fmt(new Date(Date.now() - WEEK_MS))}-${fmt(new Date())}`
-  const summaryText = `本周求职小结（${rangeText}）：新收藏 ${newFavs} · 投递 ${applied} · 状态推进 ${advanced}（笔试/面试/OC） · 即将截止 ${dueSoon}。${cheer}`
+  const summaryText = tt`本周求职小结（${rangeText}）：新收藏 ${newFavs} · 投递 ${applied} · 状态推进 ${advanced}（笔试/面试/OC） · 即将截止 ${dueSoon}。${cheer}`
 
   const stats = [
-    { icon: Star, label: '新收藏', value: newFavs },
-    { icon: Send, label: '投递', value: applied },
-    { icon: TrendingUp, label: '状态推进', value: advanced },
-    { icon: CalendarClock, label: '即将截止', value: dueSoon },
+    { icon: Star, label: t("新收藏"), value: newFavs },
+    { icon: Send, label: t("投递"), value: applied },
+    { icon: TrendingUp, label: t("状态推进"), value: advanced },
+    { icon: CalendarClock, label: t("即将截止"), value: dueSoon },
   ]
 
   return (
     <div className="rounded-lg border bg-muted/40 p-3">
       <div className="flex items-center gap-1.5">
         <Sparkles className="h-4 w-4 text-primary" />
-        <span className="text-sm font-semibold">本周小结</span>
-        <span className="text-xs text-muted-foreground">近 7 天 · 仅本机数据</span>
+        <span className="text-sm font-semibold">{t("本周小结")}</span>
+        <span className="text-xs text-muted-foreground">{t("近 7 天 · 仅本机数据")}</span>
         <Button
           variant="ghost"
           size="icon"
-          aria-label="关闭本周小结"
+          aria-label={t("关闭本周小结")}
           className="ml-auto h-11 w-11 text-muted-foreground sm:h-6 sm:w-6"
           onClick={onClose}
         >
@@ -121,8 +122,7 @@ export function WeeklyDigest({ onClose }: { onClose: () => void }) {
       </div>
       {empty ? (
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          本周还没有新动态——去收藏几个心仪岗位、标记投递状态，下周小结见分晓。
-        </p>
+          {t("本周还没有新动态——去收藏几个心仪岗位、标记投递状态，下周小结见分晓。")}{' '}</p>
       ) : (
         <>
           <div className="mt-2 grid grid-cols-4 gap-1.5">
@@ -150,7 +150,7 @@ export function WeeklyDigest({ onClose }: { onClose: () => void }) {
             }}
           >
             {copied ? <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" /> : <ClipboardCopy className="h-3.5 w-3.5" />}
-            {copied ? '已复制，去微信粘贴吧' : '复制小结文本'}
+            {copied ? t("已复制，去微信粘贴吧") : t("复制小结文本")}
           </Button>
           <Button
             variant="outline"
@@ -168,16 +168,15 @@ export function WeeklyDigest({ onClose }: { onClose: () => void }) {
             }}
           >
             <ImageIcon className="h-3.5 w-3.5" />
-            生成分享图片
-          </Button>
+            {t("生成分享图片")}{' '}</Button>
           <Dialog open={!!cardUrl} onOpenChange={(o) => !o && setCardUrl(null)}>
             <DialogContent className="max-w-xs sm:max-w-sm">
               <DialogHeader>
-                <DialogTitle>本周小结分享卡</DialogTitle>
-                <DialogDescription>长按图片保存，或用下方按钮保存/复制后发微信。</DialogDescription>
+                <DialogTitle>{t("本周小结分享卡")}</DialogTitle>
+                <DialogDescription>{t("长按图片保存，或用下方按钮保存/复制后发微信。")}</DialogDescription>
               </DialogHeader>
               {cardUrl && (
-                <img src={cardUrl} alt="本周求职小结分享卡" className="w-full rounded-lg border" />
+                <img src={cardUrl} alt={t("本周求职小结分享卡")} className="w-full rounded-lg border" />
               )}
               <div className="grid grid-cols-2 gap-2">
                 <Button
@@ -188,13 +187,12 @@ export function WeeklyDigest({ onClose }: { onClose: () => void }) {
                     if (!cardUrl) return
                     const a = document.createElement('a')
                     a.href = cardUrl
-                    a.download = `求职周报_${rangeText.replace(/[.-]/g, '')}.png`
+                    a.download = tt`求职周报_${rangeText.replace(/[.-]/g, '')}.png`
                     a.click()
                   }}
                 >
                   <Download className="h-3.5 w-3.5" />
-                  保存图片
-                </Button>
+                  {t("保存图片")}{' '}</Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -223,13 +221,12 @@ export function WeeklyDigest({ onClose }: { onClose: () => void }) {
                   ) : (
                     <ClipboardCopy className="h-3.5 w-3.5" />
                   )}
-                  {imgCopied ? '已复制' : '复制图片'}
+                  {imgCopied ? t("已复制") : t("复制图片")}
                 </Button>
               </div>
               {imgCopyFail && (
                 <p className="text-xs text-muted-foreground">
-                  当前浏览器不支持复制图片，请长按图片保存或点「保存图片」。
-                </p>
+                  {t("当前浏览器不支持复制图片，请长按图片保存或点「保存图片」。")}{' '}</p>
               )}
             </DialogContent>
           </Dialog>

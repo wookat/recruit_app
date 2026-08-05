@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useState } from 'react'
 import { Bookmark, BookmarkPlus, Check, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -49,8 +50,8 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
     setSaveName('')
     setHint(
       dropped
-        ? `已达 10 组上限，删除了最旧的「${dropped}」`
-        : '已保存并订阅，上新时 chip 显示「+N 新」',
+        ? tt`已达 10 组上限，删除了最旧的「${dropped}」`
+        : t("已保存并订阅，上新时 chip 显示「+N 新」"),
     )
     setTimeout(() => setHint(null), 6000)
   }
@@ -58,7 +59,7 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
   return (
     <div className="flex max-w-full flex-wrap items-center gap-2 text-xs">
       <Bookmark className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      <span className="shrink-0 text-muted-foreground">常用筛选：</span>
+      <span className="shrink-0 text-muted-foreground">{t("常用筛选：")}</span>
       {saved.map((f) => (
         <Badge key={f.name} variant="secondary" className="max-w-full gap-1 font-normal">
           <span className="cursor-pointer truncate" onClick={() => apply(f)}>
@@ -66,12 +67,11 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
           </span>
           {(news.counts[`${board}|${f.name}`] ?? 0) > 0 && (
             <span className="shrink-0 rounded-sm bg-red-500/15 px-1.5 text-[10px] font-medium text-red-600 dark:text-red-400">
-              +{news.counts[`${board}|${f.name}`]} 新
-            </span>
+              +{news.counts[`${board}|${f.name}`]} {' '}{t("新")}{' '}</span>
           )}
           <button
             type="button"
-            aria-label={`删除筛选 ${f.name}`}
+            aria-label={tt`删除筛选 ${f.name}`}
             className="cursor-pointer text-muted-foreground hover:text-foreground"
             onClick={() => {
               removeSavedFilterBaseline(board, f.name)
@@ -96,10 +96,10 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
               if (e.key === 'Enter') handleSave()
               else if (e.key === 'Escape') setSaveOpen(false)
             }}
-            placeholder={defaultName || '筛选名称'}
+            placeholder={defaultName || t("筛选名称")}
             className="h-9 w-40 max-w-full text-xs sm:h-7 sm:w-32"
           />
-          <Button size="icon" variant="ghost" className="h-9 w-9 sm:h-7 sm:w-7" onClick={handleSave} aria-label="确认保存">
+          <Button size="icon" variant="ghost" className="h-9 w-9 sm:h-7 sm:w-7" onClick={handleSave} aria-label={t("确认保存")}>
             <Check className="h-3.5 w-3.5" />
           </Button>
           <Button
@@ -110,13 +110,13 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
               setSaveOpen(false)
               setSaveName('')
             }}
-            aria-label="取消保存"
+            aria-label={t("取消保存")}
           >
             <X className="h-3.5 w-3.5" />
           </Button>
         </span>
       ) : (
-        <span title={!canSave ? '先设置筛选条件后可保存' : undefined}>
+        <span title={!canSave ? t("先设置筛选条件后可保存") : undefined}>
           <Button
             variant="link"
             size="sm"
@@ -128,8 +128,7 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
             }}
           >
             <BookmarkPlus className="mr-0.5 h-3.5 w-3.5" />
-            保存当前筛选
-          </Button>
+            {t("保存当前筛选")}{' '}</Button>
         </span>
       )}
       {hint && <span className="text-muted-foreground">{hint}</span>}

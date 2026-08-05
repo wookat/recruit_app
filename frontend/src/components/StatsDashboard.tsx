@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { fetchStats, type Stats } from '@/api'
 import { Card, CardContent } from '@/components/ui/card'
@@ -61,7 +62,7 @@ function StatList({
           className="w-full rounded px-1 py-1 text-left text-xs text-primary hover:bg-muted"
           onClick={() => setShowAll((v) => !v)}
         >
-          {showAll ? '收起' : `展开全部 ${entries.length} 项`}
+          {showAll ? t("收起") : tt`展开全部 ${entries.length} 项`}
         </button>
       )}
     </div>
@@ -130,13 +131,11 @@ export function StatsDashboard({
         <CardContent className="space-y-4 p-4">
           <div className="flex items-center gap-2 text-sm font-medium">
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            数据看板
-            <Badge variant="secondary" className="font-normal">
-              {stats.total.toLocaleString()} 条
-            </Badge>
+            {t("数据看板")}{' '}<Badge variant="secondary" className="font-normal">
+              {stats.total.toLocaleString()} {' '}{t("条")}{' '}</Badge>
           </div>
           <StatList
-            title="按年份（点击筛选）"
+            title={t("按年份（点击筛选）")}
             entries={stats.by_year}
             max={6}
             isSelected={(name) => Number(name) === selectedYear}
@@ -146,14 +145,14 @@ export function StatsDashboard({
             }}
           />
           <StatList
-            title="按考试类型（点击筛选）"
+            title={t("按考试类型（点击筛选）")}
             entries={stats.by_exam_type}
             max={8}
             isSelected={(name) => name === selectedExamType}
             onSelect={onSelectExamType}
           />
           <StatList
-            title="按省份（点击筛选）"
+            title={t("按省份（点击筛选）")}
             entries={stats.by_province}
             max={8}
             isSelected={(name) => selectedProvinces?.includes(name) ?? false}
@@ -170,10 +169,8 @@ export function StatsDashboard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-medium">
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            数据看板
-            <Badge variant="secondary" className="font-normal">
-              共 {stats.total.toLocaleString()} 条岗位
-            </Badge>
+            {t("数据看板")}{' '}<Badge variant="secondary" className="font-normal">
+              {t("共")}{' '}{stats.total.toLocaleString()} {' '}{t("条岗位")}{' '}</Badge>
           </div>
           <Button
             variant="ghost"
@@ -183,17 +180,17 @@ export function StatsDashboard({
           >
             {expanded ? (
               <>
-                收起 <ChevronUp className="h-3.5 w-3.5" />
+                {t("收起")}{' '}<ChevronUp className="h-3.5 w-3.5" />
               </>
             ) : (
               <>
-                展开 <ChevronDown className="h-3.5 w-3.5" />
+                {t("展开")}{' '}<ChevronDown className="h-3.5 w-3.5" />
               </>
             )}
           </Button>
         </div>
         <StatGroup
-          title="按年份（点击筛选）"
+          title={t("按年份（点击筛选）")}
           entries={stats.by_year.slice(0, expanded ? undefined : 6)}
           isSelected={(name) => Number(name) === selectedYear}
           onSelect={(name) => {
@@ -204,13 +201,13 @@ export function StatsDashboard({
         {expanded && (
           <>
             <StatGroup
-              title="按考试类型（点击筛选）"
+              title={t("按考试类型（点击筛选）")}
               entries={stats.by_exam_type}
               isSelected={(name) => name === selectedExamType}
               onSelect={onSelectExamType}
             />
             <StatGroup
-              title="按省份（点击筛选）"
+              title={t("按省份（点击筛选）")}
               entries={stats.by_province}
               isSelected={(name) => selectedProvinces?.includes(name) ?? false}
               onSelect={onSelectProvince}

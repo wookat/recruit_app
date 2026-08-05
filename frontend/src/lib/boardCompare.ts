@@ -1,3 +1,4 @@
+import { tt } from './i18n'
 import { useSyncExternalStore } from 'react'
 import type { BianzhiJob, CampusJob, Position } from '@/api'
 
@@ -38,7 +39,7 @@ export function toggleBoardCompare(item: BoardCompareItem) {
     return
   }
   if (items.length >= BOARD_COMPARE_MAX) {
-    hint = `最多同时对比 ${BOARD_COMPARE_MAX} 条`
+    hint = tt`最多同时对比 ${BOARD_COMPARE_MAX} 条`
     emit()
     return
   }

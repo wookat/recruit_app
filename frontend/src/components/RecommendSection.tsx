@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, ChevronRight, MapPin, RefreshCw, Sparkles } from 'lucide-react'
 import { fetchPositions, type Position } from '@/api'
@@ -128,13 +129,12 @@ export function RecommendSection() {
             <ChevronDown className="h-4 w-4 shrink-0" />
           )}
           <Sparkles className="h-4 w-4 shrink-0 text-primary" />
-          <span className="shrink-0 whitespace-nowrap">为你推荐</span>
+          <span className="shrink-0 whitespace-nowrap">{t("为你推荐")}</span>
           <span className="min-w-0 max-w-60 truncate text-xs font-normal text-muted-foreground">
-            基于收藏
-            <span className="hidden sm:inline">（{basisLabel}）</span>
+            {t("基于收藏")}{' '}<span className="hidden sm:inline">（{basisLabel}）</span>
           </span>
           {collapsed && (
-            <span className="shrink-0 text-xs font-normal text-primary">展开</span>
+            <span className="shrink-0 text-xs font-normal text-primary">{t("展开")}</span>
           )}
         </button>
         {!collapsed && (
@@ -146,8 +146,7 @@ export function RecommendSection() {
             disabled={loading}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            换一批
-          </Button>
+            {t("换一批")}{' '}</Button>
         )}
       </div>
       <div
@@ -188,10 +187,10 @@ export function RecommendSection() {
             </div>
           ))}
           {loading && !items?.length && (
-            <div className="py-6 text-center text-xs text-muted-foreground">加载中…</div>
+            <div className="py-6 text-center text-xs text-muted-foreground">{t("加载中…")}</div>
           )}
           {!loading && items && items.length === 0 && (
-            <div className="py-6 text-center text-xs text-muted-foreground">暂无更多推荐</div>
+            <div className="py-6 text-center text-xs text-muted-foreground">{t("暂无更多推荐")}</div>
           )}
         </div>
         </div>

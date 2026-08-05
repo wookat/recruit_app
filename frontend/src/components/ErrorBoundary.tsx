@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { RefreshCw, TriangleAlert } from 'lucide-react'
 
@@ -27,8 +28,8 @@ export class ErrorBoundary extends Component<Props, State> {
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6 text-center">
         <TriangleAlert className="h-10 w-10 text-amber-500" />
         <div className="space-y-1">
-          <p className="text-lg font-semibold text-foreground">出错了</p>
-          <p className="text-sm text-muted-foreground">页面遇到意外错误，刷新后即可恢复</p>
+          <p className="text-lg font-semibold text-foreground">{t("出错了")}</p>
+          <p className="text-sm text-muted-foreground">{t("页面遇到意外错误，刷新后即可恢复")}</p>
         </div>
         <button
           type="button"
@@ -36,8 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
           onClick={() => window.location.reload()}
         >
           <RefreshCw className="h-4 w-4" />
-          点击刷新
-        </button>
+          {t("点击刷新")}{' '}</button>
       </div>
     )
   }

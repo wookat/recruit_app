@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
 import majorGuide from '@/data/majorGuide.json'
 import { Badge } from '@/components/ui/badge'
@@ -48,8 +49,8 @@ export function MajorGuideSheet({ open, onClose }: { open: boolean; onClose: () 
     >
       <SheetContent side="right" className="flex w-full flex-col sm:max-w-xl">
         <SheetHeader>
-          <SheetTitle>专业就业方向指南</SheetTitle>
-          <SheetDescription>共 {ENTRIES.length} 个专业 · 按专业查看对口行业与岗位方向</SheetDescription>
+          <SheetTitle>{t("专业就业方向指南")}</SheetTitle>
+          <SheetDescription>{t("共")}{' '}{ENTRIES.length} {' '}{t("个专业 · 按专业查看对口行业与岗位方向")}</SheetDescription>
         </SheetHeader>
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -59,7 +60,7 @@ export function MajorGuideSheet({ open, onClose }: { open: boolean; onClose: () 
               setQuery(e.target.value)
               setSelected(null)
             }}
-            placeholder="搜索专业，如：计算机 / 会计 / 机械…"
+            placeholder={t("搜索专业，如：计算机 / 会计 / 机械…")}
             className="h-10 pl-9"
           />
         </div>
@@ -71,8 +72,7 @@ export function MajorGuideSheet({ open, onClose }: { open: boolean; onClose: () 
                 onClick={() => setSelected(null)}
                 className="text-sm text-primary hover:underline"
               >
-                ← 返回专业列表
-              </button>
+                {t("← 返回专业列表")}{' '}</button>
               <h3 className="text-base font-semibold">{selected.major}</h3>
               <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
                 {selected.guide.split(/\s*\|\s*/).map((para, i) => (
@@ -95,7 +95,7 @@ export function MajorGuideSheet({ open, onClose }: { open: boolean; onClose: () 
                 </button>
               ))}
               {filtered.length === 0 && (
-                <p className="text-sm text-muted-foreground">没有匹配的专业</p>
+                <p className="text-sm text-muted-foreground">{t("没有匹配的专业")}</p>
               )}
             </div>
           )}

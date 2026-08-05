@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { TableSwipeHint } from './TableSwipeHint'
 import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -130,21 +131,21 @@ interface PresetView {
 }
 
 const PRESETS: PresetView[] = [
-  { key: 'all', label: '全部', params: {} },
-  { key: 'main', label: '校招汇总', params: { source_table: ['校招汇总表'] } },
-  { key: 'noexam', label: '免笔试', params: { source_table: ['免笔试汇总'] } },
-  { key: 'referral', label: '内推码', params: { referral_only: true } },
-  { key: 'soe', label: '央国企名录', params: { source_table: ['央国企事业单位名录'] } },
-  { key: 'soecampus', label: '央国企校招', params: { source_table: ['央国企校招'] } },
-  { key: 'old', label: '24-25届可投', params: { source_table: ['24-25届可投'] } },
-  { key: 'autumn', label: '秋招', params: { batch: '秋招' } },
-  { key: 'spring', label: '春招', params: { batch: '春招' } },
-  { key: 'intern', label: '实习', params: { batch: '实习' } },
-  { key: 'y27autumn', label: '27届秋招', params: { batch: '秋招', grad_year: '2027' } },
-  { key: 'internet', label: '互联网', params: { industry: ['互联网'] } },
-  { key: 'finance', label: '银行金融', params: { industry: ['银行', '金融'] } },
-  { key: 'soe2', label: '央国企', params: { company_type: ['央国企', '国企'] } },
-  { key: 'foreign', label: '外企', params: { company_type: ['外企', '外企/合资', '合资', '中外合资'] } },
+  { key: 'all', label: t("全部"), params: {} },
+  { key: 'main', label: t("校招汇总"), params: { source_table: [t("校招汇总表")] } },
+  { key: 'noexam', label: t("免笔试"), params: { source_table: [t("免笔试汇总")] } },
+  { key: 'referral', label: t("内推码"), params: { referral_only: true } },
+  { key: 'soe', label: t("央国企名录"), params: { source_table: [t("央国企事业单位名录")] } },
+  { key: 'soecampus', label: t("央国企校招"), params: { source_table: [t("央国企校招")] } },
+  { key: 'old', label: t("24-25届可投"), params: { source_table: [t("24-25届可投")] } },
+  { key: 'autumn', label: t("秋招"), params: { batch: t("秋招") } },
+  { key: 'spring', label: t("春招"), params: { batch: t("春招") } },
+  { key: 'intern', label: t("实习"), params: { batch: t("实习") } },
+  { key: 'y27autumn', label: t("27届秋招"), params: { batch: t("秋招"), grad_year: '2027' } },
+  { key: 'internet', label: t("互联网"), params: { industry: [t("互联网")] } },
+  { key: 'finance', label: t("银行金融"), params: { industry: [t("银行"), t("金融")] } },
+  { key: 'soe2', label: t("央国企"), params: { company_type: [t("央国企"), t("国企")] } },
+  { key: 'foreign', label: t("外企"), params: { company_type: [t("外企"), t("外企/合资"), t("合资"), t("中外合资")] } },
 ]
 
 const PAGE_SIZE = 20
@@ -330,7 +331,7 @@ export function CampusPage({
     if (!cityOptions.length || !Object.keys(cityProvinces).length) return null
     const byProv = new Map<string, string[]>()
     for (const c of cityOptions) {
-      const prov = cityProvinces[c] ?? '其他地区'
+      const prov = cityProvinces[c] ?? t("其他地区")
       const arr = byProv.get(prov)
       if (arr) arr.push(c)
       else byProv.set(prov, [c])
@@ -540,15 +541,15 @@ export function CampusPage({
   const exportFname = useMemo(() => {
     const presetLabel = PRESETS.find((v) => v.key === preset)?.label
     const parts = [
-      '校招',
+      t("校招"),
       preset !== 'all' ? presetLabel : undefined,
       ...companyTypes,
       ...cities,
       eduFilter || undefined,
       keyword || undefined,
-      recentOnly ? '近7天' : undefined,
-      dueOnly ? '7天内截止' : undefined,
-      !dueOnly && hideExpired ? '未过期' : undefined,
+      recentOnly ? t("近7天") : undefined,
+      dueOnly ? t("7天内截止") : undefined,
+      !dueOnly && hideExpired ? t("未过期") : undefined,
       new Date().toISOString().slice(0, 10).replace(/-/g, ''),
     ]
     return parts.filter(Boolean).join('-')
@@ -575,20 +576,20 @@ export function CampusPage({
         ? null
         : cities.length <= 3
           ? cities.join('+')
-          : `${cities.slice(0, 3).join('+')}等${cities.length}地`,
+          : tt`${cities.slice(0, 3).join('+')}等${cities.length}地`,
       companyTypes.length === 0
         ? null
         : companyTypes.length <= 3
           ? companyTypes.join('+')
-          : `${companyTypes.slice(0, 3).join('+')}等${companyTypes.length}类`,
+          : tt`${companyTypes.slice(0, 3).join('+')}等${companyTypes.length}类`,
       eduFilter || null,
       preset !== 'all' ? PRESETS.find((p) => p.key === preset)?.label : null,
-      recentOnly ? '近7天更新' : null,
-      dueOnly ? '即将截止' : null,
+      recentOnly ? t("近7天更新") : null,
+      dueOnly ? t("即将截止") : null,
       keyword.trim() || null,
     ]
       .filter(Boolean)
-      .join('·') || '校招筛选'
+      .join('·') || t("校招筛选")
   const filterCanSave =
     preset !== 'all' ||
     recentOnly ||
@@ -602,7 +603,7 @@ export function CampusPage({
   const activeFilters: RemovableFilter[] = []
   if (keyword)
     activeFilters.push({
-      label: `关键词：${keyword}`,
+      label: tt`关键词：${keyword}`,
       onRemove: () => {
         setKeyword('')
         setSearchInput('')
@@ -611,17 +612,17 @@ export function CampusPage({
     })
   for (const c of cities)
     activeFilters.push({
-      label: `城市：${c}`,
+      label: tt`城市：${c}`,
       onRemove: () => {
         setCities((prev) => prev.filter((x) => x !== c))
         setPage(1)
       },
     })
   for (const t of companyTypes)
-    activeFilters.push({ label: `类型：${t}`, onRemove: () => toggleCompanyType(t) })
+    activeFilters.push({ label: tt`类型：${t}`, onRemove: () => toggleCompanyType(t) })
   if (eduFilter)
     activeFilters.push({
-      label: `学历：${eduFilter}`,
+      label: tt`学历：${eduFilter}`,
       onRemove: () => {
         setEduFilter('')
         setPage(1)
@@ -630,11 +631,11 @@ export function CampusPage({
   if (preset !== 'all') {
     const presetLabel = PRESETS.find((v) => v.key === preset)?.label
     if (presetLabel)
-      activeFilters.push({ label: `视图：${presetLabel}`, onRemove: () => selectPreset('all') })
+      activeFilters.push({ label: tt`视图：${presetLabel}`, onRemove: () => selectPreset('all') })
   }
   if (recentOnly)
     activeFilters.push({
-      label: '近7天更新',
+      label: t("近7天更新"),
       onRemove: () => {
         setRecentOnly(false)
         setPage(1)
@@ -642,7 +643,7 @@ export function CampusPage({
     })
   if (timeRange)
     activeFilters.push({
-      label: `更新时段：${timeRange.from}~${timeRange.to}`,
+      label: tt`更新时段：${timeRange.from}~${timeRange.to}`,
       onRemove: () => {
         setTimeRange(null)
         setPage(1)
@@ -650,7 +651,7 @@ export function CampusPage({
     })
   if (dueOnly)
     activeFilters.push({
-      label: '即将截止',
+      label: t("即将截止"),
       onRemove: () => {
         setDueOnly(false)
         setPage(1)
@@ -658,7 +659,7 @@ export function CampusPage({
     })
   if (hideExpired)
     activeFilters.push({
-      label: '隐藏已截止',
+      label: t("隐藏已截止"),
       onRemove: () => {
         setHideExpired(false)
         setPage(1)
@@ -666,7 +667,7 @@ export function CampusPage({
     })
   if (hideSeen)
     activeFilters.push({
-      label: '隐藏已看过',
+      label: t("隐藏已看过"),
       onRemove: () => setHideSeen(false),
     })
   function clearAllFilters() {
@@ -716,7 +717,7 @@ export function CampusPage({
 
   const typeChips = filters ? (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="mr-0.5 shrink-0 text-xs text-muted-foreground md:hidden">企业类型</span>
+      <span className="mr-0.5 shrink-0 text-xs text-muted-foreground md:hidden">{t("企业类型")}</span>
       {filters.company_types.slice(0, 6).map((t) => (
         <button
           key={t}
@@ -745,7 +746,7 @@ export function CampusPage({
     <div className="relative">
       <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
         <div className="flex w-max items-center gap-1.5">
-          <span className="mr-0.5 shrink-0 text-xs text-muted-foreground">城市</span>
+          <span className="mr-0.5 shrink-0 text-xs text-muted-foreground">{t("城市")}</span>
           {CITY_CHIPS.map((c) => (
             <button
               key={c}
@@ -766,7 +767,7 @@ export function CampusPage({
           ))}
           {cityOptions.length > 0 && (
             <MultiSelect
-              label="更多城市"
+              label={t("更多城市")}
               options={cityGroups ? undefined : cityOptions}
               groups={cityGroups ?? undefined}
               selected={cities}
@@ -774,11 +775,11 @@ export function CampusPage({
                 setCities(v)
                 setPage(1)
               }}
-              placeholder="搜索城市（支持拼音）…"
+              placeholder={t("搜索城市（支持拼音）…")}
               triggerLabel={
                 cities.filter((c) => !CITY_CHIPS.includes(c)).length
-                  ? `更多城市 · ${cities.filter((c) => !CITY_CHIPS.includes(c)).length}`
-                  : '更多城市'
+                  ? tt`更多城市 · ${cities.filter((c) => !CITY_CHIPS.includes(c)).length}`
+                  : t("更多城市")
               }
             />
           )}
@@ -793,7 +794,7 @@ export function CampusPage({
 
   const eduRow = (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-xs text-muted-foreground">我的学历（含可投的「及以上/不限」）：</span>
+      <span className="text-xs text-muted-foreground">{t("我的学历（含可投的「及以上/不限」）：")}</span>
       {EDU_OPTIONS.map((e) => (
         <button
           key={e}
@@ -809,7 +810,7 @@ export function CampusPage({
               : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
           )}
         >
-          {e}
+          {t(e)}
         </button>
       ))}
     </div>
@@ -830,8 +831,7 @@ export function CampusPage({
               : 'border-border bg-background text-foreground hover:bg-muted',
           )}
         >
-          近7天更新
-        </button>
+          {t("近7天更新")}{' '}</button>
         <button
           type="button"
           onClick={() => {
@@ -845,8 +845,7 @@ export function CampusPage({
               : 'border-border bg-background text-foreground hover:bg-muted',
           )}
         >
-          即将截止
-        </button>
+          {t("即将截止")}{' '}</button>
         <button
           type="button"
           onClick={() => {
@@ -860,8 +859,7 @@ export function CampusPage({
               : 'border-border bg-background text-foreground hover:bg-muted',
           )}
         >
-          隐藏已截止
-        </button>
+          {t("隐藏已截止")}{' '}</button>
         <button
           type="button"
           onClick={() => setHideSeen((v) => !v)}
@@ -872,8 +870,7 @@ export function CampusPage({
               : 'border-border bg-background text-foreground hover:bg-muted',
           )}
         >
-          隐藏已看过
-        </button>
+          {t("隐藏已看过")}{' '}</button>
     </div>
   )
 
@@ -914,7 +911,7 @@ export function CampusPage({
           {crossPresets && crossPresets.length > 0 && onCrossPreset && (
             <>
               <span className="my-auto h-4 w-px shrink-0 bg-border" aria-hidden="true" />
-              <span className="my-auto shrink-0 text-xs text-muted-foreground">去其他板块</span>
+              <span className="my-auto shrink-0 text-xs text-muted-foreground">{t("去其他板块")}</span>
               {crossPresets.map((p) => (
                 <button
                   key={p.key}
@@ -939,10 +936,8 @@ export function CampusPage({
         >
           <Search className="h-4 w-4 shrink-0" />
           <span>
-            {crossLabel || '另一板块'}中另有{' '}
-            <span className="font-semibold text-foreground">{crossTotal.toLocaleString()}</span> 条与「
-            {keyword.trim()}」相关，点击查看 →
-          </span>
+            {crossLabel || t("另一板块")}{t("中另有")}{' '}
+            <span className="font-semibold text-foreground">{crossTotal.toLocaleString()}</span> {' '}{t("条与「")}{' '}{keyword.trim()}{t("」相关，点击查看 →")}{' '}</span>
         </button>
       )}
 
@@ -976,13 +971,13 @@ export function CampusPage({
             if (text.length >= 2) addRecentSearch(text)
           }}
           words={CAMPUS_SUGGEST_WORDS}
-          placeholder="搜索公司 / 岗位 / 行业 / 专业…"
+          placeholder={t("搜索公司 / 岗位 / 行业 / 专业…")}
           inputClassName="h-10"
         />
         <div className="flex gap-1">
           <button
             type="button"
-            aria-label="卡片视图"
+            aria-label={t("卡片视图")}
             onClick={() => selectView('card')}
             className={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
@@ -995,7 +990,7 @@ export function CampusPage({
           </button>
           <button
             type="button"
-            aria-label="表格视图"
+            aria-label={t("表格视图")}
             onClick={() => selectView('table')}
             className={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
@@ -1008,8 +1003,8 @@ export function CampusPage({
           </button>
           <button
             type="button"
-            aria-label="地图分布"
-            title="岗位城市分布地图"
+            aria-label={t("地图分布")}
+            title={t("岗位城市分布地图")}
             aria-pressed={mapOpen}
             onClick={() => setMapOpen((v) => !v)}
             className={cn(
@@ -1023,8 +1018,8 @@ export function CampusPage({
           </button>
           <button
             type="button"
-            aria-label="时间线"
-            title="岗位更新时间线"
+            aria-label={t("时间线")}
+            title={t("岗位更新时间线")}
             aria-pressed={timelineOpen}
             onClick={() => setTimelineOpen((v) => !v)}
             className={cn(
@@ -1038,7 +1033,7 @@ export function CampusPage({
           </button>
           {view === 'card' && (
             <select
-              aria-label="排序"
+              aria-label={t("排序")}
               value={sort ? `${sort.key}:${sort.dir}` : ''}
               onChange={(e) => {
                 const v = e.target.value
@@ -1050,10 +1045,10 @@ export function CampusPage({
               }}
               className="ml-1 h-10 rounded-md border border-border bg-background px-2 text-sm text-foreground"
             >
-              <option value="">默认排序</option>
-              <option value="updated:desc">更新最新</option>
-              <option value="deadline:asc">截止最近</option>
-              <option value="start:desc">开始最新</option>
+              <option value="">{t("默认排序")}</option>
+              <option value="updated:desc">{t("更新最新")}</option>
+              <option value="deadline:asc">{t("截止最近")}</option>
+              <option value="start:desc">{t("开始最新")}</option>
             </select>
           )}
         </div>
@@ -1065,14 +1060,13 @@ export function CampusPage({
       {timelineOpen && (
         <div className="rounded-lg border border-border bg-card p-2 sm:p-3">
           <div className="flex items-center justify-between px-1 pb-1">
-            <span className="text-sm font-medium">岗位更新时间线（每日更新岗位数，拖动下方滑块选时间段）</span>
+            <span className="text-sm font-medium">{t("岗位更新时间线（每日更新岗位数，拖动下方滑块选时间段）")}</span>
             <button
               type="button"
               className="text-xs text-muted-foreground hover:text-foreground"
               onClick={() => setTimelineOpen(false)}
             >
-              收起
-            </button>
+              {t("收起")}{' '}</button>
           </div>
           <Suspense fallback={<Skeleton className="h-[280px] w-full" />}>
             {timeline ? (
@@ -1099,14 +1093,13 @@ export function CampusPage({
       {mapOpen && (
         <div className="rounded-lg border border-border bg-card p-2 sm:p-3">
           <div className="flex items-center justify-between px-1 pb-1">
-            <span className="text-sm font-medium">岗位城市分布（气泡大小=岗位数，点击气泡筛选该城市，可拖拽/缩放）</span>
+            <span className="text-sm font-medium">{t("岗位城市分布（气泡大小=岗位数，点击气泡筛选该城市，可拖拽/缩放）")}</span>
             <button
               type="button"
               className="text-xs text-muted-foreground hover:text-foreground"
               onClick={() => setMapOpen(false)}
             >
-              收起
-            </button>
+              {t("收起")}{' '}</button>
           </div>
           <Suspense fallback={<Skeleton className="h-[420px] w-full sm:h-[520px]" />}>
             <CityMapPanel
@@ -1129,7 +1122,7 @@ export function CampusPage({
       </div>
 
       {/* 移动端筛选：超两行自动折叠 */}
-      <MobileFilterCollapse count={mobileFilterCount} title="校招筛选" onReset={clearAllFilters}>
+      <MobileFilterCollapse count={mobileFilterCount} title={t("校招筛选")} onReset={clearAllFilters}>
         {typeChips}
         {cityFilterRow}
         {eduRow}
@@ -1140,8 +1133,7 @@ export function CampusPage({
       {data && (
         <div ref={listTopRef} className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span>
-            共 <span className="font-medium text-foreground">{data.total.toLocaleString()}</span> 条
-          </span>
+            {t("共")}{' '}<span className="font-medium text-foreground">{data.total.toLocaleString()}</span> {' '}{t("条")}{' '}</span>
           <FreshnessNote board="campus" />
           <BoardExportButton
             className="ml-auto"
@@ -1155,7 +1147,7 @@ export function CampusPage({
       <FilterSummaryBar filters={activeFilters} onClearAll={clearAllFilters} />
 
       {hideSeen && hiddenSeenCount > 0 && (
-        <div className="text-xs text-muted-foreground">本页已隐藏 {hiddenSeenCount} 条已看过的岗位</div>
+        <div className="text-xs text-muted-foreground">{t("本页已隐藏")}{' '}{hiddenSeenCount} {' '}{t("条已看过的岗位")}</div>
       )}
 
       {/* 列表 */}
@@ -1203,8 +1195,8 @@ export function CampusPage({
       ) : data && data.items.length === 0 ? (
         <div className="space-y-3">
           <EmptyState
-            title="没有匹配的校招信息"
-            description="建议优先移除关键词，其次城市、企业类型筛选"
+            title={t("没有匹配的校招信息")}
+            description={t("建议优先移除关键词，其次城市、企业类型筛选")}
             action={
               <div className="flex flex-col items-center gap-3">
                 <ActiveFilterChips filters={activeFilters} />
@@ -1241,30 +1233,29 @@ export function CampusPage({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
-                  <span className="sr-only">收藏</span>
+                  <span className="sr-only">{t("收藏")}</span>
                 </TableHead>
                 <SortableHead
-                  label="公司"
+                  label={t("公司")}
                   sortKey="company"
                   sort={sort}
                   onToggle={toggleSort}
                   className="min-w-[140px] max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:border-r max-sm:bg-card max-sm:shadow-[8px_0_12px_-6px_rgba(0,0,0,0.18)]"
                 />
-                <TableHead>企业类型</TableHead>
-                <TableHead className="min-w-[220px]">招聘岗位</TableHead>
-                <TableHead>批次</TableHead>
-                <TableHead>届次</TableHead>
-                <TableHead>学历要求</TableHead>
-                <TableHead>笔试</TableHead>
-                <TableHead className="hidden 2xl:table-cell">行业</TableHead>
-                <TableHead className="min-w-[120px]">工作地点</TableHead>
-                <SortableHead label="开始时间" sortKey="start" sort={sort} onToggle={toggleSort} className="hidden 2xl:table-cell" />
-                <SortableHead label="截止时间" sortKey="deadline" sort={sort} onToggle={toggleSort} />
-                <SortableHead label="更新日期" sortKey="updated" sort={sort} onToggle={toggleSort} />
-                <TableHead>内推码</TableHead>
+                <TableHead>{t("企业类型")}</TableHead>
+                <TableHead className="min-w-[220px]">{t("招聘岗位")}</TableHead>
+                <TableHead>{t("批次")}</TableHead>
+                <TableHead>{t("届次")}</TableHead>
+                <TableHead>{t("学历要求")}</TableHead>
+                <TableHead>{t("笔试")}</TableHead>
+                <TableHead className="hidden 2xl:table-cell">{t("行业")}</TableHead>
+                <TableHead className="min-w-[120px]">{t("工作地点")}</TableHead>
+                <SortableHead label={t("开始时间")} sortKey="start" sort={sort} onToggle={toggleSort} className="hidden 2xl:table-cell" />
+                <SortableHead label={t("截止时间")} sortKey="deadline" sort={sort} onToggle={toggleSort} />
+                <SortableHead label={t("更新日期")} sortKey="updated" sort={sort} onToggle={toggleSort} />
+                <TableHead>{t("内推码")}</TableHead>
                 <TableHead className="sm:sticky sm:right-0 sm:z-10 sm:border-l sm:bg-card sm:shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
-                  投递/公告
-                </TableHead>
+                  {t("投递/公告")}{' '}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1438,7 +1429,7 @@ export function CampusPage({
                           rel="noopener noreferrer"
                           className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md bg-primary px-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                         >
-                          投递 <ExternalLink className="h-3 w-3" />
+                          {t("投递")}{' '}<ExternalLink className="h-3 w-3" />
                         </a>
                       )}
                       {job.announce_url && job.announce_url.startsWith('http') && (
@@ -1448,7 +1439,7 @@ export function CampusPage({
                           rel="noopener noreferrer"
                           className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md border border-border bg-background px-2 text-xs font-medium transition-colors hover:bg-muted"
                         >
-                          公告 <ExternalLink className="h-3 w-3" />
+                          {t("公告")}{' '}<ExternalLink className="h-3 w-3" />
                         </a>
                       )}
                     </div>
@@ -1516,7 +1507,7 @@ export function CampusPage({
                 {job.referral_code && (
                   <Badge variant="secondary" className={cn('gap-1 border-0', TONE_CLASSES.emerald)}>
                     <Ticket className="h-3 w-3" />
-                    内推码 {job.referral_code.length > 16 ? job.referral_code.slice(0, 16) + '…' : job.referral_code}
+                    {t("内推码")}{' '}{job.referral_code.length > 16 ? job.referral_code.slice(0, 16) + '…' : job.referral_code}
                   </Badge>
                 )}
                 {deriveCampusTags(job)
@@ -1539,7 +1530,7 @@ export function CampusPage({
                   </Badge>
                 )}
                 {job.updated_at_src && (
-                  <span className="ml-auto text-xs text-muted-foreground">更新：{normalizeDateStr(job.updated_at_src)}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{t("更新：")}{normalizeDateStr(job.updated_at_src)}</span>
                 )}
               </div>
               {job.positions && (
@@ -1581,22 +1572,22 @@ export function CampusPage({
                 {job.locations && <span className="text-muted-foreground">{job.locations}</span>}
                 {job.start_date && (
                   <span className={cn('text-muted-foreground', cardMore.has(job.id) ? 'inline' : 'hidden sm:inline')}>
-                    开始：{normalizeDateStr(job.start_date)}
+                    {t("开始：")}{normalizeDateStr(job.start_date)}
                   </span>
                 )}
                 {job.deadline_text && (
-                  <span className="text-muted-foreground">截止：{normalizeDateStr(job.deadline_text)}</span>
+                  <span className="text-muted-foreground">{t("截止：")}{normalizeDateStr(job.deadline_text)}</span>
                 )}
                 <DueBadge date={job.deadline_date} />
               </div>
               {job.major_requirement && job.major_requirement.trim() !== '/' && (
                 <p className={cn('mt-1.5 line-clamp-2 text-xs text-muted-foreground', cardMore.has(job.id) ? 'block' : 'hidden sm:block')}>
-                  专业：{job.major_requirement}
+                  {t("专业：")}{job.major_requirement}
                 </p>
               )}
               {job.notes && job.notes.trim() !== '/' && (
                 <p className={cn('mt-1 line-clamp-2 text-xs text-muted-foreground', cardMore.has(job.id) ? 'block' : 'hidden sm:block')}>
-                  备注：{job.notes}
+                  {t("备注：")}{job.notes}
                 </p>
               )}
               {(job.source_table ||
@@ -1612,7 +1603,7 @@ export function CampusPage({
                     toggleCardMore(job.id)
                   }}
                 >
-                  {cardMore.has(job.id) ? '收起' : '更多'}
+                  {cardMore.has(job.id) ? t("收起") : t("更多")}
                 </button>
               )}
               {(job.apply_url || job.announce_url) && (
@@ -1624,7 +1615,7 @@ export function CampusPage({
                       rel="noopener noreferrer"
                       className="inline-flex h-8 items-center gap-1 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                     >
-                      投递入口 <ExternalLink className="h-3.5 w-3.5" />
+                      {t("投递入口")}{' '}<ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}
                   {job.announce_url && job.announce_url.startsWith('http') && (
@@ -1634,7 +1625,7 @@ export function CampusPage({
                       rel="noopener noreferrer"
                       className="inline-flex h-8 items-center gap-1 rounded-md border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted"
                     >
-                      查看公告 <ExternalLink className="h-3.5 w-3.5" />
+                      {t("查看公告")}{' '}<ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}
                 </div>
@@ -1650,20 +1641,17 @@ export function CampusPage({
       {data && data.total > PAGE_SIZE && (
         <div className="flex items-center justify-between pt-1">
           <span className="text-sm text-muted-foreground">
-            第 {page} / {totalPages} 页
-          </span>
+            {t("第")}{' '}{page} / {totalPages} {' '}{t("页")}{' '}</span>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => gotoPage(-1)}>
-              上一页
-            </Button>
+              {t("上一页")}{' '}</Button>
             <Button
               variant="outline"
               size="sm"
               disabled={page >= totalPages || loading}
               onClick={() => gotoPage(1)}
             >
-              下一页
-            </Button>
+              {t("下一页")}{' '}</Button>
           </div>
         </div>
       )}
@@ -1691,30 +1679,30 @@ export function CampusPage({
           expiredNotice={isExpiredDate(detail.deadline_date)}
           {...sheetNavProps(visibleItems, detail, setDetail)}
           basics={[
-            { label: '公司', value: detail.company },
-            { label: '招聘岗位', value: detail.positions },
-            { label: '企业类型', value: detail.company_type },
-            { label: '行业', value: detail.industry },
-            { label: '批次', value: detail.batch },
-            { label: '届别', value: detail.grad_years },
-            { label: '免笔试', value: detail.no_exam },
-            { label: '内推码', value: detail.referral_code },
-            { label: '工作地点', value: detail.locations },
-            { label: '来源', value: detail.source_table },
-            { label: '备注', value: detail.notes },
+            { label: t("公司"), value: detail.company },
+            { label: t("招聘岗位"), value: detail.positions },
+            { label: t("企业类型"), value: detail.company_type },
+            { label: t("行业"), value: detail.industry },
+            { label: t("批次"), value: detail.batch },
+            { label: t("届别"), value: detail.grad_years },
+            { label: t("免笔试"), value: detail.no_exam },
+            { label: t("内推码"), value: detail.referral_code },
+            { label: t("工作地点"), value: detail.locations },
+            { label: t("来源"), value: detail.source_table },
+            { label: t("备注"), value: detail.notes },
           ]}
           requirements={[
-            { label: '学历要求', value: detail.edu_requirement },
-            { label: '专业要求', value: detail.major_requirement },
+            { label: t("学历要求"), value: detail.edu_requirement },
+            { label: t("专业要求"), value: detail.major_requirement },
           ]}
           schedule={[
-            { label: '开始时间', value: normalizeDateStr(detail.start_date) },
-            { label: '截止时间', value: normalizeDateStr(detail.deadline_text) },
-            { label: '更新时间', value: normalizeDateStr(detail.updated_at_src) },
+            { label: t("开始时间"), value: normalizeDateStr(detail.start_date) },
+            { label: t("截止时间"), value: normalizeDateStr(detail.deadline_text) },
+            { label: t("更新时间"), value: normalizeDateStr(detail.updated_at_src) },
           ]}
           links={[
-            { label: '投递入口', url: detail.apply_url, checkDead: true },
-            { label: '公告链接', url: detail.announce_url },
+            { label: t("投递入口"), url: detail.apply_url, checkDead: true },
+            { label: t("公告链接"), url: detail.announce_url },
           ]}
           applyWindow={(() => {
             const s = normalizeDateStr(detail.start_date)
@@ -1726,20 +1714,20 @@ export function CampusPage({
               : null
           })()}
           prep={{
-            examType: [detail.company_type, detail.batch, '校招'].filter(Boolean).join(' '),
+            examType: [detail.company_type, detail.batch, t("校招")].filter(Boolean).join(' '),
             province: detail.locations?.split(/[、,，;；/\s]/)[0] || null,
             deadline: getEffectiveDeadline(detail),
             icsUid: `campus-${detail.id}`,
-            icsSummary: `报名截止：${detail.company?.trim() || '校招岗位'}${detail.positions ? ` ${detail.positions.slice(0, 20)}` : ''}`,
+            icsSummary: tt`报名截止：${detail.company?.trim() || t("校招岗位")}${detail.positions ? ` ${detail.positions.slice(0, 20)}` : ''}`,
           }}
           related={
             relatedJobs.length > 0
               ? {
-                  title: '同公司其他岗位',
+                  title: t("同公司其他岗位"),
                   items: relatedJobs.map((j) => ({
                     key: String(j.id),
                     label: j.positions || j.batch || j.company || '-',
-                    sub: [j.locations, j.deadline_text ? `截止：${normalizeDateStr(j.deadline_text)}` : null]
+                    sub: [j.locations, j.deadline_text ? tt`截止：${normalizeDateStr(j.deadline_text)}` : null]
                       .filter(Boolean)
                       .join(' · '),
                   })),
@@ -1753,11 +1741,11 @@ export function CampusPage({
           similar={
             similarJobs.length > 0
               ? {
-                  title: '相似岗位（同行业·同城市）',
+                  title: t("相似岗位（同行业·同城市）"),
                   items: similarJobs.map((j) => ({
                     key: String(j.id),
                     label: [j.company, j.positions].filter(Boolean).join(' · ') || '-',
-                    sub: [j.locations, j.deadline_text ? `截止：${normalizeDateStr(j.deadline_text)}` : null]
+                    sub: [j.locations, j.deadline_text ? tt`截止：${normalizeDateStr(j.deadline_text)}` : null]
                       .filter(Boolean)
                       .join(' · '),
                   })),

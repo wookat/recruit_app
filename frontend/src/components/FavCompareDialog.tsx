@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -18,7 +19,7 @@ export function FavCompareDialog({
   open,
   onClose,
   columns,
-  title = '收藏对比',
+  title = t("收藏对比"),
 }: {
   open: boolean
   onClose: () => void
@@ -30,7 +31,7 @@ export function FavCompareDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[85vh] w-[95vw] gap-0 overflow-hidden p-0 sm:max-w-4xl">
         <DialogHeader className="border-b px-4 py-3">
-          <DialogTitle>{title}（{columns.length} 条）</DialogTitle>
+          <DialogTitle>{title}（{columns.length} {' '}{t("条）")}</DialogTitle>
         </DialogHeader>
         <div className="relative min-w-0 max-w-full">
           <div
@@ -41,8 +42,7 @@ export function FavCompareDialog({
             <thead>
               <tr>
                 <th className="sticky left-0 z-10 w-24 bg-popover p-2 text-left text-xs font-medium text-muted-foreground max-sm:pl-4">
-                  字段
-                </th>
+                  {t("字段")}{' '}</th>
                 {columns.map((c) => (
                   <th key={c.key} className="min-w-[160px] p-2 text-left align-top">
                     <div className="flex items-start justify-between gap-1">
@@ -50,7 +50,7 @@ export function FavCompareDialog({
                         <button
                           type="button"
                           className="line-clamp-2 cursor-pointer text-left font-semibold leading-snug underline-offset-2 hover:text-primary hover:underline"
-                          title="查看详情"
+                          title={t("查看详情")}
                           onClick={c.onOpenDetail}
                         >
                           {c.title}
@@ -65,7 +65,7 @@ export function FavCompareDialog({
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 shrink-0"
-                        aria-label="移出对比"
+                        aria-label={t("移出对比")}
                         onClick={c.onRemove}
                       >
                         <X className="h-3.5 w-3.5" />

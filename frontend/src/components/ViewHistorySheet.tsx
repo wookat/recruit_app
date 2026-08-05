@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { Briefcase, GraduationCap, History, Landmark, Trash2, X } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -12,9 +13,9 @@ import {
 } from '@/lib/viewHistory'
 
 const BOARD_LABELS: Record<HistoryBoard, string> = {
-  positions: '体制内',
-  campus: '校招',
-  bianzhi: '编制',
+  positions: t("体制内"),
+  campus: t("校招"),
+  bianzhi: t("编制"),
 }
 
 const BOARD_ICONS: Record<HistoryBoard, typeof Landmark> = {
@@ -26,12 +27,12 @@ const BOARD_ICONS: Record<HistoryBoard, typeof Landmark> = {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const min = Math.floor(diff / 60000)
-  if (min < 1) return '刚刚'
-  if (min < 60) return `${min} 分钟前`
+  if (min < 1) return t("刚刚")
+  if (min < 60) return tt`${min} 分钟前`
   const h = Math.floor(min / 60)
-  if (h < 24) return `${h} 小时前`
+  if (h < 24) return tt`${h} 小时前`
   const d = Math.floor(h / 24)
-  if (d < 30) return `${d} 天前`
+  if (d < 30) return tt`${d} 天前`
   return new Date(iso).toLocaleDateString()
 }
 
@@ -52,11 +53,10 @@ export function ViewHistorySheet({ open, onClose, onOpenJob }: Props) {
         <SheetHeader className="space-y-1.5 px-4 pt-6 sm:px-6">
           <SheetTitle className="flex items-center gap-2 pr-8 text-lg">
             <History className="h-5 w-5 text-primary" />
-            最近浏览
-            {history.length > 0 && <Badge variant="secondary">{history.length}</Badge>}
+            {t("最近浏览")}{' '}{history.length > 0 && <Badge variant="secondary">{history.length}</Badge>}
           </SheetTitle>
           <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span>记录最近查看的 {history.length > 0 ? '岗位' : '岗位（最多 30 条）'}，仅保存在本机</span>
+            <span>{t("记录最近查看的")}{' '}{history.length > 0 ? t("岗位") : t("岗位（最多 30 条）")}{t("，仅保存在本机")}</span>
             {history.length > 0 && (
               <Button
                 variant="ghost"
@@ -65,8 +65,7 @@ export function ViewHistorySheet({ open, onClose, onOpenJob }: Props) {
                 onClick={clearViewHistory}
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                清空
-              </Button>
+                {t("清空")}{' '}</Button>
             )}
           </div>
         </SheetHeader>
@@ -74,8 +73,8 @@ export function ViewHistorySheet({ open, onClose, onOpenJob }: Props) {
           {history.length === 0 ? (
             <EmptyState
               icon={History}
-              title="还没有浏览记录"
-              description="点开任意岗位详情后，会在这里留下最近 30 条记录，方便随时回看"
+              title={t("还没有浏览记录")}
+              description={t("点开任意岗位详情后，会在这里留下最近 30 条记录，方便随时回看")}
             />
           ) : (
             <ul className="space-y-1.5 py-2">
@@ -103,7 +102,7 @@ export function ViewHistorySheet({ open, onClose, onOpenJob }: Props) {
                       variant="ghost"
                       size="icon"
                       className="h-11 w-11 shrink-0 text-muted-foreground sm:h-8 sm:w-8"
-                      aria-label={`删除「${e.title}」的浏览记录`}
+                      aria-label={tt`删除「${e.title}」的浏览记录`}
                       onClick={() => removeViewHistory(e.board, e.id)}
                     >
                       <X className="h-3.5 w-3.5" />

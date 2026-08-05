@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import * as React from 'react'
 import { Check, ChevronDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -40,7 +41,7 @@ export function MultiSelect({
   groups,
   selected,
   onChange,
-  placeholder = '搜索选项…',
+  placeholder = t("搜索选项…"),
   triggerLabel,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false)
@@ -98,24 +99,24 @@ export function MultiSelect({
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              aria-label={label || triggerLabel || '筛选'}
+              aria-label={label || triggerLabel || t("筛选")}
               className="h-11 w-full justify-between px-3 text-left font-normal sm:h-9"
             >
               <span className="truncate">
                 {selected.length === 0
-                  ? triggerLabel || '全部'
+                  ? triggerLabel || t("全部")
                   : selected.length <= 2
                   ? selected.join('、')
                   : triggerLabel || label
                   ? `${triggerLabel || label} · ${selected.length}`
-                  : `已选 ${selected.length} 项`}
+                  : tt`已选 ${selected.length} 项`}
               </span>
               <div className="flex items-center gap-2">
                 {selected.length > 0 && (
                   <span
                     role="button"
-                    aria-label="清除已选"
-                    title="清除已选"
+                    aria-label={t("清除已选")}
+                    title={t("清除已选")}
                     onClick={clear}
                     className="group/clear -my-1 rounded-full p-1 hover:bg-destructive/10"
                   >
@@ -131,7 +132,7 @@ export function MultiSelect({
           <Command filter={pinyinCommandFilter}>
             <CommandInput placeholder={placeholder} />
             <CommandList className="max-h-64">
-              <CommandEmpty>无匹配选项</CommandEmpty>
+              <CommandEmpty>{t("无匹配选项")}</CommandEmpty>
               {options && <CommandGroup>{options.map(renderOption)}</CommandGroup>}
               {groups?.map((group, idx) => (
                 <React.Fragment key={group.label}>

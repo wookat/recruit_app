@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { TableSwipeHint } from './TableSwipeHint'
 import { memo, useMemo, useState, type ReactNode } from 'react'
 
@@ -64,26 +65,26 @@ function dedupExamType(title: string, examType: string | null | undefined): stri
 }
 
 const columns: ColumnDef<Position>[] = [
-  { accessorKey: 'employer', header: '用人单位/系统', size: 180 },
-  { accessorKey: 'year', header: '年份', size: 70 },
-  { accessorKey: 'job_type', header: '岗位类型', size: 90 },
+  { accessorKey: 'employer', header: t("用人单位/系统"), size: 180 },
+  { accessorKey: 'year', header: t("年份"), size: 70 },
+  { accessorKey: 'job_type', header: t("岗位类型"), size: 90 },
   {
     id: 'exam_type',
     accessorFn: (row) => row.exam_type_norm || row.exam_type,
-    header: '考试/招聘类型',
+    header: t("考试/招聘类型"),
     size: 130,
   },
-  { accessorKey: 'position_example', header: '岗位示例', size: 200 },
+  { accessorKey: 'position_example', header: t("岗位示例"), size: 200 },
   {
     id: 'edu_level_norm',
     accessorFn: (row) => row.edu_level_norm || row.edu_requirement,
-    header: '学历要求',
+    header: t("学历要求"),
     size: 110,
   },
-  { accessorKey: 'work_location', header: '工作地点', size: 150 },
-  { accessorKey: 'signup_time', header: '报名时间', size: 150 },
-  { accessorKey: 'exam_time', header: '考试时间', size: 160 },
-  { accessorKey: 'created_at', header: '更新', size: 100 },
+  { accessorKey: 'work_location', header: t("工作地点"), size: 150 },
+  { accessorKey: 'signup_time', header: t("报名时间"), size: 150 },
+  { accessorKey: 'exam_time', header: t("考试时间"), size: 160 },
+  { accessorKey: 'created_at', header: t("更新"), size: 100 },
 ]
 
 const SORTABLE_COLUMNS: Record<string, string> = {
@@ -231,8 +232,7 @@ export const PositionTable = memo(function PositionTable({
                     ),
                   )}
                   <TableHead className="w-32 sm:sticky sm:right-0 sm:border-l sm:bg-card sm:shadow-[-8px_0_12px_-6px_rgba(0,0,0,0.18)]">
-                    操作
-                  </TableHead>
+                    {t("操作")}{' '}</TableHead>
                 </TableRow>
               ))}
             </TableHeader>
@@ -252,8 +252,8 @@ export const PositionTable = memo(function PositionTable({
                   <TableCell colSpan={columns.length + 1} className="p-0">
                     <EmptyState
                       className="rounded-none border-0 bg-transparent"
-                      title="没有找到匹配的岗位"
-                      description="建议优先移除关键词，其次地区、类型筛选"
+                      title={t("没有找到匹配的岗位")}
+                      description={t("建议优先移除关键词，其次地区、类型筛选")}
                       action={emptyAction}
                     />
                   </TableCell>
@@ -369,8 +369,7 @@ export const PositionTable = memo(function PositionTable({
                             setSelected(row.original)
                           }}
                         >
-                          详情
-                        </Button>
+                          {t("详情")}{' '}</Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -382,13 +381,12 @@ export const PositionTable = memo(function PositionTable({
 
         <div className="flex flex-col items-center justify-between gap-3 border-t px-4 py-3 sm:flex-row">
           <div className="text-sm text-muted-foreground">
-            {totalPartial ? '至少 ' : '共 '}
-            <span className="font-medium text-foreground">{formatTotal(total, totalCapped)}</span> 条 · 第{' '}
+            {totalPartial ? t("至少 ") : t("共 ")}
+            <span className="font-medium text-foreground">{formatTotal(total, totalCapped)}</span> {' '}{t("条 · 第")}{' '}
             <span className="font-medium text-foreground">
               {page}/{totalPages}
             </span>{' '}
-            页
-          </div>
+            {t("页")}{' '}</div>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Button
               variant="outline"
@@ -396,7 +394,7 @@ export const PositionTable = memo(function PositionTable({
               className="h-8 w-8"
               onClick={() => onPageChange(1)}
               disabled={page <= 1}
-              aria-label="首页"
+              aria-label={t("首页")}
             >
               <ChevronsLeft className="h-4 w-4" />
             </Button>
@@ -406,7 +404,7 @@ export const PositionTable = memo(function PositionTable({
               className="h-8 w-8"
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
-              aria-label="上一页"
+              aria-label={t("上一页")}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -436,7 +434,7 @@ export const PositionTable = memo(function PositionTable({
               className="h-8 w-8"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
-              aria-label="下一页"
+              aria-label={t("下一页")}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -446,19 +444,18 @@ export const PositionTable = memo(function PositionTable({
               className="h-8 w-8"
               onClick={() => onPageChange(totalPages)}
               disabled={page >= totalPages}
-              aria-label="末页"
+              aria-label={t("末页")}
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
             <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
-              <SelectTrigger className="h-8 w-[100px]" aria-label="每页条数">
+              <SelectTrigger className="h-8 w-[100px]" aria-label={t("每页条数")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {[10, 20, 50, 100].map((n) => (
                   <SelectItem key={n} value={String(n)}>
-                    {n}条/页
-                  </SelectItem>
+                    {n}{t("条/页")}{' '}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -488,7 +485,7 @@ function HeaderFilter({ config }: { config: ColumnFilterConfig }) {
           <Button
             variant="ghost"
             size="icon-xs"
-            aria-label={`筛选${config.label}`}
+            aria-label={tt`筛选${config.label}`}
             className={cn('relative h-6 w-6', active ? 'text-primary' : 'text-muted-foreground')}
           >
             <ListFilter className="h-3.5 w-3.5" />
@@ -521,8 +518,7 @@ function HeaderFilter({ config }: { config: ColumnFilterConfig }) {
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => config.onChange([])}>
-              清除{config.label}筛选
-            </DropdownMenuItem>
+              {t("清除")}{config.label}{t("筛选")}{' '}</DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>

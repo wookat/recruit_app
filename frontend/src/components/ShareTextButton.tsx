@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { Check, ClipboardCopy, Link2, QrCode, Share2, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -50,23 +51,22 @@ function QrShareDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <QrCode className="h-4 w-4 text-primary" />
-            扫码打开岗位详情
-          </DialogTitle>
+            {t("扫码打开岗位详情")}{' '}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center gap-2">
           {error ? (
-            <p className="py-8 text-sm text-muted-foreground">二维码生成失败，请重试</p>
+            <p className="py-8 text-sm text-muted-foreground">{t("二维码生成失败，请重试")}</p>
           ) : dataUrl ? (
             <img
               src={dataUrl}
-              alt={`岗位深链二维码：${title || url}`}
+              alt={tt`岗位深链二维码：${title || url}`}
               className="h-56 w-56 rounded-lg border border-border bg-white p-1"
             />
           ) : (
             <div className="h-56 w-56 animate-pulse rounded-lg bg-muted" />
           )}
           {title && <p className="line-clamp-2 text-center text-xs text-muted-foreground">{title}</p>}
-          <p className="text-xs text-muted-foreground">手机扫码直达；长按图片可保存分享</p>
+          <p className="text-xs text-muted-foreground">{t("手机扫码直达；长按图片可保存分享")}</p>
         </div>
       </DialogContent>
     </Dialog>
@@ -102,8 +102,8 @@ export function ShareMenuButton({
           <Button
             variant="ghost"
             size="icon"
-            title="分享"
-            aria-label="分享"
+            title={t("分享")}
+            aria-label={t("分享")}
             className={cn(
               'relative h-11 w-11 text-muted-foreground hover:text-primary sm:h-8 sm:w-8',
               className,
@@ -113,7 +113,7 @@ export function ShareMenuButton({
             {copied ? <Check className="h-4 w-4 text-green-600 dark:text-green-400" /> : <Share2 className="h-4 w-4" />}
             {copied && (
               <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-0.5 text-[11px] text-background shadow">
-                {copied === 'link' ? '链接已复制' : '已复制'}
+                {copied === 'link' ? t("链接已复制") : t("已复制")}
               </span>
             )}
           </Button>
@@ -128,8 +128,7 @@ export function ShareMenuButton({
           }}
         >
           <Link2 className="h-4 w-4" />
-          复制链接
-        </DropdownMenuItem>
+          {t("复制链接")}{' '}</DropdownMenuItem>
         <DropdownMenuItem
           className="min-h-11 gap-2 sm:min-h-8"
           onClick={async () => {
@@ -138,12 +137,10 @@ export function ShareMenuButton({
           }}
         >
           <ClipboardCopy className="h-4 w-4" />
-          复制分享文本
-        </DropdownMenuItem>
+          {t("复制分享文本")}{' '}</DropdownMenuItem>
         <DropdownMenuItem className="min-h-11 gap-2 sm:min-h-8" onClick={() => setQrOpen(true)}>
           <QrCode className="h-4 w-4" />
-          二维码分享
-        </DropdownMenuItem>
+          {t("二维码分享")}{' '}</DropdownMenuItem>
         {canNativeShare && (
           <DropdownMenuItem
             className="min-h-11 gap-2 sm:min-h-8"
@@ -152,8 +149,7 @@ export function ShareMenuButton({
             }}
           >
             <Smartphone className="h-4 w-4" />
-            系统分享
-          </DropdownMenuItem>
+            {t("系统分享")}{' '}</DropdownMenuItem>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
@@ -169,8 +165,8 @@ export function ShareTextButton({ text, className }: { text: string; className?:
     <Button
       variant="ghost"
       size="icon"
-      title="复制分享文本"
-      aria-label="复制分享文本"
+      title={t("复制分享文本")}
+      aria-label={t("复制分享文本")}
       className={cn('relative h-11 w-11 text-muted-foreground hover:text-primary sm:h-8 sm:w-8', className)}
       onClick={async (e) => {
         e.stopPropagation()
@@ -182,8 +178,7 @@ export function ShareTextButton({ text, className }: { text: string; className?:
       {copied ? <Check className="h-4 w-4 text-green-600 dark:text-green-400" /> : <Share2 className="h-4 w-4" />}
       {copied && (
         <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-0.5 text-[11px] text-background shadow">
-          已复制
-        </span>
+          {t("已复制")}{' '}</span>
       )}
     </Button>
   )
@@ -203,10 +198,10 @@ export function buildShareText(parts: {
   const head = `${parts.org ? `【${parts.org}】` : ''}${parts.title ?? ''}`.trim()
   if (head) segs.push(head)
   if (parts.location) segs.push(parts.location)
-  if (parts.deadline) segs.push(`截止:${parts.deadline}`)
+  if (parts.deadline) segs.push(tt`截止:${parts.deadline}`)
   if (parts.deepLink) {
     segs.push(parts.deepLink)
-    if (parts.url) segs.push(`官方公告:${parts.url}`)
+    if (parts.url) segs.push(tt`官方公告:${parts.url}`)
   } else if (parts.url) {
     segs.push(parts.url)
   }

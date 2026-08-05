@@ -1,3 +1,4 @@
+import { t, tt } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { fetchDeadlines, type DeadlineEntry, type Position } from '@/api'
 import { LazyPositionSheet } from './LazyPositionSheet'
@@ -17,8 +18,8 @@ function entryDaysLeft(e: DeadlineEntry): number | null {
 
 function daysLeftLabel(n: number | null, fallback: string): string {
   if (n === null) return fallback
-  if (n <= 0) return '今日截止'
-  return `剩 ${n} 天`
+  if (n <= 0) return t("今日截止")
+  return tt`剩 ${n} 天`
 }
 
 function shortDate(s: string): string {
@@ -63,10 +64,8 @@ export function DeadlinesCard({ days = 7, limit = 20, defaultExpanded = false }:
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm font-medium">
             <AlarmClock className="h-4 w-4 text-amber-500" />
-            报名即将截止
-            <Badge variant="secondary" className="font-normal">
-              {entries.length} 条
-            </Badge>
+            {t("报名即将截止")}{' '}<Badge variant="secondary" className="font-normal">
+              {entries.length} {' '}{t("条")}{' '}</Badge>
           </div>
           {entries.length > COLLAPSED_COUNT && (
             <Button
@@ -77,11 +76,11 @@ export function DeadlinesCard({ days = 7, limit = 20, defaultExpanded = false }:
             >
               {expanded ? (
                 <>
-                  收起 <ChevronUp className="h-3.5 w-3.5" />
+                  {t("收起")}{' '}<ChevronUp className="h-3.5 w-3.5" />
                 </>
               ) : (
                 <>
-                  展开 <ChevronDown className="h-3.5 w-3.5" />
+                  {t("展开")}{' '}<ChevronDown className="h-3.5 w-3.5" />
                 </>
               )}
             </Button>

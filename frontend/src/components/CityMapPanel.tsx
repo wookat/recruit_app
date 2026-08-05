@@ -1,3 +1,4 @@
+import { tt } from '@/lib/i18n'
 import { useEffect, useRef, useState } from 'react'
 import * as echarts from 'echarts/core'
 import { ScatterChart, EffectScatterChart } from 'echarts/charts'
@@ -59,7 +60,7 @@ export function CityMapPanel({ cities, onSelectCity, selected }: Props) {
       tooltip: {
         trigger: 'item',
         formatter: (p: { name: string; value: number[] }) =>
-          `${p.name}：${p.value[2].toLocaleString()} 个岗位<br/><span style="font-size:11px;opacity:.7">点击筛选该城市</span>`,
+          tt`${p.name}：${p.value[2].toLocaleString()} 个岗位<br/><span style="font-size:11px;opacity:.7">点击筛选该城市</span>`,
       },
       geo: {
         map: 'china',

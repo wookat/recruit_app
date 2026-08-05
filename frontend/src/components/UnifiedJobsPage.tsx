@@ -96,6 +96,7 @@ export function UnifiedJobsPage({ onOpenJob }: UnifiedJobsPageProps) {
 
   const [items, setItems] = useState<UnifiedJob[]>([])
   const [total, setTotal] = useState(0)
+  const [totalCapped, setTotalCapped] = useState(false)
   const [loading, setLoading] = useState(true)
   const [exhausted, setExhausted] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
@@ -145,6 +146,7 @@ export function UnifiedJobsPage({ onOpenJob }: UnifiedJobsPageProps) {
         const res = await fetchUnifiedJobs({ ...params, page, page_size: PAGE_SIZE }, controller.signal)
         if (controller.signal.aborted) return
         setTotal(res.total)
+        setTotalCapped(!!res.total_capped)
         if (res.items.length < PAGE_SIZE) setExhausted(true)
         setItems((prev) => {
           if (page === 1) return res.items
@@ -166,6 +168,7 @@ export function UnifiedJobsPage({ onOpenJob }: UnifiedJobsPageProps) {
     const timer = setTimeout(() => {
       setItems([])
       setTotal(0)
+      setTotalCapped(false)
       setExhausted(false)
       parentRef.current?.scrollTo({ top: 0 })
       loadPage(1)
@@ -410,7 +413,7 @@ export function UnifiedJobsPage({ onOpenJob }: UnifiedJobsPageProps) {
               {t('已加载')}{' '}
               <span className="font-medium text-foreground">{items.length.toLocaleString()}</span>
               {' / '}
-              {total.toLocaleString()} {t('条 · 滚动自动加载')}
+              {total.toLocaleString()}{totalCapped ? '+' : ''} {t('条 · 滚动自动加载')}
             </span>
             {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           </div>

@@ -35,8 +35,13 @@ class UnifiedJobOut(BaseModel):
     created_at: Optional[datetime] = None
 
 
+#: total 计数上限（与各板块 total_capped 约定一致，避免全表 count 拖慢列表接口）
+COUNT_CAP = 100_000
+
+
 class UnifiedJobList(BaseModel):
     total: int
+    total_capped: bool = False
     page: int
     page_size: int
     items: List[UnifiedJobOut]
@@ -111,8 +116,14 @@ def list_jobs(
         deadline_from, deadline_to, hide_expired,
     )
     total = db.execute(
-        text(f"SELECT count(*) FROM unified_jobs{where}"), params
+        text(
+            f"SELECT count(*) FROM (SELECT 1 FROM unified_jobs{where} LIMIT :cap) t"
+        ),
+        {**params, "cap": COUNT_CAP + 1},
     ).scalar() or 0
+    total_capped = total > COUNT_CAP
+    if total_capped:
+        total = COUNT_CAP
     if sort == "deadline_asc":
         order = "ORDER BY deadline_date ASC NULLS LAST, created_at DESC, source_board, source_id DESC"
     else:
@@ -126,6 +137,7 @@ def list_jobs(
     ).mappings().all()
     return {
         "total": total,
+        "total_capped": total_capped,
         "page": page,
         "page_size": page_size,
         "items": [UnifiedJobOut(**dict(r)).model_dump() for r in rows],

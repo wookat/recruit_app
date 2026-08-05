@@ -321,6 +321,7 @@ export interface UnifiedJob {
 
 export interface UnifiedJobList {
   total: number
+  total_capped?: boolean
   page: number
   page_size: number
   items: UnifiedJob[]

@@ -28,6 +28,8 @@ from models import BianzhiJob, CampusJob, PushSubscription
 from pywebpush import webpush, WebPushException
 import refresh_feishu
 import collect_ciic
+import enrich_ciic
+import enrich_ncss
 from seo import EXAM_TYPES, PROVINCES, SITE
 import digest
 import collect_iguopin
@@ -112,6 +114,18 @@ def collect_ciic_jobs(self):
         return collect_ciic.collect()
     except Exception as exc:
         raise self.retry(exc=exc)
+
+
+@celery_app.task(bind=True, max_retries=1, default_retry_delay=600)
+def enrich_new_details(self):
+    """每日对当日新采集的中智/NCSS 岗位补全详情字段（截止日期/行业，限批量控时长）。"""
+    day = datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
+    ciic = enrich_ciic.enrich(
+        limit=1500, audit_path=os.path.join(EXPORTS_DIR, f"enrich_ciic_{day}.jsonl"))
+    ncss = enrich_ncss.enrich(
+        limit=1500, audit_path=os.path.join(EXPORTS_DIR, f"enrich_ncss_{day}.jsonl"))
+    return {"ciic": {k: ciic.get(k) for k in ("scanned", "deadline_filled", "industry_filled", "error")},
+            "ncss": {k: ncss.get(k) for k in ("scanned", "industry_filled", "error")}}
 
 
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=600)

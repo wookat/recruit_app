@@ -51,6 +51,10 @@ celery_app.conf.update(
             "task": "tasks.submit_indexnow",
             "schedule": crontab(hour=7, minute=10),  # 每天采集入库后向 IndexNow 提交 SEO 页 URL
         },
+        "enrich-new-details": {
+            "task": "tasks.enrich_new_details",
+            "schedule": crontab(hour=6, minute=40),  # 采集后补全中智/NCSS 新岗位详情字段（截止/行业）
+        },
         "data-quality-audit": {
             "task": "tasks.data_quality_audit",
             "schedule": crontab(hour=7, minute=0),  # 采集入库后做数据质量审计+deadline 回填

@@ -130,6 +130,8 @@ INDEXES = [
        ON unified_jobs (created_at DESC, source_board, source_id)""",
     """CREATE INDEX IF NOT EXISTS idx_uj_prov_city
        ON unified_jobs (province, city)""",
+    """CREATE INDEX IF NOT EXISTS idx_uj_city
+       ON unified_jobs (city)""",
     """CREATE INDEX IF NOT EXISTS idx_uj_edu
        ON unified_jobs (edu_level_norm)""",
     """CREATE INDEX IF NOT EXISTS idx_uj_deadline
@@ -179,6 +181,8 @@ def main():
             print(stmt.split("\n")[0].strip())
             conn.execute(text(stmt))
             conn.commit()
+        conn.execute(text("ANALYZE unified_jobs"))
+        conn.commit()
     print("done")
 
 

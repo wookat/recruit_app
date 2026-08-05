@@ -795,6 +795,7 @@ def refresh_unified_jobs():
             conn.execute(sql_text(
                 "REFRESH MATERIALIZED VIEW CONCURRENTLY unified_jobs"
             ))
+            conn.execute(sql_text("ANALYZE unified_jobs"))
             conn.commit()
     invalidated = cache.invalidate_prefixes("jobs", "jobs_filters")
     return {"status": "ok", "cache_invalidated": invalidated}

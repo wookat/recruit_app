@@ -70,9 +70,8 @@ def _build_where(
         clauses.append("province = ANY(:provinces)")
         params["provinces"] = list(province)
     if city:
-        clauses.append("(city = ANY(:cities) OR work_location ILIKE ANY(:city_pats))")
+        clauses.append("city = ANY(:cities)")
         params["cities"] = list(city)
-        params["city_pats"] = [f"%{c}%" for c in city]
     if edu:
         clauses.append("edu_level_norm = ANY(:edus)")
         params["edus"] = list(edu)

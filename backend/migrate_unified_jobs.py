@@ -28,11 +28,13 @@ CASE
 END
 """
 
-#: 从多值地点原文中取首个词并去掉尾缀「市」（如「北京、上海」→「北京」）
-FIRST_LOC_SQL = (
-    "nullif(regexp_replace((regexp_split_to_array(coalesce({col}, ''), "
-    "'[|、,，/;；[:space:]]+'))[1], '市$', ''), '')"
+#: 多值地点原文拆词（支持「北京、上海」「山东-青岛」等格式）
+LOC_ARR_SQL = (
+    "regexp_split_to_array(coalesce({col}, ''), '[-|、,，/;；[:space:]]+')"
 )
+
+#: 去掉尾缀「市/省/自治区」后的单个地名词
+CLEAN_LOC_SQL = "nullif(regexp_replace(coalesce({tok}, ''), '(市|省|自治区)$', ''), '')"
 
 CREATE_VIEW = f"""
 CREATE MATERIALIZED VIEW unified_jobs AS
@@ -76,8 +78,19 @@ SELECT
   concat_ws(' ', c.company, c.positions, c.industry, c.major_requirement, c.locations),
   c.created_at
 FROM campus_jobs c
-LEFT JOIN unified_city_province ucp
-  ON ucp.city = {FIRST_LOC_SQL.format(col='c.locations')}
+LEFT JOIN LATERAL (
+  SELECT {LOC_ARR_SQL.format(col='c.locations')} AS a
+) la ON true
+LEFT JOIN LATERAL (
+  SELECT
+    coalesce(u1.city, u2.city) AS city,
+    coalesce(u1.province, u2.province,
+             (SELECT min(x.province) FROM unified_city_province x
+              WHERE x.province = {CLEAN_LOC_SQL.format(tok='la.a[1]')})) AS province
+  FROM (SELECT 1) _
+  LEFT JOIN unified_city_province u1 ON u1.city = {CLEAN_LOC_SQL.format(tok='la.a[1]')}
+  LEFT JOIN unified_city_province u2 ON u2.city = {CLEAN_LOC_SQL.format(tok='la.a[2]')}
+) ucp ON true
 UNION ALL
 SELECT
   '编制'::text,
@@ -98,8 +111,15 @@ SELECT
   concat_ws(' ', b.employer, b.job_type, b.work_location, b.major_requirement),
   b.created_at
 FROM bianzhi_jobs b
-LEFT JOIN unified_city_province ucp
-  ON ucp.city = {FIRST_LOC_SQL.format(col='b.work_location')}
+LEFT JOIN LATERAL (
+  SELECT {LOC_ARR_SQL.format(col='b.work_location')} AS a
+) lb ON true
+LEFT JOIN LATERAL (
+  SELECT coalesce(u1.city, u2.city) AS city, coalesce(u1.province, u2.province) AS province
+  FROM (SELECT 1) _
+  LEFT JOIN unified_city_province u1 ON u1.city = {CLEAN_LOC_SQL.format(tok='lb.a[1]')}
+  LEFT JOIN unified_city_province u2 ON u2.city = {CLEAN_LOC_SQL.format(tok='lb.a[2]')}
+) ucp ON true
 """
 
 INDEXES = [

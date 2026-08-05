@@ -105,7 +105,7 @@ def list_jobs(
     deadline_from: Optional[date] = None,
     deadline_to: Optional[date] = None,
     hide_expired: bool = False,
-    sort: str = Query("created_desc", pattern="^(created_desc|deadline_asc)$"),
+    sort: str = Query("recommended", pattern="^(recommended|created_desc|deadline_asc)$"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -124,9 +124,22 @@ def list_jobs(
     if total_capped:
         total = COUNT_CAP
     if sort == "deadline_asc":
-        order = "ORDER BY deadline_date ASC NULLS LAST, created_at DESC, source_board, source_id DESC"
-    else:
+        # 未截止在前（按截止升序），已截止沉底，无截止日期最后
+        order = (
+            "ORDER BY CASE WHEN deadline_date >= CURRENT_DATE THEN 0 "
+            "WHEN deadline_date IS NOT NULL THEN 1 ELSE 2 END, "
+            "deadline_date ASC NULLS LAST, created_at DESC, source_board, source_id DESC"
+        )
+    elif sort == "created_desc":
         order = "ORDER BY created_at DESC NULLS LAST, source_board, source_id DESC"
+    else:
+        # recommended：按收录日期倒序，同日内 体制内/编制 与 央国企/机关事业单位 类校招优先
+        order = (
+            "ORDER BY created_at::date DESC NULLS LAST, "
+            "CASE WHEN source_board IN ('体制内', '编制') THEN 0 "
+            "WHEN coalesce(category, '') ~ '(国有|国企|央企|机关|事业单位)' THEN 1 ELSE 2 END, "
+            "created_at DESC, source_board, source_id DESC"
+        )
     rows = db.execute(
         text(
             f"SELECT {COLUMNS} FROM unified_jobs{where} {order} "

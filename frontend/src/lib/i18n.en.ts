@@ -1157,4 +1157,10 @@ export const EN: Record<string, string> = {
   '全部岗位 - 体制内/校招/编制统一检索 | {0}': 'All Jobs - Unified civil service / campus / public sector search | {0}',
   '体制内岗位、校招信息、编制公告三大板块合并为一个统一列表，一套筛选横跨全部岗位：板块、省市、学历、关键词、截止日期一次搜定。':
     'Civil service positions, campus recruitment and public sector announcements merged into one unified list with a single filter set: board, province/city, education, keyword and deadline in one search.',
+  '体制内优先': 'Public sector first',
+  '搜索岗位 / 单位 / 公司，自动搜索，回车立即搜索': 'Search jobs / employers / companies — auto search, Enter to search now',
+  '全部岗位筛选': 'All jobs filters',
+  '折叠多城市岗位': 'Collapse multi-city jobs',
+  '跳转原公告页': 'Open original announcement',
+  '{0} 个城市': '{0} cities',
 }

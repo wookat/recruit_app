@@ -43,6 +43,10 @@ celery_app.conf.update(
             "task": "tasks.refresh_feishu_data",
             "schedule": crontab(hour=6, minute=20),  # 每天刷新飞书校招/编制表格增量
         },
+        "refresh-unified-jobs": {
+            "task": "tasks.refresh_unified_jobs",
+            "schedule": crontab(hour=6, minute=50),  # 采集/enrich 后刷新统一岗位物化视图并失效 /api/jobs 缓存
+        },
         "refresh-hot-cache": {
             "task": "tasks.refresh_hot_cache",
             "schedule": crontab(hour=6, minute=30),  # 采集入库后刷新 stats/filters 热缓存

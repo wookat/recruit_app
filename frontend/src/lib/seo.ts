@@ -45,7 +45,7 @@ function applyAlternates() {
 }
 
 export function applySeo(
-  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar' | 'updates' | 'search',
+  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar' | 'updates' | 'search' | 'all',
   preset?: string,
   keyword?: string,
 ) {
@@ -54,7 +54,10 @@ export function applySeo(
   let desc = t(
     '上岸雷达：全国体制内岗位一站式检索平台，覆盖公务员、事业编、军队文职、国企招聘，支持专业、学历、地区快速匹配，助你找准上岸方向。',
   )
-  if (mode === 'calendar') {
+  if (mode === 'all') {
+    title = tt`全部岗位 - 体制内/校招/编制统一检索 | ${SITE}`
+    desc = t('体制内岗位、校招信息、编制公告三大板块合并为一个统一列表，一套筛选横跨全部岗位：板块、省市、学历、关键词、截止日期一次搜定。')
+  } else if (mode === 'calendar') {
     title = tt`截止日历 - ${SITE}`
     desc = t('未来 60 天校招与编制公告报名截止汇总日历，按日期查看当日截止岗位，不错过每一个报名窗口。')
   } else if (mode === 'search') {

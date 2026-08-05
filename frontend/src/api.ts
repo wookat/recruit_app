@@ -297,6 +297,70 @@ export function fetchBianzhiTimeline(): Promise<CampusTimeline | null> {
   return bianzhiTimelinePromise
 }
 
+// ---------- 全部岗位（统一聚合列表：体制内 + 校招 + 编制） ----------
+export type UnifiedBoard = '体制内' | '校招' | '编制'
+
+export interface UnifiedJob {
+  source_board: UnifiedBoard
+  source_id: number
+  title: string | null
+  employer: string | null
+  category: string | null
+  edu_level_norm: string | null
+  major: string | null
+  province: string | null
+  city: string | null
+  work_location: string | null
+  deadline_date: string | null
+  announce_url: string | null
+  apply_url: string | null
+  industry: string | null
+  grad_years: string | null
+  created_at: string | null
+}
+
+export interface UnifiedJobList {
+  total: number
+  page: number
+  page_size: number
+  items: UnifiedJob[]
+}
+
+export interface UnifiedJobParams {
+  keyword?: string
+  board?: string[]
+  province?: string[]
+  city?: string[]
+  edu?: string[]
+  due_within_days?: number
+  deadline_from?: string
+  deadline_to?: string
+  hide_expired?: boolean
+  sort?: 'created_desc' | 'deadline_asc'
+  page?: number
+  page_size?: number
+}
+
+export interface UnifiedJobFilters {
+  boards: Record<string, number>
+  provinces: Record<string, number>
+  cities: Record<string, number>
+  city_provinces: Record<string, string>
+  edu_levels: Record<string, number>
+}
+
+export async function fetchUnifiedJobs(params: UnifiedJobParams, signal?: AbortSignal): Promise<UnifiedJobList> {
+  const res = await axios.get(`${API_BASE}/api/jobs?${toQuery(params)}`, { signal })
+  return res.data
+}
+
+export async function fetchUnifiedJobFilters(): Promise<UnifiedJobFilters | null> {
+  return axios
+    .get(`${API_BASE}/api/jobs/filters`)
+    .then((r) => r.data)
+    .catch(() => null)
+}
+
 export type MatchLevel = 'exact' | 'semantic' | 'unlimited' | 'none' | 'unset'
 
 export interface MatchReasons {

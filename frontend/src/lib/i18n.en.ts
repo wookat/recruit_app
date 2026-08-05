@@ -1143,4 +1143,18 @@ export const EN: Record<string, string> = {
   '2026届': 'Class of 2026',
   '2027届': 'Class of 2027',
   '民企': 'Private company',
+  '全部岗位': 'All jobs',
+  '体制内 · 校招 · 编制 三大板块合并检索': 'Civil service · Campus · Public sector, all in one list',
+  '最新收录': 'Newest first',
+  '30天内截止': 'Due in 30 days',
+  '搜索岗位 / 单位 / 公司…': 'Search jobs / employers / companies…',
+  '关键词搜索': 'Keyword search',
+  '试试减少筛选条件或更换关键词': 'Try fewer filters or a different keyword',
+  '岗位 / 单位': 'Job / Employer',
+  '类别': 'Category',
+  '打开公告链接': 'Open announcement',
+  '体制内/校招/编制合并检索': 'Civil service / campus / public sector combined search',
+  '全部岗位 - 体制内/校招/编制统一检索 | {0}': 'All Jobs - Unified civil service / campus / public sector search | {0}',
+  '体制内岗位、校招信息、编制公告三大板块合并为一个统一列表，一套筛选横跨全部岗位：板块、省市、学历、关键词、截止日期一次搜定。':
+    'Civil service positions, campus recruitment and public sector announcements merged into one unified list with a single filter set: board, province/city, education, keyword and deadline in one search.',
 }

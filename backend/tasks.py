@@ -11,7 +11,7 @@ import pandas as pd
 from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session
 from celery_app import celery_app
-from database import SessionLocal
+from database import SessionLocal, engine
 from ingest import ingest_positions_df
 from models import CrawlRun
 import check_links
@@ -35,6 +35,8 @@ import digest
 import collect_iguopin
 import collect_ncss
 import import_guopin_2027
+import cache
+import migrate_unified_jobs
 from cache import get_redis
 from etl.normalize_v2 import parse_signup_deadline_v2
 from recruit_parser import (
@@ -777,6 +779,26 @@ def refresh_feishu_data():
     except Exception as exc:  # noqa: BLE001
         results["hot_keywords_warm"] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
     return results
+
+
+@celery_app.task
+def refresh_unified_jobs():
+    """每日采集入库后刷新 unified_jobs 物化视图并失效 /api/jobs 缓存。"""
+    with engine.connect() as conn:
+        conn.execute(sql_text("SET statement_timeout = 0"))
+        exists = conn.execute(sql_text(
+            "SELECT 1 FROM pg_matviews WHERE matviewname = 'unified_jobs'"
+        )).scalar()
+        if not exists:
+            migrate_unified_jobs.main()
+        else:
+            conn.execute(sql_text(
+                "REFRESH MATERIALIZED VIEW CONCURRENTLY unified_jobs"
+            ))
+            conn.execute(sql_text("ANALYZE unified_jobs"))
+            conn.commit()
+    invalidated = cache.invalidate_prefixes("jobs", "jobs_filters")
+    return {"status": "ok", "cache_invalidated": invalidated}
 
 
 @celery_app.task

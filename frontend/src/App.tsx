@@ -6,7 +6,7 @@ import { LazyPositionSheet } from '@/components/LazyPositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BookOpen, Briefcase, CalendarDays, History, Languages, Moon, Search, Settings, Sparkles, Star, Sun } from 'lucide-react'
+import { BookOpen, Briefcase, CalendarDays, History, Languages, Layers, Moon, Search, Settings, Sparkles, Star, Sun } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
@@ -67,6 +67,9 @@ const RecentUpdatesPage = lazy(() =>
 const SearchResultsPage = lazy(() =>
   lazyRetry(() => import('@/components/SearchResultsPage').then((m) => ({ default: m.SearchResultsPage }))),
 )
+const UnifiedJobsPage = lazy(() =>
+  lazyRetry(() => import('@/components/UnifiedJobsPage').then((m) => ({ default: m.UnifiedJobsPage }))),
+)
 
 const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
 
@@ -100,8 +103,11 @@ const BIANZHI_CROSS = [
   { key: 'campus:noexam', label: t("免笔试") },
 ]
 
+//: 「全部岗位」页的 URL 深链参数（UnifiedJobsPage 内维护）
+const ALLJOBS_URL_KEYS = ['ajkw', 'ajb', 'ajp', 'ajc', 'aje', 'ajdue', 'ajhexp', 'ajsort', 'ajview']
+
 interface Section {
-  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar' | 'updates' | 'search'
+  mode: 'positions' | 'campus' | 'bianzhi' | 'calendar' | 'updates' | 'search' | 'all'
   preset?: string
   keyword?: string
 }
@@ -112,6 +118,7 @@ function initialSection(): Section {
   if (board === 'campus' || board === 'bianzhi') {
     return { mode: board, preset: q.get('bpreset') || undefined }
   }
+  if (board === 'all') return { mode: 'all' }
   if (board === 'calendar') return { mode: 'calendar' }
   if (board === 'updates') return { mode: 'updates' }
   if (board === 'search') {
@@ -127,6 +134,11 @@ function syncSectionUrl(section: Section) {
   if (section.mode === 'search') {
     q.set('board', 'search')
     q.set('q', section.keyword || '')
+    for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bcity', 'bkw', 'bedu', 'cedu', 'cfrom', 'cto', 'bfrom', 'bto', 'hexp', 'hseen', 'cview', 'ub', 'cboard']) q.delete(k)
+    for (const k of POSITION_URL_KEYS) q.delete(k)
+    for (const k of ALLJOBS_URL_KEYS) q.delete(k)
+  } else if (section.mode === 'all') {
+    q.set('board', 'all')
     for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bcity', 'bkw', 'bedu', 'cedu', 'cfrom', 'cto', 'bfrom', 'bto', 'hexp', 'hseen', 'cview', 'ub', 'cboard']) q.delete(k)
     for (const k of POSITION_URL_KEYS) q.delete(k)
   } else if (section.mode === 'positions') {
@@ -150,6 +162,7 @@ function syncSectionUrl(section: Section) {
     q.delete('bto')
     q.delete('cview')
     q.delete('ub')
+    for (const k of ALLJOBS_URL_KEYS) q.delete(k)
   } else if (section.mode === 'calendar' || section.mode === 'updates') {
     q.set('board', section.mode)
     for (const k of ['bpreset', 'due', 'city', 'ctype', 'prov', 'bcity', 'bkw', 'bedu', 'cedu', 'cfrom', 'cto', 'bfrom', 'bto', 'hexp', 'hseen']) q.delete(k)
@@ -160,6 +173,7 @@ function syncSectionUrl(section: Section) {
       q.delete('ub')
     }
     for (const k of POSITION_URL_KEYS) q.delete(k)
+    for (const k of ALLJOBS_URL_KEYS) q.delete(k)
   } else {
     if (q.get('board') !== section.mode) {
       q.delete('hexp')
@@ -168,6 +182,7 @@ function syncSectionUrl(section: Section) {
     q.set('board', section.mode)
     q.delete('cview')
     q.delete('ub')
+    for (const k of ALLJOBS_URL_KEYS) q.delete(k)
     for (const k of POSITION_URL_KEYS) {
       if (k !== 'hexp') q.delete(k)
     }
@@ -549,6 +564,20 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
+            className={`min-h-11 gap-1.5 px-2 sm:min-h-8 ${section.mode === 'all' ? 'text-primary' : ''}`}
+            aria-label={t("全部岗位")}
+            title={t("体制内/校招/编制合并检索")}
+            onClick={() => {
+              setSection(section.mode === 'all' ? { mode: 'positions' } : { mode: 'all' })
+              window.scrollTo({ top: 0 })
+            }}
+          >
+            <Layers className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("全部岗位")}</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             className={`hidden min-h-11 gap-1.5 px-2 sm:min-h-8 md:inline-flex ${section.mode === 'updates' ? 'text-primary' : ''}`}
             aria-label={t("今日更新")}
             title={t("近 7 天新增岗位")}
@@ -702,6 +731,9 @@ export default function App() {
                 onOpenBoard={openSearchBoard}
                 onOpenJob={openSearchJob}
               />
+            )}
+            {tab !== 'admin' && section.mode === 'all' && (
+              <UnifiedJobsPage onOpenJob={(board, id) => openSearchJob(board, id, '')} />
             )}
             {tab !== 'admin' && section.mode === 'calendar' && <CalendarPage />}
             {tab !== 'admin' && section.mode === 'updates' && (

@@ -28,6 +28,7 @@ import share_meta
 from admin import require_admin, router as admin_router
 from campus import router as campus_router
 from bianzhi import router as bianzhi_router
+from jobs import router as jobs_router
 from match import router as match_router
 from push import router as push_router
 from seo import router as seo_router
@@ -70,6 +71,7 @@ app.add_middleware(
 app.include_router(admin_router)
 app.include_router(campus_router)
 app.include_router(bianzhi_router)
+app.include_router(jobs_router)
 app.include_router(match_router)
 app.include_router(push_router)
 app.include_router(seo_router)

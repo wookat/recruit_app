@@ -83,7 +83,8 @@ def parse_industry(html: str) -> tuple:
     return "", ""
 
 
-def enrich(dry_run: bool = False, limit: int = 0, audit_path: str = "") -> dict:
+def enrich(dry_run: bool = False, limit: int = 0, audit_path: str = "",
+           days: int = 0) -> dict:
     db = SessionLocal()
     audit_path = audit_path or (
         f"enrich_ncss_audit_{datetime.now():%Y%m%d_%H%M%S}.jsonl")
@@ -93,9 +94,13 @@ def enrich(dry_run: bool = False, limit: int = 0, audit_path: str = "") -> dict:
         rows = db.execute(text(
             "SELECT id, announce_url, industry FROM campus_jobs "
             "WHERE source_table = :st AND (industry IS NULL OR industry = '') "
-            "AND announce_url LIKE 'https://job.ncss.cn/%' ORDER BY id"
+            "AND announce_url LIKE 'https://job.ncss.cn/%'"
+            + (" AND created_at >= now() - make_interval(days => :days)" if days else "")
+            + " ORDER BY id"
             + (" LIMIT :lim" if limit else "")),
-            {"st": SOURCE_TABLE, **({"lim": limit} if limit else {})}).fetchall()
+            {"st": SOURCE_TABLE,
+             **({"lim": limit} if limit else {}),
+             **({"days": days} if days else {})}).fetchall()
         print(f"待补全 {len(rows)} 条（industry 为空）", flush=True)
         with open(audit_path, "a", encoding="utf-8") as audit:
             for i, row in enumerate(rows, 1):
@@ -141,8 +146,9 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="只抓取解析不写库")
     parser.add_argument("--limit", type=int, default=0, help="最多处理 N 条")
     parser.add_argument("--audit", default="", help="JSONL 审计文件路径")
+    parser.add_argument("--days", type=int, default=0, help="只处理最近 N 天入库的行")
     args = parser.parse_args()
-    enrich(dry_run=args.dry_run, limit=args.limit, audit_path=args.audit)
+    enrich(dry_run=args.dry_run, limit=args.limit, audit_path=args.audit, days=args.days)
 
 
 if __name__ == "__main__":

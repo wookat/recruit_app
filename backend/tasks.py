@@ -121,9 +121,11 @@ def enrich_new_details(self):
     """每日对当日新采集的中智/NCSS 岗位补全详情字段（截止日期/行业，限批量控时长）。"""
     day = datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
     ciic = enrich_ciic.enrich(
-        limit=1500, audit_path=os.path.join(EXPORTS_DIR, f"enrich_ciic_{day}.jsonl"))
+        limit=1500, days=2,
+        audit_path=os.path.join(EXPORTS_DIR, f"enrich_ciic_{day}.jsonl"))
     ncss = enrich_ncss.enrich(
-        limit=1500, audit_path=os.path.join(EXPORTS_DIR, f"enrich_ncss_{day}.jsonl"))
+        limit=1500, days=2,
+        audit_path=os.path.join(EXPORTS_DIR, f"enrich_ncss_{day}.jsonl"))
     return {"ciic": {k: ciic.get(k) for k in ("scanned", "deadline_filled", "industry_filled", "error")},
             "ncss": {k: ncss.get(k) for k in ("scanned", "industry_filled", "error")}}
 

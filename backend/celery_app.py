@@ -55,6 +55,10 @@ celery_app.conf.update(
             "task": "tasks.data_quality_audit",
             "schedule": crontab(hour=7, minute=0),  # 采集入库后做数据质量审计+deadline 回填
         },
+        "generate-daily-digest": {
+            "task": "tasks.generate_daily_digest",
+            "schedule": crontab(hour=7, minute=40),  # 采集入库后生成每日岗位精选文案（渠道内容素材）
+        },
         "push-due-reminders": {
             "task": "tasks.push_due_reminders",
             "schedule": crontab(hour=8, minute=30),  # 每天向 Web Push 订阅者发临近截止聚合提醒

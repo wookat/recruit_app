@@ -28,6 +28,7 @@ from models import BianzhiJob, CampusJob, PushSubscription
 from pywebpush import webpush, WebPushException
 import refresh_feishu
 import collect_ciic
+from seo import EXAM_TYPES, PROVINCES, SITE
 import collect_iguopin
 import collect_ncss
 import import_guopin_2027
@@ -108,6 +109,32 @@ def collect_ciic_jobs(self):
     self.update_state(state="PROGRESS", meta={"step": "collecting ciic jobs"})
     try:
         return collect_ciic.collect()
+    except Exception as exc:
+        raise self.retry(exc=exc)
+
+
+@celery_app.task(bind=True, max_retries=2, default_retry_delay=600)
+def submit_indexnow(self):
+    """每日向 IndexNow（Bing/Yandex 等）批量提交 SEO 聚合页 URL，加速收录。"""
+    key = os.environ.get("INDEXNOW_KEY", "")
+    if not key:
+        return {"skipped": "INDEXNOW_KEY not set"}
+    urls = [f"{SITE}/", f"{SITE}/zhaokao"]
+    for slug, _ in PROVINCES:
+        urls.append(f"{SITE}/zhaokao/{slug}")
+        urls.extend(f"{SITE}/zhaokao/{slug}/{et[0]}" for et in EXAM_TYPES)
+    try:
+        resp = requests.post(
+            "https://api.indexnow.org/indexnow",
+            json={
+                "host": "jobs.zalize.com",
+                "key": key,
+                "keyLocation": f"{SITE}/{key}.txt",
+                "urlList": urls,
+            },
+            timeout=30,
+        )
+        return {"status": resp.status_code, "urls": len(urls)}
     except Exception as exc:
         raise self.retry(exc=exc)
 

@@ -47,6 +47,10 @@ celery_app.conf.update(
             "task": "tasks.refresh_hot_cache",
             "schedule": crontab(hour=6, minute=30),  # 采集入库后刷新 stats/filters 热缓存
         },
+        "submit-indexnow": {
+            "task": "tasks.submit_indexnow",
+            "schedule": crontab(hour=7, minute=10),  # 每天采集入库后向 IndexNow 提交 SEO 页 URL
+        },
         "data-quality-audit": {
             "task": "tasks.data_quality_audit",
             "schedule": crontab(hour=7, minute=0),  # 采集入库后做数据质量审计+deadline 回填

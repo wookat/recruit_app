@@ -318,11 +318,11 @@ export const PositionTable = memo(function PositionTable({
                           </span>
                         ) : cell.column.id === 'job_type' ? (
                           <span className={cn(PILL_BASE, jobTypeClass(row.original.job_type))}>
-                            {String(cell.getValue() || '-')}
+                            {t(String(cell.getValue() || '-'))}
                           </span>
                         ) : cell.column.id === 'edu_level_norm' ? (
                           <span className={cn(PILL_BASE, eduClass(String(cell.getValue() || '')))}>
-                            {String(cell.getValue() || '-')}
+                            {t(String(cell.getValue() || '-'))}
                           </span>
                         ) : cell.column.id === 'work_location' && foldGroups.has(row.original.id) ? (
                           <button

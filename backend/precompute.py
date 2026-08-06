@@ -94,6 +94,19 @@ SYNONYM_COMBOS = (
 )
 
 
+def warm_suggest_vocab() -> dict:
+    """预生成搜索联想的类别词表到 Redis（24h TTL）。"""
+    db = SessionLocal()
+    try:
+        vocab = crud.build_suggest_vocab(db)
+    finally:
+        db.close()
+    cache.get_redis().setex(
+        crud.SUGGEST_VOCAB_KEY, HOT_TTL, json.dumps(vocab, ensure_ascii=False)
+    )
+    return {"vocab": len(vocab)}
+
+
 def warm_hot_keywords() -> dict:
     """预热热门搜索词与常见同义组合（三板块）。
 

@@ -16,9 +16,9 @@ import {
 } from '@/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
+import { SearchSuggestInput } from '@/components/SearchSuggestInput'
 import { Highlight } from '@/components/Highlight'
 import { DueBadge } from '@/components/DueBadge'
 import { MultiSelect } from '@/components/MultiSelect'
@@ -45,7 +45,6 @@ import {
   LayoutGrid,
   Loader2,
   MapPin,
-  Search,
   Table2,
   X,
 } from 'lucide-react'
@@ -439,22 +438,18 @@ export function UnifiedJobsPage() {
   )
 
   const searchForm = (
-    <form
-      className="relative"
-      onSubmit={(e) => {
-        e.preventDefault()
-        setKeyword(keywordInput.trim())
+    <SearchSuggestInput
+      value={keywordInput}
+      onValueChange={(v) => setKeywordInput(v)}
+      onSelect={(text) => {
+        setKeywordInput(text)
+        setKeyword(text)
       }}
-    >
-      <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <Input
-        value={keywordInput}
-        onChange={(e) => setKeywordInput(e.target.value)}
-        placeholder={t('搜索岗位 / 单位 / 公司，自动搜索，回车立即搜索')}
-        className="h-11 pl-8 sm:h-9"
-        aria-label={t('关键词搜索')}
-      />
-    </form>
+      words={[]}
+      suggestBoard="all"
+      placeholder={t('搜索岗位 / 单位 / 公司，自动搜索，回车立即搜索')}
+      inputClassName="h-11 sm:h-9"
+    />
   )
 
   return (

@@ -677,29 +677,143 @@ _TOKEN_SPLIT_RE = re.compile(r"[\s,，、；;。．.:：/（）()\[\]【】\-—
 _CLEAN_FILTERS = (Position.dup_of_id.is_(None), Position.invalid_reason.is_(None))
 
 
-def suggest_keywords(db: Session, q: str, limit: int = 10, sample: int = 500) -> List[Dict]:
-    """关键词补全：利用 search_text 的 GIN trigram 索引取样含 q 的行，
-    再从 position_example/employer/exam_type 中切词统计包含 q 的高频词。"""
+# ---------- 搜索联想（/api/suggest） ----------
+
+SUGGEST_VOCAB_KEY = "suggest:vocab"
+
+# 启动预热失败时的静态兜底热词（与前端 HOT_SEARCHES 口径一致）
+FALLBACK_HOT_WORDS = (
+    "国考", "省考", "事业单位", "选调生", "教师",
+    "护士", "银行", "央企", "国企", "三支一扶",
+)
+
+
+def build_suggest_vocab(db: Session) -> List[Dict]:
+    """岗位类别/考试类型词表：exam_type_norm、job_type、category、company_type
+    去重值 + 预设类别，预生成后写入 Redis（precompute.warm_suggest_vocab）。"""
+    words: List[str] = list(CATEGORY_KEYWORDS.keys())
+    for sql in (
+        "SELECT DISTINCT exam_type_norm FROM positions WHERE exam_type_norm IS NOT NULL",
+        "SELECT DISTINCT job_type FROM positions WHERE job_type IS NOT NULL",
+        "SELECT DISTINCT category FROM bianzhi_jobs WHERE category IS NOT NULL",
+        "SELECT DISTINCT job_type FROM bianzhi_jobs WHERE job_type IS NOT NULL AND length(job_type) <= 20",
+        "SELECT DISTINCT company_type FROM campus_jobs WHERE company_type IS NOT NULL",
+    ):
+        try:
+            words += [r[0] for r in db.execute(sa_text(sql)).all()]
+        except Exception:  # noqa: BLE001  单来源失败不影响其余
+            db.rollback()
+    seen: set = set()
+    vocab = []
+    for w in words:
+        w = (w or "").strip()
+        if 2 <= len(w) <= 20 and w not in seen:
+            seen.add(w)
+            vocab.append({"text": w, "type": "category"})
+    return vocab
+
+
+def _suggest_vocab(db: Session) -> List[Dict]:
+    """词表优先读 Redis 预生成缓存，miss 时现算并回填（24h TTL）。"""
+    r = cache.get_redis()
+    try:
+        raw = r.get(SUGGEST_VOCAB_KEY)
+        if raw:
+            return json.loads(raw)
+    except Exception:
+        pass
+    vocab = build_suggest_vocab(db)
+    try:
+        r.setex(SUGGEST_VOCAB_KEY, 24 * 3600, json.dumps(vocab, ensure_ascii=False))
+    except Exception:
+        pass
+    return vocab
+
+
+def _hot_keyword_candidates() -> List[Dict]:
+    """热门关键词来源：stats 热缓存里的 hot_keywords，miss 时用静态兜底词表。"""
+    try:
+        raw = cache.get_redis().get(cache._make_key("stats", (), {}))
+        if raw:
+            stats = json.loads(raw)
+            return [
+                {"text": it["word"], "type": "hot", "count": it.get("count")}
+                for it in stats.get("hot_keywords", [])
+            ]
+    except Exception:
+        pass
+    return [{"text": w, "type": "hot"} for w in FALLBACK_HOT_WORDS]
+
+
+def _like_prefix(q: str) -> str:
+    return q.lower().replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_") + "%"
+
+
+# 单位/公司名前缀匹配：lower(col) LIKE 'q%' 走 text_pattern_ops 表达式索引
+# （migrate_suggest.py），内层 LIMIT 限定聚合行数上限，禁止全表扫。
+_EMPLOYER_SQL = {
+    "positions": """
+        SELECT employer AS name, count(*) AS c FROM (
+            SELECT employer FROM positions
+            WHERE dup_of_id IS NULL AND invalid_reason IS NULL
+              AND employer IS NOT NULL AND lower(employer) LIKE :p
+            LIMIT 2000
+        ) t GROUP BY 1 ORDER BY c DESC, name LIMIT :n
+    """,
+    "campus": """
+        SELECT company AS name, count(*) AS c FROM (
+            SELECT company FROM campus_jobs
+            WHERE company IS NOT NULL AND lower(company) LIKE :p
+            LIMIT 2000
+        ) t GROUP BY 1 ORDER BY c DESC, name LIMIT :n
+    """,
+    "bianzhi": """
+        SELECT employer AS name, count(*) AS c FROM (
+            SELECT employer FROM bianzhi_jobs
+            WHERE employer IS NOT NULL AND lower(employer) LIKE :p
+            LIMIT 2000
+        ) t GROUP BY 1 ORDER BY c DESC, name LIMIT :n
+    """,
+}
+
+
+def _employer_candidates(db: Session, q: str, board: Optional[str], per_board: int) -> List[Dict]:
+    boards = [board] if board in _EMPLOYER_SQL else list(_EMPLOYER_SQL)
+    p = _like_prefix(q)
+    out: List[Dict] = []
+    for b in boards:
+        try:
+            rows = db.execute(sa_text(_EMPLOYER_SQL[b]), {"p": p, "n": per_board}).all()
+        except Exception:  # noqa: BLE001  单板块查询失败不影响其余来源
+            db.rollback()
+            continue
+        out += [{"text": name, "type": "employer", "count": c} for name, c in rows if len(name) <= 40]
+    out.sort(key=lambda it: -(it.get("count") or 0))
+    return out
+
+
+def suggest_mixed(db: Session, q: str, board: Optional[str] = None, limit: int = 8) -> List[Dict]:
+    """混合联想：热门关键词（子串匹配）+ 单位/公司名（前缀匹配）+ 类别词表（子串匹配），
+    去重后按 热门 → 单位 → 类别 顺序取 top limit。"""
     q = (q or "").strip()
     if not q:
         return []
-    rows = (
-        db.query(Position.position_example, Position.employer, Position.exam_type)
-        .filter(*_CLEAN_FILTERS, Position.search_text.ilike(f"%{q}%"))
-        .limit(sample)
-        .all()
-    )
-    counter: Counter = Counter()
     ql = q.lower()
-    for row in rows:
-        for field in row:
-            if not field:
-                continue
-            for tok in _TOKEN_SPLIT_RE.split(field):
-                tok = tok.strip()
-                if 2 <= len(tok) <= 20 and ql in tok.lower():
-                    counter[tok] += 1
-    return [{"word": w, "count": c} for w, c in counter.most_common(limit)]
+
+    hot = [it for it in _hot_keyword_candidates() if ql in it["text"].lower() and it["text"] != q][:3]
+    employers = _employer_candidates(db, q, board, per_board=limit)
+    categories = [it for it in _suggest_vocab(db) if ql in it["text"].lower() and it["text"] != q][:3]
+
+    out: List[Dict] = []
+    seen = {q}
+    for it in hot + employers + categories:
+        if it["text"] in seen:
+            continue
+        seen.add(it["text"])
+        out.append(it)
+        if len(out) >= limit:
+            break
+    return out
 
 
 def recommend_positions(

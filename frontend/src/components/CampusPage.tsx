@@ -971,6 +971,7 @@ export function CampusPage({
             if (text.length >= 2) addRecentSearch(text)
           }}
           words={CAMPUS_SUGGEST_WORDS}
+          suggestBoard="campus"
           placeholder={t("搜索公司 / 岗位 / 行业 / 专业…")}
           inputClassName="h-10"
         />

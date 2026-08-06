@@ -132,6 +132,7 @@ def _bigram_hit_clause(col, keyword: str):
 TIER3_TIMEOUT_MS = 3000  # search_text 兜底层语句级超时，超时降级不入缓存
 COUNT_BIGRAM_TIMEOUT_MS = 1000  # count 竞速 bigram 路超时（胜出场景冷查 ~0.4-0.7s，早停释放 IO）
 COUNT_ILIKE_TIMEOUT_MS = 2200  # count 竞速纯 ILIKE 路超时（高频词 LIMIT 触顶 ~0.5-1.1s）
+COUNT_NOKW_TIMEOUT_MS = 4000  # 无关键词筛选组合 count 超时，超时降级为部分计数 + 后台补算
 BITMAP_IO_CONCURRENCY = 64  # 位图堆扫描预取并发：冷缓存随机 IO 串行读是慢查主因之一
 
 
@@ -391,7 +392,7 @@ def _keyword_capped_count(db, q_nokw, keyword: str, filters: PositionFilter):
 
 def _refresh_exact_count_async(filters: PositionFilter) -> None:
     """count 降级后后台补算精确 capped count 并写入缓存（redis 锁防并发重算），
-    前端「点击重试」或下一次请求命中缓存即可拿到精确 total。"""
+    前端「点击重试」或下一次请求命中缓存即可拿到精确 total。兼容无关键词筛选组合。"""
     count_key = "cnt:pos:" + filters.model_dump_json()
     lock_key = "lock:" + count_key
     try:
@@ -408,7 +409,9 @@ def _refresh_exact_count_async(filters: PositionFilter) -> None:
             # 纯 ILIKE 版：高频词 LIMIT 触顶快、中低频词全表顺扫有上界（~几秒），
             # bigram 版对高频词要读大段 GIN 索引，30s 内未必能完成
             q = _nokw_base_query(db, filters)
-            n = _capped_count(q.filter(_hit_clause(Position.search_text, filters.keyword)))
+            if filters.keyword:
+                q = q.filter(_hit_clause(Position.search_text, filters.keyword))
+            n = _capped_count(q)
             _cache_set_json(count_key, 1800, n)
         except Exception:  # noqa: BLE001  补算失败不影响主链路
             pass
@@ -474,8 +477,25 @@ def search_positions(
             timed_out = timed_out or tier3_to
         items = _positions_by_ids(db, ids)
     else:
-        total = cache.get_or_set(count_key, 1800, lambda: _capped_count(q))
+        # 先取列表（LIMIT page_size，冷路径也快），再带短超时计数：
+        # 非默认筛选组合冷 count 可能扫大量堆页，超时则降级为
+        # 「至少 N 条」部分计数 + 后台补算，避免请求级 20s 超时反复重试
         items = q.order_by(*order_keys).offset((page - 1) * page_size).limit(page_size).all()
+        total = _cache_get_json(count_key)
+        if total is None:
+            try:
+                db.execute(sa_text(f"SET LOCAL statement_timeout = '{COUNT_NOKW_TIMEOUT_MS}'"))
+                total = _capped_count(q)
+                db.execute(sa_text("SET LOCAL statement_timeout = DEFAULT"))
+                _cache_set_json(count_key, 1800, total)
+            except OperationalError as e:
+                if not _is_query_canceled(e):
+                    raise
+                db.rollback()
+                total = (page - 1) * page_size + len(items)
+                if meta is not None:
+                    meta["total_partial"] = True
+                _refresh_exact_count_async(filters)
     if meta is not None and timed_out:
         meta["timed_out"] = True
     return total, items

@@ -170,7 +170,7 @@ function useLiankaoJobs() {
   const [failed, setFailed] = useState(false)
   useEffect(() => {
     let alive = true
-    fetchBianzhiJobs({ category: [t("大型联考")], page_size: 100 })
+    fetchBianzhiJobs({ category: ['大型联考'], page_size: 100 })
       .then((res) => {
         if (alive) setJobs(res.items)
       })

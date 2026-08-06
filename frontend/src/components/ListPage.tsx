@@ -195,11 +195,12 @@ interface PresetView {
 
 const PRESET_VIEWS: PresetView[] = [
   { key: 'all', label: t("全部") },
-  { key: 'gwy', label: t("公务员"), category: [t("公务员")] },
-  { key: 'sye', label: t("事业编"), category: [t("事业单位/事业编")] },
-  { key: 'jdwz', label: t("军队文职"), category: [t("军队文职")] },
-  { key: 'gqyq', label: t("国企央企"), category: [t("国企/央企")] },
-  { key: 'xds', label: t("选调生"), category: [t("选调生")] },
+  // category 为查询值，必须保持中文（数据内容为中文，译文查询会 0 结果）
+  { key: 'gwy', label: t("公务员"), category: ['公务员'] },
+  { key: 'sye', label: t("事业编"), category: ['事业单位/事业编'] },
+  { key: 'jdwz', label: t("军队文职"), category: ['军队文职'] },
+  { key: 'gqyq', label: t("国企央企"), category: ['国企/央企'] },
+  { key: 'xds', label: t("选调生"), category: ['选调生'] },
   { key: 'y2027', label: t("2027 最新"), year: [2027] },
   { key: 'deadline', label: t("即将截止"), deadline: true },
 ]

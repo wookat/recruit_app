@@ -159,6 +159,7 @@ def warm_seo_pages(invalidate: bool = True) -> dict:
         cache.invalidate_prefixes(
             "seo_index", "seo_prov", "seo_prov_et", "seo_city", "seo_city_et",
             "seo_daily_index", "seo_daily_detail", "seo_daily_days",
+            "seo_major_counts", "seo_major_index", "seo_major",
         )
     warmed, errors = 0, 0
     db = SessionLocal()
@@ -183,6 +184,14 @@ def warm_seo_pages(invalidate: bool = True) -> dict:
         _try(seo._render_daily_index)
         for day in seo._recent_digest_days(db=db, limit=3):
             _try(seo._render_daily_detail, day)
+        _try(seo._major_counts)  # 先算全量计数（索引页/sitemap/详情页枚举共用）
+        _try(seo._render_major_index)
+        try:
+            for s in seo._major_live_slugs(db):
+                _try(seo._render_major, s)
+        except Exception:  # noqa: BLE001  专业枚举失败不影响其余预热
+            errors += 1
+            db.rollback()
     finally:
         db.close()
     return {"warmed": warmed, "errors": errors}

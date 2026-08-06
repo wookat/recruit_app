@@ -30,7 +30,8 @@ import refresh_feishu
 import collect_ciic
 import enrich_ciic
 import enrich_ncss
-from seo import CITIES, EXAM_TYPES, PROVINCES, SITE, _city_et_slugs, _recent_digest_days
+from seo import (CITIES, EXAM_TYPES, PROVINCES, SITE, _city_et_slugs,
+                 _major_live_slugs, _recent_digest_days)
 import digest
 import collect_iguopin
 import collect_ncss
@@ -156,6 +157,14 @@ def submit_indexnow(self):
         urls.extend(f"{SITE}/daily/{d}" for d in _recent_digest_days(db=db))
     except Exception:
         pass  # 每日精选期号枚举失败不影响主体提交
+    finally:
+        db.close()
+    urls.append(f"{SITE}/major")
+    db = SessionLocal()
+    try:
+        urls.extend(f"{SITE}/major/{s}" for s in _major_live_slugs(db))
+    except Exception:
+        pass  # 专业页枚举失败不影响主体提交
     finally:
         db.close()
     try:

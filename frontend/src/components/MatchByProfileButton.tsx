@@ -17,6 +17,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { profileUsable, saveProfile, useProfile, type UserProfile } from '@/lib/profile'
+import majorSlugs from '@/data/majorSlugs.json'
+
+const MAJOR_SLUGS = majorSlugs as Record<string, string>
 
 const EDU_LEVELS = ['大专/中专', '本科', '硕士研究生', '博士研究生']
 const CAMPUS_UNIT_TYPES = ['央国企', '民企', '外企', '事业单位']
@@ -313,6 +316,18 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
                 <span className="font-medium text-foreground">
                   {t("匹配结果")}{' '}{result.items.length} {' '}{t("条（按匹配度排序）")}{' '}</span>
                 {result.categories.length > 0 && <span>{t("专业大类：")}{result.categories.join('、')}</span>}
+                {profile.majors
+                  .filter((m) => MAJOR_SLUGS[m])
+                  .slice(0, 2)
+                  .map((m) => (
+                    <a
+                      key={m}
+                      href={`/major/${MAJOR_SLUGS[m]}`}
+                      className="text-primary underline underline-offset-2"
+                    >
+                      {t("查看")}{m}{t("专业可报岗位 →")}
+                    </a>
+                  ))}
               </div>
               {result.expanded_terms.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">

@@ -29,6 +29,7 @@ from bs4 import BeautifulSoup
 from sqlalchemy import text
 
 import cache
+import precompute
 from database import SessionLocal
 from models import CampusJob
 
@@ -134,6 +135,10 @@ def enrich(dry_run: bool = False, limit: int = 0, audit_path: str = "",
             db.commit()
             cache.invalidate_prefixes(
                 "campus_filters", "campus_counts", "campus_timeline")
+            try:
+                precompute.warm_board_caches()
+            except Exception:  # noqa: BLE001  预热失败不影响采集结果
+                pass
         stats["audit"] = audit_path
         print(json.dumps(stats, ensure_ascii=False, indent=2))
         return stats

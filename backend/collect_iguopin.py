@@ -33,6 +33,7 @@ import requests
 from sqlalchemy import text
 
 import cache
+import precompute
 import import_bianzhi
 import import_campus
 from database import Base, SessionLocal, engine
@@ -423,6 +424,10 @@ def collect(dry_run: bool = False, limit: int = 0) -> dict:
                 "campus_filters", "campus_counts", "campus_timeline",
                 "bianzhi_filters", "bianzhi_counts", "bianzhi_timeline",
             )
+            try:
+                precompute.warm_board_caches()
+            except Exception:  # noqa: BLE001  预热失败不影响采集结果
+                pass
         result = {"dry_run": dry_run, "fetched": fetched, **est, **ing.stats}
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return result

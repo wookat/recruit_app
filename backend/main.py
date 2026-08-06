@@ -40,6 +40,11 @@ logger = logging.getLogger("uvicorn.error")
 
 def _warm_hot_keywords_bg():
     try:
+        result = precompute.warm_board_caches()
+        logger.info("启动板块缓存预热完成: %s", result)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("启动板块缓存预热失败: %s: %s", type(exc).__name__, exc)
+    try:
         result = precompute.warm_suggest_vocab()
         logger.info("启动联想词表预生成完成: %s", result)
     except Exception as exc:  # noqa: BLE001

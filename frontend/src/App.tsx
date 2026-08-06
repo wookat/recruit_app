@@ -529,7 +529,7 @@ export default function App() {
             <BrandMark className="h-9 w-9 shrink-0" />
             <div className="flex min-w-0 flex-col leading-none">
               <h1 className="whitespace-nowrap text-lg font-bold tracking-tight">{t("上岸雷达")}</h1>
-              <span className="mt-0.5 hidden truncate whitespace-nowrap text-[11px] tracking-widest text-muted-foreground sm:block">
+              <span className="mt-0.5 hidden truncate whitespace-nowrap text-[11px] tracking-widest text-muted-foreground lg:block">
                 {t("体制内岗位 · 校招信息 一站检索")}{' '}</span>
             </div>
           </div>

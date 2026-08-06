@@ -250,6 +250,8 @@ export function ListPage({
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [deadlineView, setDeadlineView] = useState(false)
   const newSinceOnScreen = useNewSinceOnScreen()
+  /** 移动端搜索工具区（一键匹配/热门/最近/保存的筛选）默认收起，保首屏岗位可见 */
+  const [toolsOpen, setToolsOpen] = useState(false)
   const [majorInput, setMajorInput] = useState(() => getProfile().major || '')
   const quickMatchRef = useRef<HTMLInputElement | null>(null)
   const [params, setParams] = useState<SearchParams>(() => {
@@ -826,8 +828,8 @@ export function ListPage({
     }
   }
 
-  const keyFilterRow = (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+  const keyFilterRow = (className?: string) => (
+    <div className={cn('grid grid-cols-2 gap-2 sm:grid-cols-4', className)}>
       {filters ? (
         <>
           <MultiSelect
@@ -935,11 +937,12 @@ export function ListPage({
 
   return (
     <div className={showStats ? 'xl:grid xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start xl:gap-5' : undefined}>
-    <div className="min-w-0 space-y-5">
+    <div className="flex min-w-0 flex-col gap-5 max-sm:gap-4">
       <NewSinceBanner board="positions" onApply={(since) => updateParam('created_after', since)} />
       {onOpenUpdates && (
         <ValuePropBanner
           onMatch={() => {
+            setToolsOpen(true)
             setTimeout(() => {
               quickMatchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
               quickMatchRef.current?.focus({ preventScroll: true })
@@ -949,7 +952,7 @@ export function ListPage({
         />
       )}
       <Card>
-        <CardContent className="space-y-4 p-4">
+        <CardContent className="space-y-4 p-4 max-sm:space-y-3 max-sm:p-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
             <SearchSuggestInput
               value={params.keyword || ''}
@@ -976,7 +979,10 @@ export function ListPage({
                   <SheetHeader>
                     <SheetTitle>{t("高级筛选")}</SheetTitle>
                   </SheetHeader>
-                  <div className="mt-4 space-y-4">{advancedFilterPanel}</div>
+                  <div className="mt-4 space-y-4">
+                    {keyFilterRow()}
+                    {advancedFilterPanel}
+                  </div>
                   <div className="sticky bottom-0 mt-4 flex gap-2 bg-popover pt-2">
                     <Button className="flex-1" onClick={() => setFilterOpen(false)}>
                       {t("查看结果")}{data ? tt`（${data.total_partial ? t("至少 ") : ''}${formatTotal(data.total, data.total_capped)} 条）` : ''}
@@ -1029,12 +1035,25 @@ export function ListPage({
               >
                 <Rows3 className="h-4 w-4" />
               </Button>
+              <Button
+                variant={toolsOpen ? 'secondary' : 'outline'}
+                size="icon"
+                className="h-11 w-11 sm:hidden"
+                aria-label={t("更多搜索工具")}
+                title={t("更多搜索工具")}
+                aria-expanded={toolsOpen}
+                onClick={() => setToolsOpen((v) => !v)}
+              >
+                <Sparkles className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 
           {synAdded.length > 0 && <SynonymHint added={synAdded} onClose={() => setSynOff(true)} />}
 
-          {keyFilterRow}
+          {keyFilterRow('max-sm:hidden')}
+
+          <div className={cn('space-y-4', !toolsOpen && 'max-sm:hidden')}>
 
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-muted/30 px-3 py-2">
             <div className="flex items-center gap-1.5 text-sm font-medium">
@@ -1279,6 +1298,8 @@ export function ListPage({
             </DropdownMenu>
           </div>
 
+          </div>
+
           {activeChips.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground">{t("已选筛选：")}</span>
@@ -1308,7 +1329,12 @@ export function ListPage({
         </Suspense>
       )}
 
-      {showStats && !deadlineView && !newSinceOnScreen && <DeadlinesCard />}
+      {/* 移动端（<sm）截止卡/速览/推荐排到岗位列表之后，保首屏岗位可见 */}
+      {showStats && !deadlineView && !newSinceOnScreen && (
+        <div className="max-sm:order-1">
+          <DeadlinesCard />
+        </div>
+      )}
 
       <div className="relative">
       <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5 sm:flex-wrap">
@@ -1377,16 +1403,22 @@ export function ListPage({
       </div>
 
       {showStats && onCrossPreset && (
-        <TodayGlance
-          onUpdates={onOpenUpdates}
-          onCampus={() => onCrossPreset('recent7')}
-          onCampusAll={() => onCrossPreset('all')}
-          onBianzhi={() => onCrossPreset('bz:all')}
-          onDeadline={() => setDeadlineView(true)}
-        />
+        <div className="max-sm:order-1">
+          <TodayGlance
+            onUpdates={onOpenUpdates}
+            onCampus={() => onCrossPreset('recent7')}
+            onCampusAll={() => onCrossPreset('all')}
+            onBianzhi={() => onCrossPreset('bz:all')}
+            onDeadline={() => setDeadlineView(true)}
+          />
+        </div>
       )}
 
-      {showStats && <RecommendSection />}
+      {showStats && (
+        <div className="max-sm:order-1">
+          <RecommendSection />
+        </div>
+      )}
 
       {crossTotal > 0 && onCrossOpen && (
         <button

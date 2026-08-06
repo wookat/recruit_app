@@ -475,7 +475,7 @@ export function BianzhiPage({
       },
     })
   for (const p of provinces)
-    activeFilters.push({ label: tt`省份：${p}`, onRemove: () => toggleProvince(p) })
+    activeFilters.push({ label: tt`省份：${t(p)}`, onRemove: () => toggleProvince(p) })
   for (const c of cities)
     activeFilters.push({
       label: tt`城市：${c}`,
@@ -691,7 +691,7 @@ export function BianzhiPage({
                   : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
               )}
             >
-              {p}
+              {t(p)}
               {provinceCounts?.[p] != null && (
                 <span className="ml-1 hidden sm:inline">
                   {provinceCounts[p].toLocaleString()}

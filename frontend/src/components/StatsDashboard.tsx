@@ -50,7 +50,7 @@ function StatList({
               aria-pressed={isSelected?.(e.name) || undefined}
               onClick={() => onSelect?.(e.name)}
             >
-              <span className="truncate">{e.name}</span>
+              <span className="truncate">{t(e.name)}</span>
               <span className={cn('shrink-0 tabular-nums text-muted-foreground', isSelected?.(e.name) && 'text-primary/80')}>{e.count.toLocaleString()}</span>
             </button>
           </li>
@@ -95,7 +95,7 @@ function StatGroup({
             )}
             onClick={() => onSelect?.(e.name)}
           >
-            {e.name}
+            {t(e.name)}
             <span className={isSelected?.(e.name) ? 'text-primary/80' : 'text-muted-foreground'}>{e.count.toLocaleString()}</span>
           </Badge>
         ))}

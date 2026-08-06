@@ -4,6 +4,8 @@ import axios from 'axios'
 import { API_BASE, type BianzhiJob, type CampusJob, type Position } from '@/api'
 import { getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import { buildPushFilters } from '@/lib/savedNews'
+import { getRemindDays, getRemindNodes } from '@/lib/reminderPref'
+import { getReminder } from '@/lib/reminders'
 
 const ENABLED_KEY = 'recruit.pushEnabled'
 const EVENT = 'recruit-push-change'
@@ -13,6 +15,8 @@ export interface PushDueItem {
   t: string
   /** 截止日期 YYYY-MM-DD。 */
   d: string
+  /** 单岗位自定义提醒节点（截止前天数）；缺省用订阅默认节点。 */
+  n?: number[]
 }
 
 function fmtDate(d: Date): string {
@@ -26,17 +30,21 @@ export function buildPushItems(
   bianzhiFavorites: BianzhiJob[],
 ): PushDueItem[] {
   const out: PushDueItem[] = []
+  const push = (key: string, title: string, d: Date) => {
+    const nodes = getReminder(key)?.nodes
+    out.push(nodes ? { t: title, d: fmtDate(d), n: nodes } : { t: title, d: fmtDate(d) })
+  }
   for (const p of favorites) {
     const d = parseSignupDeadline(p)
-    if (d) out.push({ t: p.employer?.trim() || p.position_example?.trim() || p.job_type || t('体制内岗位'), d: fmtDate(d) })
+    if (d) push(`positions:${p.id}`, p.employer?.trim() || p.position_example?.trim() || p.job_type || t('体制内岗位'), d)
   }
   for (const j of campusFavorites) {
     const d = getEffectiveDeadline(j)
-    if (d) out.push({ t: j.company?.trim() || t('校招岗位'), d: fmtDate(d) })
+    if (d) push(`campus:${j.id}`, j.company?.trim() || t('校招岗位'), d)
   }
   for (const j of bianzhiFavorites) {
     const d = getEffectiveDeadline(j)
-    if (d) out.push({ t: j.employer?.trim() || j.job_type || t('编制岗位'), d: fmtDate(d) })
+    if (d) push(`bianzhi:${j.id}`, j.employer?.trim() || j.job_type || t('编制岗位'), d)
   }
   return out
 }
@@ -105,13 +113,14 @@ async function getSubscription(): Promise<PushSubscription | null> {
   return reg.pushManager.getSubscription()
 }
 
-function subToBody(sub: PushSubscription, remindDays: number, items: PushDueItem[]) {
+function subToBody(sub: PushSubscription, items: PushDueItem[]) {
   const json = sub.toJSON()
   return {
     endpoint: sub.endpoint,
     p256dh: json.keys?.p256dh ?? '',
     auth: json.keys?.auth ?? '',
-    remind_days: remindDays,
+    remind_days: getRemindDays(),
+    remind_nodes: getRemindNodes(),
     items,
     filters: buildPushFilters(),
   }
@@ -122,7 +131,6 @@ function subToBody(sub: PushSubscription, remindDays: number, items: PushDueItem
  * 返回 'granted' | 'denied' | 'unsupported' | 'unconfigured' | 'error'。
  */
 export async function enablePush(
-  remindDays: number,
   items: PushDueItem[],
 ): Promise<'granted' | 'denied' | 'unsupported' | 'unconfigured' | 'error'> {
   if (!isPushSupported()) return 'unsupported'
@@ -150,7 +158,7 @@ export async function enablePush(
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(key) as BufferSource,
       }))
-    await axios.post(`${API_BASE}/api/push/subscribe`, subToBody(sub, remindDays, items))
+    await axios.post(`${API_BASE}/api/push/subscribe`, subToBody(sub, items))
     setPushEnabledFlag(true)
     return 'granted'
   } catch {
@@ -175,15 +183,15 @@ export async function disablePush(): Promise<void> {
 
 /** 已开启推送时同步最新收藏截止快照到服务端（收藏变化后调用）。
  * 本地标记已开启但浏览器订阅丢失（SW 更新/浏览器清理）且权限仍授予时，静默重建订阅。 */
-export async function syncPushItems(remindDays: number, items: PushDueItem[]): Promise<void> {
+export async function syncPushItems(items: PushDueItem[]): Promise<void> {
   if (!getPushEnabled() || !isPushSupported()) return
   try {
     const sub = await getSubscription()
     if (!sub) {
-      if (Notification.permission === 'granted') await enablePush(remindDays, items)
+      if (Notification.permission === 'granted') await enablePush(items)
       return
     }
-    await axios.post(`${API_BASE}/api/push/subscribe`, subToBody(sub, remindDays, items))
+    await axios.post(`${API_BASE}/api/push/subscribe`, subToBody(sub, items))
   } catch {
     // ignore
   }

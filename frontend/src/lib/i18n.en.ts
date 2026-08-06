@@ -1183,4 +1183,14 @@ export const EN: Record<string, string> = {
   '已保存并订阅。浏览器通知未开启，上新将以站内红点提示，可在地址栏站点设置允许通知后到「收藏 → 提醒」开启':
     'Saved and subscribed. Browser notifications are off — new jobs will show as an in-site red dot. Allow notifications in the address-bar site settings, then enable under Favorites → Reminders.',
   '（点击查看扩展理由）': '(click a term to see why it was included)',
+  '默认提醒节点': 'Default reminder points',
+  '截止前按各节点各提醒一次；顶栏红点与横幅按最大节点计算': 'One reminder per point before the deadline; top-bar dots and banners use the largest point',
+  '前 {0} 天': '{0}d before',
+  '截止前 {0} 天': '{0} days before deadline',
+  '我的提醒': 'My reminders',
+  '未命名岗位': 'Untitled job',
+  '取消提醒': 'Cancel reminder',
+  '清理已截止 {0}': 'Clear expired ({0})',
+  '提醒节点': 'Reminder points',
+  '清空节点即取消提醒': 'Unselect all points to cancel',
 }

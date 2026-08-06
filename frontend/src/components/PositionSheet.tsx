@@ -352,6 +352,8 @@ export function PositionSheet({
               deadline={parseSignupDeadline(item)}
               favActive={favorites.some((p) => p.id === item.id)}
               onFavToggle={() => toggleFavorite(item)}
+              jobKey={`positions:${item.id}`}
+              jobTitle={item.employer?.trim() || item.position_example?.trim() || item.job_type || ''}
             />
             <CompareButton item={item} />
             <ReportIssueButton board="positions" itemId={item.id} />

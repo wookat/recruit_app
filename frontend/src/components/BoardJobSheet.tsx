@@ -272,7 +272,7 @@ export function BoardJobSheet({
           )}
           <div className="flex flex-wrap items-center gap-1">
             <BoardFavoriteButton active={favActive} onToggle={onFavToggle} />
-            <RemindMeButton deadline={remindDeadline} favActive={favActive} onFavToggle={onFavToggle} />
+            <RemindMeButton deadline={remindDeadline} favActive={favActive} onFavToggle={onFavToggle} jobKey={jobKey} jobTitle={title} />
             {(() => {
               const [b, idStr] = (jobKey || '').split(':')
               const id = Number(idStr)

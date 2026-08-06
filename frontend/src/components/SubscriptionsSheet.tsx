@@ -62,7 +62,7 @@ export function SubscriptionsSheet() {
         {entries.length === 0 ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {t("还没有订阅。去任一板块设置好筛选条件（如省份+关键词），点「保存当前筛选」即可订阅，之后有匹配的新岗位会在这里和今日速览提示。")}{' '}</p>
+              {t("还没有订阅。去任一板块设置好筛选条件（如省份+关键词），点「保存当前筛选」即可订阅，之后有匹配的新岗位会在这里和数据速览提示。")}{' '}</p>
             <div className="flex flex-wrap gap-2">
               {(['positions', 'campus', 'bianzhi'] as const).map((scope) => (
                 <button

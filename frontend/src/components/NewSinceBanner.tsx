@@ -1,5 +1,5 @@
 import { t, tt } from '@/lib/i18n'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { fetchNewSince, type NewSinceCounts } from '@/api'
@@ -22,6 +22,26 @@ function markSessionShown() {
   } catch {
     // ignore
   }
+}
+
+// 新增提示条在屏状态（全局共享）：截止卡片据此避让，同屏只出一条（优先级：新增 > 截止）
+let onScreen = false
+const onScreenListeners = new Set<() => void>()
+
+function setOnScreen(v: boolean) {
+  if (v === onScreen) return
+  onScreen = v
+  for (const l of onScreenListeners) l()
+}
+
+export function useNewSinceOnScreen(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      onScreenListeners.add(cb)
+      return () => onScreenListeners.delete(cb)
+    },
+    () => onScreen,
+  )
 }
 
 const cached = new Map<number, Promise<NewSinceCounts | null>>()
@@ -58,12 +78,18 @@ export function NewSinceBanner({
         markSessionShown()
         setCount(n)
         setVisible(true)
+        setOnScreen(true)
       }
     })
     return () => {
       alive = false
     }
   }, [prev, board])
+
+  useEffect(() => {
+    if (!visible) return
+    return () => setOnScreen(false)
+  }, [visible])
 
   if (!visible || !count || !prev) return null
 

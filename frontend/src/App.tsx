@@ -525,11 +525,11 @@ export default function App() {
     <div className="flex min-h-screen flex-col bg-muted/30 font-sans">
       <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2.5">
+          <div className="flex min-w-0 items-center gap-2.5">
             <BrandMark className="h-9 w-9 shrink-0" />
-            <div className="flex flex-col leading-none">
+            <div className="flex min-w-0 flex-col leading-none">
               <h1 className="whitespace-nowrap text-lg font-bold tracking-tight">{t("上岸雷达")}</h1>
-              <span className="mt-0.5 hidden text-[11px] tracking-widest text-muted-foreground sm:block">
+              <span className="mt-0.5 hidden truncate whitespace-nowrap text-[11px] tracking-widest text-muted-foreground sm:block">
                 {t("体制内岗位 · 校招信息 一站检索")}{' '}</span>
             </div>
           </div>

@@ -32,7 +32,7 @@ export function RecommendSection() {
     const v = localStorage.getItem(COLLAPSED_KEY)
     if (v === '1') return true
     if (v === '0') return false
-    return typeof window !== 'undefined' && window.innerWidth < 768
+    return true
   })
   const [page, setPage] = useState(1)
   const [items, setItems] = useState<Position[] | null>(null)

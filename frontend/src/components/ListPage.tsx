@@ -20,7 +20,7 @@ import { expandKeyword } from '@/lib/synonyms'
 import { MultiSelect } from './MultiSelect'
 import { getProfile, saveProfile } from '@/lib/profile'
 import { ValuePropBanner } from './ValuePropBanner'
-import { NewSinceBanner } from './NewSinceBanner'
+import { NewSinceBanner, useNewSinceOnScreen } from './NewSinceBanner'
 import type { RecommendQuery } from './RecommendPanel'
 import { buildExportUrl, createExport, exportDownloadUrl, fetchExportStatus } from '@/api'
 import { LocationFilter } from './LocationFilter'
@@ -249,6 +249,7 @@ export function ListPage({
   const [filterOpen, setFilterOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [deadlineView, setDeadlineView] = useState(false)
+  const newSinceOnScreen = useNewSinceOnScreen()
   const [majorInput, setMajorInput] = useState(() => getProfile().major || '')
   const quickMatchRef = useRef<HTMLInputElement | null>(null)
   const [params, setParams] = useState<SearchParams>(() => {
@@ -1307,7 +1308,7 @@ export function ListPage({
         </Suspense>
       )}
 
-      {showStats && !deadlineView && <DeadlinesCard />}
+      {showStats && !deadlineView && !newSinceOnScreen && <DeadlinesCard />}
 
       <div className="relative">
       <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5 sm:flex-wrap">

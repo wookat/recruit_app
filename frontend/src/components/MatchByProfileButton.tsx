@@ -324,9 +324,10 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
                         key={term}
                         type="button"
                         title={reason}
+                        aria-expanded={reason ? reasonTerm === term : undefined}
                         onClick={() => reason && setReasonTerm((prev) => (prev === term ? null : term))}
                         className={cn(
-                          'rounded-md border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 leading-none text-sky-700 dark:text-sky-400',
+                          'rounded-md border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 leading-none text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60 dark:text-sky-400',
                           reason ? 'cursor-pointer hover:bg-sky-500/20' : 'cursor-default',
                           reasonTerm === term && 'ring-1 ring-sky-500/60',
                         )}

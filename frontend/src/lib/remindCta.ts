@@ -6,6 +6,12 @@ const COUNT_KEY = 'recruit.remindCtaShown'
 const MAX_PROMPTS = 2
 
 export const REMIND_CTA_EVENT = 'recruit-remind-cta'
+export const REMIND_CONFIRM_EVENT = 'recruit-remind-confirm'
+
+/** 「提醒我」等入口开启提醒成功后调用：弹全局确认 toast。 */
+export function emitRemindConfirm(): void {
+  window.dispatchEvent(new Event(REMIND_CONFIRM_EVENT))
+}
 
 let suppressed = false
 

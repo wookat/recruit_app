@@ -443,6 +443,22 @@ export function ListPage({
     }
   }, [load, view])
 
+  // count 超时降级（total_partial）时自动轮询：后台补算写入缓存后即可拿到精确 total，
+  // 无需用户手动重试；最多 5 次，筛选变化后重置
+  const partialRetryRef = useRef(0)
+  useEffect(() => {
+    partialRetryRef.current = 0
+  }, [effParams])
+  useEffect(() => {
+    if (!data?.total_partial || loading || loadError) return
+    if (partialRetryRef.current >= 5) return
+    const t = setTimeout(() => {
+      partialRetryRef.current += 1
+      load()
+    }, 4000)
+    return () => clearTimeout(t)
+  }, [data, loading, loadError, load])
+
   function applyPreset(preset: PresetView) {
     if (preset.deadline) {
       setDeadlineView((v) => !v)
@@ -1455,9 +1471,11 @@ export function ListPage({
               <button
                 type="button"
                 onClick={() => load()}
-                className="min-h-11 text-xs text-primary underline underline-offset-2 sm:min-h-0"
+                title={t("结果不完整，点击重试")}
+                className="inline-flex min-h-11 items-center gap-1 text-xs text-muted-foreground sm:min-h-0"
               >
-                {t("结果不完整，点击重试")}{' '}</button>
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                {t("正在统计精确数量…")}{' '}</button>
             )}
             </>
           )}

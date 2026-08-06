@@ -6,24 +6,38 @@ import { buildPushItems, enablePush } from '@/lib/push'
 import { getRemindDays } from '@/lib/reminderPref'
 import { getFavorites } from '@/lib/positionStore'
 import { getBianzhiFavorites, getCampusFavorites } from '@/lib/boardFavorites'
-import { REMIND_CTA_EVENT } from '@/lib/remindCta'
+import { REMIND_CONFIRM_EVENT, REMIND_CTA_EVENT } from '@/lib/remindCta'
 
-/** 收藏有截止日期岗位后的全局 toast：引导开启截止推送提醒（每设备前 2 次）。 */
+const DISMISS_MS = 10000
+
+/** 收藏有截止日期岗位后的全局 toast：引导开启截止推送提醒（每设备前 2 次）；
+ * 也承接「提醒我」的开启成功确认。hover 时暂停自动消失。 */
 export function RemindToastHost() {
   const [open, setOpen] = useState(false)
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'denied' | 'error'>('idle')
   const timer = useRef<number | undefined>(undefined)
 
+  const scheduleDismiss = (ms = DISMISS_MS) => {
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setOpen(false), ms)
+  }
+
   useEffect(() => {
     const show = () => {
       setState('idle')
       setOpen(true)
-      window.clearTimeout(timer.current)
-      timer.current = window.setTimeout(() => setOpen(false), 10000)
+      scheduleDismiss()
+    }
+    const confirm = () => {
+      setState('done')
+      setOpen(true)
+      scheduleDismiss()
     }
     window.addEventListener(REMIND_CTA_EVENT, show)
+    window.addEventListener(REMIND_CONFIRM_EVENT, confirm)
     return () => {
       window.removeEventListener(REMIND_CTA_EVENT, show)
+      window.removeEventListener(REMIND_CONFIRM_EVENT, confirm)
       window.clearTimeout(timer.current)
     }
   }, [])
@@ -45,7 +59,7 @@ export function RemindToastHost() {
     } catch {
       setState('error')
     }
-    timer.current = window.setTimeout(() => setOpen(false), 6000)
+    scheduleDismiss()
   }
 
   return (
@@ -53,6 +67,8 @@ export function RemindToastHost() {
       role="status"
       aria-live="polite"
       className="fixed bottom-20 left-1/2 z-[60] flex w-max max-w-[calc(100vw-1.5rem)] -translate-x-1/2 flex-wrap items-center gap-x-2 gap-y-1.5 rounded-xl border bg-background px-3 py-2.5 text-sm shadow-lg md:bottom-6"
+      onMouseEnter={() => window.clearTimeout(timer.current)}
+      onMouseLeave={() => scheduleDismiss(4000)}
     >
       {state === 'done' ? (
         <>

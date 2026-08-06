@@ -92,6 +92,7 @@ def warm_board_caches() -> dict:
     import bianzhi
     import campus
     import jobs
+    import main as main_app  # 运行时导入避免循环依赖（main 导入 precompute）
 
     def _default_jobs_page(db):
         # 与前端首屏请求参数一致（UnifiedJobsPage PAGE_SIZE=50，其余默认值）
@@ -110,6 +111,9 @@ def warm_board_caches() -> dict:
         ("bianzhi_filters", bianzhi.bianzhi_filter_options),
         ("bianzhi_counts", bianzhi.bianzhi_counts),
         ("bianzhi_timeline", bianzhi.bianzhi_timeline),
+        ("freshness", main_app.data_freshness),
+        # days=7 与前端首屏请求一致（cache key 含非 db kwargs）
+        ("recent_updates", lambda db: main_app.recent_updates(days=7, db=db)),
     ]
     warmed, errors = [], []
     db = SessionLocal()
@@ -121,6 +125,64 @@ def warm_board_caches() -> dict:
             except Exception:  # noqa: BLE001  单项失败不影响其余预热
                 errors.append(name)
                 db.rollback()
+    finally:
+        db.close()
+    return {"warmed": warmed, "errors": errors}
+
+
+def refresh_freshness_caches() -> dict:
+    """强制重算 /api/freshness 与 /api/recent-updates 缓存（请求路径外）。
+
+    beat 每 10 分钟调用，保证用户请求永远命中热缓存，消除 TTL 到期后的冷重算。
+    """
+    import main as main_app
+
+    cache.invalidate_prefixes("freshness", "recent_updates")
+    db = SessionLocal()
+    try:
+        main_app.data_freshness(db=db)
+        main_app.recent_updates(days=7, db=db)
+    finally:
+        db.close()
+    return {"ok": True}
+
+
+def warm_seo_pages(invalidate: bool = True) -> dict:
+    """预热 SSR SEO 页（/zhaokao 省/城市/类型页与 /daily）的 Redis 缓存。
+
+    先失效再逐页重渲染，保证每日采集后内容新鲜且任意冷访问命中热缓存；
+    单页失败不影响其余（stale 副本仍可兜底）。
+    """
+    import seo
+
+    if invalidate:
+        cache.invalidate_prefixes(
+            "seo_index", "seo_prov", "seo_prov_et", "seo_city", "seo_city_et",
+            "seo_daily_index", "seo_daily_detail", "seo_daily_days",
+        )
+    warmed, errors = 0, 0
+    db = SessionLocal()
+
+    def _try(fn, *args):
+        nonlocal warmed, errors
+        try:
+            fn(*args, db=db)
+            warmed += 1
+        except Exception:  # noqa: BLE001  单页失败不影响其余预热
+            errors += 1
+            db.rollback()
+
+    try:
+        _try(seo._render_index)
+        for slug, _ in seo.PROVINCES:
+            _try(seo._render_province, slug)
+            for et_slug, _, _ in seo.EXAM_TYPES:
+                _try(seo._render_province_et, slug, et_slug)
+        for prov_slug, city_slug, _ in seo.CITIES:
+            _try(seo._render_city, prov_slug, city_slug)
+        _try(seo._render_daily_index)
+        for day in seo._recent_digest_days(db=db, limit=3):
+            _try(seo._render_daily_detail, day)
     finally:
         db.close()
     return {"warmed": warmed, "errors": errors}

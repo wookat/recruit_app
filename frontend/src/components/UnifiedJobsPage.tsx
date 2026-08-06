@@ -614,21 +614,25 @@ export function UnifiedJobsPage() {
                     {item ? (
                       view === 'table' ? (
                         <div
-                          role="button"
-                          tabIndex={0}
                           className="grid w-full cursor-pointer grid-cols-[5rem_1fr_6rem] items-center gap-2 border-b px-4 py-2.5 text-left text-sm transition-colors hover:bg-muted/50 active:bg-muted md:grid-cols-[5rem_1fr_9rem_7rem_9rem_6rem]"
                           onClick={() => openJob(item)}
-                          onKeyDown={(e) => e.key === 'Enter' && openJob(item)}
                         >
                           <Badge className={cn('w-fit text-[11px]', boardToneClass(item.source_board))}>
                             {item.source_board}
                           </Badge>
-                          <span className="min-w-0 truncate">
+                          <button
+                            type="button"
+                            className="min-w-0 cursor-pointer truncate text-left"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openJob(item)
+                            }}
+                          >
                             <Highlight text={item.title || item.category || '-'} query={keyword} />
                             <span className="ml-1.5 hidden text-xs text-muted-foreground lg:inline">
                               <Highlight text={item.employer || ''} query={keyword} />
                             </span>
-                          </span>
+                          </button>
                           <span className="hidden truncate text-xs text-muted-foreground md:block">
                             {item.category || '-'}
                           </span>
@@ -662,11 +666,8 @@ export function UnifiedJobsPage() {
                         </div>
                       ) : (
                         <div
-                          role="button"
-                          tabIndex={0}
                           className="flex w-full cursor-pointer items-start gap-2 border-b px-4 py-3 text-left transition-colors hover:bg-muted/50 active:bg-muted"
                           onClick={() => openJob(item)}
-                          onKeyDown={(e) => e.key === 'Enter' && openJob(item)}
                         >
                           <div className="flex min-w-0 flex-1 flex-col gap-1">
                             <div className="flex flex-wrap items-center gap-1.5">
@@ -679,9 +680,16 @@ export function UnifiedJobsPage() {
                                 </Badge>
                               )}
                               <DueBadge date={item.deadline_date ?? undefined} />
-                              <span className="line-clamp-1 text-sm font-medium">
+                              <button
+                                type="button"
+                                className="line-clamp-1 cursor-pointer text-left text-sm font-medium"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openJob(item)
+                                }}
+                              >
                                 <Highlight text={item.title || item.category || '-'} query={keyword} />
-                              </span>
+                              </button>
                             </div>
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                               <span className="inline-flex max-w-[60%] items-center gap-1">

@@ -22,6 +22,17 @@ from models import BianzhiJob, CampusJob, DailyDigest, Position
 
 router = APIRouter(tags=["seo"])
 
+# SSR 页 Redis 缓存 TTL：内容每日采集后由 warm_seo_pages 失效并重渲染，
+# TTL 取 26h 保证两次预热之间始终命中热缓存（冷 TTFB 根治）
+SEO_TTL = 26 * 3600
+# 边缘/共享缓存：内容每日更新，s-maxage 1h + SWR 1 天兼顾新鲜度与冷访问速度
+HTML_CACHE_CONTROL = "public, max-age=600, s-maxage=3600, stale-while-revalidate=86400"
+
+
+def _html(content: str) -> HTMLResponse:
+    return HTMLResponse(content, headers={"Cache-Control": HTML_CACHE_CONTROL})
+
+
 SITE = "https://jobs.zalize.com"
 BRAND = "上岸雷达"
 
@@ -112,19 +123,20 @@ _CSS = """
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
   color:#18181b;background:#fafafa;line-height:1.6}
-a{color:#1d4ed8;text-decoration:none}a:hover{text-decoration:underline}
+a{color:#1d4ed8;text-decoration:underline}
+.chips a,.cta,.logo{text-decoration:none}
 .wrap{max-width:960px;margin:0 auto;padding:16px}
 header.site{background:#fff;border-bottom:1px solid #e4e4e7}
 header.site .wrap{display:flex;align-items:center;gap:8px;padding-top:12px;padding-bottom:12px}
 .logo{font-weight:700;font-size:18px;color:#1d4ed8}
-nav.crumb{font-size:13px;color:#71717a;margin:12px 0}
+nav.crumb{font-size:13px;color:#52525b;margin:12px 0}
 h1{font-size:22px;margin:8px 0 4px}
 p.desc{color:#52525b;font-size:14px;margin-bottom:16px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
 .chips a{display:inline-block;border:1px solid #d4d4d8;border-radius:6px;background:#fff;
   padding:6px 12px;font-size:13px;color:#3f3f46}
 .chips a:hover{border-color:#1d4ed8;color:#1d4ed8;text-decoration:none}
-.chips a .n{color:#a1a1aa;font-size:12px;margin-left:4px}
+.chips a .n{color:#52525b;font-size:12px;margin-left:4px}
 table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e4e4e7;
   border-radius:8px;overflow:hidden;font-size:14px}
 th,td{text-align:left;padding:10px 12px;border-bottom:1px solid #f4f4f5;vertical-align:top}
@@ -133,7 +145,7 @@ tr:last-child td{border-bottom:none}
 .cta{display:inline-block;background:#1d4ed8;color:#fff;border-radius:8px;
   padding:10px 18px;font-size:14px;margin:16px 0}
 .cta:hover{background:#1e40af;text-decoration:none}
-footer{color:#a1a1aa;font-size:12px;margin:24px 0 16px}
+footer{color:#52525b;font-size:12px;margin:24px 0 16px}
 @media(max-width:640px){
   .wrap{padding:12px}
   h1{font-size:19px}
@@ -141,7 +153,7 @@ footer{color:#a1a1aa;font-size:12px;margin:24px 0 16px}
   thead{display:none}
   tr{border-bottom:1px solid #e4e4e7;padding:8px 0}
   td{display:block;border:none;padding:2px 12px}
-  td[data-l]:before{content:attr(data-l) "：";color:#a1a1aa;font-size:12px}
+  td[data-l]:before{content:attr(data-l) "：";color:#52525b;font-size:12px}
 }
 """
 
@@ -166,12 +178,12 @@ def _page(title: str, desc: str, canonical: str, crumb: str, body: str,
 </head>
 <body>
 <header class="site"><div class="wrap"><a class="logo" href="/">{BRAND}</a>
-<span style="color:#a1a1aa;font-size:13px">全国公务员·事业单位·校招岗位库</span></div></header>
-<div class="wrap">
+<span style="color:#52525b;font-size:13px">全国公务员·事业单位·校招岗位库</span></div></header>
+<main class="wrap">
 <nav class="crumb">{crumb}</nav>
 {body}
 <footer>数据来自公开招考公告与官方渠道聚合，实际以官方公告为准。{BRAND} · <a href="/">jobs.zalize.com</a></footer>
-</div>
+</main>
 </body>
 </html>"""
 
@@ -241,7 +253,7 @@ def _jsonld(jobs, prov: str, et_norm: str) -> str:
             + json.dumps(items, ensure_ascii=False) + "</script>")
 
 
-@cache.cached("seo_index", ttl=3600, stale=True)
+@cache.cached("seo_index", ttl=SEO_TTL, stale=True)
 def _render_index(db: Session = None) -> str:
     counts = dict(
         _active(db.query(Position.province, func.count()))
@@ -266,7 +278,7 @@ def _render_index(db: Session = None) -> str:
                  f"{SITE}/zhaokao", crumb, body)
 
 
-@cache.cached("seo_prov", ttl=3600, stale=True)
+@cache.cached("seo_prov", ttl=SEO_TTL, stale=True)
 def _render_province(slug: str, db: Session = None) -> str:
     prov = PROV_BY_SLUG[slug]
     et_counts = dict(
@@ -308,7 +320,7 @@ def _render_province(slug: str, db: Session = None) -> str:
                  _jsonld(jobs, prov, "招考"))
 
 
-@cache.cached("seo_prov_et", ttl=3600, stale=True)
+@cache.cached("seo_prov_et", ttl=SEO_TTL, stale=True)
 def _render_province_et(slug: str, et_slug: str, db: Session = None) -> str:
     prov = PROV_BY_SLUG[slug]
     et_norm, short = ET_BY_SLUG[et_slug]
@@ -335,7 +347,7 @@ def _render_province_et(slug: str, et_slug: str, db: Session = None) -> str:
                  _jsonld(jobs, prov, et_norm))
 
 
-@cache.cached("seo_city", ttl=3600, stale=True)
+@cache.cached("seo_city", ttl=SEO_TTL, stale=True)
 def _render_city(slug: str, city_slug: str, db: Session = None) -> str:
     prov = PROV_BY_SLUG[slug]
     city = CITY_BY_SLUG[(slug, city_slug)]
@@ -379,7 +391,7 @@ def _render_city(slug: str, city_slug: str, db: Session = None) -> str:
                  _jsonld(jobs, prov, "招考"))
 
 
-@cache.cached("seo_city_et", ttl=3600, stale=True)
+@cache.cached("seo_city_et", ttl=SEO_TTL, stale=True)
 def _render_city_et(slug: str, city_slug: str, et_slug: str, db: Session = None) -> str:
     prov = PROV_BY_SLUG[slug]
     city = CITY_BY_SLUG[(slug, city_slug)]
@@ -418,14 +430,14 @@ def _render_city_et(slug: str, city_slug: str, et_slug: str, db: Session = None)
 
 @router.get("/zhaokao", response_class=HTMLResponse)
 def seo_index(db: Session = Depends(get_db)):
-    return HTMLResponse(_render_index(db=db))
+    return _html(_render_index(db=db))
 
 
 @router.get("/zhaokao/{slug}", response_class=HTMLResponse)
 def seo_province(slug: str, db: Session = Depends(get_db)):
     if slug not in PROV_BY_SLUG:
         raise HTTPException(status_code=404)
-    return HTMLResponse(_render_province(slug, db=db))
+    return _html(_render_province(slug, db=db))
 
 
 @router.get("/zhaokao/{slug}/{sub}", response_class=HTMLResponse)
@@ -435,9 +447,9 @@ def seo_province_sub(slug: str, sub: str, db: Session = Depends(get_db)):
     if slug not in PROV_BY_SLUG:
         raise HTTPException(status_code=404)
     if sub in ET_BY_SLUG:
-        return HTMLResponse(_render_province_et(slug, sub, db=db))
+        return _html(_render_province_et(slug, sub, db=db))
     if (slug, sub) in CITY_BY_SLUG:
-        return HTMLResponse(_render_city(slug, sub, db=db))
+        return _html(_render_city(slug, sub, db=db))
     raise HTTPException(status_code=404)
 
 
@@ -445,7 +457,7 @@ def seo_province_sub(slug: str, sub: str, db: Session = Depends(get_db)):
 def seo_city_et(slug: str, city_slug: str, et_slug: str, db: Session = Depends(get_db)):
     if (slug, city_slug) not in CITY_BY_SLUG or et_slug not in ET_BY_SLUG:
         raise HTTPException(status_code=404)
-    return HTMLResponse(_render_city_et(slug, city_slug, et_slug, db=db))
+    return _html(_render_city_et(slug, city_slug, et_slug, db=db))
 
 
 # ---------------- 每日精选栏目页 /daily ----------------
@@ -469,7 +481,7 @@ def _recent_digest_days(db: Session = None, limit: int = 90) -> list:
     return [r[0].isoformat() for r in rows]
 
 
-@cache.cached("seo_daily_index", ttl=1800, stale=True)
+@cache.cached("seo_daily_index", ttl=SEO_TTL, stale=True)
 def _render_daily_index(db: Session = None) -> str:
     rows = (db.query(DailyDigest)
             .order_by(DailyDigest.day.desc()).limit(90).all())
@@ -547,7 +559,7 @@ def _daily_jsonld(day: date, campus, bianzhi) -> str:
             + json.dumps(data, ensure_ascii=False) + "</script>")
 
 
-@cache.cached("seo_daily_detail", ttl=1800, stale=True)
+@cache.cached("seo_daily_detail", ttl=SEO_TTL, stale=True)
 def _render_daily_detail(day_str: str, db: Session = None) -> str:
     day = date.fromisoformat(day_str)
     row = db.query(DailyDigest).filter(DailyDigest.day == day).first()
@@ -609,7 +621,7 @@ def _render_daily_detail(day_str: str, db: Session = None) -> str:
 
 @router.get("/daily", response_class=HTMLResponse)
 def daily_index(db: Session = Depends(get_db)):
-    return HTMLResponse(_render_daily_index(db=db))
+    return _html(_render_daily_index(db=db))
 
 
 @router.get("/daily/{day_str}", response_class=HTMLResponse)
@@ -618,7 +630,7 @@ def daily_detail(day_str: str, db: Session = Depends(get_db)):
         date.fromisoformat(day_str)
     except ValueError:
         raise HTTPException(status_code=404)
-    return HTMLResponse(_render_daily_detail(day_str, db=db))
+    return _html(_render_daily_detail(day_str, db=db))
 
 
 @router.get("/api/daily/latest")

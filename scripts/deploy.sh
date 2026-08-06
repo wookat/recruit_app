@@ -26,4 +26,10 @@ if [[ "$MODE" != "--frontend-only" ]]; then
 fi
 
 "${SSH[@]}" "cd $REMOTE_DIR && docker compose -f docker-compose.prod.yml build app && docker compose -f docker-compose.prod.yml up -d app worker"
+
+if [[ "$MODE" != "--frontend-only" ]]; then
+  # SSR 模板变更需失效并重渲染 SEO 页缓存（26h TTL，启动预热不失效已有键）
+  "${SSH[@]}" "sleep 15 && docker exec recruit-worker celery -A celery_app call tasks.warm_seo_pages" || \
+    echo "WARN: SEO 缓存重预热任务下发失败，可手动执行 tasks.warm_seo_pages"
+fi
 echo "deployed: $(curl -s https://jobs.zalize.com/ | grep -o 'index-[^\"]*\.js' | head -1)"

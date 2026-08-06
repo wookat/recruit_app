@@ -47,6 +47,11 @@ def _warm_hot_keywords_bg():
     except Exception as exc:  # noqa: BLE001
         logger.warning("启动板块缓存预热失败: %s: %s", type(exc).__name__, exc)
     try:
+        result = precompute.warm_seo_pages(invalidate=False)  # 启动只补缺页，不失效已有热缓存
+        logger.info("启动 SEO 页预热完成: %s", result)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("启动 SEO 页预热失败: %s: %s", type(exc).__name__, exc)
+    try:
         result = precompute.warm_suggest_vocab()
         logger.info("启动联想词表预生成完成: %s", result)
     except Exception as exc:  # noqa: BLE001
@@ -156,7 +161,7 @@ def health():
 
 
 @app.get("/api/freshness")
-@cache.cached("freshness", ttl=600)
+@cache.cached("freshness", ttl=900, stale=True)
 def data_freshness(db: Session = Depends(get_db)):
     """各数据板块最近一次采集成功时间与总条数（crawl_runs 聚合，10 分钟缓存）。"""
     rows = db.execute(text("""

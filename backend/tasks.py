@@ -892,7 +892,24 @@ def refresh_unified_jobs():
         warm = precompute.warm_board_caches()
     except Exception as exc:  # noqa: BLE001  预热失败不影响刷新结果
         warm = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
-    return {"status": "ok", "cache_invalidated": invalidated, "warm": warm}
+    try:
+        seo_warm = precompute.warm_seo_pages()
+    except Exception as exc:  # noqa: BLE001
+        seo_warm = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    return {"status": "ok", "cache_invalidated": invalidated, "warm": warm,
+            "seo_warm": seo_warm}
+
+
+@celery_app.task
+def warm_seo_pages():
+    """每日采集/精选生成后预热 SSR SEO 页缓存（省/城市/类型页与 /daily）。"""
+    return precompute.warm_seo_pages()
+
+
+@celery_app.task
+def refresh_freshness_caches():
+    """每 10 分钟请求路径外重算 freshness/recent-updates 缓存，消除 TTL 到期冷重算。"""
+    return precompute.refresh_freshness_caches()
 
 
 @celery_app.task

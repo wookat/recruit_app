@@ -64,18 +64,31 @@ export function ValuePropBanner({
   }
 
   return (
-    <section className="relative mb-4 animate-fade-in-up rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4">
+    <section className="relative animate-fade-in-up rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-3 py-2 sm:mb-4 sm:p-4">
       <button
         type="button"
         aria-label={t("关闭价值主张条")}
-        className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground sm:h-8 sm:w-8"
+        className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground sm:right-2 sm:top-2"
         onClick={dismiss}
       >
         <X className="h-4 w-4" />
       </button>
-      <p className="pr-10 text-sm font-semibold">
-        {t("90 万+ 体制内 / 校招 / 编制岗位信息 · 每日自动更新 · 完全免费")}{' '}</p>
-      <div className="mt-2.5 flex flex-wrap gap-2">
+      {/* 移动端压缩为单行条（标题 + 匹配入口 + 关闭），保证 375px 首屏岗位卡可见 */}
+      <div className="flex items-center gap-2 pr-8 sm:block sm:pr-10">
+        <p className="min-w-0 flex-1 truncate text-xs font-semibold sm:flex-none sm:text-sm">
+          {t("90 万+ 体制内 / 校招 / 编制岗位信息 · 每日自动更新 · 完全免费")}{' '}</p>
+        <button
+          type="button"
+          className="shrink-0 whitespace-nowrap text-xs text-primary underline-offset-2 hover:underline sm:hidden"
+          onClick={() => {
+            dismiss()
+            onMatch()
+          }}
+        >
+          {t("一键匹配")}
+        </button>
+      </div>
+      <div className="mt-2.5 hidden flex-wrap gap-2 sm:flex">
         <Button
           size="sm"
           className="min-h-11 gap-1.5 sm:min-h-8"

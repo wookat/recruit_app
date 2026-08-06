@@ -132,20 +132,21 @@ interface PresetView {
 
 const PRESETS: PresetView[] = [
   { key: 'all', label: t("全部"), params: {} },
-  { key: 'main', label: t("校招汇总"), params: { source_table: [t("校招汇总表")] } },
-  { key: 'noexam', label: t("免笔试"), params: { source_table: [t("免笔试汇总")] } },
+  // params 为查询值，必须保持中文（数据内容为中文，译文查询会 0 结果）
+  { key: 'main', label: t("校招汇总"), params: { source_table: ['校招汇总表'] } },
+  { key: 'noexam', label: t("免笔试"), params: { source_table: ['免笔试汇总'] } },
   { key: 'referral', label: t("内推码"), params: { referral_only: true } },
-  { key: 'soe', label: t("央国企名录"), params: { source_table: [t("央国企事业单位名录")] } },
-  { key: 'soecampus', label: t("央国企校招"), params: { source_table: [t("央国企校招")] } },
-  { key: 'old', label: t("24-25届可投"), params: { source_table: [t("24-25届可投")] } },
-  { key: 'autumn', label: t("秋招"), params: { batch: t("秋招") } },
-  { key: 'spring', label: t("春招"), params: { batch: t("春招") } },
-  { key: 'intern', label: t("实习"), params: { batch: t("实习") } },
-  { key: 'y27autumn', label: t("27届秋招"), params: { batch: t("秋招"), grad_year: '2027' } },
-  { key: 'internet', label: t("互联网"), params: { industry: [t("互联网")] } },
-  { key: 'finance', label: t("银行金融"), params: { industry: [t("银行"), t("金融")] } },
-  { key: 'soe2', label: t("央国企"), params: { company_type: [t("央国企"), t("国企")] } },
-  { key: 'foreign', label: t("外企"), params: { company_type: [t("外企"), t("外企/合资"), t("合资"), t("中外合资")] } },
+  { key: 'soe', label: t("央国企名录"), params: { source_table: ['央国企事业单位名录'] } },
+  { key: 'soecampus', label: t("央国企校招"), params: { source_table: ['央国企校招'] } },
+  { key: 'old', label: t("24-25届可投"), params: { source_table: ['24-25届可投'] } },
+  { key: 'autumn', label: t("秋招"), params: { batch: '秋招' } },
+  { key: 'spring', label: t("春招"), params: { batch: '春招' } },
+  { key: 'intern', label: t("实习"), params: { batch: '实习' } },
+  { key: 'y27autumn', label: t("27届秋招"), params: { batch: '秋招', grad_year: '2027' } },
+  { key: 'internet', label: t("互联网"), params: { industry: ['互联网'] } },
+  { key: 'finance', label: t("银行金融"), params: { industry: ['银行', '金融'] } },
+  { key: 'soe2', label: t("央国企"), params: { company_type: ['央国企', '国企'] } },
+  { key: 'foreign', label: t("外企"), params: { company_type: ['外企', '外企/合资', '合资', '中外合资'] } },
 ]
 
 const PAGE_SIZE = 20

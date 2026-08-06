@@ -1,24 +1,28 @@
 """多维画像匹配：按用户画像（学历/多专业/意向地点/偏好）对校招、编制岗位
 打分排序并逐维标注匹配原因。专业维度用 AI 语义扩展（ai_match），学历为硬约束。"""
+import hashlib
+import threading
 from datetime import date
 from typing import Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
-from sqlalchemy import or_
+from sqlalchemy import or_, text as sa_text
 from sqlalchemy.orm import Session
 
 from ai_match import expand_majors_semantic
 from bianzhi import BianzhiJobOut
 from campus import CampusJobOut
-from crud import edu_eligible_clause
-from database import get_db
+from crud import _cache_get_json, _cache_set_json, edu_eligible_clause
+from database import SessionLocal, get_db
 from models import BianzhiJob, CampusJob
 
 router = APIRouter(prefix="/api/match", tags=["match"])
 
 CANDIDATES_PER_TIER = 400
 MAX_RESULTS = 60
+TIER_TIMEOUT_MS = 8000  # 单层召回语句超时：超时层跳过，其余层结果仍参与打分
+MATCH_CACHE_TTL = 6 * 3600  # 匹配结果按画像缓存，重复匹配秒出
 
 MatchLevel = Literal["exact", "semantic", "unlimited", "none", "unset"]
 
@@ -136,11 +140,34 @@ def _candidate_conds(major_cols, majors: List[str], terms: List[str]):
 
 
 def _collect(db, model, order_col, tiers, base_filters):
+    """各召回层并行查询（独立会话 + 语句超时）：冷缓存下三层 ILIKE 串行扫描
+    是匹配慢的主因，并行后取最慢一层耗时；超时层跳过不阻塞整体结果。"""
+    if len(tiers) == 1:
+        q = db.query(model).filter(tiers[0], *base_filters).order_by(order_col.desc())
+        return list(q.limit(CANDIDATES_PER_TIER))
+
+    results: List[Optional[list]] = [None] * len(tiers)
+
+    def worker(i: int, cond) -> None:
+        s = SessionLocal()
+        try:
+            s.execute(sa_text(f"SET statement_timeout = '{TIER_TIMEOUT_MS}'"))
+            q = s.query(model).filter(cond, *base_filters).order_by(order_col.desc())
+            results[i] = q.limit(CANDIDATES_PER_TIER).all()
+        except Exception:  # noqa: BLE001  超时/失败层跳过
+            results[i] = []
+        finally:
+            s.close()
+
+    threads = [threading.Thread(target=worker, args=(i, cond), daemon=True) for i, cond in enumerate(tiers)]
+    for th in threads:
+        th.start()
+    for th in threads:
+        th.join(timeout=TIER_TIMEOUT_MS / 1000 + 3)
     seen: set = set()
     rows = []
-    for cond in tiers:
-        q = db.query(model).filter(cond, *base_filters).order_by(order_col.desc())
-        for row in q.limit(CANDIDATES_PER_TIER):
+    for tier_rows in results:
+        for row in tier_rows or []:
             if row.id in seen:
                 continue
             seen.add(row.id)
@@ -148,8 +175,16 @@ def _collect(db, model, order_col, tiers, base_filters):
     return rows
 
 
+def _match_cache_key(board: str, profile: "MatchProfile") -> str:
+    return f"match:{board}:" + hashlib.md5(profile.model_dump_json().encode()).hexdigest()
+
+
 @router.post("/campus", response_model=CampusMatchOut)
 def match_campus(profile: MatchProfile, db: Session = Depends(get_db)):
+    cache_key = _match_cache_key("campus", profile)
+    cached = _cache_get_json(cache_key)
+    if cached is not None:
+        return cached
     majors = [m.strip() for m in profile.majors if m.strip()][:5]
     exp = expand_majors_semantic(majors)
     terms = exp["terms"]
@@ -189,15 +224,21 @@ def match_campus(profile: MatchProfile, db: Session = Depends(get_db)):
         )
         items.append(CampusMatchItem(job=CampusJobOut.model_validate(r), score=score, reasons=reasons))
     items.sort(key=lambda x: -x.score)
-    return CampusMatchOut(
+    out = CampusMatchOut(
         items=items[:MAX_RESULTS], expanded_terms=terms,
         categories=exp["categories"], term_reasons=exp.get("term_reasons", {}),
         semantic_source=exp["source"],
     )
+    _cache_set_json(cache_key, MATCH_CACHE_TTL, out.model_dump(mode="json"))
+    return out
 
 
 @router.post("/bianzhi", response_model=BianzhiMatchOut)
 def match_bianzhi(profile: MatchProfile, db: Session = Depends(get_db)):
+    cache_key = _match_cache_key("bianzhi", profile)
+    cached = _cache_get_json(cache_key)
+    if cached is not None:
+        return cached
     majors = [m.strip() for m in profile.majors if m.strip()][:5]
     exp = expand_majors_semantic(majors)
     terms = exp["terms"]
@@ -232,8 +273,10 @@ def match_bianzhi(profile: MatchProfile, db: Session = Depends(get_db)):
         )
         items.append(BianzhiMatchItem(job=BianzhiJobOut.model_validate(r), score=score, reasons=reasons))
     items.sort(key=lambda x: -x.score)
-    return BianzhiMatchOut(
+    out = BianzhiMatchOut(
         items=items[:MAX_RESULTS], expanded_terms=terms,
         categories=exp["categories"], term_reasons=exp.get("term_reasons", {}),
         semantic_source=exp["source"],
     )
+    _cache_set_json(cache_key, MATCH_CACHE_TTL, out.model_dump(mode="json"))
+    return out

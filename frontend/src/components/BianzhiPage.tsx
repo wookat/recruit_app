@@ -115,13 +115,14 @@ interface PresetView {
 
 const PRESETS: PresetView[] = [
   { key: 'all', label: t("全部"), icon: LayoutList },
-  { key: 'gwy', label: t("公务员事业单位"), category: t("公务员事业单位"), icon: Landmark },
-  { key: 'edu', label: t("教育系统"), category: t("教育系统"), icon: School },
-  { key: 'med', label: t("医疗系统"), category: t("医疗系统"), icon: Stethoscope },
-  { key: 'univ', label: t("高校高职大专"), category: t("高校高职大专"), icon: Library },
-  { key: 'sci', label: t("科研院所"), category: t("科研院所"), icon: FlaskConical },
-  { key: 'soe', label: t("央国企社招"), category: t("央国企社招"), icon: Building2 },
-  { key: 'lk', label: t("大型联考"), category: t("大型联考"), icon: PenLine },
+  // category 为查询值，必须保持中文（数据内容为中文，译文查询会 0 结果）
+  { key: 'gwy', label: t("公务员事业单位"), category: '公务员事业单位', icon: Landmark },
+  { key: 'edu', label: t("教育系统"), category: '教育系统', icon: School },
+  { key: 'med', label: t("医疗系统"), category: '医疗系统', icon: Stethoscope },
+  { key: 'univ', label: t("高校高职大专"), category: '高校高职大专', icon: Library },
+  { key: 'sci', label: t("科研院所"), category: '科研院所', icon: FlaskConical },
+  { key: 'soe', label: t("央国企社招"), category: '央国企社招', icon: Building2 },
+  { key: 'lk', label: t("大型联考"), category: '大型联考', icon: PenLine },
 ]
 
 const PAGE_SIZE = 20

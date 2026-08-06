@@ -75,6 +75,7 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
   const [error, setError] = useState(false)
   const [result, setResult] = useState<MatchOut<CampusMatchItem | BianzhiMatchItem> | null>(null)
   const [showCount, setShowCount] = useState(10)
+  const [reasonTerm, setReasonTerm] = useState<string | null>(null)
 
   const [eduLevel, setEduLevel] = useState<string[]>(profile.eduLevel)
   const [majorsText, setMajorsText] = useState(profile.majors.join('、'))
@@ -105,6 +106,7 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
     setError(false)
     setResult(null)
     setShowCount(10)
+    setReasonTerm(null)
     const body = {
       edu_level: p.eduLevel,
       majors: p.majors,
@@ -311,14 +313,40 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
                 <span className="font-medium text-foreground">
                   {t("匹配结果")}{' '}{result.items.length} {' '}{t("条（按匹配度排序）")}{' '}</span>
                 {result.categories.length > 0 && <span>{t("专业大类：")}{result.categories.join('、')}</span>}
-                {result.expanded_terms.length > 0 && (
-                  <span>
-                    {result.semantic_source === 'ai' ? t("AI 扩展") : t("同类扩展")}：
-                    {result.expanded_terms.slice(0, 8).join('、')}
-                    {result.expanded_terms.length > 8 ? '…' : ''}
-                  </span>
-                )}
               </div>
+              {result.expanded_terms.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                  <span>{result.semantic_source === 'ai' ? t("AI 扩展") : t("同类扩展")}：</span>
+                  {result.expanded_terms.slice(0, 12).map((term) => {
+                    const reason = result.term_reasons?.[term]
+                    return (
+                      <button
+                        key={term}
+                        type="button"
+                        title={reason}
+                        onClick={() => reason && setReasonTerm((prev) => (prev === term ? null : term))}
+                        className={cn(
+                          'rounded-md border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 leading-none text-sky-700 dark:text-sky-400',
+                          reason ? 'cursor-pointer hover:bg-sky-500/20' : 'cursor-default',
+                          reasonTerm === term && 'ring-1 ring-sky-500/60',
+                        )}
+                      >
+                        {term}
+                      </button>
+                    )
+                  })}
+                  {result.expanded_terms.length > 12 && <span>…</span>}
+                  {result.term_reasons && Object.keys(result.term_reasons).length > 0 && (
+                    <span className="text-[11px]">{t("（点击查看扩展理由）")}</span>
+                  )}
+                </div>
+              )}
+              {reasonTerm && result.term_reasons?.[reasonTerm] && (
+                <p className="rounded-md border border-sky-500/20 bg-sky-500/5 px-2 py-1 text-xs text-muted-foreground">
+                  <span className="font-medium text-sky-700 dark:text-sky-400">{reasonTerm}</span>
+                  ：{result.term_reasons[reasonTerm]}
+                </p>
+              )}
               {result.items.length === 0 && (
                 <p className="text-sm text-muted-foreground">{t("没有匹配到岗位，试试放宽画像条件")}</p>
               )}

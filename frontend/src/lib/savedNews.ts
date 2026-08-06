@@ -258,6 +258,18 @@ export async function enableNewsNotification(): Promise<NotificationPermission> 
   return perm
 }
 
+/** 保存筛选时勾选「有新岗位通知我」：开启全局上新通知开关（需权限）。
+ *  返回 'granted'（已开启）或 'fallback'（权限未授予，回退站内红点，调用方温和引导）。 */
+export async function enableNotifyForSavedFilter(): Promise<'granted' | 'fallback'> {
+  if (!isNewsNotificationSupported()) return 'fallback'
+  const perm = await enableNewsNotification()
+  return perm === 'granted' ? 'granted' : 'fallback'
+}
+
+export function isNewsNotificationSupported(): boolean {
+  return 'Notification' in window
+}
+
 function todayStr(): string {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`

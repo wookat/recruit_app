@@ -1,7 +1,7 @@
 """多维画像匹配：按用户画像（学历/多专业/意向地点/偏好）对校招、编制岗位
 打分排序并逐维标注匹配原因。专业维度用 AI 语义扩展（ai_match），学历为硬约束。"""
 from datetime import date
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -55,6 +55,7 @@ class CampusMatchOut(BaseModel):
     items: List[CampusMatchItem]
     expanded_terms: List[str]
     categories: List[str]
+    term_reasons: Dict[str, str] = Field(default_factory=dict)
     semantic_source: Literal["ai", "rules"]
 
 
@@ -62,6 +63,7 @@ class BianzhiMatchOut(BaseModel):
     items: List[BianzhiMatchItem]
     expanded_terms: List[str]
     categories: List[str]
+    term_reasons: Dict[str, str] = Field(default_factory=dict)
     semantic_source: Literal["ai", "rules"]
 
 
@@ -189,7 +191,8 @@ def match_campus(profile: MatchProfile, db: Session = Depends(get_db)):
     items.sort(key=lambda x: -x.score)
     return CampusMatchOut(
         items=items[:MAX_RESULTS], expanded_terms=terms,
-        categories=exp["categories"], semantic_source=exp["source"],
+        categories=exp["categories"], term_reasons=exp.get("term_reasons", {}),
+        semantic_source=exp["source"],
     )
 
 
@@ -231,5 +234,6 @@ def match_bianzhi(profile: MatchProfile, db: Session = Depends(get_db)):
     items.sort(key=lambda x: -x.score)
     return BianzhiMatchOut(
         items=items[:MAX_RESULTS], expanded_terms=terms,
-        categories=exp["categories"], semantic_source=exp["source"],
+        categories=exp["categories"], term_reasons=exp.get("term_reasons", {}),
+        semantic_source=exp["source"],
     )

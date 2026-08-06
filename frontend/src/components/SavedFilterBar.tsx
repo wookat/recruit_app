@@ -4,7 +4,13 @@ import { Bookmark, BookmarkPlus, Check, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { markSavedFilterSeen, removeSavedFilterBaseline, useSavedNews } from '@/lib/savedNews'
+import {
+  enableNotifyForSavedFilter,
+  isNewsNotificationSupported,
+  markSavedFilterSeen,
+  removeSavedFilterBaseline,
+  useSavedNews,
+} from '@/lib/savedNews'
 import {
   deleteQuery,
   getSavedQueries,
@@ -28,6 +34,7 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
   const [saved, setSaved] = useState<SavedQuery[]>(() => getSavedQueries(board))
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveName, setSaveName] = useState('')
+  const [saveNotify, setSaveNotify] = useState(true)
   const [hint, setHint] = useState<string | null>(null)
   const news = useSavedNews()
 
@@ -53,7 +60,13 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
         ? tt`已达 10 组上限，删除了最旧的「${dropped}」`
         : t("已保存并订阅，上新时 chip 显示「+N 新」"),
     )
-    setTimeout(() => setHint(null), 6000)
+    if (saveNotify && isNewsNotificationSupported()) {
+      void enableNotifyForSavedFilter().then((r) => {
+        if (r === 'fallback')
+          setHint(t("已保存并订阅。浏览器通知未开启，上新将以站内红点提示，可在地址栏站点设置允许通知后到「收藏 → 提醒」开启"))
+      })
+    }
+    setTimeout(() => setHint(null), 8000)
   }
 
   return (
@@ -83,7 +96,7 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
         </Badge>
       ))}
       {saveOpen ? (
-        <span className="inline-flex max-w-full items-center gap-1">
+        <span className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1">
           <Input
             autoFocus
             onFocus={(e) => {
@@ -99,6 +112,17 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
             placeholder={defaultName || t("筛选名称")}
             className="h-9 w-40 max-w-full text-xs sm:h-7 sm:w-32"
           />
+          {isNewsNotificationSupported() && (
+            <label className="inline-flex cursor-pointer items-center gap-1 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={saveNotify}
+                onChange={(e) => setSaveNotify(e.target.checked)}
+                className="h-3.5 w-3.5 accent-primary"
+              />
+              {t("有新岗位通知我")}
+            </label>
+          )}
           <Button size="icon" variant="ghost" className="h-9 w-9 sm:h-7 sm:w-7" onClick={handleSave} aria-label={t("确认保存")}>
             <Check className="h-3.5 w-3.5" />
           </Button>
@@ -124,6 +148,7 @@ export function SavedFilterBar({ board, snapshot, defaultName, canSave }: Props)
             disabled={!canSave}
             onClick={() => {
               setSaveName(defaultName)
+              setSaveNotify(true)
               setSaveOpen(true)
             }}
           >

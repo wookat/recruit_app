@@ -400,6 +400,8 @@ export interface MatchOut<T> {
   items: T[]
   expanded_terms: string[]
   categories: string[]
+  /** 扩展专业词 -> 一句扩展理由（AI 生成或规则映射说明）。 */
+  term_reasons?: Record<string, string>
   semantic_source: 'ai' | 'rules'
 }
 

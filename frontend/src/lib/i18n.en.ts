@@ -196,7 +196,7 @@ export const EN: Record<string, string> = {
   '体制内岗位采自国家公务员局、军队人才网、国聘网及各省官方招考公告；校招/编制公告汇总自飞书多维表格，每天 6:00-6:20 自动同步一次。各板块条数与最近同步时间见「数据说明」章节。': 'Public-sector jobs come from the State Civil Service Bureau, military talent portal, Guopin and provincial official announcements; campus/staffing listings are aggregated from Feishu tables, auto-synced daily at 6:00–6:20. See the “Data notes” section for counts and last sync times.',
   '体制内岗位：采自国家公务员局、军队人才网、国聘网及各省官方招考公告页面。': 'Public-sector jobs: sourced from the State Civil Service Bureau, military talent portal, Guopin and provincial official exam announcement pages.',
   '你有 {0} 条收藏岗位将在 {1} 天内截止报名，点击查看': 'You have {0} saved job(s) closing within {1} day(s) — click to view',
-  '你的专业，如：计算机科学与技术': 'Your major, e.g. Computer Science',
+  '你的专业，如：计算机科学与技术': 'Your major, e.g. CS',
   '你订阅的 {0} 个筛选共新增 {1} 条，点击查看': '{1} new item(s) across your {0} subscribed filter(s) — click to view',
   '使用技巧与误区': 'Tips & pitfalls',
   '保存图片': 'Save image',

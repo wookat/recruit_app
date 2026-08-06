@@ -952,7 +952,7 @@ export function ListPage({
         />
       )}
       <Card>
-        <CardContent className="space-y-4 p-4">
+        <CardContent className="space-y-4 p-4 max-sm:space-y-3 max-sm:p-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
             <SearchSuggestInput
               value={params.keyword || ''}
@@ -1035,22 +1035,23 @@ export function ListPage({
               >
                 <Rows3 className="h-4 w-4" />
               </Button>
+              <Button
+                variant={toolsOpen ? 'secondary' : 'outline'}
+                size="icon"
+                className="h-11 w-11 sm:hidden"
+                aria-label={t("更多搜索工具")}
+                title={t("更多搜索工具")}
+                aria-expanded={toolsOpen}
+                onClick={() => setToolsOpen((v) => !v)}
+              >
+                <Sparkles className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 
           {synAdded.length > 0 && <SynonymHint added={synAdded} onClose={() => setSynOff(true)} />}
 
           {keyFilterRow('max-sm:hidden')}
-
-          <button
-            type="button"
-            aria-expanded={toolsOpen}
-            onClick={() => setToolsOpen((v) => !v)}
-            className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-border py-1.5 text-xs text-muted-foreground hover:bg-muted sm:hidden"
-          >
-            {toolsOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            {t("更多搜索工具")}
-          </button>
 
           <div className={cn('space-y-4', !toolsOpen && 'max-sm:hidden')}>
 

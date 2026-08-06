@@ -24,7 +24,7 @@ import { Highlight } from '@/components/Highlight'
 import { BoardExportButton } from '@/components/BoardExportButton'
 import { TONE_CLASSES, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
-import { formatDueDayLabel, getEffectiveDeadline, parseDeadlineText } from '@/lib/deadline'
+import { formatDueDayLabel, getEffectiveDeadline, isLongTermDate, parseDeadlineText } from '@/lib/deadline'
 import {
   Table,
   TableBody,
@@ -1316,7 +1316,7 @@ export function BianzhiPage({
                     )}
                   </>
                 ) : (
-                  job.deadline_text && (
+                  job.deadline_text && !isLongTermDate(job.deadline_date) && (
                     <span className="text-muted-foreground">{t("截止：")}{normalizeDateStr(job.deadline_text)}</span>
                   )
                 )}
@@ -1549,6 +1549,7 @@ export function BianzhiPage({
                     <TableCell className="text-muted-foreground" title={job.deadline_text ?? ''}>
                       <span className="inline-flex items-center gap-1.5">
                         {(() => {
+                          if (isLongTermDate(job.deadline_date)) return null
                           const d = normalizeDateStr(job.deadline_text)
                           return d ? (d.length > 14 ? d.slice(0, 14) + '…' : d) : '-'
                         })()}
@@ -1662,7 +1663,7 @@ export function BianzhiPage({
           ]}
           schedule={[
             { label: t("报名开始"), value: normalizeDateStr(detail.signup_start) },
-            { label: t("报名截止"), value: normalizeDateStr(detail.deadline_text) },
+            { label: t("报名截止"), value: isLongTermDate(detail.deadline_date) ? t("长期有效") : normalizeDateStr(detail.deadline_text) },
             { label: t("考试时间"), value: normalizeDateStr(detail.exam_time) },
             { label: t("更新时间"), value: normalizeDateStr(detail.updated_at_src) },
           ]}

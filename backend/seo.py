@@ -12,13 +12,13 @@ from urllib.parse import quote
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import HTMLResponse, PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 
 import cache
 from database import get_db
-from major_pages import MAJOR_BY_SLUG, MAJOR_DISCIPLINES
+from major_pages import MAJOR_BY_SLUG, MAJOR_DISCIPLINES, resolve_major_alias
 from models import BianzhiJob, CampusJob, DailyDigest, Position
 
 router = APIRouter(tags=["seo"])
@@ -156,6 +156,21 @@ footer{color:#52525b;font-size:12px;margin:24px 0 16px}
   td{display:block;border:none;padding:2px 12px}
   td[data-l]:before{content:attr(data-l) "：";color:#52525b;font-size:12px}
 }
+@media(prefers-color-scheme:dark){
+  body{color:#e4e4e7;background:#09090b}
+  a{color:#60a5fa}
+  header.site{background:#18181b;border-color:#27272a}
+  .logo{color:#60a5fa}
+  nav.crumb,p.desc,footer,.chips a .n{color:#a1a1aa}
+  .chips a{border-color:#3f3f46;background:#18181b;color:#d4d4d8}
+  .chips a:hover{border-color:#60a5fa;color:#60a5fa}
+  table{background:#18181b;border-color:#27272a}
+  th{background:#27272a;color:#a1a1aa}
+  th,td{border-color:#27272a}
+  .cta{background:#2563eb;color:#fff}
+  .cta:hover{background:#1d4ed8}
+  @media(max-width:640px){tr{border-color:#27272a}}
+}
 """
 
 
@@ -170,6 +185,7 @@ def _page(title: str, desc: str, canonical: str, crumb: str, body: str,
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>{_esc(title)}</title>
 <meta name="description" content="{_esc(desc)}">
 <link rel="canonical" href="{canonical}">
@@ -656,6 +672,9 @@ def major_index(db: Session = Depends(get_db)):
 @router.get("/major/{slug}", response_class=HTMLResponse)
 def major_detail(slug: str, db: Session = Depends(get_db)):
     if slug not in MAJOR_BY_SLUG:
+        canonical = resolve_major_alias(slug)
+        if canonical:
+            return RedirectResponse(f"/major/{canonical}", status_code=301)
         raise HTTPException(status_code=404)
     return _html(_render_major(slug, db=db))
 

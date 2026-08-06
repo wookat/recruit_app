@@ -63,20 +63,32 @@ export function OnboardingCard({ onOpenTips }: { onOpenTips: () => void }) {
   }
 
   return (
-    <section className="relative mb-3 animate-fade-in-up rounded-xl border bg-gradient-to-br from-primary/5 to-transparent p-3 shadow-sm sm:mb-4 sm:p-5">
+    <section className="relative mb-2 animate-fade-in-up rounded-xl border bg-gradient-to-br from-primary/5 to-transparent px-3 py-2 shadow-sm sm:mb-4 sm:p-5">
       <button
         type="button"
         aria-label={t("关闭引导")}
-        className="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground sm:right-2 sm:top-2 sm:h-8 sm:w-8"
+        className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground sm:right-2 sm:top-2"
         onClick={dismiss}
       >
         <X className="h-4 w-4" />
       </button>
-      <h2 className="pr-10 text-sm font-bold">{t("👋 欢迎使用上岸雷达 · 3 步开始")}</h2>
-      {/* 移动端压缩为一行摘要，保证 375px 首屏至少可见 1 张完整岗位卡 */}
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:hidden">
-        {t("切换三板块 → 一键匹配筛选 → 收藏追踪与截止提醒")}
-      </p>
+      {/* 移动端压缩为单行条（标题 + 技巧入口 + 关闭），保证 375px 首屏岗位卡可见 */}
+      <div className="flex items-center gap-2 pr-8 sm:block sm:pr-10">
+        <h2 className="min-w-0 flex-1 truncate text-xs font-bold sm:flex-none sm:text-sm">
+          {t("👋 欢迎使用上岸雷达 · 3 步开始")}
+        </h2>
+        <button
+          type="button"
+          className="shrink-0 whitespace-nowrap text-xs text-primary underline-offset-2 hover:underline sm:hidden"
+          onClick={() => {
+            markSeen()
+            setVisible(false)
+            onOpenTips()
+          }}
+        >
+          {t("使用技巧")}
+        </button>
+      </div>
       <div className="mt-3 hidden gap-3 sm:grid sm:grid-cols-3">
         {STEPS.map((s) => (
           <div key={s.title} className="flex items-start gap-2.5">
@@ -90,13 +102,13 @@ export function OnboardingCard({ onOpenTips }: { onOpenTips: () => void }) {
           </div>
         ))}
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2 sm:mt-3">
-        <Button size="sm" className="min-h-9 sm:min-h-8" onClick={dismiss}>
+      <div className="mt-3 hidden flex-wrap items-center gap-2 sm:flex">
+        <Button size="sm" className="min-h-8" onClick={dismiss}>
           {t("知道了")}{' '}</Button>
         <Button
           variant="outline"
           size="sm"
-          className="min-h-9 sm:min-h-8"
+          className="min-h-8"
           onClick={() => {
             markSeen()
             setVisible(false)

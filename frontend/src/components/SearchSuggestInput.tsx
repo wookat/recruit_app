@@ -91,7 +91,7 @@ export function SearchSuggestInput({
     text,
     suggestBoard === 'all' ? undefined : suggestBoard,
     composing,
-    !!suggestBoard,
+    !!suggestBoard && open,
   )
 
   // 外部变更（清除筛选/一键匹配等）同步到内部

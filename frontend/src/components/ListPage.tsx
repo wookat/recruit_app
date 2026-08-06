@@ -33,7 +33,13 @@ import {
   type SavedFilter,
 } from '@/lib/storage'
 import { pinyinMatch } from '@/lib/pinyin'
-import { markSavedFilterSeen, removeSavedFilterBaseline, useSavedNews } from '@/lib/savedNews'
+import {
+  enableNotifyForSavedFilter,
+  isNewsNotificationSupported,
+  markSavedFilterSeen,
+  removeSavedFilterBaseline,
+  useSavedNews,
+} from '@/lib/savedNews'
 import {
   ArrowUpRight,
   Search,
@@ -312,6 +318,7 @@ export function ListPage({
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveHint, setSaveHint] = useState<string | null>(null)
   const [saveName, setSaveName] = useState('')
+  const [saveNotify, setSaveNotify] = useState(true)
   const [copied, setCopied] = useState(false)
   const [recommendQuery, setRecommendQuery] = useState<RecommendQuery | null>(null)
   const [exportTask, setExportTask] = useState<string | null>(null)
@@ -734,12 +741,17 @@ export function ListPage({
     setSaved(list)
     setSaveName('')
     setSaveOpen(false)
-    setSaveHint(
-      dropped
-        ? tt`已达 10 组上限，删除了最旧的「${dropped}」`
-        : t("已保存并订阅，上新时 chip 显示「+N 新」"),
-    )
-    setTimeout(() => setSaveHint(null), 6000)
+    const baseHint = dropped
+      ? tt`已达 10 组上限，删除了最旧的「${dropped}」`
+      : t("已保存并订阅，上新时 chip 显示「+N 新」")
+    setSaveHint(baseHint)
+    if (saveNotify && isNewsNotificationSupported()) {
+      void enableNotifyForSavedFilter().then((r) => {
+        if (r === 'fallback')
+          setSaveHint(t("已保存并订阅。浏览器通知未开启，上新将以站内红点提示，可在地址栏站点设置允许通知后到「收藏 → 提醒」开启"))
+      })
+    }
+    setTimeout(() => setSaveHint(null), 8000)
   }
 
   function applySavedFilter(f: SavedFilter) {
@@ -1097,7 +1109,7 @@ export function ListPage({
               </Badge>
             ))}
             {saveOpen ? (
-              <span className="inline-flex items-center gap-1">
+              <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
                 <Input
                   autoFocus
                   onFocus={(e) => {
@@ -1110,6 +1122,17 @@ export function ListPage({
                   placeholder={defaultFilterName}
                   className="h-7 w-32 text-xs"
                 />
+                {isNewsNotificationSupported() && (
+                  <label className="inline-flex cursor-pointer items-center gap-1 text-xs text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={saveNotify}
+                      onChange={(e) => setSaveNotify(e.target.checked)}
+                      className="h-3.5 w-3.5 accent-primary"
+                    />
+                    {t("有新岗位通知我")}
+                  </label>
+                )}
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSaveFilter} aria-label={t("确认保存")}>
                   <Check className="h-3.5 w-3.5" />
                 </Button>
@@ -1135,6 +1158,7 @@ export function ListPage({
                   disabled={activeFilters.length === 0 && !deadlineView}
                   onClick={() => {
                     setSaveName(defaultFilterName)
+                    setSaveNotify(true)
                     setSaveOpen(true)
                   }}
                 >

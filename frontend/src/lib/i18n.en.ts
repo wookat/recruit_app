@@ -1168,4 +1168,8 @@ export const EN: Record<string, string> = {
   '折叠多城市岗位': 'Collapse multi-city jobs',
   '跳转原公告页': 'Open original announcement',
   '{0} 个城市': '{0} cities',
+  '有新岗位通知我': 'Notify me of new jobs',
+  '已保存并订阅。浏览器通知未开启，上新将以站内红点提示，可在地址栏站点设置允许通知后到「收藏 → 提醒」开启':
+    'Saved and subscribed. Browser notifications are off — new jobs will show as an in-site red dot. Allow notifications in the address-bar site settings, then enable under Favorites → Reminders.',
+  '（点击查看扩展理由）': '(click a term to see why it was included)',
 }

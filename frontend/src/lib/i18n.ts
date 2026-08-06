@@ -6,22 +6,25 @@ const STORAGE_KEY = 'recruit.lang'
 
 function detectLang(): Lang {
   try {
+    // URL 参数仅对本次访问生效（hreflang/分享链接可能带 lang=en），
+    // 不写入 localStorage，避免中文用户点了英文链接后被永久切成英文
     const q = new URLSearchParams(window.location.search).get('lang')
-    if (q === 'en' || q === 'zh') {
-      try {
-        localStorage.setItem(STORAGE_KEY, q)
-      } catch {
-        // ignore
-      }
-      return q
-    }
+    if (q === 'en' || q === 'zh') return q
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored === 'en' || stored === 'zh') return stored
   } catch {
     // ignore
   }
-  const nav = (navigator.language || '').toLowerCase()
-  return nav.startsWith('zh') ? 'zh' : 'en'
+  // 站点面向中文用户：浏览器语言列表含任一中文即中文；仅明确非中文环境默认英文
+  try {
+    const langs = navigator.languages?.length ? navigator.languages : [navigator.language]
+    for (const l of langs) {
+      if ((l || '').toLowerCase().startsWith('zh')) return 'zh'
+    }
+    return langs[0] ? 'en' : 'zh'
+  } catch {
+    return 'zh'
+  }
 }
 
 /** 语言在启动时确定；切换语言时持久化后整页刷新，保证模块级常量同步更新 */

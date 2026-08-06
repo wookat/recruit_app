@@ -127,7 +127,9 @@ export function PrepResources({ examType, province, deadline, icsUid, icsSummary
               ) : (
                 <>
                   <CalendarPlus className="h-4 w-4" />
-                  {t("加入日历提醒（")}{deadline.getMonth() + 1}/{deadline.getDate()} {' '}{t("截止")}{' '}{examDate ? tt`，${examDate.getMonth() + 1}/${examDate.getDate()} 考试` : ''}）
+                  {examDate
+                    ? tt`加入日历提醒（${deadline.getMonth() + 1}/${deadline.getDate()} 截止，${examDate.getMonth() + 1}/${examDate.getDate()} 考试）`
+                    : tt`加入日历提醒（${deadline.getMonth() + 1}/${deadline.getDate()} 截止）`}
                 </>
               )}
             </button>

@@ -390,9 +390,29 @@ def _keyword_capped_count(db, q_nokw, keyword: str, filters: PositionFilter):
         return 0, True
 
 
+QUICK_LB_LIMIT = 2000
+QUICK_LB_TIMEOUT_MS = 1200
+
+
+def _quick_lower_bound(db, q, fallback: int) -> int:
+    """count 超时降级时的快速下界：短超时扫前 QUICK_LB_LIMIT 行，
+    给出比「页内条数」合理得多的「至少 N 条」；再超时则退回 fallback。"""
+    try:
+        db.execute(sa_text(f"SET LOCAL statement_timeout = '{QUICK_LB_TIMEOUT_MS}'"))
+        n = q.order_by(None).limit(QUICK_LB_LIMIT).count() or 0
+        db.execute(sa_text("SET LOCAL statement_timeout = DEFAULT"))
+        return max(n, fallback)
+    except OperationalError as e:
+        if not _is_query_canceled(e):
+            raise
+        db.rollback()
+        return fallback
+
+
 def _refresh_exact_count_async(filters: PositionFilter) -> None:
     """count 降级后后台补算精确 capped count 并写入缓存（redis 锁防并发重算），
-    前端「点击重试」或下一次请求命中缓存即可拿到精确 total。兼容无关键词筛选组合。"""
+    前端自动轮询或下一次请求命中缓存即可拿到精确 total。兼容无关键词筛选组合。
+    纯 ILIKE 路超时时退回 bigram 路再试一次，避免中频词补算失败导致缓存始终为空。"""
     count_key = "cnt:pos:" + filters.model_dump_json()
     lock_key = "lock:" + count_key
     try:
@@ -401,22 +421,37 @@ def _refresh_exact_count_async(filters: PositionFilter) -> None:
     except Exception:  # noqa: BLE001  Redis 不可用时不补算
         return
 
-    def run():
+    def _count_once(use_bigram: bool) -> int:
         db = SessionLocal()
         try:
-            db.execute(sa_text("SET statement_timeout = '30s'"))
+            db.execute(sa_text("SET statement_timeout = '45s'"))
             _set_bitmap_io(db)
-            # 纯 ILIKE 版：高频词 LIMIT 触顶快、中低频词全表顺扫有上界（~几秒），
-            # bigram 版对高频词要读大段 GIN 索引，30s 内未必能完成
             q = _nokw_base_query(db, filters)
             if filters.keyword:
-                q = q.filter(_hit_clause(Position.search_text, filters.keyword))
-            n = _capped_count(q)
+                clause = (
+                    _bigram_hit_clause(Position.search_text, filters.keyword)
+                    if use_bigram
+                    else _hit_clause(Position.search_text, filters.keyword)
+                )
+                q = q.filter(clause)
+            return _capped_count(q)
+        finally:
+            db.close()
+
+    def run():
+        try:
+            # 纯 ILIKE 版：高频词 LIMIT 触顶快、中低频词全表顺扫有上界（~几秒）；
+            # 超时再走 bigram 版兜底（中频词位图候选集小）
+            try:
+                n = _count_once(use_bigram=False)
+            except Exception:  # noqa: BLE001
+                if not filters.keyword:
+                    raise
+                n = _count_once(use_bigram=True)
             _cache_set_json(count_key, 1800, n)
         except Exception:  # noqa: BLE001  补算失败不影响主链路
             pass
         finally:
-            db.close()
             try:
                 cache.get_redis().delete(lock_key)
             except Exception:  # noqa: BLE001
@@ -492,7 +527,7 @@ def search_positions(
                 if not _is_query_canceled(e):
                     raise
                 db.rollback()
-                total = (page - 1) * page_size + len(items)
+                total = _quick_lower_bound(db, q, (page - 1) * page_size + len(items))
                 if meta is not None:
                     meta["total_partial"] = True
                 _refresh_exact_count_async(filters)

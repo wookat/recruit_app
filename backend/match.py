@@ -176,7 +176,8 @@ def _collect(db, model, order_col, tiers, base_filters):
 
 
 def _match_cache_key(board: str, profile: "MatchProfile") -> str:
-    return f"match:{board}:" + hashlib.md5(profile.model_dump_json().encode()).hexdigest()
+    # v2：响应含 term_reasons/semantic_source，版本号隔离旧格式缓存
+    return f"match:v2:{board}:" + hashlib.md5(profile.model_dump_json().encode()).hexdigest()
 
 
 @router.post("/campus", response_model=CampusMatchOut)

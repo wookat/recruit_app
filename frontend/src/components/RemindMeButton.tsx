@@ -6,7 +6,7 @@ import { buildPushItems, enablePush, isPushSupported, usePushEnabled } from '@/l
 import { useRemindDays } from '@/lib/reminderPref'
 import { getFavorites } from '@/lib/positionStore'
 import { getBianzhiFavorites, getCampusFavorites } from '@/lib/boardFavorites'
-import { suppressRemindCta } from '@/lib/remindCta'
+import { emitRemindConfirm, suppressRemindCta } from '@/lib/remindCta'
 import { daysUntil } from '@/lib/deadline'
 
 interface Props {
@@ -27,7 +27,10 @@ export function RemindMeButton({ deadline, favActive, onFavToggle }: Props) {
 
   const click = async () => {
     if (state === 'busy' || done) return
-    setState('busy')
+    // 权限已授予时乐观更新按钮态并弹确认 toast，订阅/上报失败再回退提示
+    const optimistic = Notification.permission === 'granted'
+    setState(optimistic ? 'done' : 'busy')
+    if (optimistic) emitRemindConfirm()
     if (!favActive) suppressRemindCta(onFavToggle)
     try {
       const items = buildPushItems(getFavorites(), getCampusFavorites(), getBianzhiFavorites())

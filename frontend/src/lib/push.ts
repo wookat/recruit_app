@@ -173,12 +173,16 @@ export async function disablePush(): Promise<void> {
   }
 }
 
-/** 已开启推送时同步最新收藏截止快照到服务端（收藏变化后调用）。 */
+/** 已开启推送时同步最新收藏截止快照到服务端（收藏变化后调用）。
+ * 本地标记已开启但浏览器订阅丢失（SW 更新/浏览器清理）且权限仍授予时，静默重建订阅。 */
 export async function syncPushItems(remindDays: number, items: PushDueItem[]): Promise<void> {
   if (!getPushEnabled() || !isPushSupported()) return
   try {
     const sub = await getSubscription()
-    if (!sub) return
+    if (!sub) {
+      if (Notification.permission === 'granted') await enablePush(remindDays, items)
+      return
+    }
     await axios.post(`${API_BASE}/api/push/subscribe`, subToBody(sub, remindDays, items))
   } catch {
     // ignore

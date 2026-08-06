@@ -255,7 +255,7 @@ export function RecentUpdatesPage({ onOpenJob, onOpenBoard }: Props) {
                             </span>
                             {it.extra && (
                               <Badge variant="outline" className="shrink-0 px-1.5 text-[10px]">
-                                {it.extra}
+                                {t(it.extra)}
                               </Badge>
                             )}
                             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />

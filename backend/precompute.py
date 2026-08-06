@@ -4,6 +4,7 @@
 调用点：Celery beat 每日采集后 + pipeline.post_ingest 入库后。
 """
 import json
+import logging
 
 import cache
 import crud
@@ -11,6 +12,8 @@ from bianzhi import apply_bianzhi_filters, bianzhi_export_order
 from campus import apply_campus_filters, campus_export_order
 from database import SessionLocal
 from models import BianzhiJob, CampusJob
+
+logger = logging.getLogger(__name__)
 
 HOT_TTL = 24 * 3600
 
@@ -162,6 +165,7 @@ def warm_seo_pages(invalidate: bool = True) -> dict:
             "seo_major_counts", "seo_major_index", "seo_major",
         )
     warmed, errors = 0, 0
+    failed_pages: list = []
     db = SessionLocal()
 
     def _try(fn, *args):
@@ -169,8 +173,12 @@ def warm_seo_pages(invalidate: bool = True) -> dict:
         try:
             fn(*args, db=db)
             warmed += 1
-        except Exception:  # noqa: BLE001  单页失败不影响其余预热
+        except Exception as exc:  # noqa: BLE001  单页失败不影响其余预热
             errors += 1
+            page = f"{getattr(fn, '__name__', fn)}{args}"
+            failed_pages.append(page)
+            logger.warning("warm_seo_pages 单页失败 %s: %s: %s",
+                           page, type(exc).__name__, exc)
             db.rollback()
 
     try:
@@ -189,12 +197,15 @@ def warm_seo_pages(invalidate: bool = True) -> dict:
         try:
             for s in seo._major_live_slugs(db):
                 _try(seo._render_major, s)
-        except Exception:  # noqa: BLE001  专业枚举失败不影响其余预热
+        except Exception as exc:  # noqa: BLE001  专业枚举失败不影响其余预热
             errors += 1
+            failed_pages.append("_major_live_slugs")
+            logger.warning("warm_seo_pages 专业枚举失败: %s: %s",
+                           type(exc).__name__, exc)
             db.rollback()
     finally:
         db.close()
-    return {"warmed": warmed, "errors": errors}
+    return {"warmed": warmed, "errors": errors, "failed_pages": failed_pages[:20]}
 
 
 # 与前端 synonyms.ts 的 HOT_SEARCHES 词表 + expandKeyword 的同义组合保持一致

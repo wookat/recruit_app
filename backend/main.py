@@ -11,6 +11,7 @@ from typing import List, Optional
 
 import pandas as pd
 from fastapi import FastAPI, Depends, Query, HTTPException, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -33,6 +34,7 @@ from bianzhi import router as bianzhi_router
 from jobs import router as jobs_router
 from match import router as match_router
 from push import router as push_router
+import seo
 from seo import router as seo_router
 from tasks import EXPORTS_DIR, export_board_task, export_positions_task, scrape_year
 import precompute
@@ -98,6 +100,19 @@ async def slow_request_log(request: Request, call_next):
         logger.warning("slow request: %s %s %.1fs status=%s",
                        request.method, request.url.path, elapsed, response.status_code)
     return response
+
+
+# SSR SEO 页路径前缀：无效路径 404 时返回品牌化 HTML（含返回首页链接），不裸 JSON
+SSR_404_PREFIXES = ("/zhaokao", "/daily", "/major")
+
+
+@app.exception_handler(StarletteHTTPException)
+async def ssr_html_404_handler(request: Request, exc: StarletteHTTPException):
+    path = request.url.path
+    if (exc.status_code == 404
+            and any(path == p or path.startswith(p + "/") for p in SSR_404_PREFIXES)):
+        return HTMLResponse(seo.render_404(), status_code=404)
+    return await http_exception_handler(request, exc)
 
 
 app.include_router(admin_router)

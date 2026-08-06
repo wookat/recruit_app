@@ -189,6 +189,22 @@ def _page(title: str, desc: str, canonical: str, crumb: str, body: str,
 </html>"""
 
 
+def render_404() -> str:
+    """品牌化 404 页：SSR 路径（/zhaokao、/daily、/major 等）无效时返回，替代裸 JSON。"""
+    body = (f"<h1>页面不存在（404）</h1>"
+            f"<p class='desc'>你访问的页面不存在或已下线，可能是链接拼写有误、"
+            f"或对应的岗位聚合页已因数据变化下线。</p>"
+            f"<div class='chips'>"
+            f"<a href='/zhaokao'>按省份浏览招考岗位</a>"
+            f"<a href='/major'>按专业反查可报岗位</a>"
+            f"<a href='/daily'>每日岗位精选</a></div>"
+            f"<a class='cta' href='/'>返回{BRAND}首页 →</a>")
+    crumb = f"<a href='/'>{BRAND}</a> › 404"
+    return _page(f"页面不存在 - {BRAND}",
+                 "你访问的页面不存在，返回上岸雷达首页浏览全国公务员、事业单位与校招岗位。",
+                 f"{SITE}/", crumb, body)
+
+
 def _active(query):
     return query.filter(Position.dup_of_id.is_(None),
                         Position.invalid_reason.is_(None))
@@ -327,8 +343,10 @@ def _render_province_et(slug: str, et_slug: str, db: Session = None) -> str:
     et_norm, short = ET_BY_SLUG[et_slug]
     q = _active(db.query(Position)).filter(
         Position.province == prov, Position.exam_type_norm == et_norm)
+    db.execute(text("SET statement_timeout = '120s'"))  # 大省×类型全量计数超默认超时
     total = q.count()
     jobs = q.order_by(Position.id.desc()).limit(50).all()
+    db.execute(text("SET statement_timeout = DEFAULT"))
     siblings = "".join(
         f"<a href='/zhaokao/{slug}/{s}'>{sh}</a>"
         for s, _, sh in EXAM_TYPES if s != et_slug)

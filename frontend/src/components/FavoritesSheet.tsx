@@ -1760,6 +1760,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           })}
           favActive={campusFavs.some((f) => f.id === campusDetail.id)}
           onFavToggle={() => toggleCampusFavorite(campusDetail)}
+          remindDeadline={getEffectiveDeadline(campusDetail)}
           snapshotNote
           basics={[
             { label: t("公司"), value: campusDetail.company },
@@ -1816,6 +1817,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
           })}
           favActive={bianzhiFavs.some((f) => f.id === bianzhiDetail.id)}
           onFavToggle={() => toggleBianzhiFavorite(bianzhiDetail)}
+          remindDeadline={getEffectiveDeadline(bianzhiDetail)}
           snapshotNote
           basics={[
             { label: t("招聘单位"), value: bianzhiDetail.employer },
@@ -1914,11 +1916,11 @@ function PushToggleRow() {
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
       <MonitorSmartphone className="h-3.5 w-3.5 shrink-0" />
-      {t("关站推送提醒")}{' '}<button
+      {tt`截止前 ${remindDays} 天提醒你报名`}{' '}<button
         type="button"
         role="switch"
         aria-checked={enabled}
-        aria-label={t("关站推送提醒")}
+        aria-label={tt`截止前 ${remindDays} 天提醒你报名`}
         aria-busy={busy}
         onClick={toggle}
         className="relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:h-6 sm:w-10"
@@ -1939,8 +1941,8 @@ function PushToggleRow() {
       </button>
       <span className="hidden sm:inline">
         {enabled
-          ? t("不打开站点也会在每天早上推送临近截止的收藏与保存筛选的上新")
-          : t("默认关闭，开启后关站也能收到截止提醒与订阅上新推送")}
+          ? t("已开启：关闭网页也能收到收藏岗位的截止提醒和订阅筛选上新")
+          : t("关闭网页也能收到，还会推送订阅筛选的上新")}
       </span>
       {error && (
         <span

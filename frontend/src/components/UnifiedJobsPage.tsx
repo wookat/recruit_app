@@ -28,6 +28,7 @@ import { LazyPositionSheet } from '@/components/LazyPositionSheet'
 import { buildShareText } from '@/components/ShareTextButton'
 import { jobShareUrl } from '@/lib/clipboard'
 import { normalizeDateStr } from '@/lib/tableSort'
+import { getEffectiveDeadline } from '@/lib/deadline'
 import {
   toggleBianzhiFavorite,
   toggleCampusFavorite,
@@ -780,6 +781,7 @@ export function UnifiedJobsPage() {
           shareText={campusShare(campusDetail)}
           favActive={campusFavs.some((f) => f.id === campusDetail.id)}
           onFavToggle={() => toggleCampusFavorite(campusDetail)}
+          remindDeadline={getEffectiveDeadline(campusDetail)}
           basics={[
             { label: t('公司'), value: campusDetail.company },
             { label: t('招聘岗位'), value: campusDetail.positions },
@@ -819,6 +821,7 @@ export function UnifiedJobsPage() {
           shareText={bianzhiShare(bianzhiDetail)}
           favActive={bianzhiFavs.some((f) => f.id === bianzhiDetail.id)}
           onFavToggle={() => toggleBianzhiFavorite(bianzhiDetail)}
+          remindDeadline={getEffectiveDeadline(bianzhiDetail)}
           basics={[
             { label: t('招聘单位'), value: bianzhiDetail.employer },
             { label: t('分类'), value: bianzhiDetail.category },

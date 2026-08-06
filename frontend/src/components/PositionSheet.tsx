@@ -24,6 +24,7 @@ import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { FavoriteButton } from './FavoriteButton'
+import { RemindMeButton } from './RemindMeButton'
 import { CompareButton } from './CompareButton'
 import { ShareMenuButton, buildShareText } from './ShareTextButton'
 import { ShareLandingBanner } from './ShareLandingBanner'
@@ -32,7 +33,9 @@ import {
   APP_STATUSES,
   STATUS_COLORS,
   setAppStatus,
+  toggleFavorite,
   useAppStatuses,
+  useFavorites,
   type AppStatus,
 } from '@/lib/positionStore'
 import {
@@ -167,6 +170,7 @@ export function PositionSheet({
 }: Props) {
   const [copied, setCopied] = useState(false)
   const statuses = useAppStatuses()
+  const favorites = useFavorites()
   const [related, setRelated] = useState<Position[]>([])
   const [similar, setSimilar] = useState<Position[]>([])
   const itemId = item?.id
@@ -344,6 +348,11 @@ export function PositionSheet({
               })}
             />
             <FavoriteButton item={item} />
+            <RemindMeButton
+              deadline={parseSignupDeadline(item)}
+              favActive={favorites.some((p) => p.id === item.id)}
+              onFavToggle={() => toggleFavorite(item)}
+            />
             <CompareButton item={item} />
             <ReportIssueButton board="positions" itemId={item.id} />
             {(onPrev || onNext) && (

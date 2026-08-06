@@ -653,6 +653,7 @@ export function CalendarPage() {
           shareText={campusShare(campusDetail)}
           favActive={campusFavs.some((f) => f.id === campusDetail.id)}
           onFavToggle={() => toggleCampusFavorite(campusDetail)}
+          remindDeadline={getEffectiveDeadline(campusDetail)}
           jobKey={`campus:${campusDetail.id}`}
           {...sheetNavProps(selectedDay?.campus ?? [], campusDetail, setCampusDetail)}
           basics={[
@@ -694,6 +695,7 @@ export function CalendarPage() {
           shareText={bianzhiShare(bianzhiDetail)}
           favActive={bianzhiFavs.some((f) => f.id === bianzhiDetail.id)}
           onFavToggle={() => toggleBianzhiFavorite(bianzhiDetail)}
+          remindDeadline={getEffectiveDeadline(bianzhiDetail)}
           jobKey={`bianzhi:${bianzhiDetail.id}`}
           {...sheetNavProps(selectedDay?.bianzhi ?? [], bianzhiDetail, setBianzhiDetail)}
           basics={[

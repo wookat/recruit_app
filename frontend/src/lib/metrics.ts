@@ -52,7 +52,12 @@ export function reportPv(board: string, page = '') {
   }
 }
 
-export type MetricEvent = 'remind_set' | 'save_filter' | 'new_since_click'
+export type MetricEvent =
+  | 'remind_set'
+  | 'save_filter'
+  | 'new_since_click'
+  | 'apply_click'
+  | 'apply_marked'
 
 /** 留存功能埋点事件（复用 metrics_pv 通道，board="event"）。 */
 export function reportEvent(event: MetricEvent) {

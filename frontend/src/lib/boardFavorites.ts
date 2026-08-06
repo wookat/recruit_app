@@ -6,6 +6,7 @@ import { recordFavAdded, removeFavAdded } from '@/lib/favTimes'
 import { daysUntil, getEffectiveDeadline } from '@/lib/deadline'
 import { maybeShowRemindCta } from '@/lib/remindCta'
 import { removeReminder } from '@/lib/reminders'
+import { reportEvent } from '@/lib/metrics'
 
 export type BoardKind = 'campus' | 'bianzhi'
 
@@ -129,9 +130,14 @@ function patchMeta(kind: BoardKind, id: number, patch: Partial<BoardMeta>) {
   }
 }
 
+export function getBoardStatus(kind: BoardKind, id: number): AppStatus {
+  return metaOf(kind)[id]?.status ?? '未投递'
+}
+
 export function setBoardStatus(kind: BoardKind, id: number, status: AppStatus) {
   const current = metaOf(kind)[id]
   if ((current?.status ?? '未投递') === status) return
+  if (status === '已投递') reportEvent('apply_marked')
   patchMeta(kind, id, {
     status: status === '未投递' ? undefined : status,
     history: [...(current?.history ?? []), { status, at: new Date().toISOString() }],

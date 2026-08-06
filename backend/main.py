@@ -721,7 +721,7 @@ FEEDBACK_ISSUE_TYPES = {"link_broken", "wrong_info", "expired", "other"}
 PV_BOARD_RE = re.compile(r"^[a-z][a-z0-9_-]{0,29}$")
 
 #: 留存埋点事件类型（board="event" 时 page 仅允许这些值）
-METRIC_EVENTS = {"remind_set", "save_filter", "new_since_click"}
+METRIC_EVENTS = {"remind_set", "save_filter", "new_since_click", "apply_click", "apply_marked"}
 
 
 @app.post("/api/metrics/pv")

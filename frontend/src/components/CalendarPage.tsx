@@ -323,7 +323,7 @@ export function CalendarPage() {
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {v === 'month' ? t("月") : t("周")}
+                {v === 'month' ? t("按月") : t("按周")}
               </button>
             ))}
           </div>
@@ -436,7 +436,9 @@ export function CalendarPage() {
                 )}
               >
                 <h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-                  {d.getMonth() + 1} {' '}{t("月")}{' '}{d.getDate()} {' '}{t("日")}{' '}<span className="text-xs font-normal text-muted-foreground">
+                  {getLang() === 'en'
+                    ? `${d.getMonth() + 1}/${d.getDate()}`
+                    : `${d.getMonth() + 1} 月 ${d.getDate()} 日`}{' '}<span className="text-xs font-normal text-muted-foreground">
                     {t("周")}{WEEKDAYS[(d.getDay() + 6) % 7]}
                   </span>
                   {isToday && (

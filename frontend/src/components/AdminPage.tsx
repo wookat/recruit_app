@@ -810,6 +810,8 @@ function HealthCard({ health, updatedAt, token }: { health: HealthSummary; updat
 
         {health.visits && health.visits.length > 0 && <VisitsSection visits={health.visits} />}
 
+        {health.events && Object.keys(health.events).length > 0 && <EventsSection events={health.events} />}
+
         {health.trend && health.trend.length > 0 && <TrendSection trend={health.trend} />}
 
         {health.crawl_24h.latest_by_source.length > 0 && (
@@ -1032,6 +1034,26 @@ function VisitsSection({ visits: rawVisits }: { visits: HealthVisitDay[] }) {
           })}
         </div>
       </div>
+    </div>
+  )
+}
+
+const EVENT_LABELS: Record<string, string> = {
+  remind_set: t("设提醒"),
+  save_filter: t("保存筛选"),
+  new_since_click: t("新增岗位提示条点击"),
+}
+
+function EventsSection({ events }: { events: Record<string, number> }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      <span>{t("近 14 天留存事件")}</span>
+      {Object.entries(EVENT_LABELS).map(([key, label]) => (
+        <span key={key} className="inline-flex items-center gap-1">
+          {label}
+          <span className="font-semibold tabular-nums text-foreground">{events[key] ?? 0}</span>
+        </span>
+      ))}
     </div>
   )
 }

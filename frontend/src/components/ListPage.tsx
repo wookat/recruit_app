@@ -20,6 +20,7 @@ import { expandKeyword } from '@/lib/synonyms'
 import { MultiSelect } from './MultiSelect'
 import { getProfile, saveProfile } from '@/lib/profile'
 import { ValuePropBanner } from './ValuePropBanner'
+import { NewSinceBanner } from './NewSinceBanner'
 import type { RecommendQuery } from './RecommendPanel'
 import { buildExportUrl, createExport, exportDownloadUrl, fetchExportStatus } from '@/api'
 import { LocationFilter } from './LocationFilter'
@@ -554,6 +555,8 @@ export function ListPage({
     })
     if (params.hide_expired)
       out.push({ label: t("隐藏已截止"), onRemove: () => updateParam('hide_expired', undefined) })
+    if (params.created_after)
+      out.push({ label: t("仅看上次访问后新增"), onRemove: () => updateParam('created_after', undefined) })
     if (hideSeen) out.push({ label: t("隐藏已看过"), onRemove: () => setHideSeen(false) })
     return out
   }, [params, updateParam, hideSeen])
@@ -932,6 +935,7 @@ export function ListPage({
   return (
     <div className={showStats ? 'xl:grid xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start xl:gap-5' : undefined}>
     <div className="min-w-0 space-y-5">
+      <NewSinceBanner board="positions" onApply={(since) => updateParam('created_after', since)} />
       {onOpenUpdates && (
         <ValuePropBanner
           onMatch={() => {

@@ -39,6 +39,7 @@ import { SeenBadge } from '@/components/SeenBadge'
 import { NewDot } from '@/components/NewDot'
 import { useSeenSet } from '@/lib/viewHistory'
 import { markBoardVisit } from '@/lib/lastVisit'
+import { NewSinceBanner } from '@/components/NewSinceBanner'
 import { BoardCompareButton } from '@/components/BoardCompareButton'
 import { CrossBoardZeroHint } from '@/components/CrossBoardZeroHint'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
@@ -280,6 +281,7 @@ export function CampusPage({
     const q = new URLSearchParams(window.location.search)
     return q.get('board') === 'campus' && q.get('hexp') === '1'
   })
+  const [newSince, setNewSince] = useState<string | null>(null)
   const [hideSeen, setHideSeen] = useState(() => {
     const q = new URLSearchParams(window.location.search)
     return q.get('board') === 'campus' && q.get('hseen') === '1'
@@ -481,12 +483,13 @@ export function CampusPage({
       location: cities.length ? cities.join(',') : undefined,
       updated_after: timeRange ? timeRange.from : recentOnly ? daysAgoStr(7) : undefined,
       updated_before: timeRange ? timeRange.to : undefined,
+      created_after: newSince ?? undefined,
       due_within_days: dueOnly ? 7 : undefined,
       hide_expired: !dueOnly && hideExpired ? true : undefined,
       page,
       page_size: PAGE_SIZE,
     }
-  }, [preset, kwTrim, synAdded, companyTypes, cities, eduFilter, recentOnly, timeRange, dueOnly, hideExpired, page])
+  }, [preset, kwTrim, synAdded, companyTypes, cities, eduFilter, recentOnly, timeRange, dueOnly, hideExpired, newSince, page])
 
   useEffect(() => {
     let cancelled = false
@@ -671,6 +674,14 @@ export function CampusPage({
       label: t("隐藏已看过"),
       onRemove: () => setHideSeen(false),
     })
+  if (newSince)
+    activeFilters.push({
+      label: t("仅看上次访问后新增"),
+      onRemove: () => {
+        setNewSince(null)
+        setPage(1)
+      },
+    })
   function clearAllFilters() {
     setPreset('all')
     setRecentOnly(false)
@@ -683,6 +694,7 @@ export function CampusPage({
     setCompanyTypes([])
     setSearchInput('')
     setKeyword('')
+    setNewSince(null)
     setPage(1)
   }
 
@@ -887,6 +899,13 @@ export function CampusPage({
 
   return (
     <div className="space-y-4">
+      <NewSinceBanner
+        board="campus"
+        onApply={(since) => {
+          setNewSince(since)
+          setPage(1)
+        }}
+      />
       {/* 预设视图 chips */}
       <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
         <div className="flex w-max gap-2 sm:w-full sm:flex-wrap">

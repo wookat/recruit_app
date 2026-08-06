@@ -1,4 +1,5 @@
 import type { SearchParams } from '@/api'
+import { reportEvent } from '@/lib/metrics'
 
 const RECENT_KEY = 'recruit.recentSearches'
 const SAVED_KEY = 'recruit.savedFilters'
@@ -58,6 +59,7 @@ export function saveFilter(
   name: string,
   params: SearchParams,
 ): { list: SavedFilter[]; dropped: string | null } {
+  reportEvent('save_filter')
   const entry: SavedFilter = {
     name: name.trim(),
     params: { ...params, page: 1 },
@@ -102,6 +104,7 @@ export function saveQuery(
   name: string,
   query: string,
 ): { list: SavedQuery[]; dropped: string | null } {
+  reportEvent('save_filter')
   const entry: SavedQuery = { name: name.trim(), query, createdAt: Date.now() }
   const rest = getSavedQueries(board).filter((f) => f.name !== entry.name)
   let dropped: string | null = null

@@ -2039,6 +2039,7 @@ function PushToggleRow() {
       const result = await enablePush(items)
       if (result === 'denied') setError(t("浏览器已拒绝通知权限（可在地址栏站点设置中重新允许）"))
       else if (result === 'unconfigured') setError(t("开启失败：网络异常或推送服务未就绪，请再点一次开关重试"))
+      else if (result === 'timeout') setError(t("推送暂不可用（浏览器 Service Worker 未就绪），提醒已保存在站内，可稍后重试"))
       else if (result !== 'granted') setError(t("开启失败，请再点一次开关重试"))
     } finally {
       setBusy(false)

@@ -113,6 +113,7 @@ export interface SearchParams {
   major_type?: 'undergrad' | 'grad' | 'any'
   category?: string[]
   hide_expired?: boolean
+  created_after?: string
   page?: number
   page_size?: number
   sort?: string
@@ -179,6 +180,7 @@ export interface CampusParams {
   location?: string
   updated_after?: string
   updated_before?: string
+  created_after?: string
   due_within_days?: number
   hide_expired?: boolean
   page?: number
@@ -283,6 +285,7 @@ export interface BianzhiParams {
   edu?: string
   updated_after?: string
   updated_before?: string
+  created_after?: string
   due_within_days?: number
   hide_expired?: boolean
   page?: number
@@ -513,6 +516,18 @@ export async function submitFeedback(
     issue_type: issueType,
     note: note || undefined,
   })
+}
+
+export interface NewSinceCounts {
+  positions: number
+  campus: number
+  bianzhi: number
+}
+
+/** 三板块自 since（ISO 时间）之后新入库岗位数（回访「新增 N 个岗位」提示条）。 */
+export async function fetchNewSince(since: string): Promise<NewSinceCounts> {
+  const res = await axios.get(`${API_BASE}/api/new-since`, { params: { since } })
+  return res.data
 }
 
 export async function fetchRecentUpdates(days = 7): Promise<{ days: RecentUpdateDay[] }> {
@@ -928,6 +943,8 @@ export interface HealthSummary {
   } | null
   trend?: HealthTrendDay[] | null
   visits?: HealthVisitDay[] | null
+  /** 近 14 天留存埋点事件计数（remind_set / save_filter / new_since_click）。 */
+  events?: Record<string, number> | null
   stale_sources?: StaleSource[] | null
 }
 

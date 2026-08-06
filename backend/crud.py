@@ -42,6 +42,7 @@ class PositionFilter(BaseModel):
     major_type: Optional[str] = "any"  # undergrad | grad | any
     category: Optional[List[str]] = None
     hide_expired: Optional[bool] = None
+    created_after: Optional[datetime] = None
 
 
 # ---------- 职位类型关键词 ----------
@@ -272,6 +273,9 @@ def _apply_filters(query, model, filters: PositionFilter):
             model.signup_deadline == None,  # noqa: E711
             model.signup_deadline >= datetime.now(),
         ))
+
+    if filters.created_after and hasattr(model, "created_at"):
+        query = query.filter(model.created_at > filters.created_after)
 
     if filters.keyword:
         if hasattr(model, "search_text"):

@@ -129,6 +129,7 @@ def _build_filter(
     major_type: Optional[str] = "any",
     category: Optional[List[str]] = None,
     hide_expired: bool = False,
+    created_after: Optional[datetime] = None,
 ) -> crud.PositionFilter:
     return crud.PositionFilter(
         year=year,
@@ -145,6 +146,7 @@ def _build_filter(
         major_type=major_type,
         category=category,
         hide_expired=hide_expired,
+        created_after=created_after,
     )
 
 
@@ -196,6 +198,27 @@ def data_freshness(db: Session = Depends(get_db)):
 
 RECENT_BULK_THRESHOLD = 2000  # 单日入库超过该值视为全量同步导入，不逐条展示
 RECENT_ITEM_MAX = 6
+
+
+@app.get("/api/new-since")
+def new_since(since: datetime = Query(...), db: Session = Depends(get_db)):
+    """三板块自 since 之后新入库（created_at）岗位数，用于回访「新增 N 个岗位」提示条。"""
+    cutoff = datetime.now() - timedelta(days=30)
+    if since < cutoff:
+        since = cutoff
+    counts = {}
+    for grp, sql in (
+        ("positions",
+         "SELECT count(*) FROM positions WHERE dup_of_id IS NULL AND invalid_reason IS NULL AND created_at > :s"),
+        ("campus", "SELECT count(*) FROM campus_jobs WHERE created_at > :s"),
+        ("bianzhi", "SELECT count(*) FROM bianzhi_jobs WHERE created_at > :s"),
+    ):
+        try:
+            counts[grp] = db.execute(text(sql), {"s": since}).scalar() or 0
+        except Exception:  # noqa: BLE001
+            db.rollback()
+            counts[grp] = 0
+    return counts
 
 
 @app.get("/api/recent-updates")
@@ -278,6 +301,7 @@ def get_positions(
     major_type: Optional[str] = Query("any"),
     category: Optional[List[str]] = Query(None),
     hide_expired: bool = Query(False),
+    created_after: Optional[datetime] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=200),
     sort: str = Query("year_desc"),
@@ -300,6 +324,7 @@ def get_positions(
         major_type=major_type,
         category=category,
         hide_expired=hide_expired,
+        created_after=created_after,
     )
     try:
         if after_id is not None:
@@ -693,6 +718,9 @@ FEEDBACK_ISSUE_TYPES = {"link_broken", "wrong_info", "expired", "other"}
 
 PV_BOARD_RE = re.compile(r"^[a-z][a-z0-9_-]{0,29}$")
 
+#: 留存埋点事件类型（board="event" 时 page 仅允许这些值）
+METRIC_EVENTS = {"remind_set", "save_filter", "new_since_click"}
+
 
 @app.post("/api/metrics/pv")
 def report_pv(request: Request, body: schemas.PvIn, db: Session = Depends(get_db)):
@@ -702,6 +730,8 @@ def report_pv(request: Request, body: schemas.PvIn, db: Session = Depends(get_db
     if not PV_BOARD_RE.match(board):
         raise HTTPException(status_code=422, detail="board 无效")
     page = (body.page or "").strip()[:50]
+    if board == "event" and page not in METRIC_EVENTS:
+        raise HTTPException(status_code=422, detail="event 无效")
     db.execute(text("""
         INSERT INTO metrics_pv_daily (day, board, page, pv)
         VALUES (CURRENT_DATE, :b, :p, 1)

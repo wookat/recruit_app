@@ -51,3 +51,20 @@ export function reportPv(board: string, page = '') {
     // ignore
   }
 }
+
+export type MetricEvent = 'remind_set' | 'save_filter' | 'new_since_click'
+
+/** 留存功能埋点事件（复用 metrics_pv 通道，board="event"）。 */
+export function reportEvent(event: MetricEvent) {
+  if (isInternal()) return
+  try {
+    void fetch(`${API_BASE}/api/metrics/pv`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ board: 'event', page: event, sid: getSid() }),
+      keepalive: true,
+    }).catch(() => undefined)
+  } catch {
+    // ignore
+  }
+}

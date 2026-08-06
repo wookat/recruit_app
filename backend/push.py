@@ -6,7 +6,7 @@
 import json
 import os
 import re
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -21,11 +21,20 @@ MAX_ITEMS = 300
 MAX_FILTERS = 30
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 FILTER_URL_PREFIXES = ("/api/positions?", "/api/campus?", "/api/bianzhi?")
+REMIND_NODE_CHOICES = (1, 3, 7)
+
+
+def clean_nodes(nodes) -> List[int]:
+    """提醒节点白名单过滤 + 去重升序。"""
+    if not isinstance(nodes, list):
+        return []
+    return sorted({n for n in nodes if isinstance(n, int) and n in REMIND_NODE_CHOICES})
 
 
 class PushItem(BaseModel):
     t: str = Field(..., max_length=120)
     d: str = Field(..., max_length=10)
+    n: Optional[List[int]] = Field(None, max_length=8)  # 单岗位提醒节点（截止前天数）
 
 
 class PushFilter(BaseModel):
@@ -37,7 +46,8 @@ class SubscribeBody(BaseModel):
     endpoint: str = Field(..., max_length=2000)
     p256dh: str = Field(..., max_length=200)
     auth: str = Field(..., max_length=100)
-    remind_days: int = Field(3, ge=1, le=30)
+    remind_days: int = Field(3, ge=1, le=30)  # 兼容旧客户端：默认节点最大值
+    remind_nodes: List[int] = Field(default_factory=list, max_length=8)
     items: List[PushItem] = Field(default_factory=list)
     filters: List[PushFilter] = Field(default_factory=list)
 
@@ -58,11 +68,15 @@ def vapid_key():
 def subscribe(body: SubscribeBody, db: Session = Depends(get_db)):
     if not body.endpoint.startswith("https://"):
         raise HTTPException(status_code=422, detail="invalid endpoint")
-    items = [
-        {"t": it.t.strip()[:120], "d": it.d}
-        for it in body.items[:MAX_ITEMS]
-        if it.t.strip() and DATE_RE.match(it.d)
-    ]
+    items = []
+    for it in body.items[:MAX_ITEMS]:
+        if not (it.t.strip() and DATE_RE.match(it.d)):
+            continue
+        item = {"t": it.t.strip()[:120], "d": it.d}
+        nodes = clean_nodes(it.n)
+        if nodes:
+            item["n"] = nodes
+        items.append(item)
     row = (
         db.query(models.PushSubscription)
         .filter(models.PushSubscription.endpoint == body.endpoint)
@@ -74,6 +88,10 @@ def subscribe(body: SubscribeBody, db: Session = Depends(get_db)):
     row.p256dh = body.p256dh
     row.auth = body.auth
     row.remind_days = body.remind_days
+    default_nodes = clean_nodes(body.remind_nodes) or (
+        [body.remind_days] if body.remind_days in REMIND_NODE_CHOICES else [3]
+    )
+    row.remind_nodes = json.dumps(default_nodes)
     row.items_json = json.dumps(items, ensure_ascii=False)
     # 保存筛选快照：同 u 保留已有基线，新增的基线由每日任务首次初始化（null）
     try:

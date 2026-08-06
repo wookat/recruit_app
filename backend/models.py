@@ -157,8 +157,12 @@ class PushSubscription(Base):
     endpoint = Column(Text, nullable=False, unique=True)
     p256dh = Column(String(200), nullable=False)
     auth = Column(String(100), nullable=False)
-    remind_days = Column(Integer, nullable=False, default=3)
-    items_json = Column(Text, nullable=False, default="[]")  # [{"t": 标题, "d": "YYYY-MM-DD"}]
+    remind_days = Column(Integer, nullable=False, default=3)  # 兼容字段：默认节点的最大值
+    # 默认提醒节点（截止前天数列表，如 [1,3,7]）；单岗位可在 items 里用 "n" 覆盖
+    remind_nodes = Column(Text, nullable=False, default="[3]", server_default="[3]")
+    # 已发送节点去重 {"标题|截止日|节点": "发送日期"}，同岗位同节点只发一次
+    sent_json = Column(Text, nullable=False, default="{}", server_default="{}")
+    items_json = Column(Text, nullable=False, default="[]")  # [{"t": 标题, "d": "YYYY-MM-DD", "n": [节点]?}]
     # 保存筛选快照 [{"n": 名称, "u": 列表 API 路径+参数, "t": 上次推送时的总数基线|null}]
     filters_json = Column(Text, nullable=False, default="[]", server_default="[]")
     failures = Column(Integer, nullable=False, default=0)

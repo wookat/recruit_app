@@ -4,6 +4,7 @@ import type { AppChannel } from '@/lib/badgeColors'
 import { recordFavAdded, removeFavAdded } from '@/lib/favTimes'
 import { daysUntil, parseSignupDeadline } from '@/lib/deadline'
 import { maybeShowRemindCta } from '@/lib/remindCta'
+import { removeReminder, removeRemindersByPrefix } from '@/lib/reminders'
 
 const FAV_KEY = 'recruit.favorites'
 const STATUS_KEY = 'recruit.appStatus'
@@ -103,6 +104,7 @@ export function toggleFavorite(item: Position) {
   if (isFavorite(item.id)) {
     favorites = favorites.filter((p) => p.id !== item.id)
     removeFavAdded('positions', item.id)
+    removeReminder(`positions:${item.id}`)
   } else {
     favorites = [item, ...favorites].slice(0, FAV_MAX)
     recordFavAdded('positions', item.id)
@@ -124,6 +126,7 @@ export function importFavorites(items: Position[]): number {
 
 export function clearFavorites() {
   favorites = []
+  removeRemindersByPrefix('positions:')
   persistFavorites()
   emit()
 }

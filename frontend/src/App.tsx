@@ -1,5 +1,5 @@
 import { getLang, setLang, t, tt } from '@/lib/i18n'
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchCampusJobs, fetchPosition, fetchPositions, type Position } from '@/api'
 import { importFavorites } from '@/lib/positionStore'
 import { LazyPositionSheet } from '@/components/LazyPositionSheet'
@@ -21,7 +21,8 @@ import { applySeo } from '@/lib/seo'
 import { readJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { POSITION_URL_KEYS } from '@/lib/urlFilters'
 import { daysUntil, getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
-import { useRemindDays } from '@/lib/reminderPref'
+import { useRemindDays, useRemindNodes } from '@/lib/reminderPref'
+import { useReminders } from '@/lib/reminders'
 import { maybeNotifyDue } from '@/lib/dueNotification'
 import { buildPushItems, syncPushItems } from '@/lib/push'
 import {
@@ -273,6 +274,8 @@ export default function App() {
   const campusFavorites = useCampusFavorites()
   const bianzhiFavorites = useBianzhiFavorites()
   const remindDays = useRemindDays()
+  const remindNodes = useRemindNodes()
+  const reminders = useReminders()
   const dueSoon = useMemo(() => {
     const within = (d: Date | null) => {
       if (!d) return false
@@ -304,13 +307,20 @@ export default function App() {
     maybeNotifyDue(dueSoon, remindDays, () => setFavOpen(true))
   }, [dueSoon, remindDays])
 
-  // 已开启关站推送时，收藏/提醒天数变化后同步最新截止快照到服务端
+  // 已开启关站推送时，收藏/提醒节点变化后同步最新截止快照到服务端。
+  // 首次立即执行（syncPushItems 内部等 SW ready），订阅丢失自愈单次刷新即恢复；后续变化防抖 3s
+  const pushSyncedOnce = useRef(false)
   useEffect(() => {
-    const t = window.setTimeout(() => {
-      void syncPushItems(remindDays, buildPushItems(favorites, campusFavorites, bianzhiFavorites))
-    }, 3000)
+    const run = () =>
+      void syncPushItems(buildPushItems(favorites, campusFavorites, bianzhiFavorites))
+    if (!pushSyncedOnce.current) {
+      pushSyncedOnce.current = true
+      run()
+      return
+    }
+    const t = window.setTimeout(run, 3000)
     return () => window.clearTimeout(t)
-  }, [favorites, campusFavorites, bianzhiFavorites, remindDays])
+  }, [favorites, campusFavorites, bianzhiFavorites, remindNodes, reminders])
 
   // 推送通知点击落地 /?fav=1 → 收藏面板；/?subs=1 → 订阅面板
   useEffect(() => {

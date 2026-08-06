@@ -456,7 +456,11 @@ def cleanup_exports():
 
 @celery_app.task
 def push_due_reminders():
-    """每日向 Web Push 订阅者推送临近截止的收藏提醒（每订阅至多一条聚合通知）。"""
+    """每日向 Web Push 订阅者推送临近截止的收藏提醒（每订阅至多一条聚合通知）。
+
+    按提醒节点（截止前 1/3/7 天，订阅默认或单岗位覆盖）触发，
+    sent_json 记录已发送节点，同岗位同节点只发一次；发送成功才落已发标记。
+    """
     private_key = os.getenv("VAPID_PRIVATE_KEY", "")
     sub_claim = os.getenv("VAPID_SUB", "mailto:admin@zalize.com")
     if not private_key:
@@ -472,16 +476,53 @@ def push_due_reminders():
                 items = json.loads(sub.items_json or "[]")
             except ValueError:
                 items = []
+            try:
+                default_nodes = [int(x) for x in json.loads(sub.remind_nodes or "[3]")]
+            except (ValueError, TypeError):
+                default_nodes = []
+            if not default_nodes:
+                default_nodes = [sub.remind_days or 3]
+            try:
+                sent_map = json.loads(sub.sent_json or "{}")
+                if not isinstance(sent_map, dict):
+                    sent_map = {}
+            except ValueError:
+                sent_map = {}
+            # 清理已过期条目的已发标记（key = 标题|截止日|节点）
+            pruned = {
+                k: v
+                for k, v in sent_map.items()
+                if len(k.rsplit("|", 2)) == 3 and k.rsplit("|", 2)[1] >= today.isoformat()
+            }
+            sent_dirty = pruned != sent_map
+            sent_map = pruned
+
             due = []
+            pending_keys = []
             for it in items:
                 try:
                     d = datetime.strptime(it.get("d", ""), "%Y-%m-%d").date()
                 except ValueError:
                     continue
                 n = (d - today).days
-                if 0 <= n <= (sub.remind_days or 3):
+                if n < 0:
+                    continue
+                raw_nodes = it.get("n") or default_nodes
+                nodes = sorted({int(x) for x in raw_nodes if isinstance(x, (int, float))})
+                hit = False
+                for node in nodes:
+                    if n > node:
+                        continue
+                    key = f"{it.get('t', '')}|{it.get('d', '')}|{node}"
+                    if key in sent_map:
+                        continue
+                    pending_keys.append(key)
+                    hit = True
+                if hit:
                     due.append((n, it.get("t", "")))
             if not due:
+                if sent_dirty:
+                    sub.sent_json = json.dumps(sent_map, ensure_ascii=False)
                 continue
             due.sort()
             first = due[0]
@@ -506,6 +547,9 @@ def push_due_reminders():
                     ttl=3600 * 12,
                 )
                 sent += 1
+                for k in pending_keys:
+                    sent_map[k] = today.isoformat()
+                sub.sent_json = json.dumps(sent_map, ensure_ascii=False)
             except Exception as exc:  # noqa: BLE001  单个坏订阅不阻断其余推送
                 status = (
                     exc.response.status_code
@@ -516,6 +560,8 @@ def push_due_reminders():
                     db.delete(sub)
                     removed += 1
                 else:
+                    if sent_dirty:
+                        sub.sent_json = json.dumps(sent_map, ensure_ascii=False)
                     sub.failures = (sub.failures or 0) + 1
                     if sub.failures >= 5:
                         db.delete(sub)

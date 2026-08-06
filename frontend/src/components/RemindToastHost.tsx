@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BellRing, Check, Star, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { buildPushItems, enablePush } from '@/lib/push'
-import { getRemindDays } from '@/lib/reminderPref'
+import { formatNodes, getRemindNodes } from '@/lib/reminderPref'
 import { getFavorites } from '@/lib/positionStore'
 import { getBianzhiFavorites, getCampusFavorites } from '@/lib/boardFavorites'
 import { REMIND_CONFIRM_EVENT, REMIND_CTA_EVENT } from '@/lib/remindCta'
@@ -44,7 +44,7 @@ export function RemindToastHost() {
 
   if (!open) return null
 
-  const remindDays = getRemindDays()
+  const remindNodes = formatNodes(getRemindNodes())
 
   const activate = async () => {
     if (state === 'busy') return
@@ -52,7 +52,7 @@ export function RemindToastHost() {
     window.clearTimeout(timer.current)
     try {
       const items = buildPushItems(getFavorites(), getCampusFavorites(), getBianzhiFavorites())
-      const result = await enablePush(remindDays, items)
+      const result = await enablePush(items)
       if (result === 'granted') setState('done')
       else if (result === 'denied') setState('denied')
       else setState('error')
@@ -73,7 +73,7 @@ export function RemindToastHost() {
       {state === 'done' ? (
         <>
           <Check className="h-4 w-4 shrink-0 text-green-600" aria-hidden="true" />
-          <span>{tt`已开启：截止前 ${remindDays} 天提醒你报名（关闭网页也能收到）`}</span>
+          <span>{tt`已开启：截止前 ${remindNodes} 天提醒你报名（关闭网页也能收到）`}</span>
         </>
       ) : state === 'denied' || state === 'error' ? (
         <>
@@ -92,7 +92,7 @@ export function RemindToastHost() {
             size="sm"
             className="h-8 gap-1 px-2.5 text-xs"
             aria-busy={state === 'busy'}
-            title={tt`截止前 ${remindDays} 天提醒你报名（关闭网页也能收到）`}
+            title={tt`截止前 ${remindNodes} 天提醒你报名（关闭网页也能收到）`}
             onClick={activate}
           >
             <BellRing className="h-3.5 w-3.5" aria-hidden="true" />

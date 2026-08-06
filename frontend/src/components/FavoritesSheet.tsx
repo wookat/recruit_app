@@ -19,6 +19,7 @@ import {
   useAppStatuses,
   useAppStatusHistory,
   useFavorites,
+  getFavorites,
   appendFollowUp,
   type AppStatus,
   type StatusEvent,
@@ -35,6 +36,8 @@ import {
   useBianzhiMeta,
   useCampusFavorites,
   useCampusMeta,
+  getBianzhiFavorites,
+  getCampusFavorites,
   type BoardKind,
   type BoardMeta,
 } from '@/lib/boardFavorites'
@@ -43,7 +46,8 @@ import { normalizeDateStr } from '@/lib/tableSort'
 import { downloadBackup, restoreBackup } from '@/lib/backup'
 import { setConfirmExtLink, useConfirmExtLink } from '@/lib/extLink'
 import { downloadIcs, type IcsEvent } from '@/lib/ics'
-import { REMIND_OPTIONS, setRemindDays, useRemindDays } from '@/lib/reminderPref'
+import { formatNodes, REMIND_NODE_OPTIONS, setRemindNodes, useRemindDays, useRemindNodes } from '@/lib/reminderPref'
+import { clearExpiredReminders, removeReminder, setReminderNodes, useReminders } from '@/lib/reminders'
 import {
   enableDueNotification,
   isNotificationSupported,
@@ -55,7 +59,7 @@ import {
   setNewsNotifyEnabled,
   useNewsNotifyEnabled,
 } from '@/lib/savedNews'
-import { buildPushItems, disablePush, enablePush, isPushSupported, usePushEnabled } from '@/lib/push'
+import { buildPushItems, disablePush, enablePush, isPushSupported, syncPushItems, usePushEnabled } from '@/lib/push'
 import { dismissFollowUp, followUpInfo, useFollowUpDismissed } from '@/lib/followup'
 import { cn } from '@/lib/utils'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
@@ -75,13 +79,14 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlarmClock, ArrowRight, TriangleAlert, Bookmark, ChevronDown, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, MonitorSmartphone, Scale, ShieldCheck, Sparkles, Square, SquareCheck } from 'lucide-react'
+import { AlarmClock, ArrowRight, TriangleAlert, BellRing, Bookmark, ChevronDown, Building2, ClipboardList, Download, ExternalLink, Flag, History as HistoryIcon, MapPin, MoreHorizontal, Pin, Search, Star, Trash2, Link2, Check, CalendarDays, DatabaseBackup, FileUp, ListChecks, StickyNote, MonitorSmartphone, Scale, ShieldCheck, Sparkles, Square, SquareCheck } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { DueBadge } from './DueBadge'
 import { EmptyState } from './EmptyState'
 import { FavCompareDialog, type FavCompareColumn } from './FavCompareDialog'
 import { WeeklyDigest } from './WeeklyDigest'
@@ -568,6 +573,7 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
   }, [calendarDays])
 
   const remindDays = useRemindDays()
+  const remindNodes = useRemindNodes()
   const dueAlert = useMemo(() => {
     let red = 0
     let yellow = 0
@@ -1269,28 +1275,36 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
             <div className={cn('space-y-2', !settingsOpen && 'hidden sm:block sm:space-y-2')}>
             <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
               <AlarmClock className="h-3.5 w-3.5 shrink-0" />
-              {t("提前提醒")}{' '}{REMIND_OPTIONS.map((n) => (
+              {t("默认提醒节点")}{' '}{REMIND_NODE_OPTIONS.map((n) => (
                 <button
                   key={n}
                   type="button"
-                  aria-pressed={remindDays === n}
-                  onClick={() => setRemindDays(n)}
+                  aria-pressed={remindNodes.includes(n)}
+                  onClick={() =>
+                    setRemindNodes(
+                      remindNodes.includes(n)
+                        ? remindNodes.filter((x) => x !== n)
+                        : [...remindNodes, n],
+                    )
+                  }
                   className={cn(
                     'min-h-11 min-w-11 cursor-pointer rounded-md border px-2.5 py-0.5 transition-colors sm:min-h-6 sm:min-w-0',
-                    remindDays === n
+                    remindNodes.includes(n)
                       ? 'border-primary bg-primary/10 text-primary'
                       : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >
-                  {n} {' '}{t("天")}{' '}</button>
+                  {tt`前 ${n} 天`}
+                </button>
               ))}
-              <span className="hidden sm:inline">{t("顶栏红点与横幅按此计算")}</span>
+              <span className="hidden sm:inline">{t("截止前按各节点各提醒一次；顶栏红点与横幅按最大节点计算")}</span>
             </div>
             <NotifyToggleRow />
             <PushToggleRow />
             <NewsNotifyToggleRow />
             <ExtLinkConfirmToggleRow />
             </div>
+            <MyRemindersSection />
             <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5">
               {BOARD_TABS.map((t) => (
                 <button
@@ -1883,13 +1897,131 @@ function ExtLinkConfirmToggleRow() {
   )
 }
 
+/** 「我的提醒」聚合管理：已设提醒岗位按截止升序，可调节点/单个取消/一键清理已截止。 */
+function MyRemindersSection() {
+  const reminders = useReminders()
+  const [expanded, setExpanded] = useState(false)
+  const [editKey, setEditKey] = useState<string | null>(null)
+  if (reminders.length === 0) return null
+
+  const sorted = [...reminders].sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0))
+  const expiredCount = reminders.filter((e) => daysUntil(new Date(`${e.d}T00:00:00`)) < 0).length
+
+  const sync = () =>
+    void syncPushItems(buildPushItems(getFavorites(), getCampusFavorites(), getBianzhiFavorites()))
+
+  return (
+    <div className="rounded-lg border bg-muted/30 px-2.5 py-2 text-xs">
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          aria-expanded={expanded}
+          className="flex min-h-8 flex-1 cursor-pointer items-center gap-1.5 text-left font-medium text-foreground/90"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          <BellRing className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+          {t("我的提醒")}
+          <span className="text-muted-foreground">{reminders.length}</span>
+          <ChevronDown
+            className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform', expanded && 'rotate-180')}
+            aria-hidden="true"
+          />
+        </button>
+        {expanded && expiredCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-auto min-h-8 gap-1 px-2 text-[11px] text-muted-foreground"
+            onClick={() => {
+              clearExpiredReminders()
+              sync()
+            }}
+          >
+            <Trash2 className="h-3 w-3" aria-hidden="true" />
+            {tt`清理已截止 ${expiredCount}`}
+          </Button>
+        )}
+      </div>
+      {expanded && (
+        <ul className="mt-1 max-h-64 space-y-1 overflow-y-auto">
+          {sorted.map((e) => (
+            <li key={e.key} className="rounded-md bg-background px-2 py-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="min-w-0 flex-1 truncate" title={e.title}>
+                  {e.title || t("未命名岗位")}
+                </span>
+                <DueBadge date={e.d} />
+                <button
+                  type="button"
+                  aria-expanded={editKey === e.key}
+                  className="inline-flex min-h-8 shrink-0 cursor-pointer items-center gap-0.5 rounded-md px-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={() => setEditKey((k) => (k === e.key ? null : e.key))}
+                >
+                  {tt`前 ${formatNodes(e.nodes)} 天`}
+                  <ChevronDown
+                    className={cn('h-3 w-3 transition-transform', editKey === e.key && 'rotate-180')}
+                    aria-hidden="true"
+                  />
+                </button>
+                <button
+                  type="button"
+                  aria-label={t("取消提醒")}
+                  title={t("取消提醒")}
+                  className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={() => {
+                    removeReminder(e.key)
+                    sync()
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <span>{tt`截止 ${e.d}`}</span>
+              </div>
+              {editKey === e.key && (
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                  {t("提醒节点")}
+                  {REMIND_NODE_OPTIONS.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      aria-pressed={e.nodes.includes(n)}
+                      onClick={() => {
+                        setReminderNodes(
+                          e.key,
+                          e.nodes.includes(n) ? e.nodes.filter((x) => x !== n) : [...e.nodes, n],
+                        )
+                        sync()
+                      }}
+                      className={cn(
+                        'min-h-8 cursor-pointer rounded-md border px-2 py-0.5 transition-colors',
+                        e.nodes.includes(n)
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
+                      )}
+                    >
+                      {tt`前 ${n} 天`}
+                    </button>
+                  ))}
+                  <span>{t("清空节点即取消提醒")}</span>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 /** 「关站推送提醒」开关（默认关）：Web Push 订阅，即使没打开站点也能收到每日临近截止聚合推送。 */
 function PushToggleRow() {
   const enabled = usePushEnabled()
   const favorites = useFavorites()
   const campusFavs = useCampusFavorites()
   const bianzhiFavs = useBianzhiFavorites()
-  const remindDays = useRemindDays()
+  const remindNodes = useRemindNodes()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   if (!isPushSupported()) return null
@@ -1904,7 +2036,7 @@ function PushToggleRow() {
         return
       }
       const items = buildPushItems(favorites, campusFavs, bianzhiFavs)
-      const result = await enablePush(remindDays, items)
+      const result = await enablePush(items)
       if (result === 'denied') setError(t("浏览器已拒绝通知权限（可在地址栏站点设置中重新允许）"))
       else if (result === 'unconfigured') setError(t("开启失败：网络异常或推送服务未就绪，请再点一次开关重试"))
       else if (result !== 'granted') setError(t("开启失败，请再点一次开关重试"))
@@ -1916,11 +2048,11 @@ function PushToggleRow() {
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
       <MonitorSmartphone className="h-3.5 w-3.5 shrink-0" />
-      {tt`截止前 ${remindDays} 天提醒你报名`}{' '}<button
+      {tt`截止前 ${formatNodes(remindNodes)} 天提醒你报名`}{' '}<button
         type="button"
         role="switch"
         aria-checked={enabled}
-        aria-label={tt`截止前 ${remindDays} 天提醒你报名`}
+        aria-label={tt`截止前 ${formatNodes(remindNodes)} 天提醒你报名`}
         aria-busy={busy}
         onClick={toggle}
         className="relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center sm:h-6 sm:w-10"

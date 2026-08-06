@@ -8,6 +8,8 @@ export const SYNC_CODE_MAX = 30000
 const PROFILE_KEY = 'recruit.profile'
 const PREF_KEYS = [
   'recruit.remindDays',
+  'recruit.remindNodes',
+  'recruit.jobReminders',
   'recruit.savedFilters',
   'recruit.savedQueries',
   'recruit.savedFilterBaselines',

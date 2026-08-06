@@ -13,11 +13,12 @@ from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
-from sqlalchemy import func
+from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 
 import cache
 from database import get_db
+from major_pages import MAJOR_BY_SLUG, MAJOR_DISCIPLINES
 from models import BianzhiJob, CampusJob, DailyDigest, Position
 
 router = APIRouter(tags=["seo"])
@@ -428,6 +429,206 @@ def _render_city_et(slug: str, city_slug: str, et_slug: str, db: Session = None)
                  _jsonld(jobs, prov, et_norm))
 
 
+# ---------------- 专业反查页 /major ----------------
+
+def _major_positions(db: Session, name: str):
+    """体制内岗位的专业命中口径：三个专业字段任一子串命中（见 major_pages）。"""
+    like = f"%{name}%"
+    return _active(db.query(Position)).filter(or_(
+        Position.undergrad_major.ilike(like),
+        Position.grad_major.ilike(like),
+        Position.raw_major.ilike(like)))
+
+
+@cache.cached("seo_major_counts", ttl=SEO_TTL, stale=True)
+def _major_counts(db: Session = None) -> dict:
+    """全部专业的三板块命中数（slug -> {pos, campus, bianzhi}）；只在预热时重算。"""
+    # 全量 ILIKE 计数超出默认 20s statement_timeout，仅预热路径承担
+    db.execute(text("SET statement_timeout = '300s'"))
+    out = {}
+    for slug, (name, _disc) in MAJOR_BY_SLUG.items():
+        like = f"%{name}%"
+        pos = _major_positions(db, name).with_entities(func.count()).scalar() or 0
+        campus = (db.query(func.count()).select_from(CampusJob)
+                  .filter(CampusJob.major_requirement.ilike(like)).scalar() or 0)
+        bz = (db.query(func.count()).select_from(BianzhiJob)
+              .filter(BianzhiJob.major_requirement.ilike(like)).scalar() or 0)
+        out[slug] = {"pos": pos, "campus": campus, "bianzhi": bz}
+    db.execute(text("SET statement_timeout = DEFAULT"))
+    return out
+
+
+def _major_live_slugs(db: Session) -> list:
+    """有命中岗位的专业 slug 列表（命中不了的专业不出页）。"""
+    counts = _major_counts(db=db)
+    return [s for s, c in counts.items()
+            if c["pos"] + c["campus"] + c["bianzhi"] > 0]
+
+
+def _major_jsonld(name: str, jobs) -> str:
+    postings = []
+    for j in jobs[:20]:
+        title = (j.position_example or "").strip() or (j.exam_type_norm or "岗位")
+        item = {
+            "@type": "JobPosting",
+            "title": title[:80],
+            "hiringOrganization": {"@type": "Organization",
+                                   "name": (j.employer or "招录单位")[:80]},
+            "jobLocation": {"@type": "Place", "address": {
+                "@type": "PostalAddress", "addressRegion": j.province or "全国",
+                "addressLocality": j.city or j.province or "全国",
+                "addressCountry": "CN"}},
+            "employmentType": "FULL_TIME",
+            "industry": j.exam_type_norm or "招考",
+            "qualifications": f"{name}专业可报",
+        }
+        if j.created_at:
+            item["datePosted"] = j.created_at.strftime("%Y-%m-%d")
+        if j.signup_deadline:
+            item["validThrough"] = j.signup_deadline.strftime("%Y-%m-%d")
+        postings.append(item)
+    if not postings:
+        return ""
+    data = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": f"{name}专业可报岗位",
+        "itemListElement": [
+            {"@type": "ListItem", "position": i + 1, "item": p}
+            for i, p in enumerate(postings)],
+    }
+    return ("<script type=\"application/ld+json\">"
+            + json.dumps(data, ensure_ascii=False) + "</script>")
+
+
+@cache.cached("seo_major_index", ttl=SEO_TTL, stale=True)
+def _render_major_index(db: Session = None) -> str:
+    counts = _major_counts(db=db)
+    sections = []
+    grand = 0
+    live = 0
+    for disc, majors in MAJOR_DISCIPLINES:
+        chips = []
+        for slug, name in majors:
+            c = counts.get(slug) or {}
+            n = (c.get("pos", 0) or 0) + (c.get("campus", 0) or 0) + (c.get("bianzhi", 0) or 0)
+            if not n:
+                continue
+            grand += n
+            live += 1
+            chips.append(f"<a href='/major/{slug}'>{name}<span class='n'>{n:,}</span></a>")
+        if chips:
+            sections.append(
+                f"<h2 style='font-size:16px;margin:16px 0 8px'>{disc}</h2>"
+                f"<div class='chips'>{''.join(chips)}</div>")
+    body = (f"<h1>专业能报什么岗位？按专业反查可报岗位</h1>"
+            f"<p class='desc'>按你的专业反查全国公务员、事业单位、编制与校招岗位："
+            f"收录 {live} 个常见专业、累计 {grand:,} 个专业对口岗位，按学科门类分组，"
+            f"点击专业查看各板块岗位数、省份分布、考试类型与最新岗位样例，每日更新。</p>"
+            + "".join(sections)
+            + f"<a class='cta' href='/'>打开{BRAND}筛选全部岗位 →</a>")
+    crumb = f"<a href='/'>{BRAND}</a> › 专业反查"
+    jsonld = ("<script type=\"application/ld+json\">" + json.dumps({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": f"{BRAND}专业反查可报岗位",
+        "itemListElement": [
+            {"@type": "ListItem", "position": i + 1,
+             "url": f"{SITE}/major/{slug}",
+             "name": f"{MAJOR_BY_SLUG[slug][0]}专业可报岗位"}
+            for i, slug in enumerate(_major_live_slugs(db)[:50])],
+    }, ensure_ascii=False) + "</script>")
+    return _page(f"专业反查可报岗位（公务员·事业单位·校招） - {BRAND}",
+                 f"按专业反查可报岗位：计算机、法学、会计、临床医学等 {live} 个常见专业对应的公务员、事业单位、编制与校招岗位数量与最新岗位，每日更新。",
+                 f"{SITE}/major", crumb, body, jsonld)
+
+
+@cache.cached("seo_major", ttl=SEO_TTL, stale=True)
+def _render_major(slug: str, db: Session = None) -> str:
+    name, disc = MAJOR_BY_SLUG[slug]
+    like = f"%{name}%"
+    db.execute(text("SET statement_timeout = '120s'"))  # 聚合查询仅预热路径承担
+    rows = (_major_positions(db, name)
+            .with_entities(Position.province, Position.exam_type_norm, func.count())
+            .group_by(Position.province, Position.exam_type_norm).all())
+    prov_counts: dict = {}
+    et_counts: dict = {}
+    for prov, et, n in rows:
+        if prov:
+            prov_counts[prov] = prov_counts.get(prov, 0) + n
+        if et:
+            et_counts[et] = et_counts.get(et, 0) + n
+    pos_total = sum(n for _, _, n in rows)
+    campus_total = (db.query(func.count()).select_from(CampusJob)
+                    .filter(CampusJob.major_requirement.ilike(like)).scalar() or 0)
+    bz_total = (db.query(func.count()).select_from(BianzhiJob)
+                .filter(BianzhiJob.major_requirement.ilike(like)).scalar() or 0)
+    if pos_total + campus_total + bz_total == 0:
+        raise HTTPException(status_code=404)
+    jobs = (_major_positions(db, name)
+            .order_by(Position.id.desc()).limit(20).all())
+    db.execute(text("SET statement_timeout = DEFAULT"))
+
+    top_prov = sorted(prov_counts.items(), key=lambda kv: -kv[1])[:10]
+    prov_chips = "".join(
+        f"<a href='/zhaokao/{SLUG_BY_PROV[p]}'>{p}<span class='n'>{n:,}</span></a>"
+        for p, n in top_prov if p in SLUG_BY_PROV)
+    et_top = sorted(et_counts.items(), key=lambda kv: -kv[1])[:8]
+    et_chips = "".join(
+        (f"<a href='/?major={quote(name)}&exam_type_norm={quote(et)}'>{et}"
+         f"<span class='n'>{n:,}</span></a>") for et, n in et_top)
+    board_bits = [f"体制内 {pos_total:,} 个"]
+    if campus_total:
+        board_bits.append(f"校招/社招 {campus_total:,} 个")
+    if bz_total:
+        board_bits.append(f"编制/央国企 {bz_total:,} 个")
+    top3 = "、".join(f"{et} {n:,} 个" for et, n in et_top[:3])
+    desc_txt = (f"{name}专业（{disc}门类）当前全站可报岗位：{'，'.join(board_bits)}。"
+                + (f"体制内岗位中数量最多的考试类型为：{top3}。" if top3 else "")
+                + "命中口径为岗位专业要求字段包含该专业名（含所属大类表述），"
+                  "数据来自各级人事考试网与官方公告，每日更新，实际以官方职位表为准。")
+    deep = f"/?major={quote(name)}"
+    campus_deep = f"/?board=campus&bkw={quote(name)}"
+    others = "".join(
+        f"<a href='/major/{s}'>{n}</a>"
+        for d2, ms in MAJOR_DISCIPLINES if d2 == disc
+        for s, n in ms if s != slug)
+    body = (f"<h1>{name}专业能报哪些岗位？</h1>"
+            f"<p class='desc'>{desc_txt}</p>"
+            + (f"<h2 style='font-size:16px;margin:16px 0 8px'>考试类型分布</h2>"
+               f"<div class='chips'>{et_chips}</div>" if et_chips else "")
+            + (f"<h2 style='font-size:16px;margin:16px 0 8px'>省份分布 Top10</h2>"
+               f"<div class='chips'>{prov_chips}</div>" if prov_chips else "")
+            + f"<a class='cta' href='{_esc(deep)}'>在{BRAND}中按「{name}」筛选体制内岗位 →</a> "
+            + (f"<a class='cta' style='background:#0f766e' href='{_esc(campus_deep)}'>查看{name}校招岗位 →</a>" if campus_total else "")
+            + f"<h2 style='font-size:16px;margin:16px 0 8px'>最新岗位样例</h2>"
+            f"<table><thead><tr><th>岗位</th><th>单位</th><th>地点</th><th>学历</th><th>报名时间</th></tr></thead>"
+            f"<tbody>{_job_rows(jobs)}</tbody></table>"
+            + (f"<h2 style='font-size:16px;margin:20px 0 8px'>{disc}门类其他专业</h2>"
+               f"<div class='chips'>{others}</div>" if others else "")
+            + "<h2 style='font-size:16px;margin:20px 0 8px'>更多</h2>"
+            "<div class='chips'><a href='/major'>全部专业反查</a>"
+            "<a href='/zhaokao'>按省份浏览岗位</a></div>")
+    crumb = (f"<a href='/'>{BRAND}</a> › <a href='/major'>专业反查</a> › {name}")
+    total_all = pos_total + campus_total + bz_total
+    return _page(f"{name}专业能报哪些岗位（{total_all:,} 个在库） - {BRAND}",
+                 f"{name}专业可报岗位 {total_all:,} 个：公务员、事业单位、编制与校招岗位数量、省份分布、考试类型与最新岗位样例，每日更新。",
+                 f"{SITE}/major/{slug}", crumb, body,
+                 _major_jsonld(name, jobs))
+
+
+@router.get("/major", response_class=HTMLResponse)
+def major_index(db: Session = Depends(get_db)):
+    return _html(_render_major_index(db=db))
+
+
+@router.get("/major/{slug}", response_class=HTMLResponse)
+def major_detail(slug: str, db: Session = Depends(get_db)):
+    if slug not in MAJOR_BY_SLUG:
+        raise HTTPException(status_code=404)
+    return _html(_render_major(slug, db=db))
+
+
 @router.get("/zhaokao", response_class=HTMLResponse)
 def seo_index(db: Session = Depends(get_db)):
     return _html(_render_index(db=db))
@@ -691,7 +892,13 @@ def sitemap(db: Session = Depends(get_db)):
         url(f"{SITE}/?board=updates", "0.8"),
         url(f"{SITE}/zhaokao", "0.9"),
         url(f"{SITE}/daily", "0.9"),
+        url(f"{SITE}/major", "0.9"),
     ]
+    try:
+        for s in _major_live_slugs(db):
+            urls.append(url(f"{SITE}/major/{s}", "0.7"))
+    except Exception:
+        pass  # 专业页枚举失败不影响 sitemap 主体
     try:
         for d in _recent_digest_days(db=db):
             urls.append(url(f"{SITE}/daily/{d}", "0.7"))

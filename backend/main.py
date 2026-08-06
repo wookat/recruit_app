@@ -6,7 +6,7 @@ import threading
 import time
 from urllib.parse import quote
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 import pandas as pd
@@ -203,6 +203,8 @@ RECENT_ITEM_MAX = 6
 @app.get("/api/new-since")
 def new_since(since: datetime = Query(...), db: Session = Depends(get_db)):
     """三板块自 since 之后新入库（created_at）岗位数，用于回访「新增 N 个岗位」提示条。"""
+    if since.tzinfo is not None:
+        since = since.astimezone(timezone.utc).replace(tzinfo=None)
     cutoff = datetime.now() - timedelta(days=30)
     if since < cutoff:
         since = cutoff

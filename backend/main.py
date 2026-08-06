@@ -40,6 +40,11 @@ logger = logging.getLogger("uvicorn.error")
 
 def _warm_hot_keywords_bg():
     try:
+        result = precompute.warm_suggest_vocab()
+        logger.info("启动联想词表预生成完成: %s", result)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("启动联想词表预生成失败: %s: %s", type(exc).__name__, exc)
+    try:
         result = precompute.warm_hot_keywords()
         logger.info("启动热词预热完成: %s", result)
     except Exception as exc:  # noqa: BLE001  预热失败不影响启动
@@ -454,13 +459,15 @@ def get_filters(db: Session = Depends(get_db)):
 
 
 @app.get("/api/suggest", response_model=schemas.SuggestOut)
-@cache.cached("suggest", ttl=300)
+@cache.cached("suggest", ttl=600)
 def suggest(
-    q: str = Query(..., min_length=2, max_length=50),
-    limit: int = Query(10, ge=1, le=50),
+    q: str = Query(..., min_length=1, max_length=50),
+    board: Optional[str] = Query(None, pattern="^(positions|campus|bianzhi)$"),
+    limit: int = Query(8, ge=1, le=8),
     db: Session = Depends(get_db),
 ):
-    return {"query": q, "suggestions": crud.suggest_keywords(db, q, limit)}
+    """搜索联想：热门关键词 + 单位/公司名前缀 + 岗位类别词表（10 分钟缓存，key 含 q+board）。"""
+    return {"query": q, "suggestions": crud.suggest_mixed(db, q, board=board, limit=limit)}
 
 
 @app.get("/api/stats", response_model=schemas.StatsOut)

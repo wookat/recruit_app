@@ -3,12 +3,10 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState, useCallback } fro
 import axios from 'axios'
 import {
   fetchFilters,
-  fetchSuggestions,
   formatTotal,
   type PositionList,
   type FilterOptions,
   type SearchParams,
-  type Suggestion,
 } from '@/api'
 import { StatsDashboard } from './StatsDashboard'
 import { FreshnessNote } from './FreshnessNote'
@@ -313,15 +311,12 @@ export function ListPage({
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveHint, setSaveHint] = useState<string | null>(null)
   const [saveName, setSaveName] = useState('')
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [copied, setCopied] = useState(false)
   const [recommendQuery, setRecommendQuery] = useState<RecommendQuery | null>(null)
   const [exportTask, setExportTask] = useState<string | null>(null)
   const [exportError, setExportError] = useState('')
   const [loadError, setLoadError] = useState(false)
   const [synOff, setSynOff] = useState(false)
-  const suggestDisabledRef = useRef(false)
-  const skipSuggestRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const loadSeqRef = useRef(0)
   const exportTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -362,31 +357,7 @@ export function ListPage({
     )
   }, [syncUrl, params])
 
-  useEffect(() => {
-    const kw = (params.keyword || '').trim()
-    if (
-      suggestDisabledRef.current ||
-      kw.length < 1 ||
-      (kw.length < 2 && !/[\u4e00-\u9fff]/.test(kw)) ||
-      skipSuggestRef.current === kw
-    ) {
-      setSuggestions([])
-      return
-    }
-    const t = setTimeout(() => {
-      fetchSuggestions(kw)
-        .then((s) => setSuggestions(s.filter((x) => x.text !== kw)))
-        .catch((e) => {
-          if (e?.response?.status === 404) suggestDisabledRef.current = true
-          setSuggestions([])
-        })
-    }, 250)
-    return () => clearTimeout(t)
-  }, [params.keyword])
-
   function applySuggestion(text: string) {
-    skipSuggestRef.current = text
-    setSuggestions([])
     updateParam('keyword', text)
   }
 
@@ -950,17 +921,8 @@ export function ListPage({
               onValueChange={(v) => updateParam('keyword', v)}
               onSelect={(text) => applySuggestion(text)}
               words={positionSuggestWords}
-              extraItems={[
-                ...suggestions
-                  .filter(
-                    (s) =>
-                      s.text.length <= 12 &&
-                      !/[，。、；！？]/.test(s.text) &&
-                      !/从事|等工作|负责|相关工作/.test(s.text),
-                  )
-                  .map((s) => ({ text: s.text, count: s.count })),
-                ...pinyinSuggestions.map((s) => ({ text: s })),
-              ]}
+              suggestBoard="positions"
+              extraItems={pinyinSuggestions.map((s) => ({ text: s }))}
               placeholder={t("搜索岗位、单位、专业、地点…")}
             />
             <div className="flex items-center gap-2">

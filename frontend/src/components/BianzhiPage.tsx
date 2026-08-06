@@ -918,6 +918,7 @@ export function BianzhiPage({
             if (text.length >= 2) addRecentSearch(text)
           }}
           words={bianzhiSuggestWords}
+          suggestBoard="bianzhi"
           placeholder={t("搜索招聘单位 / 工作地 / 专业…")}
           inputClassName="h-10"
         />

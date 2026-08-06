@@ -7,6 +7,19 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 SERVER="${SERVER:?SERVER 未设置（如 ubuntu@1.2.3.4）}"
+
+# 安全检查：禁止从不含 origin/main 的分支部署（防止旧分支覆盖主线，FORCE=1 可跳过）
+git fetch origin main
+if ! git merge-base --is-ancestor origin/main HEAD; then
+  if [[ "${FORCE:-0}" == "1" ]]; then
+    echo "WARN: 当前 HEAD 不包含 origin/main，FORCE=1 已指定，继续部署（请确认这是有意为之）"
+  else
+    echo "ERROR: 当前 HEAD 不包含 origin/main 的全部提交，部署会覆盖主线已上线代码。" >&2
+    echo "  正确做法：合并 PR 后从最新 main 部署（git checkout main && git pull）。" >&2
+    echo "  确需从该分支部署（明知会覆盖主线）：FORCE=1 SERVER=... ./scripts/deploy.sh" >&2
+    exit 1
+  fi
+fi
 REMOTE_DIR=/opt/recruit_app
 SSH=(sshpass -e ssh -o StrictHostKeyChecking=no "$SERVER")
 RSYNC=(sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no")

@@ -83,6 +83,12 @@ def cached(prefix: str, ttl: int = 60, stale: bool = False):
             try:
                 result = func(*args, **kwargs)
             except Exception:
+                db = kwargs.get("db")
+                if db is not None:
+                    try:  # 回滚共享会话，避免中止事务级联到后续查询（InFailedSqlTransaction）
+                        db.rollback()
+                    except Exception:
+                        pass
                 if stale:
                     try:
                         old = r.get(stale_key)

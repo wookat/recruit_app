@@ -104,9 +104,13 @@ def collect_ncss_jobs(self):
     """每日增量采集 NCSS 教育部大学生就业平台校招职位（幂等可重跑）。"""
     self.update_state(state="PROGRESS", meta={"step": "collecting ncss jobs"})
     try:
-        return collect_ncss.collect()
+        result = collect_ncss.collect()
     except Exception as exc:
         raise self.retry(exc=exc)
+    # NCSS 常在 06:50 的 beat 刷新之后才完成（含手动触发），链尾追加一次
+    # unified_jobs 刷新，避免白天物化视图与 campus_jobs 长时间口径差
+    refresh_unified_jobs.delay()
+    return result
 
 
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=300)

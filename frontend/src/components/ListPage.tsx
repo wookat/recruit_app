@@ -937,7 +937,7 @@ export function ListPage({
 
   return (
     <div className={showStats ? 'xl:grid xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start xl:gap-5' : undefined}>
-    <div className="flex min-w-0 flex-col gap-5">
+    <div className="flex min-w-0 flex-col gap-5 max-sm:gap-4">
       <NewSinceBanner board="positions" onApply={(since) => updateParam('created_after', since)} />
       {onOpenUpdates && (
         <ValuePropBanner

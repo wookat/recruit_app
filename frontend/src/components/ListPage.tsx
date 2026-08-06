@@ -120,17 +120,18 @@ interface ListPageProps {
   onOpenUpdates?: () => void
 }
 
+// value 必须保持中文（数据内容为中文，用译文查询会 0 结果）；label 可随语言翻译
 const HOT_SEARCH = [
-  { label: t("北京"), type: 'location' as const, value: t("北京") },
-  { label: t("上海"), type: 'location' as const, value: t("上海") },
-  { label: t("广州"), type: 'location' as const, value: t("广州") },
-  { label: t("深圳"), type: 'location' as const, value: t("深圳") },
-  { label: t("杭州"), type: 'location' as const, value: t("杭州") },
-  { label: t("计算机"), type: 'major' as const, value: t("计算机") },
-  { label: t("法学"), type: 'major' as const, value: t("法学") },
-  { label: t("会计"), type: 'major' as const, value: t("会计") },
-  { label: t("国考"), type: 'keyword' as const, value: t("国考") },
-  { label: t("央企校招"), type: 'keyword' as const, value: t("央企校招") },
+  { label: t("北京"), type: 'location' as const, value: '北京' },
+  { label: t("上海"), type: 'location' as const, value: '上海' },
+  { label: t("广州"), type: 'location' as const, value: '广州' },
+  { label: t("深圳"), type: 'location' as const, value: '深圳' },
+  { label: t("杭州"), type: 'location' as const, value: '杭州' },
+  { label: t("计算机"), type: 'major' as const, value: '计算机' },
+  { label: t("法学"), type: 'major' as const, value: '法学' },
+  { label: t("会计"), type: 'major' as const, value: '会计' },
+  { label: t("国考"), type: 'keyword' as const, value: '国考' },
+  { label: t("央企校招"), type: 'keyword' as const, value: '央企校招' },
 ]
 
 const POSITION_INDUSTRY_WORDS = [

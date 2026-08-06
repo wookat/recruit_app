@@ -559,7 +559,7 @@ export default function App() {
             aria-label={getLang() === 'en' ? '切换到中文' : 'Switch to English'}
           >
             <Languages className="h-4 w-4" />
-            <span className="text-[11px] font-medium">{getLang() === 'en' ? '中文' : 'EN'}</span>
+            <span className="hidden text-[11px] font-medium sm:inline">{getLang() === 'en' ? '中文' : 'EN'}</span>
           </Button>
           <Button
             variant="ghost"

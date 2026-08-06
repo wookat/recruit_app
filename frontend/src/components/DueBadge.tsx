@@ -1,14 +1,20 @@
 import { t, tt } from '@/lib/i18n'
 import { Badge } from '@/components/ui/badge'
-import { daysUntil } from '@/lib/deadline'
+import { daysUntil, isLongTermDate } from '@/lib/deadline'
 import { useRemindDays } from '@/lib/reminderPref'
 
-/** deadline_date 已过期显示灰色「已截止」；距今 ≤3 天红色，4 天至 max(7, 提醒天数偏好) 天 amber。 */
+/** deadline_date 已过期显示灰色「已截止」；距今 ≤3 天红色，4 天至 max(7, 提醒天数偏好) 天 amber；距今 >3 年显示「长期有效」。 */
 export function DueBadge({ date }: { date: string | null | undefined }) {
   const remindDays = useRemindDays()
   if (!date) return null
   const d = new Date(`${date}T00:00:00`)
   if (isNaN(d.getTime())) return null
+  if (isLongTermDate(date)) {
+    return (
+      <Badge className="whitespace-nowrap border-0 bg-muted text-foreground/80 dark:text-muted-foreground">
+        {t("长期有效")}{' '}</Badge>
+    )
+  }
   const n = daysUntil(d)
   if (n < 0) {
     return (

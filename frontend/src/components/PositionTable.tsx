@@ -35,7 +35,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ListFilter } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronUp, ListFilter } from 'lucide-react'
+import { foldPositions } from '@/lib/positionFold'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -143,6 +144,7 @@ export const PositionTable = memo(function PositionTable({
 }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
   const [sort, setSort] = useState<SortState | null>(null)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   const sortedData = useMemo(() => {
@@ -150,8 +152,20 @@ export const PositionTable = memo(function PositionTable({
     return [...data].sort((a, b) => cmpNullableStr(sortField(a, sort.key), sortField(b, sort.key), sort.dir))
   }, [data, sort])
 
+  const { rows: foldedData, groups: foldGroups, collapsedGroups, hiddenRows } = useMemo(
+    () => foldPositions(sortedData, expandedGroups),
+    [sortedData, expandedGroups],
+  )
+  const toggleGroup = (key: string) =>
+    setExpandedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+
   const table = useReactTable({
-    data: sortedData,
+    data: foldedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
   })
@@ -187,6 +201,25 @@ export const PositionTable = memo(function PositionTable({
 
   return (
     <div className="space-y-3">
+      {(collapsedGroups > 0 || expandedGroups.size > 0) && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          {collapsedGroups > 0 ? (
+            <span>{tt`本页已折叠 ${collapsedGroups} 组同岗多地区岗位（${hiddenRows} 条），总数按未折叠口径统计`}</span>
+          ) : (
+            <span />
+          )}
+          {expandedGroups.size > 0 && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 hover:text-foreground"
+              onClick={() => setExpandedGroups(new Set())}
+            >
+              <ChevronUp className="h-3.5 w-3.5" />
+              {t('折叠多地区岗位')}
+            </button>
+          )}
+        </div>
+      )}
       <div className="rounded-xl border bg-card shadow-sm">
         <div className="overflow-x-auto [scrollbar-width:thin]">
           <TableSwipeHint />
@@ -291,6 +324,19 @@ export const PositionTable = memo(function PositionTable({
                           <span className={cn(PILL_BASE, eduClass(String(cell.getValue() || '')))}>
                             {String(cell.getValue() || '-')}
                           </span>
+                        ) : cell.column.id === 'work_location' && foldGroups.has(row.original.id) ? (
+                          <button
+                            type="button"
+                            className="inline-flex max-w-full items-center gap-0.5 truncate text-primary hover:underline"
+                            title={foldGroups.get(row.original.id)!.locations.join(' / ')}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleGroup(foldGroups.get(row.original.id)!.key)
+                            }}
+                          >
+                            {tt`${foldGroups.get(row.original.id)!.locations.length || foldGroups.get(row.original.id)!.count} 个地区`}
+                            <ChevronDown className="h-3 w-3 shrink-0" />
+                          </button>
                         ) : cell.column.id === 'work_location' && cell.getValue() ? (
                           <span
                             className={cn(
@@ -467,7 +513,7 @@ export const PositionTable = memo(function PositionTable({
         <LazyPositionSheet
           item={selected}
           onClose={() => setSelected(null)}
-          {...sheetNavProps(sortedData, selected, setSelected)}
+          {...sheetNavProps(foldedData, selected, setSelected)}
           onOpenItem={setSelected}
           onTagClick={onTagClick}
         />

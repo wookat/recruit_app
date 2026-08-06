@@ -1,5 +1,5 @@
-import { t } from '@/lib/i18n'
-import { memo, useEffect, useRef, useState, type ReactNode } from 'react'
+import { t, tt } from '@/lib/i18n'
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import type { Position } from '@/api'
 import { PositionCard } from './PositionCard'
@@ -8,6 +8,8 @@ import { sheetNavProps } from '@/lib/sheetNav'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { EmptyState } from './EmptyState'
+import { foldPositions } from '@/lib/positionFold'
+import { ChevronUp } from 'lucide-react'
 
 interface Props {
   data: Position[]
@@ -33,8 +35,20 @@ function useSingleColumn() {
 
 const CARD_ESTIMATE = 260
 
-export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, emptyAction, highlight, onTagClick }: Props) {
+export const PositionCardGrid = memo(function PositionCardGrid({ data: rawData, loading, emptyAction, highlight, onTagClick }: Props) {
   const [selected, setSelected] = useState<Position | null>(null)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const { rows: data, groups, collapsedGroups, hiddenRows } = useMemo(
+    () => foldPositions(rawData, expandedGroups),
+    [rawData, expandedGroups],
+  )
+  const toggleGroup = (key: string) =>
+    setExpandedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
   const singleColumn = useSingleColumn()
   const listRef = useRef<HTMLDivElement>(null)
   const virtualize = singleColumn && data.length > 12
@@ -84,6 +98,25 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, 
 
   return (
     <div className={loading ? 'space-y-3 opacity-50 transition-opacity' : 'space-y-3'}>
+      {(collapsedGroups > 0 || expandedGroups.size > 0) && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          {collapsedGroups > 0 ? (
+            <span>{tt`本页已折叠 ${collapsedGroups} 组同岗多地区岗位（${hiddenRows} 条），总数按未折叠口径统计`}</span>
+          ) : (
+            <span />
+          )}
+          {expandedGroups.size > 0 && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 hover:text-foreground"
+              onClick={() => setExpandedGroups(new Set())}
+            >
+              <ChevronUp className="h-3.5 w-3.5" />
+              {t('折叠多地区岗位')}
+            </button>
+          )}
+        </div>
+      )}
       {virtualize ? (
         <div key="virtual" ref={listRef} className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
           {virtualizer.getVirtualItems().map((vi) => {
@@ -96,7 +129,13 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, 
                 className="absolute left-0 top-0 w-full pb-4"
                 style={{ transform: `translateY(${vi.start - virtualizer.options.scrollMargin}px)` }}
               >
-                <PositionCard item={item} onDetail={setSelected} highlight={highlight} />
+                <PositionCard
+                  item={item}
+                  onDetail={setSelected}
+                  highlight={highlight}
+                  foldGroup={groups.get(item.id)}
+                  onFoldToggle={toggleGroup}
+                />
               </div>
             )
           })}
@@ -109,7 +148,13 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data, loading, 
               className="h-full animate-fade-in-up"
               style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
             >
-              <PositionCard item={item} onDetail={setSelected} highlight={highlight} />
+              <PositionCard
+                item={item}
+                onDetail={setSelected}
+                highlight={highlight}
+                foldGroup={groups.get(item.id)}
+                onFoldToggle={toggleGroup}
+              />
             </div>
           ))}
         </div>

@@ -26,6 +26,7 @@ class UnifiedJobOut(BaseModel):
     major: Optional[str] = None
     province: Optional[str] = None
     city: Optional[str] = None
+    district: Optional[str] = None
     work_location: Optional[str] = None
     deadline_date: Optional[date] = None
     announce_url: Optional[str] = None
@@ -49,13 +50,13 @@ class UnifiedJobList(BaseModel):
 
 COLUMNS = (
     "source_board, source_id, title, employer, category, edu_level_norm, major, "
-    "province, city, work_location, deadline_date, announce_url, apply_url, "
+    "province, city, district, work_location, deadline_date, announce_url, apply_url, "
     "industry, grad_years, created_at"
 )
 
 
 def _build_where(
-    keyword, board, province, city, edu, due_within_days,
+    keyword, board, province, city, district, edu, due_within_days,
     deadline_from, deadline_to, hide_expired,
 ):
     clauses = []
@@ -72,6 +73,9 @@ def _build_where(
     if city:
         clauses.append("city = ANY(:cities)")
         params["cities"] = list(city)
+    if district:
+        clauses.append("district = ANY(:districts)")
+        params["districts"] = list(district)
     if edu:
         clauses.append("edu_level_norm = ANY(:edus)")
         params["edus"] = list(edu)
@@ -100,6 +104,7 @@ def list_jobs(
     board: Optional[List[str]] = Query(None),
     province: Optional[List[str]] = Query(None),
     city: Optional[List[str]] = Query(None),
+    district: Optional[List[str]] = Query(None),
     edu: Optional[List[str]] = Query(None),
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
     deadline_from: Optional[date] = None,
@@ -111,7 +116,7 @@ def list_jobs(
     db: Session = Depends(get_db),
 ):
     where, params = _build_where(
-        keyword, board, province, city, edu, due_within_days,
+        keyword, board, province, city, district, edu, due_within_days,
         deadline_from, deadline_to, hide_expired,
     )
     total = db.execute(
@@ -176,6 +181,15 @@ def jobs_filter_options(db: Session = Depends(get_db)):
     edus = db.execute(text(
         "SELECT edu_level_norm, count(*) FROM unified_jobs GROUP BY edu_level_norm"
     )).all()
+    districts = db.execute(text(
+        """SELECT city, district, count(*) FROM unified_jobs
+           WHERE district IS NOT NULL AND district <> ''
+             AND city IS NOT NULL AND city <> ''
+           GROUP BY city, district ORDER BY city, count(*) DESC"""
+    )).all()
+    city_districts: dict = {}
+    for c, d, n in districts:
+        city_districts.setdefault(c, {})[d] = n
     city_counts: dict = {}
     city_provinces: dict = {}
     for c, p, n in cities:
@@ -187,5 +201,6 @@ def jobs_filter_options(db: Session = Depends(get_db)):
         "provinces": {p: n for p, n in provinces},
         "cities": city_counts,
         "city_provinces": city_provinces,
+        "city_districts": city_districts,
         "edu_levels": {e: n for e, n in edus},
     }

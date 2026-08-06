@@ -48,6 +48,7 @@ SELECT
   coalesce(nullif(p.undergrad_major, ''), nullif(p.grad_major, ''), p.raw_major) AS major,
   p.province AS province,
   p.city AS city,
+  p.district AS district,
   p.work_location AS work_location,
   p.signup_deadline::date AS deadline_date,
   p.source_url AS announce_url,
@@ -69,6 +70,7 @@ SELECT
   c.major_requirement,
   ucp.province,
   ucp.city,
+  NULL::text AS district,
   c.locations,
   c.deadline_date,
   c.announce_url,
@@ -102,6 +104,7 @@ SELECT
   b.major_requirement,
   coalesce(nullif(b.province, ''), ucp.province),
   ucp.city,
+  NULL::text AS district,
   b.work_location,
   b.deadline_date,
   b.announce_url,
@@ -132,6 +135,8 @@ INDEXES = [
        ON unified_jobs (province, city)""",
     """CREATE INDEX IF NOT EXISTS idx_uj_city
        ON unified_jobs (city)""",
+    """CREATE INDEX IF NOT EXISTS idx_uj_city_district
+       ON unified_jobs (city, district)""",
     """CREATE INDEX IF NOT EXISTS idx_uj_edu
        ON unified_jobs (edu_level_norm)""",
     """CREATE INDEX IF NOT EXISTS idx_uj_deadline
@@ -171,6 +176,17 @@ def main():
         exists = conn.execute(text(
             "SELECT 1 FROM pg_matviews WHERE matviewname = 'unified_jobs'"
         )).scalar()
+        if exists:
+            has_district = conn.execute(text(
+                """SELECT 1 FROM pg_attribute
+                   WHERE attrelid = 'unified_jobs'::regclass
+                     AND attname = 'district' AND NOT attisdropped"""
+            )).scalar()
+            if not has_district:
+                print("unified_jobs 缺少 district 列，重建 ...")
+                conn.execute(text("DROP MATERIALIZED VIEW unified_jobs"))
+                conn.commit()
+                exists = None
         if exists:
             print("unified_jobs 已存在，跳过创建（如需重建请先 DROP MATERIALIZED VIEW unified_jobs）")
         else:

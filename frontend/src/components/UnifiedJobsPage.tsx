@@ -81,6 +81,7 @@ function readUrlState() {
     boards: csv('ajb'),
     provinces: csv('ajp'),
     cities: csv('ajc'),
+    districts: csv('ajd'),
     edus: csv('aje'),
     due: q.get('ajdue') || '',
     hideExpired: q.get('ajhexp') === '1',
@@ -134,6 +135,7 @@ export function UnifiedJobsPage() {
   const [boards, setBoards] = useState<string[]>(init.boards)
   const [provinces, setProvinces] = useState<string[]>(init.provinces)
   const [cities, setCities] = useState<string[]>(init.cities)
+  const [districts, setDistricts] = useState<string[]>(init.districts)
   const [edus, setEdus] = useState<string[]>(init.edus)
   const [due, setDue] = useState(init.due)
   const [hideExpired, setHideExpired] = useState(init.hideExpired)
@@ -165,7 +167,7 @@ export function UnifiedJobsPage() {
     return () => clearTimeout(timer)
   }, [keywordInput])
 
-  // URL 深链持久化（ajb/ajp/ajc/aje/ajkw/ajdue/ajhexp/ajsort/ajview）
+  // URL 深链持久化（ajb/ajp/ajc/ajd/aje/ajkw/ajdue/ajhexp/ajsort/ajview）
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
     const setOrDel = (k: string, v: string) => (v ? q.set(k, v) : q.delete(k))
@@ -173,13 +175,14 @@ export function UnifiedJobsPage() {
     setOrDel('ajb', boards.join(','))
     setOrDel('ajp', provinces.join(','))
     setOrDel('ajc', cities.join(','))
+    setOrDel('ajd', districts.join(','))
     setOrDel('aje', edus.join(','))
     setOrDel('ajdue', due)
     setOrDel('ajhexp', hideExpired ? '1' : '')
     setOrDel('ajsort', sort === 'recommended' ? '' : sort)
     setOrDel('ajview', view === 'table' ? view : '')
     window.history.replaceState(null, '', `?${q.toString()}${window.location.hash}`)
-  }, [keyword, boards, provinces, cities, edus, due, hideExpired, sort, view])
+  }, [keyword, boards, provinces, cities, districts, edus, due, hideExpired, sort, view])
 
   const params = useMemo<UnifiedJobParams>(
     () => ({
@@ -187,12 +190,13 @@ export function UnifiedJobsPage() {
       board: boards.length ? boards : undefined,
       province: provinces.length ? provinces : undefined,
       city: cities.length ? cities : undefined,
+      district: districts.length ? districts : undefined,
       edu: edus.length ? edus : undefined,
       due_within_days: due ? Number(due) : undefined,
       hide_expired: hideExpired || undefined,
       sort,
     }),
-    [keyword, boards, provinces, cities, edus, due, hideExpired, sort],
+    [keyword, boards, provinces, cities, districts, edus, due, hideExpired, sort],
   )
 
   const loadPage = useCallback(
@@ -270,9 +274,25 @@ export function UnifiedJobsPage() {
     () => (filters ? Object.keys(filters.cities) : []),
     [filters],
   )
+  // 区县选项：依赖已选城市，按城市分组（仅体制内岗位有区县数据）
+  const districtGroups = useMemo(() => {
+    const cd = filters?.city_districts
+    if (!cd || cities.length === 0) return []
+    return cities
+      .filter((c) => cd[c] && Object.keys(cd[c]).length > 0)
+      .map((c) => ({ label: c, options: Object.keys(cd[c]) }))
+  }, [filters, cities])
+  const districtAvailable = districtGroups.length > 0
+
+  // 城市变化时剪枝：去掉不在当前可选范围内的已选区县
+  useEffect(() => {
+    if (!filters?.city_districts) return
+    const allowed = new Set(districtGroups.flatMap((g) => g.options))
+    setDistricts((prev) => (prev.every((d) => allowed.has(d)) ? prev : prev.filter((d) => allowed.has(d))))
+  }, [filters, districtGroups])
 
   const activeCount =
-    boards.length + provinces.length + cities.length + edus.length +
+    boards.length + provinces.length + cities.length + districts.length + edus.length +
     (keyword ? 1 : 0) + (due ? 1 : 0) + (hideExpired ? 1 : 0)
 
   const resetAll = () => {
@@ -281,6 +301,7 @@ export function UnifiedJobsPage() {
     setBoards([])
     setProvinces([])
     setCities([])
+    setDistricts([])
     setEdus([])
     setDue('')
     setHideExpired(false)
@@ -412,7 +433,7 @@ export function UnifiedJobsPage() {
   )
 
   const selectRow = (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
       <MultiSelect
         label=""
         triggerLabel={t('省份')}
@@ -427,6 +448,28 @@ export function UnifiedJobsPage() {
         selected={cities}
         onChange={setCities}
       />
+      {districtAvailable ? (
+        <MultiSelect
+          label=""
+          triggerLabel={t('区县')}
+          groups={districtGroups}
+          selected={districts}
+          onChange={setDistricts}
+          placeholder={t('选择区县')}
+        />
+      ) : (
+        <button
+          type="button"
+          disabled
+          title={cities.length === 0 ? t('先选城市后可按区县筛选（仅体制内岗位有区县数据）') : t('所选城市暂无区县数据（仅体制内岗位有区县数据）')}
+          className="inline-flex h-11 w-full cursor-not-allowed items-center justify-between rounded-md border bg-muted/50 px-3 text-sm text-muted-foreground opacity-60 sm:h-9"
+        >
+          <span className="truncate">
+            {cities.length === 0 ? t('区县 · 先选城市') : t('区县 · 暂无数据')}
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+        </button>
+      )}
       <MultiSelect
         label=""
         triggerLabel={t('学历')}

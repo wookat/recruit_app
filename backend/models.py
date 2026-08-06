@@ -194,6 +194,19 @@ class SessionDaily(Base):
     sid = Column(String(40), nullable=False)
 
 
+class DailyDigest(Base):
+    """每日岗位精选结构化存档：站内 /daily 栏目页与 SPA 入口的数据源。"""
+
+    __tablename__ = "daily_digests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    day = Column(Date, nullable=False, unique=True, index=True)
+    intro = Column(Text, nullable=False, default="")
+    campus_ids_json = Column(Text, nullable=False, default="[]", server_default="[]")
+    bianzhi_ids_json = Column(Text, nullable=False, default="[]", server_default="[]")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class Announcement(Base):
     """采集到的公告链接，待管理员审核/处理。"""
 

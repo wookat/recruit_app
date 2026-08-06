@@ -24,13 +24,13 @@ import bianzhi as bianzhi_api
 import campus as campus_api
 import csv_export
 import quality
-from models import BianzhiJob, CampusJob, PushSubscription
+from models import Base, BianzhiJob, CampusJob, PushSubscription
 from pywebpush import webpush, WebPushException
 import refresh_feishu
 import collect_ciic
 import enrich_ciic
 import enrich_ncss
-from seo import CITIES, EXAM_TYPES, PROVINCES, SITE, _city_et_slugs
+from seo import CITIES, EXAM_TYPES, PROVINCES, SITE, _city_et_slugs, _recent_digest_days
 import digest
 import collect_iguopin
 import collect_ncss
@@ -150,6 +150,14 @@ def submit_indexnow(self):
         pass  # 城市×类型组合枚举失败不影响主体提交
     finally:
         db.close()
+    urls.append(f"{SITE}/daily")
+    db = SessionLocal()
+    try:
+        urls.extend(f"{SITE}/daily/{d}" for d in _recent_digest_days(db=db))
+    except Exception:
+        pass  # 每日精选期号枚举失败不影响主体提交
+    finally:
+        db.close()
     try:
         resp = requests.post(
             "https://api.indexnow.org/indexnow",
@@ -180,7 +188,31 @@ def generate_daily_digest(self):
         path = os.path.join(EXPORTS_DIR, f"digest-{day}.md")
         with open(path, "w", encoding="utf-8") as f:
             f.write(md)
-        return {"path": path, "bytes": len(md.encode())}
+        saved = digest.save_digest(db)
+        return {"path": path, "bytes": len(md.encode()), "saved": saved}
+    finally:
+        db.close()
+
+
+@celery_app.task(bind=True, max_retries=1, default_retry_delay=600)
+def backfill_daily_digests(self, days: int = 90):
+    """回填历史每日精选：按 exports/digest-*.md 的日期重算精选并落库（幂等）。"""
+    Base.metadata.create_all(bind=engine)
+    pat = re.compile(r"^digest-(\d{4}-\d{2}-\d{2})\.md$")
+    found = sorted(
+        m.group(1) for f in os.listdir(EXPORTS_DIR)
+        if (m := pat.match(f))
+    )[-days:]
+    db = SessionLocal()
+    results = []
+    try:
+        for d in found:
+            try:
+                results.append(digest.save_digest(db, datetime.strptime(d, "%Y-%m-%d").date()))
+            except Exception as exc:  # 单日失败不影响其余日期回填
+                db.rollback()
+                results.append({"day": d, "error": str(exc)})
+        return {"days": len(results), "results": results}
     finally:
         db.close()
 

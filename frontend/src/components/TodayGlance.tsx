@@ -1,7 +1,7 @@
 import { t } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
-import { fetchBianzhiJobs, fetchCampusJobs, fetchDeadlines } from '@/api'
-import { AlarmClock, Bookmark, BriefcaseBusiness, Landmark, Sparkles, ChevronRight } from 'lucide-react'
+import { fetchBianzhiJobs, fetchCampusJobs, fetchDailyLatest, fetchDeadlines } from '@/api'
+import { AlarmClock, Bookmark, BriefcaseBusiness, Landmark, Sparkles, Star, ChevronRight } from 'lucide-react'
 import { openSubscriptionsPanel, useSavedNews } from '@/lib/savedNews'
 import { getSavedFilters, getSavedQueries } from '@/lib/storage'
 import { cn } from '@/lib/utils'
@@ -35,6 +35,7 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
   const [bianzhiTotal, setBianzhiTotal] = useState<number | null>(null)
   const [bianzhiDue, setBianzhiDue] = useState<number | null>(null)
   const [deadlineCount, setDeadlineCount] = useState<number | null>(null)
+  const [dailyDay, setDailyDay] = useState<string | null>(null)
   const savedNews = useSavedNews()
   /** 有保存的筛选时即使无上新也保留订阅入口，方便回访用户找到订阅面板 */
   const hasSubscriptions =
@@ -58,6 +59,11 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
     fetchDeadlines(7, 100)
       .then((list) => setDeadlineCount(list.length))
       .catch(() => undefined)
+    fetchDailyLatest()
+      .then((r) => {
+        if (r.is_today && r.day) setDailyDay(r.day)
+      })
+      .catch(() => undefined)
     if (campusActiveCache === null) {
       fetchCampusJobs({ hide_expired: true, page: 1, page_size: 1 })
         .then((r) => {
@@ -77,6 +83,12 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
   }, [])
 
   const items = [
+    dailyDay && (
+      <a key="daily" className={PILL} href={`/daily/${dailyDay}`}>
+        <Star className="h-3.5 w-3.5 text-primary" />
+        {t('今日精选')}{' '}<ChevronRight className="h-3 w-3 text-muted-foreground" />
+      </a>
+    ),
     savedNews.sum > 0 ? (
       <button key="subs" type="button" className={PILL} onClick={openSubscriptionsPanel}>
         <Bookmark className="h-3.5 w-3.5 text-primary" />

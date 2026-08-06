@@ -746,6 +746,12 @@ function parseDeadlineEntry(item: unknown): DeadlineEntry | null {
   }
 }
 
+/** 最新一期每日精选期号（is_today=true 表示当日有期号，SPA 首页显示入口）。 */
+export async function fetchDailyLatest(): Promise<{ day: string | null; is_today: boolean }> {
+  const res = await axios.get(`${API_BASE}/api/daily/latest`, { timeout: 10000 })
+  return res.data
+}
+
 export async function fetchDeadlines(days = 7, limit = 20): Promise<DeadlineEntry[]> {
   const res = await axios.get(`${API_BASE}/api/deadlines`, { params: { days, limit } })
   const data = res.data

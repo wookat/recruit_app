@@ -696,12 +696,33 @@ export async function fetchPositionCompetition(
   return res.data
 }
 
+export interface PositionHeat {
+  views_7d: number
+  sample_ok: boolean
+  percentile: number | null
+  level: 'high' | 'mid' | 'low' | null
+  peers: number
+  peer_views: number
+}
+
+/** 竞争热度：该岗近 7 日站内浏览量在同类岗位组的分位。 */
+export async function fetchPositionHeat(id: number): Promise<PositionHeat> {
+  const res = await axios.get(`${API_BASE}/api/positions/${id}/heat`)
+  return res.data
+}
+
+export interface EmployerHistoryEdu {
+  level: string
+  count: number
+}
+
 export interface EmployerHistoryYear {
   year: number
   total: number
+  edu?: EmployerHistoryEdu[]
 }
 
-/** 同单位历年岗位数（按年份聚合）。 */
+/** 同单位历年招录（按年份聚合，含学历要求分布）。 */
 export async function fetchEmployerHistory(employer: string): Promise<EmployerHistoryYear[]> {
   const res = await axios.get(`${API_BASE}/api/positions/employer-history`, {
     params: { employer },

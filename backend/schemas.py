@@ -182,6 +182,12 @@ class PvIn(BaseModel):
     sid: Optional[str] = None  # sessionStorage 随机 id（不跨天），用于独立会话估算
 
 
+class JobViewIn(BaseModel):
+    """岗位级浏览上报体（详情面板打开时计数）。"""
+    board: str  # positions / campus / bianzhi
+    job_id: int
+
+
 class FeedbackIn(BaseModel):
     """用户「举报数据有误」提交体。"""
     board: str  # positions / campus / bianzhi

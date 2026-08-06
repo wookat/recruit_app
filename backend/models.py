@@ -183,6 +183,19 @@ class PageViewDaily(Base):
     pv = Column(Integer, nullable=False, default=0)
 
 
+class JobViewDaily(Base):
+    """岗位级浏览日聚合：详情面板打开计数（无 cookie、无个人数据、IP 不落库）。"""
+
+    __tablename__ = "metrics_job_view_daily"
+    __table_args__ = (UniqueConstraint("day", "board", "job_id", name="uq_jobview_day_board_job"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    day = Column(Date, nullable=False, index=True)
+    board = Column(String(20), nullable=False)
+    job_id = Column(Integer, nullable=False, index=True)
+    views = Column(Integer, nullable=False, default=0)
+
+
 class SessionDaily(Base):
     """独立会话估算：sessionStorage 随机 id（不跨天），每天去重计数。"""
 

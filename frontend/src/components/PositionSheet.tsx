@@ -5,6 +5,7 @@ import { copyText, jobShareUrl, positionShareUrl } from '@/lib/clipboard'
 import { clearJobParam, setJobParam } from '@/lib/jobDeepLink'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { addViewHistory } from '@/lib/viewHistory'
+import { reportJobView } from '@/lib/metrics'
 import { derivePositionTags } from '@/lib/jobTags'
 import { daysUntil, parseDeadlineText, parseSignupDeadline } from '@/lib/deadline'
 import { PrepResources } from './PrepResources'
@@ -185,6 +186,7 @@ export function PositionSheet({
       item.job_type ||
       '体制内岗位'
     addViewHistory('positions', item.id, t)
+    reportJobView('positions', item.id)
   }, [item])
 
   useEffect(() => {
@@ -399,6 +401,7 @@ export function PositionSheet({
               />
               <Field label={t("考试/招聘类型")} value={item.exam_type_norm || item.exam_type} />
               <CompetitionRef
+                positionId={item.id}
                 province={item.province}
                 examType={item.exam_type_norm}
                 year={item.year}

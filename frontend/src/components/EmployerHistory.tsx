@@ -6,7 +6,12 @@ import { fetchEmployerHistory, type EmployerHistoryYear } from '@/api'
 const TTL = 60 * 60 * 1000
 const cache = new Map<string, { at: number; data: EmployerHistoryYear[] }>()
 
-/** 同单位历年岗位数：仅有 2 个及以上年份数据时渲染。 */
+function eduSummary(y: EmployerHistoryYear): string {
+  if (!y.edu || y.edu.length === 0) return ''
+  return y.edu.map((e) => `${e.level} ${e.count}`).join(' · ')
+}
+
+/** 该单位历年招录：库内各年份岗位数与学历要求分布，仅有 2 个及以上年份数据时渲染。 */
 export function EmployerHistory({ employer, currentYear }: { employer?: string | null; currentYear?: number }) {
   const [years, setYears] = useState<EmployerHistoryYear[]>([])
 
@@ -38,17 +43,23 @@ export function EmployerHistory({ employer, currentYear }: { employer?: string |
   return (
     <div className="flex items-start gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
       <History className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
-      <div>
-        <div className="text-xs font-medium text-muted-foreground">{t("该单位历年岗位数")}</div>
-        <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-sm">
-          {years.map((y) => (
-            <span key={y.year}>
-              {y.year} {' '}{t("年")}{' '}
-              <span className={y.year === currentYear ? 'font-semibold text-primary' : 'font-medium'}>
-                {y.total.toLocaleString()}
-              </span>{' '}
-              {t("条")}{' '}</span>
-          ))}
+      <div className="min-w-0">
+        <div className="text-xs font-medium text-muted-foreground">{t("该单位历年招录")}</div>
+        <div className="mt-0.5 space-y-0.5 text-sm">
+          {years.map((y) => {
+            const edu = eduSummary(y)
+            return (
+              <div key={y.year} className="flex flex-wrap items-baseline gap-x-2">
+                <span>
+                  {y.year} {' '}{t("年")}{' '}
+                  <span className={y.year === currentYear ? 'font-semibold text-primary' : 'font-medium'}>
+                    {y.total.toLocaleString()}
+                  </span>{' '}
+                  {t("条")}{' '}</span>
+                {edu && <span className="text-xs text-muted-foreground">{edu}</span>}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

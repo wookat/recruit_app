@@ -414,7 +414,7 @@ def position_employer_history(
     employer: str = Query(..., min_length=2, max_length=300),
     db: Session = Depends(get_db),
 ):
-    """同单位历年岗位数：按年份聚合该单位的清洗后岗位条数（1h 缓存）。"""
+    """同单位历年招录：按年份聚合岗位条数及学历要求分布（1h 缓存）。"""
     rows = db.execute(
         text("""
             SELECT year, count(*) AS total
@@ -427,7 +427,81 @@ def position_employer_history(
         """),
         {"emp": employer},
     ).all()
-    return {"years": [{"year": r.year, "total": r.total} for r in rows]}
+    years = [r.year for r in rows]
+    edu_map: dict = {}
+    if years:
+        edu_rows = db.execute(
+            text("""
+                SELECT year, edu_level_norm, count(*) AS n
+                FROM positions
+                WHERE dup_of_id IS NULL AND invalid_reason IS NULL
+                  AND employer = :emp AND year = ANY(:ys)
+                  AND edu_level_norm IS NOT NULL AND edu_level_norm <> ''
+                GROUP BY year, edu_level_norm
+            """),
+            {"emp": employer, "ys": years},
+        ).all()
+        for r in edu_rows:
+            edu_map.setdefault(r.year, []).append({"level": r.edu_level_norm, "count": r.n})
+    for m in edu_map.values():
+        m.sort(key=lambda x: -x["count"])
+    return {"years": [
+        {"year": r.year, "total": r.total, "edu": edu_map.get(r.year, [])} for r in rows
+    ]}
+
+
+#: 竞争热度分位判定阈值：样本不足（同类岗位数或近7日总浏览过小）时不给结论
+HEAT_MIN_PEERS = 20
+HEAT_MIN_VIEWS = 100
+
+
+@app.get("/api/positions/{position_id}/heat")
+@cache.cached("pos_heat", ttl=600)
+def position_heat(position_id: int, db: Session = Depends(get_db)):
+    """竞争热度：该岗近 7 日站内浏览量在同类岗位组（同省×同考试类型×同年）的分位（10min 缓存）。"""
+    item = crud.get_position(db, position_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Position not found")
+    row = db.execute(
+        text("""
+            SELECT COALESCE(SUM(v.views), 0) AS views
+            FROM metrics_job_view_daily v
+            WHERE v.board = 'positions' AND v.job_id = :id
+              AND v.day >= CURRENT_DATE - 6
+        """),
+        {"id": position_id},
+    ).one()
+    views_7d = int(row.views)
+    out = {"views_7d": views_7d, "sample_ok": False, "percentile": None, "level": None,
+           "peers": 0, "peer_views": 0}
+    if not item.province or not item.exam_type_norm or not item.year:
+        return out
+    peer = db.execute(
+        text("""
+            SELECT count(*) AS peers,
+                   COALESCE(SUM(t.views), 0) AS peer_views,
+                   count(*) FILTER (WHERE t.views < :mine) AS below
+            FROM (
+                SELECT v.job_id, SUM(v.views) AS views
+                FROM metrics_job_view_daily v
+                JOIN positions p ON p.id = v.job_id
+                WHERE v.board = 'positions' AND v.day >= CURRENT_DATE - 6
+                  AND p.dup_of_id IS NULL AND p.invalid_reason IS NULL
+                  AND p.province = :prov AND p.exam_type_norm = :et AND p.year = :y
+                GROUP BY v.job_id
+            ) t
+        """),
+        {"mine": views_7d, "prov": item.province, "et": item.exam_type_norm, "y": item.year},
+    ).one()
+    peers, peer_views = int(peer.peers), int(peer.peer_views)
+    out["peers"], out["peer_views"] = peers, peer_views
+    if peers < HEAT_MIN_PEERS or peer_views < HEAT_MIN_VIEWS or views_7d <= 0:
+        return out
+    pct = round(int(peer.below) * 100 / peers)
+    out["sample_ok"] = True
+    out["percentile"] = pct
+    out["level"] = "high" if pct >= 80 else ("mid" if pct >= 40 else "low")
+    return out
 
 
 @app.get("/api/positions/{position_id}", response_model=schemas.PositionOut)
@@ -750,6 +824,26 @@ def report_pv(request: Request, body: schemas.PvIn, db: Session = Depends(get_db
             INSERT INTO metrics_sessions_daily (day, sid)
             VALUES (CURRENT_DATE, :s) ON CONFLICT (day, sid) DO NOTHING
         """), {"s": sid})
+    db.commit()
+    return {"ok": True}
+
+
+JOB_VIEW_BOARDS = {"positions", "campus", "bianzhi"}
+
+
+@app.post("/api/metrics/job-view")
+def report_job_view(request: Request, body: schemas.JobViewIn, db: Session = Depends(get_db)):
+    """岗位级浏览上报：详情面板打开时按日聚合计数（无 cookie，IP 不落库）。"""
+    _rate_limit(request, "jobview", limit=60, window=60)
+    if body.board not in JOB_VIEW_BOARDS:
+        raise HTTPException(status_code=422, detail="board 无效")
+    if body.job_id <= 0:
+        raise HTTPException(status_code=422, detail="job_id 无效")
+    db.execute(text("""
+        INSERT INTO metrics_job_view_daily (day, board, job_id, views)
+        VALUES (CURRENT_DATE, :b, :j, 1)
+        ON CONFLICT (day, board, job_id) DO UPDATE SET views = metrics_job_view_daily.views + 1
+    """), {"b": body.board, "j": body.job_id})
     db.commit()
     return {"ok": True}
 

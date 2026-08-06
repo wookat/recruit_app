@@ -52,6 +52,29 @@ export function reportPv(board: string, page = '') {
   }
 }
 
+let lastJobKey = ''
+let lastJobAt = 0
+
+/** 岗位级浏览上报：详情面板打开时计数（QA/内部流量同样排除，失败静默）。 */
+export function reportJobView(board: string, jobId: number) {
+  if (isInternal()) return
+  const key = `${board}|${jobId}`
+  const now = Date.now()
+  if (key === lastJobKey && now - lastJobAt < 2000) return // 去重：rerender/StrictMode 双触发
+  lastJobKey = key
+  lastJobAt = now
+  try {
+    void fetch(`${API_BASE}/api/metrics/job-view`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ board, job_id: jobId }),
+      keepalive: true,
+    }).catch(() => undefined)
+  } catch {
+    // ignore
+  }
+}
+
 export type MetricEvent =
   | 'remind_set'
   | 'save_filter'

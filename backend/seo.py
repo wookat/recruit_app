@@ -442,18 +442,41 @@ def _major_positions(db: Session, name: str):
 
 @cache.cached("seo_major_counts", ttl=SEO_TTL, stale=True)
 def _major_counts(db: Session = None) -> dict:
-    """全部专业的三板块命中数（slug -> {pos, campus, bianzhi}）；只在预热时重算。"""
-    # 全量 ILIKE 计数超出默认 20s statement_timeout，仅预热路径承担
-    db.execute(text("SET statement_timeout = '300s'"))
-    out = {}
-    for slug, (name, _disc) in MAJOR_BY_SLUG.items():
-        like = f"%{name}%"
-        pos = _major_positions(db, name).with_entities(func.count()).scalar() or 0
-        campus = (db.query(func.count()).select_from(CampusJob)
-                  .filter(CampusJob.major_requirement.ilike(like)).scalar() or 0)
-        bz = (db.query(func.count()).select_from(BianzhiJob)
-              .filter(BianzhiJob.major_requirement.ilike(like)).scalar() or 0)
-        out[slug] = {"pos": pos, "campus": campus, "bianzhi": bz}
+    """全部专业的命中统计（slug -> {pos, campus, bianzhi, prov, et}）；只在预热时重算。
+
+    单次全表分组扫描后在 Python 侧做子串匹配，避免逐专业 148×3 次 ILIKE 全表扫描
+    （单次约 20s，全量超过 warm 任务 1h 硬限）。
+    """
+    db.execute(text("SET statement_timeout = '300s'"))  # 仅预热路径承担
+    names = [(slug, name) for slug, (name, _d) in MAJOR_BY_SLUG.items()]
+    out = {slug: {"pos": 0, "campus": 0, "bianzhi": 0, "prov": {}, "et": {}}
+           for slug, _ in names}
+    rows = (_active(db.query(Position))
+            .with_entities(Position.undergrad_major, Position.grad_major,
+                           Position.raw_major, Position.province,
+                           Position.exam_type_norm, func.count())
+            .group_by(Position.undergrad_major, Position.grad_major,
+                      Position.raw_major, Position.province,
+                      Position.exam_type_norm))
+    for ug, gm, rm, prov, et, n in rows.yield_per(20000):
+        blob = f"{ug or ''}\n{gm or ''}\n{rm or ''}"
+        for slug, nm in names:
+            if nm in blob:
+                c = out[slug]
+                c["pos"] += n
+                if prov:
+                    c["prov"][prov] = c["prov"].get(prov, 0) + n
+                if et:
+                    c["et"][et] = c["et"].get(et, 0) + n
+    for model, key in ((CampusJob, "campus"), (BianzhiJob, "bianzhi")):
+        rows = (db.query(model.major_requirement, func.count())
+                .group_by(model.major_requirement))
+        for req, n in rows.yield_per(20000):
+            if not req:
+                continue
+            for slug, nm in names:
+                if nm in req:
+                    out[slug][key] += n
     db.execute(text("SET statement_timeout = DEFAULT"))
     return out
 
@@ -546,25 +569,15 @@ def _render_major_index(db: Session = None) -> str:
 @cache.cached("seo_major", ttl=SEO_TTL, stale=True)
 def _render_major(slug: str, db: Session = None) -> str:
     name, disc = MAJOR_BY_SLUG[slug]
-    like = f"%{name}%"
-    db.execute(text("SET statement_timeout = '120s'"))  # 聚合查询仅预热路径承担
-    rows = (_major_positions(db, name)
-            .with_entities(Position.province, Position.exam_type_norm, func.count())
-            .group_by(Position.province, Position.exam_type_norm).all())
-    prov_counts: dict = {}
-    et_counts: dict = {}
-    for prov, et, n in rows:
-        if prov:
-            prov_counts[prov] = prov_counts.get(prov, 0) + n
-        if et:
-            et_counts[et] = et_counts.get(et, 0) + n
-    pos_total = sum(n for _, _, n in rows)
-    campus_total = (db.query(func.count()).select_from(CampusJob)
-                    .filter(CampusJob.major_requirement.ilike(like)).scalar() or 0)
-    bz_total = (db.query(func.count()).select_from(BianzhiJob)
-                .filter(BianzhiJob.major_requirement.ilike(like)).scalar() or 0)
+    c = _major_counts(db=db).get(slug) or {}
+    prov_counts: dict = c.get("prov") or {}
+    et_counts: dict = c.get("et") or {}
+    pos_total = c.get("pos", 0) or 0
+    campus_total = c.get("campus", 0) or 0
+    bz_total = c.get("bianzhi", 0) or 0
     if pos_total + campus_total + bz_total == 0:
         raise HTTPException(status_code=404)
+    db.execute(text("SET statement_timeout = '120s'"))  # 样例查询仅预热路径承担
     jobs = (_major_positions(db, name)
             .order_by(Position.id.desc()).limit(20).all())
     db.execute(text("SET statement_timeout = DEFAULT"))

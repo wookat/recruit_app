@@ -909,7 +909,7 @@ def refresh_unified_jobs():
             "seo_warm": seo_warm}
 
 
-@celery_app.task
+@celery_app.task(time_limit=10800, soft_time_limit=10500)
 def warm_seo_pages():
     """每日采集/精选生成后预热 SSR SEO 页缓存（省/城市/类型页与 /daily）。"""
     return precompute.warm_seo_pages()

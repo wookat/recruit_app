@@ -9,7 +9,7 @@ import html
 import json
 import os
 from urllib.parse import quote
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 
 import cache
 from database import get_db
-from models import Position
+from models import BianzhiJob, CampusJob, DailyDigest, Position
 
 router = APIRouter(tags=["seo"])
 
@@ -448,6 +448,190 @@ def seo_city_et(slug: str, city_slug: str, et_slug: str, db: Session = Depends(g
     return HTMLResponse(_render_city_et(slug, city_slug, et_slug, db=db))
 
 
+# ---------------- 每日精选栏目页 /daily ----------------
+
+def _fmt_day_cn(d: date) -> str:
+    return d.strftime("%Y年%m月%d日")
+
+
+def _daily_deadline(deadline_date, deadline_text) -> str:
+    if deadline_date:
+        return deadline_date.strftime("%m月%d日")
+    t = (deadline_text or "").strip()
+    return t[:20] if t else "详见公告"
+
+
+@cache.cached("seo_daily_days", ttl=1800, stale=True)
+def _recent_digest_days(db: Session = None, limit: int = 90) -> list:
+    """最近期号日期字符串列表（YYYY-MM-DD，倒序；缓存友好）。"""
+    rows = (db.query(DailyDigest.day)
+            .order_by(DailyDigest.day.desc()).limit(limit).all())
+    return [r[0].isoformat() for r in rows]
+
+
+@cache.cached("seo_daily_index", ttl=1800, stale=True)
+def _render_daily_index(db: Session = None) -> str:
+    rows = (db.query(DailyDigest)
+            .order_by(DailyDigest.day.desc()).limit(90).all())
+    items = []
+    for r in rows:
+        n = len(json.loads(r.campus_ids_json or "[]")) + len(json.loads(r.bianzhi_ids_json or "[]"))
+        d = r.day.isoformat()
+        items.append(
+            f"<tr><td data-l='期号'><a href='/daily/{d}'>每日岗位精选 · {_fmt_day_cn(r.day)}</a></td>"
+            f"<td data-l='岗位数'>{n} 个精选岗位</td></tr>")
+    body = (f"<h1>每日岗位精选</h1>"
+            f"<p class='desc'>上岸雷达每天从当日新收录的校招/社招与编制/央国企岗位中，"
+            f"精选高价值岗位成期发布：覆盖央企国企、外企、事业单位、教师医疗等方向，"
+            f"含单位、地点与报名截止时间，共 {len(items)} 期，每日更新。</p>"
+            f"<table><thead><tr><th>期号</th><th>岗位数</th></tr></thead>"
+            f"<tbody>{''.join(items)}</tbody></table>"
+            f"<a class='cta' href='/'>打开{BRAND}筛选全部岗位 →</a>")
+    crumb = f"<a href='/'>{BRAND}</a> › 每日精选"
+    jsonld = ("<script type=\"application/ld+json\">" + json.dumps({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": f"{BRAND}每日岗位精选",
+        "itemListElement": [
+            {"@type": "ListItem", "position": i + 1,
+             "url": f"{SITE}/daily/{r.day.isoformat()}",
+             "name": f"每日岗位精选 · {_fmt_day_cn(r.day)}"}
+            for i, r in enumerate(rows[:30])],
+    }, ensure_ascii=False) + "</script>")
+    return _page(f"每日岗位精选（校招·编制·央国企） - {BRAND}",
+                 "上岸雷达每日岗位精选：每天从新收录岗位中精选央企国企、外企、事业单位、教师医疗等高价值岗位，含截止时间，按期归档。",
+                 f"{SITE}/daily", crumb, body, jsonld)
+
+
+def _daily_jsonld(day: date, campus, bianzhi) -> str:
+    postings = []
+    for j in campus:
+        item = {
+            "@type": "JobPosting",
+            "title": ((j.positions or "").replace("\n", " ").strip() or "校园招聘")[:80],
+            "hiringOrganization": {"@type": "Organization", "name": (j.company or "招聘单位")[:80]},
+            "jobLocation": {"@type": "Place", "address": {
+                "@type": "PostalAddress",
+                "addressLocality": ((j.locations or "").split("、")[0].split(",")[0] or "多地")[:20],
+                "addressCountry": "CN"}},
+            "employmentType": "FULL_TIME",
+            "datePosted": day.isoformat(),
+        }
+        if j.deadline_date:
+            item["validThrough"] = j.deadline_date.strftime("%Y-%m-%d")
+        postings.append(item)
+    for j in bianzhi:
+        item = {
+            "@type": "JobPosting",
+            "title": ((j.employer or "").replace("\n", " ").strip() or "编制岗位")[:80],
+            "hiringOrganization": {"@type": "Organization", "name": (j.employer or "招录单位")[:80]},
+            "jobLocation": {"@type": "Place", "address": {
+                "@type": "PostalAddress", "addressRegion": j.province or "全国",
+                "addressCountry": "CN"}},
+            "employmentType": "FULL_TIME",
+            "industry": j.category or "编制招聘",
+            "datePosted": day.isoformat(),
+        }
+        if j.deadline_date:
+            item["validThrough"] = j.deadline_date.strftime("%Y-%m-%d")
+        postings.append(item)
+    data = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": f"每日岗位精选 · {_fmt_day_cn(day)}",
+        "itemListElement": [
+            {"@type": "ListItem", "position": i + 1, "item": p}
+            for i, p in enumerate(postings)],
+    }
+    return ("<script type=\"application/ld+json\">"
+            + json.dumps(data, ensure_ascii=False) + "</script>")
+
+
+@cache.cached("seo_daily_detail", ttl=1800, stale=True)
+def _render_daily_detail(day_str: str, db: Session = None) -> str:
+    day = date.fromisoformat(day_str)
+    row = db.query(DailyDigest).filter(DailyDigest.day == day).first()
+    if row is None:
+        raise HTTPException(status_code=404)
+    campus_ids = json.loads(row.campus_ids_json or "[]")
+    bianzhi_ids = json.loads(row.bianzhi_ids_json or "[]")
+    campus = (db.query(CampusJob).filter(CampusJob.id.in_(campus_ids)).all()
+              if campus_ids else [])
+    campus.sort(key=lambda r: campus_ids.index(r.id))
+    bianzhi = (db.query(BianzhiJob).filter(BianzhiJob.id.in_(bianzhi_ids)).all()
+               if bianzhi_ids else [])
+    bianzhi.sort(key=lambda r: bianzhi_ids.index(r.id))
+
+    sections = []
+    if campus:
+        rows_html = "".join(
+            f"<tr><td data-l='岗位'><a href='/?board=campus&job=campus:{j.id}'>"
+            f"{_esc(((j.positions or '').replace(chr(10), ' ') or '校园招聘')[:40])}</a></td>"
+            f"<td data-l='单位'>{_esc((j.company or '')[:30])}</td>"
+            f"<td data-l='地点'>{_esc(((j.locations or '').split('、')[0].split(',')[0] or '多地')[:14])}</td>"
+            f"<td data-l='截止'>{_esc(_daily_deadline(j.deadline_date, j.deadline_text))}</td></tr>"
+            for j in campus)
+        sections.append(
+            f"<h2 style='font-size:16px;margin:16px 0 8px'>校招/社招精选（{len(campus)} 个）</h2>"
+            f"<table><thead><tr><th>岗位</th><th>单位</th><th>地点</th><th>截止</th></tr></thead>"
+            f"<tbody>{rows_html}</tbody></table>")
+    if bianzhi:
+        rows_html = "".join(
+            f"<tr><td data-l='单位'><a href='/?board=bianzhi&bpreset=all&job=bianzhi:{j.id}'>"
+            f"{_esc(((j.employer or '').replace(chr(10), ' ') or '编制岗位')[:36])}</a></td>"
+            f"<td data-l='类别'>{_esc((j.category or '')[:16])}</td>"
+            f"<td data-l='地区'>{_esc((j.province or '')[:10])}</td>"
+            f"<td data-l='截止'>{_esc(_daily_deadline(j.deadline_date, j.deadline_text))}</td></tr>"
+            for j in bianzhi)
+        sections.append(
+            f"<h2 style='font-size:16px;margin:16px 0 8px'>编制/央国企精选（{len(bianzhi)} 个）</h2>"
+            f"<table><thead><tr><th>单位</th><th>类别</th><th>地区</th><th>截止</th></tr></thead>"
+            f"<tbody>{rows_html}</tbody></table>")
+
+    days = _recent_digest_days(db=db, limit=14)
+    others = "".join(
+        f"<a href='/daily/{d}'>{int(d[5:7])}月{int(d[8:10])}日</a>"
+        for d in days if d != day_str)
+    total = len(campus) + len(bianzhi)
+    body = (f"<h1>每日岗位精选 · {_fmt_day_cn(day)}</h1>"
+            f"<p class='desc'>{_esc(row.intro)}</p>"
+            + "".join(sections)
+            + f"<a class='cta' href='/'>打开{BRAND}筛选与订阅全部岗位 →</a>"
+            f"<h2 style='font-size:16px;margin:20px 0 8px'>近期精选</h2>"
+            f"<div class='chips'>{others}<a href='/daily'>全部期号</a></div>")
+    crumb = (f"<a href='/'>{BRAND}</a> › <a href='/daily'>每日精选</a> › "
+             f"{_fmt_day_cn(day)}")
+    return _page(f"每日岗位精选 {_fmt_day_cn(day)}（{total} 个高价值岗位） - {BRAND}",
+                 f"{_fmt_day_cn(day)}上岸雷达精选 {total} 个高价值岗位：校招/社招 {len(campus)} 个、编制/央国企 {len(bianzhi)} 个，含单位、地点与报名截止时间。",
+                 f"{SITE}/daily/{day.isoformat()}", crumb, body,
+                 _daily_jsonld(day, campus, bianzhi))
+
+
+@router.get("/daily", response_class=HTMLResponse)
+def daily_index(db: Session = Depends(get_db)):
+    return HTMLResponse(_render_daily_index(db=db))
+
+
+@router.get("/daily/{day_str}", response_class=HTMLResponse)
+def daily_detail(day_str: str, db: Session = Depends(get_db)):
+    try:
+        date.fromisoformat(day_str)
+    except ValueError:
+        raise HTTPException(status_code=404)
+    return HTMLResponse(_render_daily_detail(day_str, db=db))
+
+
+@router.get("/api/daily/latest")
+def daily_latest(db: Session = Depends(get_db)):
+    """SPA「今日精选」入口：返回最新一期期号（仅当日有期号时返回 today）。"""
+    row = (db.query(DailyDigest)
+           .order_by(DailyDigest.day.desc()).first())
+    if row is None:
+        return {"day": None, "is_today": False}
+    today = datetime.now(timezone(timedelta(hours=8))).date()
+    return {"day": row.day.isoformat(), "is_today": row.day >= today}
+
+
 # IndexNow 站点验证密钥文件（https://www.indexnow.org/）：仅在配置了密钥时注册精确路径，
 # 避免动态 /{key}.txt 模式截获 robots.txt 等静态文件
 INDEXNOW_KEY = os.environ.get("INDEXNOW_KEY", "")
@@ -494,7 +678,13 @@ def sitemap(db: Session = Depends(get_db)):
         url(f"{SITE}/?board=bianzhi", "0.9"),
         url(f"{SITE}/?board=updates", "0.8"),
         url(f"{SITE}/zhaokao", "0.9"),
+        url(f"{SITE}/daily", "0.9"),
     ]
+    try:
+        for d in _recent_digest_days(db=db):
+            urls.append(url(f"{SITE}/daily/{d}", "0.7"))
+    except Exception:
+        pass  # 精选期号枚举失败不影响 sitemap 主体
     for slug, _ in PROVINCES:
         urls.append(url(f"{SITE}/zhaokao/{slug}", "0.8"))
         for et_slug, _, _ in EXAM_TYPES:

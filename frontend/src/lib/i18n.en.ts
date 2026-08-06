@@ -1052,6 +1052,7 @@ export const EN: Record<string, string> = {
   '近 7 天 · 仅本机数据': 'Last 7 days · local data only',
   '近 7 天新增岗位': 'New jobs in the last 7 days',
   '近 7 天暂无新增': 'No new items in the last 7 days',
+  '今日精选': "Today's picks",
   '近 7 天更新': 'Last 7 days updates',
   '近 7 天更新 - {0}': 'Last 7 days updates - {0}',
   '近7天': 'Last 7 days',

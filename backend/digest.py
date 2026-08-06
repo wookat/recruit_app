@@ -4,12 +4,12 @@
 小红书/知乎/B站动态的中文文案 markdown。产物写入 exports/，
 供运营取用或后续接入自动发布。
 """
+import json
 from datetime import date, datetime, timedelta, timezone
 
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import BianzhiJob, CampusJob
+from models import BianzhiJob, CampusJob, DailyDigest
 
 SITE = "https://jobs.zalize.com"
 
@@ -69,10 +69,39 @@ def _fmt_deadline(deadline_date, deadline_text):
     return f"截止 {t}" if t else "截止详见公告"
 
 
+def _today_cn() -> date:
+    return datetime.now(timezone(timedelta(hours=8))).date()
+
+
+def pick_digest(db: Session, day: date):
+    """当日精选岗位：(校招/社招列表, 编制/央国企列表)。"""
+    return _pick_campus(db, day), _pick_bianzhi(db, day)
+
+
+def intro_text(day: date) -> str:
+    return f"{day.strftime('%Y年%m月%d日')}上岸雷达新收录岗位精选（全量筛选戳 {SITE} ）："
+
+
+def save_digest(db: Session, day: date | None = None) -> dict:
+    """把当日精选结构化落库（upsert），供 /daily 栏目页使用。空日不落库。"""
+    day = day or _today_cn()
+    campus, bianzhi = pick_digest(db, day)
+    if not campus and not bianzhi:
+        return {"day": day.isoformat(), "skipped": "no jobs"}
+    row = db.query(DailyDigest).filter(DailyDigest.day == day).first()
+    if row is None:
+        row = DailyDigest(day=day)
+        db.add(row)
+    row.intro = intro_text(day)
+    row.campus_ids_json = json.dumps([r.id for r in campus])
+    row.bianzhi_ids_json = json.dumps([r.id for r in bianzhi])
+    db.commit()
+    return {"day": day.isoformat(), "campus": len(campus), "bianzhi": len(bianzhi)}
+
+
 def render_digest(db: Session, day: date | None = None) -> str:
-    day = day or datetime.now(timezone(timedelta(hours=8))).date()
-    campus = _pick_campus(db, day)
-    bianzhi = _pick_bianzhi(db, day)
+    day = day or _today_cn()
+    campus, bianzhi = pick_digest(db, day)
     lines = [
         f"# 每日岗位精选 · {day.strftime('%Y年%m月%d日')}",
         "",

@@ -223,6 +223,7 @@ export const EN: Record<string, string> = {
   '当前筛选': 'Current filter',
   '仅收藏': 'Favorites only',
   '导出范围': 'Export scope',
+  '更多搜索工具': 'More search tools',
   '全部保存在你当前浏览器本地（localStorage），不上传服务器；清除浏览器数据会丢失。建议定期在「收藏 → 备份」导出 JSON 备份文件，随时可导入恢复。': 'Everything is stored locally in your browser (localStorage) and never uploaded; clearing browser data will lose it. We recommend regularly exporting a JSON backup via “Favorites → Backup”, which can be re-imported anytime.',
   '全部城市': 'All cities',
   '全部导出 CSV': 'Export all as CSV',

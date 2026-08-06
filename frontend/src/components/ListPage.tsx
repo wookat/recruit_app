@@ -250,6 +250,8 @@ export function ListPage({
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [deadlineView, setDeadlineView] = useState(false)
   const newSinceOnScreen = useNewSinceOnScreen()
+  /** 移动端搜索工具区（一键匹配/热门/最近/保存的筛选）默认收起，保首屏岗位可见 */
+  const [toolsOpen, setToolsOpen] = useState(false)
   const [majorInput, setMajorInput] = useState(() => getProfile().major || '')
   const quickMatchRef = useRef<HTMLInputElement | null>(null)
   const [params, setParams] = useState<SearchParams>(() => {
@@ -940,6 +942,7 @@ export function ListPage({
       {onOpenUpdates && (
         <ValuePropBanner
           onMatch={() => {
+            setToolsOpen(true)
             setTimeout(() => {
               quickMatchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
               quickMatchRef.current?.focus({ preventScroll: true })
@@ -1035,6 +1038,18 @@ export function ListPage({
           {synAdded.length > 0 && <SynonymHint added={synAdded} onClose={() => setSynOff(true)} />}
 
           {keyFilterRow}
+
+          <button
+            type="button"
+            aria-expanded={toolsOpen}
+            onClick={() => setToolsOpen((v) => !v)}
+            className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-border py-1.5 text-xs text-muted-foreground hover:bg-muted sm:hidden"
+          >
+            {toolsOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {t("更多搜索工具")}
+          </button>
+
+          <div className={cn('space-y-4', !toolsOpen && 'max-sm:hidden')}>
 
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-muted/30 px-3 py-2">
             <div className="flex items-center gap-1.5 text-sm font-medium">
@@ -1277,6 +1292,8 @@ export function ListPage({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
+
           </div>
 
           {activeChips.length > 0 && (

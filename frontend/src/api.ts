@@ -310,6 +310,7 @@ export interface UnifiedJob {
   major: string | null
   province: string | null
   city: string | null
+  district: string | null
   work_location: string | null
   deadline_date: string | null
   announce_url: string | null
@@ -332,6 +333,7 @@ export interface UnifiedJobParams {
   board?: string[]
   province?: string[]
   city?: string[]
+  district?: string[]
   edu?: string[]
   due_within_days?: number
   deadline_from?: string
@@ -347,6 +349,8 @@ export interface UnifiedJobFilters {
   provinces: Record<string, number>
   cities: Record<string, number>
   city_provinces: Record<string, string>
+  /** 城市 → { 区县: 岗位数 }（仅体制内板块岗位有区县） */
+  city_districts?: Record<string, Record<string, number>>
   edu_levels: Record<string, number>
 }
 

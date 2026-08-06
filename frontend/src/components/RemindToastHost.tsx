@@ -52,7 +52,7 @@ export function RemindToastHost() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-20 left-1/2 z-50 flex w-max max-w-[calc(100vw-1.5rem)] -translate-x-1/2 flex-wrap items-center gap-x-2 gap-y-1.5 rounded-xl border bg-background px-3 py-2.5 text-sm shadow-lg md:bottom-6"
+      className="fixed bottom-20 left-1/2 z-[60] flex w-max max-w-[calc(100vw-1.5rem)] -translate-x-1/2 flex-wrap items-center gap-x-2 gap-y-1.5 rounded-xl border bg-background px-3 py-2.5 text-sm shadow-lg md:bottom-6"
     >
       {state === 'done' ? (
         <>

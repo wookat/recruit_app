@@ -10,6 +10,8 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 import models
@@ -77,25 +79,17 @@ def subscribe(body: SubscribeBody, db: Session = Depends(get_db)):
         if nodes:
             item["n"] = nodes
         items.append(item)
-    row = (
-        db.query(models.PushSubscription)
-        .filter(models.PushSubscription.endpoint == body.endpoint)
-        .one_or_none()
-    )
-    if row is None:
-        row = models.PushSubscription(endpoint=body.endpoint)
-        db.add(row)
-    row.p256dh = body.p256dh
-    row.auth = body.auth
-    row.remind_days = body.remind_days
     default_nodes = clean_nodes(body.remind_nodes) or (
         [body.remind_days] if body.remind_days in REMIND_NODE_CHOICES else [3]
     )
-    row.remind_nodes = json.dumps(default_nodes)
-    row.items_json = json.dumps(items, ensure_ascii=False)
     # 保存筛选快照：同 u 保留已有基线，新增的基线由每日任务首次初始化（null）
+    existing = (
+        db.query(models.PushSubscription.filters_json)
+        .filter(models.PushSubscription.endpoint == body.endpoint)
+        .scalar()
+    )
     try:
-        old = {f.get("u"): f.get("t") for f in json.loads(row.filters_json or "[]")}
+        old = {f.get("u"): f.get("t") for f in json.loads(existing or "[]")}
     except ValueError:
         old = {}
     filters = [
@@ -103,8 +97,22 @@ def subscribe(body: SubscribeBody, db: Session = Depends(get_db)):
         for f in body.filters[:MAX_FILTERS]
         if f.n.strip() and f.u.startswith(FILTER_URL_PREFIXES)
     ]
-    row.filters_json = json.dumps(filters, ensure_ascii=False)
-    row.failures = 0
+    values = {
+        "p256dh": body.p256dh,
+        "auth": body.auth,
+        "remind_days": body.remind_days,
+        "remind_nodes": json.dumps(default_nodes),
+        "items_json": json.dumps(items, ensure_ascii=False),
+        "filters_json": json.dumps(filters, ensure_ascii=False),
+        "failures": 0,
+    }
+    # 单语句 upsert：并发同 endpoint 订阅（页面双重同步）不会因先查后插竞态冲突
+    stmt = pg_insert(models.PushSubscription).values(endpoint=body.endpoint, **values)
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[models.PushSubscription.endpoint],
+        set_={**values, "updated_at": func.now()},
+    )
+    db.execute(stmt)
     db.commit()
     return {"ok": True, "items": len(items), "filters": len(filters)}
 

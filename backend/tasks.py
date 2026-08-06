@@ -30,7 +30,7 @@ import refresh_feishu
 import collect_ciic
 import enrich_ciic
 import enrich_ncss
-from seo import EXAM_TYPES, PROVINCES, SITE
+from seo import CITIES, EXAM_TYPES, PROVINCES, SITE, _city_et_slugs
 import digest
 import collect_iguopin
 import collect_ncss
@@ -142,6 +142,14 @@ def submit_indexnow(self):
     for slug, _ in PROVINCES:
         urls.append(f"{SITE}/zhaokao/{slug}")
         urls.extend(f"{SITE}/zhaokao/{slug}/{et[0]}" for et in EXAM_TYPES)
+    urls.extend(f"{SITE}/zhaokao/{ps}/{cs}" for ps, cs, _ in CITIES)
+    db = SessionLocal()
+    try:
+        urls.extend(f"{SITE}/zhaokao/{path}" for path in _city_et_slugs(db=db))
+    except Exception:
+        pass  # 城市×类型组合枚举失败不影响主体提交
+    finally:
+        db.close()
     try:
         resp = requests.post(
             "https://api.indexnow.org/indexnow",

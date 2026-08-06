@@ -9,7 +9,7 @@ import html
 import json
 import os
 from urllib.parse import quote
-from datetime import date
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
@@ -52,6 +52,61 @@ EXAM_TYPES = [
 ]
 ET_BY_SLUG = {s: (norm, short) for s, norm, short in EXAM_TYPES}
 SLUG_BY_ET = {norm: s for s, norm, _ in EXAM_TYPES}
+
+# 城市×板块聚合页：岗位量 Top 城市（按在库量选取，另含深珠佛莞重点城市）。
+# (省 slug, 城市 slug, 城市名)；slug 为拼音，直辖市与省页重合故不设城市页。
+CITIES = [
+    ("hubei", "wuhan", "武汉"), ("hubei", "jingzhou", "荆州"),
+    ("hubei", "huanggang", "黄冈"), ("hubei", "xiaogan", "孝感"),
+    ("hubei", "xiangyang", "襄阳"), ("hubei", "jingmen", "荆门"),
+    ("hubei", "yichang", "宜昌"),
+    ("neimenggu", "hulunbeier", "呼伦贝尔"), ("neimenggu", "chifeng", "赤峰"),
+    ("neimenggu", "tongliao", "通辽"), ("neimenggu", "bayannaoer", "巴彦淖尔"),
+    ("neimenggu", "huhehaote", "呼和浩特"), ("neimenggu", "xilinguole", "锡林郭勒"),
+    ("neimenggu", "wulanchabu", "乌兰察布"), ("neimenggu", "xingan", "兴安"),
+    ("neimenggu", "baotou", "包头"), ("neimenggu", "eerduosi", "鄂尔多斯"),
+    ("jiangsu", "nanjing", "南京"), ("jiangsu", "suzhou", "苏州"),
+    ("jiangsu", "wuxi", "无锡"), ("jiangsu", "yancheng", "盐城"),
+    ("jiangsu", "nantong", "南通"),
+    ("guizhou", "bijie", "毕节"), ("guizhou", "zunyi", "遵义"),
+    ("guizhou", "guiyang", "贵阳"), ("guizhou", "qiandongnan", "黔东南"),
+    ("guizhou", "anshun", "安顺"), ("guizhou", "tongren", "铜仁"),
+    ("guizhou", "liupanshui", "六盘水"), ("guizhou", "qiannan", "黔南"),
+    ("guizhou", "qianxinan", "黔西南"),
+    ("henan", "anyang", "安阳"), ("henan", "shangqiu", "商丘"),
+    ("henan", "zhengzhou", "郑州"), ("henan", "zhoukou", "周口"),
+    ("henan", "luohe", "漯河"), ("henan", "xinxiang", "新乡"),
+    ("henan", "pingdingshan", "平顶山"), ("henan", "nanyang", "南阳"),
+    ("henan", "jiaozuo", "焦作"), ("henan", "luoyang", "洛阳"),
+    ("shaanxi", "xian", "西安"),
+    ("sichuan", "chengdu", "成都"),
+    ("guangdong", "guangzhou", "广州"), ("guangdong", "shenzhen", "深圳"),
+    ("guangdong", "zhuhai", "珠海"), ("guangdong", "foshan", "佛山"),
+    ("guangdong", "dongguan", "东莞"),
+    ("guangxi", "nanning", "南宁"), ("guangxi", "liuzhou", "柳州"),
+    ("guangxi", "baise", "百色"), ("guangxi", "guilin", "桂林"),
+    ("guangxi", "wuzhou", "梧州"), ("guangxi", "yulin", "玉林"),
+    ("shandong", "jinan", "济南"), ("shandong", "qingdao", "青岛"),
+    ("shandong", "yantai", "烟台"), ("shandong", "dezhou", "德州"),
+    ("shandong", "weifang", "潍坊"), ("shandong", "jining", "济宁"),
+    ("shandong", "taian", "泰安"),
+    ("anhui", "hefei", "合肥"),
+    ("xinjiang", "wulumuqi", "乌鲁木齐"),
+    ("shanxi", "yuncheng", "运城"), ("shanxi", "linfen", "临汾"),
+    ("shanxi", "lvliang", "吕梁"), ("shanxi", "taiyuan", "太原"),
+    ("shanxi", "jinzhong", "晋中"), ("shanxi", "changzhi", "长治"),
+    ("gansu", "lanzhou", "兰州"),
+    ("zhejiang", "hangzhou", "杭州"), ("zhejiang", "ningbo", "宁波"),
+    ("fujian", "quanzhou", "泉州"), ("fujian", "fuzhou", "福州"),
+    ("fujian", "zhangzhou", "漳州"), ("fujian", "ningde", "宁德"),
+    ("liaoning", "shenyang", "沈阳"), ("liaoning", "dalian", "大连"),
+    ("ningxia", "yinchuan", "银川"),
+    ("hebei", "shijiazhuang", "石家庄"),
+]
+CITY_BY_SLUG = {(p, c): name for p, c, name in CITIES}
+CITIES_BY_PROV: dict = {}
+for _p, _c, _n in CITIES:
+    CITIES_BY_PROV.setdefault(_p, []).append((_c, _n))
 
 _CSS = """
 *{box-sizing:border-box;margin:0;padding:0}
@@ -124,6 +179,24 @@ def _page(title: str, desc: str, canonical: str, crumb: str, body: str,
 def _active(query):
     return query.filter(Position.dup_of_id.is_(None),
                         Position.invalid_reason.is_(None))
+
+
+def _month_start() -> datetime:
+    today = date.today()
+    return datetime(today.year, today.month, 1)
+
+
+def _stats_para(scope: str, total: int, month_new: int, et_counts: dict) -> str:
+    """聚合统计文字段落：提升页面文本密度，避免被判「内容过薄」。"""
+    top = sorted(((v, k) for k, v in et_counts.items()
+                  if k in SLUG_BY_ET and v), reverse=True)[:3]
+    breakdown = "、".join(f"{k} {v:,} 个" for v, k in ((v, k) for v, k in top))
+    month_txt = f"本月{scope}新增 {month_new:,} 个岗位。" if month_new else ""
+    body = (f"{scope}当前在库体制内岗位共 {total:,} 个。{month_txt}"
+            + (f"其中数量最多的类型为：{breakdown}。" if breakdown else "")
+            + "数据来自各级人事考试网、事业单位招聘公告等官方公开渠道，去重后每日更新，"
+              "点击岗位类型可查看对应报名时间与学历要求明细。")
+    return f"<p class='desc'>{body}</p>"
 
 
 def _job_rows(jobs) -> str:
@@ -204,15 +277,25 @@ def _render_province(slug: str, db: Session = None) -> str:
     jobs = (_active(db.query(Position))
             .filter(Position.province == prov)
             .order_by(Position.id.desc()).limit(30).all())
+    month_new = (_active(db.query(func.count()).select_from(Position))
+                 .filter(Position.province == prov,
+                         Position.created_at >= _month_start()).scalar() or 0)
     chips = "".join(
         f"<a href='/zhaokao/{slug}/{et_slug}'>{short}<span class='n'>{et_counts.get(norm, 0):,}</span></a>"
         for et_slug, norm, short in EXAM_TYPES)
+    city_chips = "".join(
+        f"<a href='/zhaokao/{slug}/{c}'>{n}</a>"
+        for c, n in CITIES_BY_PROV.get(slug, []))
+    city_section = (
+        f"<h2 style='font-size:16px;margin:16px 0 8px'>热门城市</h2>"
+        f"<div class='chips'>{city_chips}</div>") if city_chips else ""
     others = "".join(
         f"<a href='/zhaokao/{s}'>{n}</a>" for s, n in PROVINCES if s != slug)
     body = (f"<h1>{prov}公务员·事业单位招考岗位</h1>"
-            f"<p class='desc'>{prov}在库体制内岗位共 {total:,} 个，按考试类型细分如下，每日更新。</p>"
-            f"<div class='chips'>{chips}</div>"
-            f"<a class='cta' href='/?province={quote(prov)}'>在{BRAND}中筛选{prov}全部岗位 →</a>"
+            + _stats_para(prov, total, month_new, et_counts)
+            + f"<div class='chips'>{chips}</div>"
+            + city_section
+            + f"<a class='cta' href='/?province={quote(prov)}'>在{BRAND}中筛选{prov}全部岗位 →</a>"
             f"<h2 style='font-size:16px;margin:16px 0 8px'>最新岗位</h2>"
             f"<table><thead><tr><th>岗位</th><th>单位</th><th>地点</th><th>学历</th><th>报名时间</th></tr></thead>"
             f"<tbody>{_job_rows(jobs)}</tbody></table>"
@@ -252,6 +335,87 @@ def _render_province_et(slug: str, et_slug: str, db: Session = None) -> str:
                  _jsonld(jobs, prov, et_norm))
 
 
+@cache.cached("seo_city", ttl=3600, stale=True)
+def _render_city(slug: str, city_slug: str, db: Session = None) -> str:
+    prov = PROV_BY_SLUG[slug]
+    city = CITY_BY_SLUG[(slug, city_slug)]
+    et_counts = dict(
+        _active(db.query(Position.exam_type_norm, func.count()))
+        .filter(Position.province == prov, Position.city == city)
+        .group_by(Position.exam_type_norm).all())
+    total = sum(et_counts.values())
+    month_new = (_active(db.query(func.count()).select_from(Position))
+                 .filter(Position.province == prov, Position.city == city,
+                         Position.created_at >= _month_start()).scalar() or 0)
+    jobs = (_active(db.query(Position))
+            .filter(Position.province == prov, Position.city == city)
+            .order_by(Position.id.desc()).limit(30).all())
+    chips = "".join(
+        f"<a href='/zhaokao/{slug}/{city_slug}/{et_slug}'>{short}"
+        f"<span class='n'>{et_counts.get(norm, 0):,}</span></a>"
+        for et_slug, norm, short in EXAM_TYPES if et_counts.get(norm, 0))
+    siblings = "".join(
+        f"<a href='/zhaokao/{slug}/{c}'>{n}</a>"
+        for c, n in CITIES_BY_PROV.get(slug, []) if c != city_slug)
+    sib_section = (
+        f"<h2 style='font-size:16px;margin:20px 0 8px'>{prov}其他城市</h2>"
+        f"<div class='chips'>{siblings}</div>") if siblings else ""
+    deep = f"/?province={quote(prov)}&location={quote(city)}"
+    body = (f"<h1>{city}公务员·事业单位招考岗位</h1>"
+            + _stats_para(f"{prov}{city}" if prov != city else city, total, month_new, et_counts)
+            + (f"<div class='chips'>{chips}</div>" if chips else "")
+            + f"<a class='cta' href='{_esc(deep)}'>在{BRAND}中筛选{city}全部岗位 →</a>"
+            f"<h2 style='font-size:16px;margin:16px 0 8px'>最新岗位</h2>"
+            f"<table><thead><tr><th>岗位</th><th>单位</th><th>地点</th><th>学历</th><th>报名时间</th></tr></thead>"
+            f"<tbody>{_job_rows(jobs)}</tbody></table>"
+            + sib_section
+            + f"<h2 style='font-size:16px;margin:20px 0 8px'>所属省份</h2>"
+            f"<div class='chips'><a href='/zhaokao/{slug}'>{prov}全部岗位</a></div>")
+    crumb = (f"<a href='/'>{BRAND}</a> › <a href='/zhaokao'>招考岗位</a> › "
+             f"<a href='/zhaokao/{slug}'>{prov}</a> › {city}")
+    return _page(f"{city}公务员事业单位招考岗位（{total:,} 个在招） - {BRAND}",
+                 f"{city}最新公务员、事业单位、选调生、教师、医疗招考岗位 {total:,} 个，含报名时间与学历要求，每日更新。",
+                 f"{SITE}/zhaokao/{slug}/{city_slug}", crumb, body,
+                 _jsonld(jobs, prov, "招考"))
+
+
+@cache.cached("seo_city_et", ttl=3600, stale=True)
+def _render_city_et(slug: str, city_slug: str, et_slug: str, db: Session = None) -> str:
+    prov = PROV_BY_SLUG[slug]
+    city = CITY_BY_SLUG[(slug, city_slug)]
+    et_norm, short = ET_BY_SLUG[et_slug]
+    q = _active(db.query(Position)).filter(
+        Position.province == prov, Position.city == city,
+        Position.exam_type_norm == et_norm)
+    total = q.count()
+    month_new = (_active(db.query(func.count()).select_from(Position))
+                 .filter(Position.province == prov, Position.city == city,
+                         Position.exam_type_norm == et_norm,
+                         Position.created_at >= _month_start()).scalar() or 0)
+    jobs = q.order_by(Position.id.desc()).limit(50).all()
+    siblings = "".join(
+        f"<a href='/zhaokao/{slug}/{city_slug}/{s}'>{sh}</a>"
+        for s, _, sh in EXAM_TYPES if s != et_slug)
+    deep = f"/?province={quote(prov)}&location={quote(city)}&exam_type_norm={quote(et_norm)}"
+    body = (f"<h1>{city}{short}岗位（{total:,} 个在库）</h1>"
+            + _stats_para(f"{city}{short}", total, month_new, {et_norm: total})
+            + f"<a class='cta' href='{_esc(deep)}'>在{BRAND}中筛选与订阅 →</a>"
+            f"<table><thead><tr><th>岗位</th><th>单位</th><th>地点</th><th>学历</th><th>报名时间</th></tr></thead>"
+            f"<tbody>{_job_rows(jobs)}</tbody></table>"
+            f"<h2 style='font-size:16px;margin:20px 0 8px'>{city}其他类型</h2>"
+            f"<div class='chips'>{siblings}</div>"
+            f"<h2 style='font-size:16px;margin:20px 0 8px'>更多</h2>"
+            f"<div class='chips'><a href='/zhaokao/{slug}/{city_slug}'>{city}全部岗位</a>"
+            f"<a href='/zhaokao/{slug}/{et_slug}'>{prov}{short}</a></div>")
+    crumb = (f"<a href='/'>{BRAND}</a> › <a href='/zhaokao'>招考岗位</a> › "
+             f"<a href='/zhaokao/{slug}'>{prov}</a> › "
+             f"<a href='/zhaokao/{slug}/{city_slug}'>{city}</a> › {short}")
+    return _page(f"{city}{short}岗位招录（{total:,} 个） - {BRAND}",
+                 f"{city}最新{et_norm}岗位 {total:,} 个：单位、工作地点、学历要求、报名时间一览，每日更新。",
+                 f"{SITE}/zhaokao/{slug}/{city_slug}/{et_slug}", crumb, body,
+                 _jsonld(jobs, prov, et_norm))
+
+
 @router.get("/zhaokao", response_class=HTMLResponse)
 def seo_index(db: Session = Depends(get_db)):
     return HTMLResponse(_render_index(db=db))
@@ -264,11 +428,24 @@ def seo_province(slug: str, db: Session = Depends(get_db)):
     return HTMLResponse(_render_province(slug, db=db))
 
 
-@router.get("/zhaokao/{slug}/{et_slug}", response_class=HTMLResponse)
-def seo_province_et(slug: str, et_slug: str, db: Session = Depends(get_db)):
-    if slug not in PROV_BY_SLUG or et_slug not in ET_BY_SLUG:
+@router.get("/zhaokao/{slug}/{sub}", response_class=HTMLResponse)
+def seo_province_sub(slug: str, sub: str, db: Session = Depends(get_db)):
+    """第二段既可能是考试类型（/zhaokao/guangdong/shengkao），也可能是城市
+    （/zhaokao/guangdong/shenzhen）。"""
+    if slug not in PROV_BY_SLUG:
         raise HTTPException(status_code=404)
-    return HTMLResponse(_render_province_et(slug, et_slug, db=db))
+    if sub in ET_BY_SLUG:
+        return HTMLResponse(_render_province_et(slug, sub, db=db))
+    if (slug, sub) in CITY_BY_SLUG:
+        return HTMLResponse(_render_city(slug, sub, db=db))
+    raise HTTPException(status_code=404)
+
+
+@router.get("/zhaokao/{slug}/{city_slug}/{et_slug}", response_class=HTMLResponse)
+def seo_city_et(slug: str, city_slug: str, et_slug: str, db: Session = Depends(get_db)):
+    if (slug, city_slug) not in CITY_BY_SLUG or et_slug not in ET_BY_SLUG:
+        raise HTTPException(status_code=404)
+    return HTMLResponse(_render_city_et(slug, city_slug, et_slug, db=db))
 
 
 # IndexNow 站点验证密钥文件（https://www.indexnow.org/）：仅在配置了密钥时注册精确路径，
@@ -281,8 +458,30 @@ if INDEXNOW_KEY:
         return PlainTextResponse(INDEXNOW_KEY)
 
 
+@cache.cached("seo_city_ets", ttl=6 * 3600, stale=True)
+def _city_et_slugs(db: Session = None) -> list:
+    """sitemap 用：仅收录岗位数 >0 的 城市×类型 组合，避免产出空薄页。"""
+    rows = (_active(db.query(Position.province, Position.city,
+                             Position.exam_type_norm, func.count()))
+            .filter(Position.city.isnot(None), Position.exam_type_norm.isnot(None))
+            .group_by(Position.province, Position.city, Position.exam_type_norm)
+            .all())
+    by_pc = {(SLUG_BY_PROV.get(p), c): {} for p, c, _, _ in rows}
+    for p, c, et, n in rows:
+        ps = SLUG_BY_PROV.get(p)
+        if ps and n:
+            by_pc[(ps, c)][et] = n
+    out = []
+    for (ps, cs, city) in CITIES:
+        ets = by_pc.get((ps, city), {})
+        for et_slug, norm, _ in EXAM_TYPES:
+            if ets.get(norm):
+                out.append(f"{ps}/{cs}/{et_slug}")
+    return out
+
+
 @router.get("/sitemap.xml")
-def sitemap():
+def sitemap(db: Session = Depends(get_db)):
     today = date.today().isoformat()
 
     def url(loc, priority, freq="daily"):
@@ -300,6 +499,13 @@ def sitemap():
         urls.append(url(f"{SITE}/zhaokao/{slug}", "0.8"))
         for et_slug, _, _ in EXAM_TYPES:
             urls.append(url(f"{SITE}/zhaokao/{slug}/{et_slug}", "0.7"))
+    for ps, cs, _ in CITIES:
+        urls.append(url(f"{SITE}/zhaokao/{ps}/{cs}", "0.7"))
+    try:
+        for path in _city_et_slugs(db=db):
+            urls.append(url(f"{SITE}/zhaokao/{path}", "0.6"))
+    except Exception:
+        pass  # 组合枚举失败不影响 sitemap 主体
     xml = ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
            "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
            + "".join(urls) + "</urlset>")

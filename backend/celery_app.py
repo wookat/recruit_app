@@ -67,6 +67,10 @@ celery_app.conf.update(
             "task": "tasks.generate_daily_digest",
             "schedule": crontab(hour=7, minute=40),  # 采集入库后生成每日岗位精选文案（渠道内容素材）
         },
+        "warm-seo-pages": {
+            "task": "tasks.warm_seo_pages",
+            "schedule": crontab(hour=7, minute=50),  # 每日精选生成后预热 SSR SEO 页缓存（冷 TTFB 根治）
+        },
         "push-due-reminders": {
             "task": "tasks.push_due_reminders",
             "schedule": crontab(hour=8, minute=30),  # 每天向 Web Push 订阅者发临近截止聚合提醒

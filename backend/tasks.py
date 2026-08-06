@@ -802,7 +802,11 @@ def refresh_unified_jobs():
             conn.execute(sql_text("ANALYZE unified_jobs"))
             conn.commit()
     invalidated = cache.invalidate_prefixes("jobs", "jobs_filters")
-    return {"status": "ok", "cache_invalidated": invalidated}
+    try:
+        warm = precompute.warm_board_caches()
+    except Exception as exc:  # noqa: BLE001  预热失败不影响刷新结果
+        warm = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    return {"status": "ok", "cache_invalidated": invalidated, "warm": warm}
 
 
 @celery_app.task

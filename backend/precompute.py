@@ -82,6 +82,50 @@ def warm_common_queries() -> dict:
     return {"warmed": warmed, "errors": errors, "combos": len(combos)}
 
 
+def warm_board_caches() -> dict:
+    """预热三板块 filters/counts/timeline 与统一列表默认首页缓存（冷路径根治）。
+
+    直接调用带 @cache.cached 的 endpoint 函数：key 与线上请求一致；
+    已有缓存则命中返回（幂等、代价极低），缓存被失效后则重算回填。
+    调用点：app 启动、refresh_unified_jobs、各采集/enrich 任务失效缓存后。
+    """
+    import bianzhi
+    import campus
+    import jobs
+
+    def _default_jobs_page(db):
+        # 与前端首屏请求参数一致（UnifiedJobsPage PAGE_SIZE=50，其余默认值）
+        return jobs.list_jobs(
+            keyword=None, board=None, province=None, city=None, district=None,
+            edu=None, due_within_days=None, deadline_from=None, deadline_to=None,
+            hide_expired=False, sort="recommended", page=1, page_size=50, db=db,
+        )
+
+    targets = [
+        ("jobs_filters", jobs.jobs_filter_options),
+        ("jobs_default_page", _default_jobs_page),
+        ("campus_filters", campus.campus_filter_options),
+        ("campus_counts", campus.campus_counts),
+        ("campus_timeline", campus.campus_timeline),
+        ("bianzhi_filters", bianzhi.bianzhi_filter_options),
+        ("bianzhi_counts", bianzhi.bianzhi_counts),
+        ("bianzhi_timeline", bianzhi.bianzhi_timeline),
+    ]
+    warmed, errors = [], []
+    db = SessionLocal()
+    try:
+        for name, fn in targets:
+            try:
+                fn(db=db)
+                warmed.append(name)
+            except Exception:  # noqa: BLE001  单项失败不影响其余预热
+                errors.append(name)
+                db.rollback()
+    finally:
+        db.close()
+    return {"warmed": warmed, "errors": errors}
+
+
 # 与前端 synonyms.ts 的 HOT_SEARCHES 词表 + expandKeyword 的同义组合保持一致
 HOT_KEYWORDS = (
     "国考", "省考", "事业单位", "选调生", "教师",

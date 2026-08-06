@@ -2,6 +2,32 @@ import axios from 'axios'
 
 export const API_BASE = import.meta.env.VITE_API_URL || ''
 
+/** 筛选项等非阻塞接口：带超时，失败后重试一次（冷缓存/部署窗口兼容）。 */
+async function getWithRetry<T>(url: string, timeout = 15000, retryDelay = 3000): Promise<T> {
+  try {
+    const res = await axios.get<T>(url, { timeout })
+    return res.data
+  } catch {
+    await new Promise((r) => setTimeout(r, retryDelay))
+    const res = await axios.get<T>(url, { timeout })
+    return res.data
+  }
+}
+
+/** match 等 POST 接口：5xx/网络错误自动重试一次（边缘 502 兼容）。 */
+async function postWithRetry<T>(url: string, body: unknown, retryDelay = 2000): Promise<T> {
+  try {
+    const res = await axios.post<T>(url, body)
+    return res.data
+  } catch (e) {
+    const status = axios.isAxiosError(e) ? e.response?.status : undefined
+    if (status !== undefined && status < 500) throw e
+    await new Promise((r) => setTimeout(r, retryDelay))
+    const res = await axios.post<T>(url, body)
+    return res.data
+  }
+}
+
 export interface Position {
   id: number
   year: number
@@ -191,8 +217,7 @@ export async function fetchLinkStatus(url: string): Promise<LinkStatus> {
 }
 
 export async function fetchCampusFilters(): Promise<CampusFilterOptions> {
-  const res = await axios.get(`${API_BASE}/api/campus/filters`)
-  return res.data
+  return getWithRetry(`${API_BASE}/api/campus/filters`)
 }
 
 export interface CampusTimeline {
@@ -280,8 +305,7 @@ export async function fetchBianzhiJob(id: number): Promise<BianzhiJob> {
 }
 
 export async function fetchBianzhiFilters(): Promise<BianzhiFilterOptions> {
-  const res = await axios.get(`${API_BASE}/api/bianzhi/filters`)
-  return res.data
+  return getWithRetry(`${API_BASE}/api/bianzhi/filters`)
 }
 
 let bianzhiTimelinePromise: Promise<CampusTimeline | null> | null = null
@@ -360,10 +384,7 @@ export async function fetchUnifiedJobs(params: UnifiedJobParams, signal?: AbortS
 }
 
 export async function fetchUnifiedJobFilters(): Promise<UnifiedJobFilters | null> {
-  return axios
-    .get(`${API_BASE}/api/jobs/filters`)
-    .then((r) => r.data)
-    .catch(() => null)
+  return getWithRetry<UnifiedJobFilters>(`${API_BASE}/api/jobs/filters`).catch(() => null)
 }
 
 export type MatchLevel = 'exact' | 'semantic' | 'unlimited' | 'none' | 'unset'
@@ -407,13 +428,11 @@ export interface MatchOut<T> {
 
 /** 画像多维匹配（AI 语义专业扩展+逐维打分）。 */
 export async function fetchCampusMatch(p: MatchProfileIn): Promise<MatchOut<CampusMatchItem>> {
-  const res = await axios.post(`${API_BASE}/api/match/campus`, p)
-  return res.data
+  return postWithRetry(`${API_BASE}/api/match/campus`, p)
 }
 
 export async function fetchBianzhiMatch(p: MatchProfileIn): Promise<MatchOut<BianzhiMatchItem>> {
-  const res = await axios.post(`${API_BASE}/api/match/bianzhi`, p)
-  return res.data
+  return postWithRetry(`${API_BASE}/api/match/bianzhi`, p)
 }
 
 /** 编制列表同步导出 CSV URL（≤2000 行）。 */

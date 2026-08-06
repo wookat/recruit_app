@@ -1027,7 +1027,12 @@ export function CampusPage({
             aria-label={t("地图分布")}
             title={t("岗位城市分布地图")}
             aria-pressed={mapOpen}
-            onClick={() => setMapOpen((v) => !v)}
+            onClick={() =>
+              setMapOpen((v) => {
+                if (!v) setTimelineOpen(false)
+                return !v
+              })
+            }
             className={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
               mapOpen
@@ -1042,7 +1047,12 @@ export function CampusPage({
             aria-label={t("时间线")}
             title={t("岗位更新时间线")}
             aria-pressed={timelineOpen}
-            onClick={() => setTimelineOpen((v) => !v)}
+            onClick={() =>
+              setTimelineOpen((v) => {
+                if (!v) setMapOpen(false)
+                return !v
+              })
+            }
             className={cn(
               'inline-flex h-10 w-10 items-center justify-center rounded-md border transition-colors',
               timelineOpen

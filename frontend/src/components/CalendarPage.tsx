@@ -64,6 +64,8 @@ interface DayData {
 
 type CalView = 'month' | 'week'
 
+type ExportScope = 'filter' | 'fav' | 'all'
+
 type CalBoard = 'all' | 'campus' | 'bianzhi' | 'fav'
 
 const CAL_BOARDS: { key: CalBoard; label: string }[] = [
@@ -99,6 +101,7 @@ export function CalendarPage() {
   const [calBoard, setCalBoard] = useState<CalBoard>(initialCalBoard)
   const [weekOffset, setWeekOffset] = useState(0)
   const [selectedIso, setSelectedIso] = useState<string | null>(null)
+  const [exportScope, setExportScope] = useState<ExportScope>('filter')
   const [campusJobs, setCampusJobs] = useState<CampusJob[] | null>(null)
   const [bianzhiJobs, setBianzhiJobs] = useState<BianzhiJob[] | null>(null)
   const [campusDetail, setCampusDetail] = useState<CampusJob | null>(null)
@@ -249,9 +252,27 @@ export function CalendarPage() {
     return { campus, bianzhi, total: campus.length + bianzhi.length }
   }, [byDate, periodRange])
 
+  /** 导出范围：当前筛选（随板块胶囊）/ 仅收藏 / 全部 */
+  const exportEntries = useMemo(() => {
+    if (exportScope === 'filter') return periodEntries
+    const inRange = (iso: string | null): iso is string =>
+      !!iso && iso >= periodRange.start && iso <= periodRange.end
+    const campus = (campusJobs ?? []).filter(
+      (j) =>
+        inRange(campusDateIso(j)) &&
+        (exportScope === 'all' || campusFavs.some((f) => f.id === j.id)),
+    )
+    const bianzhi = (bianzhiJobs ?? []).filter(
+      (j) =>
+        inRange(bianzhiDateIso(j)) &&
+        (exportScope === 'all' || bianzhiFavs.some((f) => f.id === j.id)),
+    )
+    return { campus, bianzhi, total: campus.length + bianzhi.length }
+  }, [exportScope, periodEntries, campusJobs, bianzhiJobs, campusFavs, bianzhiFavs, periodRange])
+
   const exportPeriodIcs = () => {
     const events: IcsEvent[] = []
-    for (const j of periodEntries.campus) {
+    for (const j of exportEntries.campus) {
       const iso = campusDateIso(j)
       if (!iso) continue
       events.push({
@@ -261,7 +282,7 @@ export function CalendarPage() {
         description: j.apply_url || j.announce_url || undefined,
       })
     }
-    for (const j of periodEntries.bianzhi) {
+    for (const j of exportEntries.bianzhi) {
       const iso = bianzhiDateIso(j)
       if (!iso) continue
       events.push({
@@ -404,15 +425,28 @@ export function CalendarPage() {
           <span className="text-muted-foreground">
             {view === 'month' ? t("本月截止") : t("本周截止")}{' '}
             <span className="font-semibold text-foreground">{periodEntries.total}</span> {' '}{t("条")}{' '}</span>
+          <select
+            aria-label={t("导出范围")}
+            value={exportScope}
+            onChange={(e) => setExportScope(e.target.value as ExportScope)}
+            className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground max-sm:min-h-11"
+          >
+            <option value="filter">{t("当前筛选")}</option>
+            <option value="fav">{t("仅收藏")}</option>
+            <option value="all">{t("全部")}</option>
+          </select>
           <Button
             variant="outline"
             size="sm"
             className="h-8 gap-1 text-xs max-sm:min-h-11"
-            disabled={periodEntries.total === 0}
+            disabled={exportEntries.total === 0}
             onClick={exportPeriodIcs}
           >
             <Download className="h-3.5 w-3.5" />
             {view === 'month' ? t("导出本月 .ics") : t("导出本周 .ics")}
+            {exportScope !== 'filter' && (
+              <span className="text-muted-foreground">（{exportEntries.total}）</span>
+            )}
           </Button>
         </div>
       )}

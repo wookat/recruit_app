@@ -190,7 +190,7 @@ export function TodayGlance({ onUpdates, onCampus, onCampusAll, onBianzhi, onDea
             'shrink-0 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground',
           )}
         >
-          {t("今日速览")}{' '}</span>
+          {t("数据速览")}{' '}</span>
         {items}
       </div>
       <div

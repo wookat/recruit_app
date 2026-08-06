@@ -3,6 +3,8 @@ import type { BianzhiJob, CampusJob } from '@/api'
 import type { AppStatus, MergeStats, StatusEvent } from '@/lib/positionStore'
 import { lastEventTime } from '@/lib/positionStore'
 import { recordFavAdded, removeFavAdded } from '@/lib/favTimes'
+import { daysUntil, getEffectiveDeadline } from '@/lib/deadline'
+import { maybeShowRemindCta } from '@/lib/remindCta'
 
 export type BoardKind = 'campus' | 'bianzhi'
 
@@ -76,6 +78,8 @@ export function toggleCampusFavorite(item: CampusJob) {
   } else {
     campusFavorites = [item, ...campusFavorites].slice(0, FAV_MAX)
     recordFavAdded('campus', item.id)
+    const d = getEffectiveDeadline(item)
+    if (d && daysUntil(d) >= 0) maybeShowRemindCta()
   }
   writeJson(FAV_KEYS.campus, campusFavorites)
   emit()
@@ -92,6 +96,8 @@ export function toggleBianzhiFavorite(item: BianzhiJob) {
   } else {
     bianzhiFavorites = [item, ...bianzhiFavorites].slice(0, FAV_MAX)
     recordFavAdded('bianzhi', item.id)
+    const d = getEffectiveDeadline(item)
+    if (d && daysUntil(d) >= 0) maybeShowRemindCta()
   }
   writeJson(FAV_KEYS.bianzhi, bianzhiFavorites)
   emit()
@@ -156,6 +162,14 @@ export function useCampusFavorites(): CampusJob[] {
 
 export function useBianzhiFavorites(): BianzhiJob[] {
   return useSyncExternalStore(subscribe, () => bianzhiFavorites)
+}
+
+export function getCampusFavorites(): CampusJob[] {
+  return campusFavorites
+}
+
+export function getBianzhiFavorites(): BianzhiJob[] {
+  return bianzhiFavorites
 }
 
 export function exportBoardData(kind: BoardKind): {

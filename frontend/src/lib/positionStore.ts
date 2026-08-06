@@ -2,6 +2,8 @@ import { useSyncExternalStore } from 'react'
 import type { Position } from '@/api'
 import type { AppChannel } from '@/lib/badgeColors'
 import { recordFavAdded, removeFavAdded } from '@/lib/favTimes'
+import { daysUntil, parseSignupDeadline } from '@/lib/deadline'
+import { maybeShowRemindCta } from '@/lib/remindCta'
 
 const FAV_KEY = 'recruit.favorites'
 const STATUS_KEY = 'recruit.appStatus'
@@ -104,6 +106,8 @@ export function toggleFavorite(item: Position) {
   } else {
     favorites = [item, ...favorites].slice(0, FAV_MAX)
     recordFavAdded('positions', item.id)
+    const d = parseSignupDeadline(item)
+    if (d && daysUntil(d) >= 0) maybeShowRemindCta()
   }
   persistFavorites()
   emit()
@@ -243,6 +247,10 @@ export function useAppChannels(): Record<number, AppChannel> {
 
 export function useFavorites(): Position[] {
   return useSyncExternalStore(subscribe, () => favorites)
+}
+
+export function getFavorites(): Position[] {
+  return favorites
 }
 
 export interface PositionBackup {

@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
+import { RemindMeButton } from '@/components/RemindMeButton'
 import { ShareMenuButton, ShareTextButton } from '@/components/ShareTextButton'
 import { ShareLandingBanner } from '@/components/ShareLandingBanner'
 import { ReportIssueButton } from '@/components/ReportIssueButton'
@@ -68,6 +69,8 @@ interface Props {
   snapshotNote?: boolean
   /** 岗位报名已截止时显示提示条。 */
   expiredNotice?: boolean
+  /** 报名截止日期；未过期时显示「提醒我」按钮（收藏+开启截止推送）。 */
+  remindDeadline?: Date | null
   /** 相关条目区块（如同单位其他公告），点击切换详情。 */
   related?: {
     title: string
@@ -161,6 +164,7 @@ export function BoardJobSheet({
   nextDisabled,
   snapshotNote,
   expiredNotice,
+  remindDeadline,
   related,
   similar,
   applyWindow,
@@ -268,6 +272,7 @@ export function BoardJobSheet({
           )}
           <div className="flex flex-wrap items-center gap-1">
             <BoardFavoriteButton active={favActive} onToggle={onFavToggle} />
+            <RemindMeButton deadline={remindDeadline} favActive={favActive} onFavToggle={onFavToggle} />
             {(() => {
               const [b, idStr] = (jobKey || '').split(':')
               const id = Number(idStr)

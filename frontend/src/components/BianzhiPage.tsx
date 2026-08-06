@@ -1606,6 +1606,7 @@ export function BianzhiPage({
           shareText={bianzhiShareText(detail)}
           favActive={bianzhiFavorites.some((f) => f.id === detail.id)}
           onFavToggle={() => toggleBianzhiFavorite(detail)}
+          remindDeadline={getEffectiveDeadline(detail)}
           jobKey={`bianzhi:${detail.id}`}
           expiredNotice={detail.category !== '大型联考' && isExpiredDate(detail.deadline_date)}
           prep={{

@@ -1676,6 +1676,7 @@ export function CampusPage({
           shareText={campusShareText(detail)}
           favActive={campusFavorites.some((f) => f.id === detail.id)}
           onFavToggle={() => toggleCampusFavorite(detail)}
+          remindDeadline={getEffectiveDeadline(detail)}
           jobKey={`campus:${detail.id}`}
           expiredNotice={isExpiredDate(detail.deadline_date)}
           {...sheetNavProps(visibleItems, detail, setDetail)}

@@ -602,8 +602,15 @@ export interface Suggestion {
   count?: number
 }
 
-export async function fetchSuggestions(q: string, limit = 8): Promise<Suggestion[]> {
-  const res = await axios.get(`${API_BASE}/api/suggest`, { params: { q, limit } })
+export async function fetchSuggestions(
+  q: string,
+  opts: { board?: 'positions' | 'campus' | 'bianzhi'; signal?: AbortSignal; limit?: number } = {},
+): Promise<Suggestion[]> {
+  const { board, signal, limit = 8 } = opts
+  const res = await axios.get(`${API_BASE}/api/suggest`, {
+    params: { q, limit, ...(board ? { board } : {}) },
+    signal,
+  })
   const data = res.data
   const raw: unknown[] = Array.isArray(data)
     ? data

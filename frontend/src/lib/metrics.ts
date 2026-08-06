@@ -1,6 +1,20 @@
 import { API_BASE } from '@/api'
 
 const SID_KEY = 'recruit.sid'
+const INTERNAL_KEY = 'recruit.internal'
+
+/** 内部走查/测试流量不计入 PV：带 ?qa=1 访问一次后本机永久排除 */
+function isInternal(): boolean {
+  try {
+    if (new URLSearchParams(window.location.search).get('qa') === '1') {
+      localStorage.setItem(INTERNAL_KEY, '1')
+      return true
+    }
+    return localStorage.getItem(INTERNAL_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
 function getSid(): string {
   try {
@@ -20,6 +34,7 @@ let lastAt = 0
 
 /** 自建轻量访问统计上报（无 cookie、无个人数据，失败静默）。 */
 export function reportPv(board: string, page = '') {
+  if (isInternal()) return
   const key = `${board}|${page}`
   const now = Date.now()
   if (key === lastKey && now - lastAt < 2000) return // 去重：rerender/StrictMode 双触发

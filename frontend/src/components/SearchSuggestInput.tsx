@@ -5,11 +5,49 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { getRecentSearches } from '@/lib/storage'
 import { pinyinMatch } from '@/lib/pinyin'
+import { fetchSuggestions } from '@/api'
 
 export interface SuggestItem {
   text: string
   count?: number
   recent?: boolean
+  type?: string
+}
+
+export const SUGGEST_TYPE_LABELS: Record<string, string> = {
+  hot: '热门',
+  employer: '单位',
+  category: '类别',
+}
+
+/** 远程搜索联想：200ms 防抖 + AbortController，中文输入法组合期不请求，失败静默返回空。 */
+export function useSuggest(
+  q: string,
+  board?: 'positions' | 'campus' | 'bianzhi',
+  composing?: boolean,
+  enabled = true,
+): SuggestItem[] {
+  const [items, setItems] = useState<SuggestItem[]>([])
+  useEffect(() => {
+    const kw = q.trim()
+    if (!enabled || composing || !kw) {
+      setItems([])
+      return
+    }
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => {
+      fetchSuggestions(kw, { board, signal: ctrl.signal })
+        .then((s) =>
+          setItems(s.filter((x) => x.text !== kw).map((x) => ({ text: x.text, count: x.count, type: x.type }))),
+        )
+        .catch(() => setItems([]))
+    }, 200)
+    return () => {
+      ctrl.abort()
+      clearTimeout(timer)
+    }
+  }, [q, board, composing, enabled])
+  return items
 }
 
 interface Props {
@@ -21,6 +59,8 @@ interface Props {
   words: string[]
   /** 额外动态联想（如 API 联想，已按当前输入过滤）。 */
   extraItems?: SuggestItem[]
+  /** 启用 /api/suggest 远程联想；'all' 为三板块混合。 */
+  suggestBoard?: 'positions' | 'campus' | 'bianzhi' | 'all'
   placeholder?: string
   inputClassName?: string
 }
@@ -34,6 +74,7 @@ export function SearchSuggestInput({
   onSelect,
   words,
   extraItems,
+  suggestBoard,
   placeholder,
   inputClassName,
 }: Props) {
@@ -41,9 +82,17 @@ export function SearchSuggestInput({
   const [debounced, setDebounced] = useState(value)
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1)
+  const [composing, setComposing] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const commitRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastCommitted = useRef(value)
+
+  const remoteItems = useSuggest(
+    text,
+    suggestBoard === 'all' ? undefined : suggestBoard,
+    composing,
+    !!suggestBoard && open,
+  )
 
   // 外部变更（清除筛选/一键匹配等）同步到内部
   useEffect(() => {
@@ -93,12 +142,13 @@ export function SearchSuggestInput({
     for (const r of getRecentSearches()) {
       if (pinyinMatch(r, q)) push({ text: r, recent: true })
     }
+    for (const it of remoteItems) push(it)
     for (const it of extraItems || []) push(it)
     for (const w of words) {
       if (pinyinMatch(w, q)) push({ text: w })
     }
     return out
-  }, [debounced, words, extraItems])
+  }, [debounced, words, extraItems, remoteItems])
 
   useEffect(() => {
     setActive(-1)
@@ -120,6 +170,8 @@ export function SearchSuggestInput({
       <Input
         value={text}
         onChange={(e) => handleChange(e.target.value)}
+        onCompositionStart={() => setComposing(true)}
+        onCompositionEnd={() => setComposing(false)}
         onFocus={() => setOpen(true)}
         placeholder={placeholder}
         className={cn('pl-9', inputClassName)}
@@ -169,6 +221,11 @@ export function SearchSuggestInput({
                 <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               )}
               <span className="flex-1 truncate">{it.text}</span>
+              {it.type && SUGGEST_TYPE_LABELS[it.type] && (
+                <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground ring-1 ring-inset ring-foreground/10">
+                  {t(SUGGEST_TYPE_LABELS[it.type])}
+                </span>
+              )}
               {it.recent && <span className="text-[11px] text-muted-foreground">{t("最近")}</span>}
               {it.count !== undefined && (
                 <span className="text-xs tabular-nums text-muted-foreground">

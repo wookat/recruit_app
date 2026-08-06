@@ -22,6 +22,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
+import { SUGGEST_TYPE_LABELS, useSuggest } from '@/components/SearchSuggestInput'
 import { pinyinMatch } from '@/lib/pinyin'
 import { expandKeyword, getSynonyms, HOT_SEARCHES } from '@/lib/synonyms'
 import { PINYIN_WORDS } from '@/lib/pinyinDict'
@@ -113,6 +114,8 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
   const [places, setPlaces] = useState<{ provinces: string[]; cities: Set<string> } | null>(null)
   const [synOff, setSynOff] = useState(false)
   const [pyTick, setPyTick] = useState(0)
+  const [composing, setComposing] = useState(false)
+  const apiSuggestions = useSuggest(q, undefined, composing, open)
 
   useEffect(() => {
     if (!open) {
@@ -258,6 +261,8 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           placeholder={t("搜索岗位 / 单位 / 公司…（同时搜三板块）")}
           value={q}
           onValueChange={setQ}
+          onCompositionStart={() => setComposing(true)}
+          onCompositionEnd={() => setComposing(false)}
         />
         {kw && synAdded.length > 0 && (
           <div className="flex items-center gap-1 border-b bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
@@ -319,7 +324,29 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           <div className="px-3 py-6 text-center text-sm text-muted-foreground">{t("搜索中…")}</div>
         )}
         <CommandList className="sm:max-h-96 max-sm:max-h-[calc(100dvh-64px)]">
+          {kw && apiSuggestions.length > 0 && (
+            <CommandGroup heading={t("搜索联想")}>
+              {apiSuggestions.map((s) => (
+                <CommandItem
+                  key={`sg-${s.text}`}
+                  value={`sg-${s.text}`}
+                  className="min-h-11"
+                  onSelect={() => setQ(s.text)}
+                >
+                  <ArrowRight className="text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate">{s.text}</span>
+                  {s.type && SUGGEST_TYPE_LABELS[s.type] && (
+                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground ring-1 ring-inset ring-foreground/10">
+                      {t(SUGGEST_TYPE_LABELS[s.type])}
+                    </span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
           {kw && pinyinSuggestions.length > 0 && (
+            <>
+            {apiSuggestions.length > 0 && <CommandSeparator />}
             <CommandGroup heading={t("拼音联想")}>
               {pinyinSuggestions.map((s) => (
                 <CommandItem
@@ -336,10 +363,11 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
                 </CommandItem>
               ))}
             </CommandGroup>
+            </>
           )}
           {kw && quickSuggestions.length > 0 && (
             <>
-            {pinyinSuggestions.length > 0 && <CommandSeparator />}
+            {(pinyinSuggestions.length > 0 || apiSuggestions.length > 0) && <CommandSeparator />}
             <CommandGroup heading={t("快捷筛选")}>
               {quickSuggestions.map((s) => (
                 <CommandItem
@@ -358,7 +386,7 @@ export function GlobalSearch({ open, onClose, onOpenBoard, onOpenJob, onQuickFil
           )}
           {kw && hits && hits.positions.total > 0 && (
             <>
-            {(quickSuggestions.length > 0 || pinyinSuggestions.length > 0) && <CommandSeparator />}
+            {(quickSuggestions.length > 0 || pinyinSuggestions.length > 0 || apiSuggestions.length > 0) && <CommandSeparator />}
             <CommandGroup heading={tt`体制内岗位 · ${formatTotal(hits.positions.total, hits.positions.capped)} 条`}>
               {hits.positions.items.map((p) => (
                 <CommandItem

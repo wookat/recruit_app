@@ -79,9 +79,15 @@ class SuggestItem(BaseModel):
     count: int
 
 
+class SuggestEntry(BaseModel):
+    text: str
+    type: str  # hot | employer | category
+    count: Optional[int] = None
+
+
 class SuggestOut(BaseModel):
     query: str
-    suggestions: List[SuggestItem]
+    suggestions: List[SuggestEntry]
 
 
 class CountItem(BaseModel):

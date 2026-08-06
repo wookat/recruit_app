@@ -778,6 +778,10 @@ def refresh_feishu_data():
         results["hot_keywords_warm"] = precompute.warm_hot_keywords()
     except Exception as exc:  # noqa: BLE001
         results["hot_keywords_warm"] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    try:
+        results["suggest_vocab_warm"] = precompute.warm_suggest_vocab()
+    except Exception as exc:  # noqa: BLE001
+        results["suggest_vocab_warm"] = {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
     return results
 
 

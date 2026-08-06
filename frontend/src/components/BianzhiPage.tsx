@@ -981,7 +981,7 @@ export function BianzhiPage({
             <ChartColumn className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           <Button variant="outline" size="sm" className="h-11 gap-1.5 sm:h-10" onClick={() => setGuideOpen(true)}>
             <GraduationCap className="h-4 w-4" />
             {t("专业就业方向")}{' '}</Button>

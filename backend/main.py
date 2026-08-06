@@ -14,6 +14,7 @@ from fastapi import FastAPI, Depends, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -785,7 +786,21 @@ if os.path.isdir(dist_dir):
             response.headers.setdefault("Cache-Control", "no-cache")
         return response
 
-    app.mount("/", StaticFiles(directory=dist_dir, html=True), name="static")
+    class SpaStaticFiles(StaticFiles):
+        """未知路径的 HTML GET 请求回落到 index.html（404 状态），避免用户看到裸 JSON。"""
+
+        async def get_response(self, path, scope):
+            try:
+                response = await super().get_response(path, scope)
+            except StarletteHTTPException as exc:
+                if exc.status_code == 404 and scope["method"] in ("GET", "HEAD"):
+                    return FileResponse(index_path, media_type="text/html", status_code=404)
+                raise
+            if response.status_code == 404 and scope["method"] in ("GET", "HEAD"):
+                return FileResponse(index_path, media_type="text/html", status_code=404)
+            return response
+
+    app.mount("/", SpaStaticFiles(directory=dist_dir, html=True), name="static")
 else:
     @app.get("/")
     def root():

@@ -1225,6 +1225,13 @@ export const EN: Record<string, string> = {
   '本页已折叠 {0} 组同岗多地区岗位（{1} 条），总数按未折叠口径统计':
     'Collapsed {0} multi-location groups on this page ({1} rows); total counts uncollapsed rows',
   '长期有效': 'Open-ended',
+  '页面不存在（404）': 'Page not found (404)',
+  '你访问的页面不存在或已下线，可能是链接拼写有误。可以从下面的入口继续浏览岗位。':
+    'The page you requested does not exist or has been taken down — the link may be misspelled. Continue browsing jobs from the entries below.',
+  '返回上岸雷达首页': 'Back to Shangan Radar home',
+  '页面不存在 - 上岸雷达': 'Page not found - Shangan Radar',
+  '切换三板块 → 一键匹配筛选 → 收藏追踪与截止提醒':
+    'Switch boards → one-key match filters → favorites tracking & deadline reminders',
   '跳转原公告页': 'Open original announcement',
   '{0} 个城市': '{0} cities',
   '有新岗位通知我': 'Notify me of new jobs',

@@ -99,7 +99,7 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
         </div>
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 shrink-0" />
-          {foldGroup ? (
+          {foldGroup && foldGroup.locations.length !== 1 ? (
             <button
               type="button"
               className="inline-flex min-w-0 items-center gap-0.5 text-primary hover:underline"

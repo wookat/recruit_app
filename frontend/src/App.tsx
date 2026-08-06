@@ -35,6 +35,7 @@ import {
 import { SubscriptionsSheet } from '@/components/SubscriptionsSheet'
 import { lazyRetry } from '@/lib/lazyRetry'
 import { BoardErrorBoundary } from '@/components/BoardErrorBoundary'
+import { NotFoundPage } from '@/components/NotFoundPage'
 import { reportPv } from '@/lib/metrics'
 
 const JobGuideSheet = lazy(() =>
@@ -75,6 +76,10 @@ const UnifiedJobsPage = lazy(() =>
 )
 
 const showAdmin = new URLSearchParams(window.location.search).get('admin') === '1'
+
+// SPA 只服务根路径（深链全部走 query 参数）；未知路径由后端回落 index.html（404 状态），
+// 客户端渲染品牌化 404 视图而非完整首页，与 SSR 404 页口径一致。
+const isNotFound = window.location.pathname !== '/'
 
 const CAMPUS_CROSS = [
   { key: 'all', label: t("校招") },
@@ -291,6 +296,10 @@ export default function App() {
   }, [favorites, campusFavorites, bianzhiFavorites, remindDays])
 
   useEffect(() => {
+    if (isNotFound) {
+      document.title = t('页面不存在 - 上岸雷达')
+      return
+    }
     syncSectionUrl(section)
     applySeo(section.mode, section.preset, section.keyword)
   }, [section])
@@ -664,6 +673,10 @@ export default function App() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
+        {isNotFound ? (
+          <NotFoundPage />
+        ) : (
+          <>
         {tab !== 'admin' && section.mode !== 'calendar' && (
           <OnboardingCard
             onOpenTips={() => {
@@ -760,6 +773,8 @@ export default function App() {
           </Suspense>
           </BoardErrorBoundary>
         </div>
+          </>
+        )}
       </main>
 
       <footer className="border-t bg-background py-6 pb-24 text-center text-xs text-muted-foreground md:pb-16">

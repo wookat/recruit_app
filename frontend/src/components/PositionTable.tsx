@@ -66,16 +66,16 @@ function dedupExamType(title: string, examType: string | null | undefined): stri
 }
 
 const columns: ColumnDef<Position>[] = [
-  { accessorKey: 'employer', header: t("用人单位/系统"), size: 180 },
-  { accessorKey: 'year', header: t("年份"), size: 70 },
-  { accessorKey: 'job_type', header: t("岗位类型"), size: 90 },
+  { accessorKey: 'employer', header: t("用人单位/系统"), size: 170 },
+  { accessorKey: 'year', header: t("年份"), size: 60 },
+  { accessorKey: 'job_type', header: t("岗位类型"), size: 84 },
   {
     id: 'exam_type',
     accessorFn: (row) => row.exam_type_norm || row.exam_type,
     header: t("考试/招聘类型"),
     size: 130,
   },
-  { accessorKey: 'position_example', header: t("岗位示例"), size: 200 },
+  { accessorKey: 'position_example', header: t("岗位示例"), size: 170 },
   {
     id: 'edu_level_norm',
     accessorFn: (row) => row.edu_level_norm || row.edu_requirement,
@@ -83,7 +83,7 @@ const columns: ColumnDef<Position>[] = [
     size: 110,
   },
   { accessorKey: 'work_location', header: t("工作地点"), size: 150 },
-  { accessorKey: 'signup_time', header: t("报名时间"), size: 150 },
+  { accessorKey: 'signup_time', header: t("报名时间"), size: 140 },
   { accessorKey: 'exam_time', header: t("考试时间"), size: 160 },
   { accessorKey: 'created_at', header: t("更新"), size: 100 },
 ]
@@ -324,17 +324,21 @@ export const PositionTable = memo(function PositionTable({
                           <span className={cn(PILL_BASE, eduClass(String(cell.getValue() || '')))}>
                             {t(String(cell.getValue() || '-'))}
                           </span>
-                        ) : cell.column.id === 'work_location' && foldGroups.has(row.original.id) ? (
+                        ) : cell.column.id === 'work_location' &&
+                          foldGroups.has(row.original.id) &&
+                          foldGroups.get(row.original.id)!.locations.length !== 1 ? (
                           <button
                             type="button"
-                            className="inline-flex max-w-full items-center gap-0.5 truncate text-primary hover:underline"
+                            className="inline-flex max-w-full items-center gap-0.5 text-primary hover:underline"
                             title={foldGroups.get(row.original.id)!.locations.join(' / ')}
                             onClick={(e) => {
                               e.stopPropagation()
                               toggleGroup(foldGroups.get(row.original.id)!.key)
                             }}
                           >
-                            {tt`${foldGroups.get(row.original.id)!.locations.length || foldGroups.get(row.original.id)!.count} 个地区`}
+                            <span className="whitespace-nowrap">
+                              {tt`${foldGroups.get(row.original.id)!.locations.length || foldGroups.get(row.original.id)!.count} 个地区`}
+                            </span>
                             <ChevronDown className="h-3 w-3 shrink-0" />
                           </button>
                         ) : cell.column.id === 'work_location' && cell.getValue() ? (

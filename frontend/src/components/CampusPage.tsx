@@ -1731,7 +1731,7 @@ export function CampusPage({
           ]}
           schedule={[
             { label: t("开始时间"), value: normalizeDateStr(detail.start_date) },
-            { label: t("截止时间"), value: normalizeDateStr(detail.deadline_text) },
+            { label: t("截止时间"), value: isLongTermDate(detail.deadline_date) ? t("长期有效") : normalizeDateStr(detail.deadline_text) },
             { label: t("更新时间"), value: normalizeDateStr(detail.updated_at_src) },
           ]}
           links={[
@@ -1740,7 +1740,7 @@ export function CampusPage({
           ]}
           applyWindow={(() => {
             const s = normalizeDateStr(detail.start_date)
-            if (!s || !detail.deadline_date) return null
+            if (!s || !detail.deadline_date || isLongTermDate(detail.deadline_date)) return null
             const start = new Date(`${s}T00:00:00`)
             const end = new Date(`${detail.deadline_date}T00:00:00`)
             return !isNaN(start.getTime()) && !isNaN(end.getTime()) && start.getTime() <= end.getTime()

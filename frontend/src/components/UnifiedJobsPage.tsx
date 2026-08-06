@@ -28,7 +28,7 @@ import { LazyPositionSheet } from '@/components/LazyPositionSheet'
 import { buildShareText } from '@/components/ShareTextButton'
 import { jobShareUrl } from '@/lib/clipboard'
 import { normalizeDateStr } from '@/lib/tableSort'
-import { getEffectiveDeadline } from '@/lib/deadline'
+import { getEffectiveDeadline, isLongTermDate } from '@/lib/deadline'
 import {
   toggleBianzhiFavorite,
   toggleCampusFavorite,
@@ -640,7 +640,7 @@ export function UnifiedJobsPage() {
                             {item.edu_level_norm || '-'}
                           </span>
                           <span className="hidden truncate text-xs text-muted-foreground md:block">
-                            {row.groupKey ? (
+                            {row.groupKey && row.cities.length !== 1 ? (
                               <button
                                 type="button"
                                 className="inline-flex items-center gap-0.5 text-primary hover:underline"
@@ -704,7 +704,7 @@ export function UnifiedJobsPage() {
                               </span>
                               <span className="inline-flex items-center gap-1">
                                 <MapPin className="h-3.5 w-3.5 shrink-0" />
-                                {row.groupKey ? (
+                                {row.groupKey && row.cities.length !== 1 ? (
                                   <button
                                     type="button"
                                     className="inline-flex max-w-64 items-center gap-0.5 truncate text-primary hover:underline"
@@ -809,7 +809,7 @@ export function UnifiedJobsPage() {
           ]}
           schedule={[
             { label: t('开始时间'), value: normalizeDateStr(campusDetail.start_date) },
-            { label: t('截止时间'), value: normalizeDateStr(campusDetail.deadline_text) },
+            { label: t('截止时间'), value: isLongTermDate(campusDetail.deadline_date) ? t('长期有效') : normalizeDateStr(campusDetail.deadline_text) },
             { label: t('更新时间'), value: normalizeDateStr(campusDetail.updated_at_src) },
           ]}
           links={[
@@ -845,7 +845,7 @@ export function UnifiedJobsPage() {
           ]}
           schedule={[
             { label: t('报名开始'), value: normalizeDateStr(bianzhiDetail.signup_start) },
-            { label: t('报名截止'), value: normalizeDateStr(bianzhiDetail.deadline_text) },
+            { label: t('报名截止'), value: isLongTermDate(bianzhiDetail.deadline_date) ? t('长期有效') : normalizeDateStr(bianzhiDetail.deadline_text) },
             { label: t('考试时间'), value: bianzhiDetail.exam_time },
             { label: t('更新时间'), value: normalizeDateStr(bianzhiDetail.updated_at_src) },
           ]}

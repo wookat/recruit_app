@@ -196,3 +196,61 @@ for _disc, _majors in MAJOR_DISCIPLINES:
         MAJOR_BY_SLUG[_slug] = (_name, _disc)
 
 SLUG_BY_MAJOR = {name: slug for slug, (name, _) in MAJOR_BY_SLUG.items()}
+
+# 常见简称/别名 -> 规范 slug；命中别名 301 到规范页（索引页与 sitemap 仍只列规范 slug）
+MAJOR_SLUG_ALIASES: dict = {
+    "jisuanji": "jisuanjikexueyujishu",        # 计算机
+    "jisuanjikexue": "jisuanjikexueyujishu",
+    "falv": "faxue",                           # 法律 -> 法学
+    "kuaiji": "kuaijixue",                     # 会计
+    "linchuang": "linchuangyixue",             # 临床
+    "hanyuyan": "hanyuyanwenxue",              # 汉语言
+    "ruanjian": "ruanjiangongcheng",           # 软件
+    "jinrong": "jinrongxue",                   # 金融
+    "huli": "hulixue",                         # 护理
+    "hushi": "hulixue",                        # 护士 -> 护理学
+    "jingji": "jingjixue",                     # 经济
+    "xinli": "xinlixue",                       # 心理
+    "shuxue": "shuxueyuyingyongshuxue",        # 数学
+    "tumu": "tumugongcheng",                   # 土木
+    "jixie": "jixiegongcheng",                 # 机械
+    "dianqi": "dianqigongcheng",               # 电气
+    "tongji": "tongjixue",                     # 统计
+    "shenji": "shenjixue",                     # 审计
+    "caiwu": "caiwuguanli",                    # 财务
+    "renliziyuan": "renliziyuanguanli",        # 人力资源
+    "renli": "renliziyuanguanli",
+    "xingzheng": "xingzhengguanli",            # 行政
+    "gongshang": "gongshangguanli",            # 工商
+    "shichang": "shichangyingxiao",            # 市场
+    "wuliu": "wuliuguanli",                    # 物流
+    "dashuju": "shujukexueyudashujujishu",     # 大数据
+    "shuju": "shujukexueyudashujujishu",
+    "xinwen": "xinwenxue",                     # 新闻
+    "jiaoyu": "jiaoyuxue",                     # 教育
+    "xueqian": "xueqianjiaoyu",                # 学前
+    "zhongyi": "zhongyixue",                   # 中医
+    "kouqiang": "kouqiangyixue",               # 口腔
+    "yingyang": "yufangyixue",                 # 预防（营养口径归预防医学）
+    "yufang": "yufangyixue",
+    "huanjing": "huanjinggongcheng",           # 环境
+    "tongxin": "tongxingongcheng",             # 通信
+    "dianzixinxi": "dianzixinxigongcheng",     # 电子信息
+    "wangluo": "wangluogongcheng",             # 网络
+    "anquan": "anquangongcheng",               # 安全
+    "jianzhu": "jianzhuxue",                   # 建筑
+}
+for _alias, _target in MAJOR_SLUG_ALIASES.items():
+    assert _alias not in MAJOR_BY_SLUG, f"alias collides with canonical slug: {_alias}"
+    assert _target in MAJOR_BY_SLUG, f"alias target missing: {_target}"
+
+
+def resolve_major_alias(slug: str) -> str | None:
+    """未命中规范 slug 时解析别名：显式别名表优先，其次唯一前缀匹配（≥4 字符）。"""
+    if slug in MAJOR_SLUG_ALIASES:
+        return MAJOR_SLUG_ALIASES[slug]
+    if len(slug) >= 4:
+        hits = [s for s in MAJOR_BY_SLUG if s.startswith(slug)]
+        if len(hits) == 1:
+            return hits[0]
+    return None

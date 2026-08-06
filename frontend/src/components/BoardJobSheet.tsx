@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { BoardFavoriteButton } from '@/components/BoardFavoriteButton'
 import { RemindMeButton } from '@/components/RemindMeButton'
 import { ShareMenuButton, ShareTextButton } from '@/components/ShareTextButton'
@@ -24,6 +25,8 @@ import { ExtLinkAnchor } from '@/components/ExtLinkAnchor'
 import { SheetDragHandle } from '@/components/SheetDragHandle'
 import { ApplyTimeline } from '@/components/ApplyTimeline'
 import { fetchLinkStatus } from '@/api'
+import { APP_STATUSES, STATUS_COLORS, type AppStatus } from '@/lib/positionStore'
+import { setBoardStatus, useBianzhiMeta, useCampusMeta } from '@/lib/boardFavorites'
 
 export interface SheetField {
   label: string
@@ -170,6 +173,8 @@ export function BoardJobSheet({
   applyWindow,
   prep,
 }: Props) {
+  const campusMeta = useCampusMeta()
+  const bianzhiMeta = useBianzhiMeta()
   const validLinks = (links ?? [])
     .filter((l) => safeUrl(l.url))
     .reduce<SheetLink[]>((acc, l) => {
@@ -272,6 +277,30 @@ export function BoardJobSheet({
           )}
           <div className="flex flex-wrap items-center gap-1">
             <BoardFavoriteButton active={favActive} onToggle={onFavToggle} />
+            {(() => {
+              const [b, idStr] = (jobKey || '').split(':')
+              const id = Number(idStr)
+              if ((b !== 'campus' && b !== 'bianzhi') || !(id > 0)) return null
+              const status = (b === 'campus' ? campusMeta : bianzhiMeta)[id]?.status ?? '未投递'
+              return (
+                <Select value={status} onValueChange={(v) => setBoardStatus(b, id, v as AppStatus)}>
+                  <SelectTrigger
+                    size="sm"
+                    aria-label={t("投递状态")}
+                    className={`h-7 w-auto gap-1 border-none px-2 text-[11px] font-medium shadow-none ${STATUS_COLORS[status as AppStatus]}`}
+                  >
+                    {t(status)}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {APP_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s} className="text-xs">
+                        {t(s)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )
+            })()}
             <RemindMeButton deadline={remindDeadline} favActive={favActive} onFavToggle={onFavToggle} jobKey={jobKey} jobTitle={title} />
             {(() => {
               const [b, idStr] = (jobKey || '').split(':')
@@ -343,7 +372,7 @@ export function BoardJobSheet({
                     {validLinks.map((l) => (
                       <div key={l.label}>
                         <div className="text-xs font-medium text-muted-foreground">{l.label}</div>
-                        <ExtLinkAnchor url={safeUrl(l.url)!} />
+                        <ExtLinkAnchor url={safeUrl(l.url)!} jobKey={jobKey} jobTitle={title} />
                         {l.url && deadUrls[l.url] && (
                           <p className="mt-1 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-400">
                             <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />

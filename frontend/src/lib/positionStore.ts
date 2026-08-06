@@ -4,6 +4,7 @@ import type { AppChannel } from '@/lib/badgeColors'
 import { recordFavAdded, removeFavAdded } from '@/lib/favTimes'
 import { daysUntil, parseSignupDeadline } from '@/lib/deadline'
 import { maybeShowRemindCta } from '@/lib/remindCta'
+import { reportEvent } from '@/lib/metrics'
 import { removeReminder, removeRemindersByPrefix } from '@/lib/reminders'
 
 const FAV_KEY = 'recruit.favorites'
@@ -139,8 +140,13 @@ function persistStatuses() {
   }
 }
 
+export function getAppStatus(id: number): AppStatus {
+  return statuses[id] ?? '未投递'
+}
+
 export function setAppStatus(id: number, status: AppStatus) {
   if ((statuses[id] ?? '未投递') === status) return
+  if (status === '已投递') reportEvent('apply_marked')
   if (status === '未投递') {
     const rest = { ...statuses }
     delete rest[id]

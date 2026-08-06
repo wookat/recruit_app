@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { BoardCompareBar } from '@/components/BoardCompareBar'
 import { MobileBottomNav } from '@/components/MobileBottomNav'
 import { RemindToastHost } from '@/components/RemindToastHost'
+import { ApplyPromptHost } from '@/components/ApplyPromptHost'
 import { OnboardingCard } from '@/components/OnboardingCard'
 import { useFavorites } from '@/lib/positionStore'
 import { useBianzhiFavorites, useCampusFavorites } from '@/lib/boardFavorites'
@@ -860,6 +861,7 @@ export default function App() {
       <BoardCompareBar onOpenJob={(board, id) => openSearchJob(board, id, '')} />
       <SubscriptionsSheet />
       <RemindToastHost />
+      <ApplyPromptHost />
       {deepLinked && (
         <LazyPositionSheet
           item={deepLinked}

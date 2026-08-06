@@ -11,16 +11,23 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { domainOf, sourceTrust, useConfirmExtLink } from '@/lib/extLink'
+import { recordApplyClick } from '@/lib/applyTracking'
 
-/** 详情外链：显示目标域名徽章；开启「外链打开前确认」时先弹确认层再跳转。 */
-export function ExtLinkAnchor({ url }: { url: string }) {
+/** 详情外链：显示目标域名徽章；开启「外链打开前确认」时先弹确认层再跳转。
+ * 传入 jobKey 时上报 apply_click 并登记回站「投了吗？」提示。 */
+export function ExtLinkAnchor({ url, jobKey, jobTitle }: { url: string; jobKey?: string; jobTitle?: string }) {
   const confirmOn = useConfirmExtLink()
   const [pending, setPending] = useState(false)
   const domain = domainOf(url)
   const trust = sourceTrust(url)
 
+  const trackOpen = () => {
+    if (jobKey) recordApplyClick(jobKey, jobTitle ?? '')
+  }
+
   const openNow = () => {
     setPending(false)
+    trackOpen()
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
@@ -35,6 +42,8 @@ export function ExtLinkAnchor({ url }: { url: string }) {
           if (confirmOn) {
             e.preventDefault()
             setPending(true)
+          } else {
+            trackOpen()
           }
         }}
       >

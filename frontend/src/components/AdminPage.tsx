@@ -1045,15 +1045,34 @@ const EVENT_LABELS: Record<string, string> = {
 }
 
 function EventsSection({ events }: { events: Record<string, number> }) {
+  const applyClick = events['apply_click'] ?? 0
+  const applyMarked = events['apply_marked'] ?? 0
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-      <span>{t("近 14 天留存事件")}</span>
-      {Object.entries(EVENT_LABELS).map(([key, label]) => (
-        <span key={key} className="inline-flex items-center gap-1">
-          {label}
-          <span className="font-semibold tabular-nums text-foreground">{events[key] ?? 0}</span>
+    <div className="space-y-1">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <span>{t("近 14 天留存事件")}</span>
+        {Object.entries(EVENT_LABELS).map(([key, label]) => (
+          <span key={key} className="inline-flex items-center gap-1">
+            {label}
+            <span className="font-semibold tabular-nums text-foreground">{events[key] ?? 0}</span>
+          </span>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        <span>{t("投递漏斗")}</span>
+        <span className="inline-flex items-center gap-1">
+          {t("点原文")}
+          <span className="font-semibold tabular-nums text-foreground">{applyClick}</span>
         </span>
-      ))}
+        <span aria-hidden="true">→</span>
+        <span className="inline-flex items-center gap-1">
+          {t("标记投递")}
+          <span className="font-semibold tabular-nums text-foreground">{applyMarked}</span>
+        </span>
+        {applyClick > 0 && (
+          <span className="tabular-nums">({Math.round((applyMarked / applyClick) * 100)}%)</span>
+        )}
+      </div>
     </div>
   )
 }

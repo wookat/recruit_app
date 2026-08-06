@@ -23,7 +23,7 @@ import { ActiveFilterChips, FilterSummaryBar, type RemovableFilter } from '@/com
 import { Highlight } from '@/components/Highlight'
 import { TONE_CLASSES, TONE_TEXT_STRONG, hashTone, type Tone } from '@/lib/badgeColors'
 import { cn } from '@/lib/utils'
-import { formatDueDayLabel, getEffectiveDeadline } from '@/lib/deadline'
+import { formatDueDayLabel, getEffectiveDeadline, isLongTermDate } from '@/lib/deadline'
 import {
   Table,
   TableBody,
@@ -705,7 +705,7 @@ export function CampusPage({
       sort.key === 'company'
         ? j.company
         : sort.key === 'deadline'
-          ? j.deadline_date
+          ? (isLongTermDate(j.deadline_date) ? null : j.deadline_date)
           : sort.key === 'start'
             ? normalizeDateStr(j.start_date)
             : normalizeDateStr(j.updated_at_src)
@@ -1432,7 +1432,9 @@ export function CampusPage({
                       className="inline-flex items-center gap-1.5"
                       title={job.deadline_date ? job.deadline_text ?? undefined : undefined}
                     >
-                      {job.deadline_date || job.deadline_text || '-'}
+                      {isLongTermDate(job.deadline_date)
+                        ? null
+                        : job.deadline_date || job.deadline_text || '-'}
                       <DueBadge date={job.deadline_date} />
                     </span>
                   </TableCell>
@@ -1606,7 +1608,7 @@ export function CampusPage({
                     {t("开始：")}{normalizeDateStr(job.start_date)}
                   </span>
                 )}
-                {job.deadline_text && (
+                {job.deadline_text && !isLongTermDate(job.deadline_date) && (
                   <span className="text-muted-foreground">{t("截止：")}{normalizeDateStr(job.deadline_text)}</span>
                 )}
                 <DueBadge date={job.deadline_date} />

@@ -1190,6 +1190,11 @@ export const EN: Record<string, string> = {
   '搜索岗位 / 单位 / 公司，自动搜索，回车立即搜索': 'Search jobs / employers / companies — auto search, Enter to search now',
   '全部岗位筛选': 'All jobs filters',
   '折叠多城市岗位': 'Collapse multi-city jobs',
+  '折叠多地区岗位': 'Collapse multi-location jobs',
+  '{0} 个地区': '{0} locations',
+  '本页已折叠 {0} 组同岗多地区岗位（{1} 条），总数按未折叠口径统计':
+    'Collapsed {0} multi-location groups on this page ({1} rows); total counts uncollapsed rows',
+  '长期有效': 'Open-ended',
   '跳转原公告页': 'Open original announcement',
   '{0} 个城市': '{0} cities',
   '有新岗位通知我': 'Notify me of new jobs',

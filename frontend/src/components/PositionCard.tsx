@@ -1,9 +1,10 @@
-import { t } from '@/lib/i18n'
+import { t, tt } from '@/lib/i18n'
 import { memo } from 'react'
 import type { Position } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
-import { MapPin, GraduationCap, Calendar, Building2 } from 'lucide-react'
+import { MapPin, GraduationCap, Calendar, Building2, ChevronDown } from 'lucide-react'
+import type { PositionFoldGroup } from '@/lib/positionFold'
 import { FavoriteButton } from './FavoriteButton'
 import { CompareButton } from './CompareButton'
 import { STATUS_COLORS, useAppStatuses } from '@/lib/positionStore'
@@ -22,9 +23,12 @@ interface Props {
   item: Position
   onDetail: (item: Position) => void
   highlight?: string
+  /** 同岗多地区折叠组信息（仅折叠组代表行有值） */
+  foldGroup?: PositionFoldGroup
+  onFoldToggle?: (key: string) => void
 }
 
-export const PositionCard = memo(function PositionCard({ item, onDetail, highlight }: Props) {
+export const PositionCard = memo(function PositionCard({ item, onDetail, highlight, foldGroup, onFoldToggle }: Props) {
   const statuses = useAppStatuses()
   const status = statuses[item.id]
   return (
@@ -95,7 +99,27 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
         </div>
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 shrink-0" />
-          <span className="line-clamp-1">{item.work_location || '-'}</span>
+          {foldGroup ? (
+            <button
+              type="button"
+              className="inline-flex min-w-0 items-center gap-0.5 text-primary hover:underline"
+              onClick={(e) => {
+                e.stopPropagation()
+                onFoldToggle?.(foldGroup.key)
+              }}
+            >
+              {tt`${foldGroup.locations.length || foldGroup.count} 个地区`}
+              {foldGroup.locations.length > 0 && (
+                <span className="truncate text-muted-foreground">
+                  （{foldGroup.locations.slice(0, 3).join(' / ')}
+                  {foldGroup.locations.length > 3 ? '…' : ''}）
+                </span>
+              )}
+              <ChevronDown className="h-3 w-3 shrink-0" />
+            </button>
+          ) : (
+            <span className="line-clamp-1">{item.work_location || '-'}</span>
+          )}
         </div>
         {item.signup_time && (
           <div className="flex items-center gap-2">

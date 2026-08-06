@@ -218,6 +218,7 @@ export const EN: Record<string, string> = {
   '免责声明': 'Disclaimer',
   '入库': 'Ingested',
   '全站搜索': 'Site-wide search',
+  '搜索联想': 'Suggestions',
   '全站搜索（Ctrl K）': 'Site-wide search (Ctrl K)',
   '全部': 'All',
   '全部保存在你当前浏览器本地（localStorage），不上传服务器；清除浏览器数据会丢失。建议定期在「收藏 → 备份」导出 JSON 备份文件，随时可导入恢复。': 'Everything is stored locally in your browser (localStorage) and never uploaded; clearing browser data will lose it. We recommend regularly exporting a JSON backup via “Favorites → Backup”, which can be re-imported anytime.',

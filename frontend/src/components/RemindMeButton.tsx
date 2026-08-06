@@ -10,6 +10,7 @@ import { getFavorites } from '@/lib/positionStore'
 import { getBianzhiFavorites, getCampusFavorites } from '@/lib/boardFavorites'
 import { emitRemindConfirm, suppressRemindCta } from '@/lib/remindCta'
 import { daysUntil } from '@/lib/deadline'
+import { reportEvent } from '@/lib/metrics'
 
 interface Props {
   /** 岗位报名截止日期；无截止或已过期不渲染。 */
@@ -31,7 +32,7 @@ export function RemindMeButton({ deadline, favActive, onFavToggle, jobKey, jobTi
   const defaultNodes = useRemindNodes()
   const reminders = useReminders()
   const pushEnabled = usePushEnabled()
-  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'denied' | 'error'>('idle')
+  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'denied' | 'timeout' | 'error'>('idle')
   const [nodesOpen, setNodesOpen] = useState(false)
   if (!deadline || daysUntil(deadline) < 0 || !isPushSupported()) return null
 
@@ -60,11 +61,13 @@ export function RemindMeButton({ deadline, favActive, onFavToggle, jobKey, jobTi
     if (optimistic) emitRemindConfirm()
     if (!favActive) suppressRemindCta(onFavToggle)
     if (jobKey) setReminder(jobKey, jobTitle ?? '', fmtDate(deadline))
+    reportEvent('remind_set')
     try {
       const items = buildPushItems(getFavorites(), getCampusFavorites(), getBianzhiFavorites())
       const result = await enablePush(items)
       if (result === 'granted') setState('done')
       else if (result === 'denied') setState('denied')
+      else if (result === 'timeout') setState('timeout')
       else setState('error')
     } catch {
       setState('error')
@@ -123,7 +126,7 @@ export function RemindMeButton({ deadline, favActive, onFavToggle, jobKey, jobTi
           ))}
         </span>
       )}
-      {(state === 'denied' || state === 'error') && (
+      {(state === 'denied' || state === 'timeout' || state === 'error') && (
         <span
           role="alert"
           className="flex w-full items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
@@ -131,7 +134,9 @@ export function RemindMeButton({ deadline, favActive, onFavToggle, jobKey, jobTi
           <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           {state === 'denied'
             ? t("已收藏。浏览器拒绝了通知权限，可在地址栏站点设置中重新允许后再点「提醒我」")
-            : t("已收藏。提醒开启失败，请稍后再点一次「提醒我」重试")}
+            : state === 'timeout'
+              ? t("推送暂不可用，已保存到我的提醒（收藏面板可查看）")
+              : t("已收藏。提醒开启失败，请稍后再点一次「提醒我」重试")}
         </span>
       )}
     </>

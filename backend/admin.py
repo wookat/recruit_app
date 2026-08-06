@@ -384,9 +384,24 @@ def health_summary(db: Session = Depends(get_db)):
                        coalesce((SELECT count(*) FROM metrics_sessions_daily s WHERE s.day = p.day), 0) AS sessions
                 FROM metrics_pv_daily p
                 WHERE p.day >= CURRENT_DATE - interval '13 days'
+                  AND p.board <> 'event'
                 GROUP BY 1 ORDER BY 1
             """)).all()
         ]
+    except Exception:  # noqa: BLE001
+        db.rollback()
+
+    # 留存埋点事件计数（近 14 天，board='event' 行）
+    events = {}
+    try:
+        events = {
+            row.page: int(row.n)
+            for row in db.execute(text("""
+                SELECT page, sum(pv) AS n FROM metrics_pv_daily
+                WHERE board = 'event' AND day >= CURRENT_DATE - interval '13 days'
+                GROUP BY page
+            """)).all()
+        }
     except Exception:  # noqa: BLE001
         db.rollback()
 
@@ -418,6 +433,7 @@ def health_summary(db: Session = Depends(get_db)):
     return {
         "trend": trend,
         "visits": visits,
+        "events": events,
         "stale_sources": stale_sources,
         "crawl_24h": {
             "success": success,

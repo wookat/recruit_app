@@ -39,6 +39,7 @@ import { SeenBadge } from '@/components/SeenBadge'
 import { NewDot } from '@/components/NewDot'
 import { useSeenSet } from '@/lib/viewHistory'
 import { markBoardVisit } from '@/lib/lastVisit'
+import { NewSinceBanner } from '@/components/NewSinceBanner'
 import { BoardCompareButton } from '@/components/BoardCompareButton'
 import { CrossBoardZeroHint } from '@/components/CrossBoardZeroHint'
 import { SearchSuggestInput } from '@/components/SearchSuggestInput'
@@ -166,6 +167,7 @@ export function BianzhiPage({
   const [hideSeen, setHideSeen] = useState(
     urlQuery.get('board') === 'bianzhi' && urlQuery.get('hseen') === '1',
   )
+  const [newSince, setNewSince] = useState<string | null>(null)
   const seenSet = useSeenSet()
   const [eduFilter, setEduFilter] = useState(
     urlQuery.get('board') === 'bianzhi' ? urlQuery.get('bedu') ?? '' : '',
@@ -329,12 +331,13 @@ export function BianzhiPage({
       edu: eduFilter || undefined,
       updated_after: timeRange ? timeRange.from : recentOnly ? daysAgoStr(7) : undefined,
       updated_before: timeRange ? timeRange.to : undefined,
+      created_after: newSince ?? undefined,
       due_within_days: dueOnly ? 7 : undefined,
       hide_expired: !dueOnly && hideExpired ? true : undefined,
       page: fetchPage,
       page_size: isLiankaoPreset ? 100 : PAGE_SIZE,
     }
-  }, [preset, recentOnly, timeRange, kwTrim, synAdded, provinces, cities, dueOnly, hideExpired, fetchPage, isLiankaoPreset, eduFilter])
+  }, [preset, recentOnly, timeRange, kwTrim, synAdded, provinces, cities, dueOnly, hideExpired, newSince, fetchPage, isLiankaoPreset, eduFilter])
 
   useEffect(() => {
     let cancelled = false
@@ -531,6 +534,14 @@ export function BianzhiPage({
       label: t("隐藏已看过"),
       onRemove: () => setHideSeen(false),
     })
+  if (newSince)
+    activeFilters.push({
+      label: t("仅看上次访问后新增"),
+      onRemove: () => {
+        setNewSince(null)
+        setPage(1)
+      },
+    })
   function clearAllFilters() {
     selectPreset('all')
     setEduFilter('')
@@ -543,6 +554,7 @@ export function BianzhiPage({
     setCities([])
     setSearchInput('')
     setKeyword('')
+    setNewSince(null)
     setPage(1)
   }
 
@@ -771,6 +783,13 @@ export function BianzhiPage({
 
   return (
     <div className="space-y-4">
+      <NewSinceBanner
+        board="bianzhi"
+        onApply={(since) => {
+          setNewSince(since)
+          setPage(1)
+        }}
+      />
       {/* 分类 chips */}
       <div className="relative">
       <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">

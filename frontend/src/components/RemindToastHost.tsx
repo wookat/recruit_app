@@ -14,7 +14,7 @@ const DISMISS_MS = 10000
  * 也承接「提醒我」的开启成功确认。hover 时暂停自动消失。 */
 export function RemindToastHost() {
   const [open, setOpen] = useState(false)
-  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'denied' | 'error'>('idle')
+  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'denied' | 'timeout' | 'error'>('idle')
   const timer = useRef<number | undefined>(undefined)
 
   const scheduleDismiss = (ms = DISMISS_MS) => {
@@ -55,6 +55,7 @@ export function RemindToastHost() {
       const result = await enablePush(items)
       if (result === 'granted') setState('done')
       else if (result === 'denied') setState('denied')
+      else if (result === 'timeout') setState('timeout')
       else setState('error')
     } catch {
       setState('error')
@@ -75,13 +76,15 @@ export function RemindToastHost() {
           <Check className="h-4 w-4 shrink-0 text-green-600" aria-hidden="true" />
           <span>{tt`已开启：截止前 ${remindNodes} 天提醒你报名（关闭网页也能收到）`}</span>
         </>
-      ) : state === 'denied' || state === 'error' ? (
+      ) : state === 'denied' || state === 'timeout' || state === 'error' ? (
         <>
           <BellRing className="h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />
           <span className="max-w-72">
             {state === 'denied'
               ? t("浏览器拒绝了通知权限，可在地址栏站点设置中重新允许后到收藏面板开启")
-              : t("开启失败，可稍后到收藏面板重试")}
+              : state === 'timeout'
+                ? t("推送暂不可用，已保存到我的提醒（收藏面板可查看）")
+                : t("开启失败，可稍后到收藏面板重试")}
           </span>
         </>
       ) : (

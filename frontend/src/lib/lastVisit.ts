@@ -34,6 +34,11 @@ export function markBoardVisit(board: VisitBoard) {
   }
 }
 
+/** 上次访问该板块的时间戳（毫秒；首次访问返回 null）。会话内快照，不受本次写回影响。 */
+export function getPrevVisit(board: VisitBoard): number | null {
+  return previous[board] ?? null
+}
+
 /** 该条目相对上次访问是否为新增（首次访问返回 false）。 */
 export function isNewSinceLastVisit(
   board: VisitBoard,

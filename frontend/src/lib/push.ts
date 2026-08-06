@@ -108,8 +108,20 @@ async function fetchVapidKey(): Promise<string> {
   }
 }
 
+const SW_READY_TIMEOUT_MS = 8000
+
+/** 等待 SW ready，超时（如 profile 损坏、SW 启动卡死）抛 timeout，避免调用方永久挂起。 */
+async function swReadyWithTimeout(): Promise<ServiceWorkerRegistration> {
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('sw-ready-timeout')), SW_READY_TIMEOUT_MS),
+    ),
+  ])
+}
+
 async function getSubscription(): Promise<PushSubscription | null> {
-  const reg = await navigator.serviceWorker.ready
+  const reg = await swReadyWithTimeout()
   return reg.pushManager.getSubscription()
 }
 
@@ -128,11 +140,11 @@ function subToBody(sub: PushSubscription, items: PushDueItem[]) {
 
 /**
  * 开启推送：请求通知权限 → 订阅 PushManager → 上报订阅与收藏截止快照。
- * 返回 'granted' | 'denied' | 'unsupported' | 'unconfigured' | 'error'。
+ * 返回 'granted' | 'denied' | 'unsupported' | 'unconfigured' | 'timeout' | 'error'。
  */
 export async function enablePush(
   items: PushDueItem[],
-): Promise<'granted' | 'denied' | 'unsupported' | 'unconfigured' | 'error'> {
+): Promise<'granted' | 'denied' | 'unsupported' | 'unconfigured' | 'timeout' | 'error'> {
   if (!isPushSupported()) return 'unsupported'
   let perm = Notification.permission
   if (perm === 'default') {
@@ -150,8 +162,13 @@ export async function enablePush(
     return 'unconfigured'
   }
   if (!key) return 'unconfigured'
+  let reg: ServiceWorkerRegistration
   try {
-    const reg = await navigator.serviceWorker.ready
+    reg = await swReadyWithTimeout()
+  } catch {
+    return 'timeout'
+  }
+  try {
     const sub =
       (await reg.pushManager.getSubscription()) ??
       (await reg.pushManager.subscribe({

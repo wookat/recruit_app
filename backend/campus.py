@@ -97,6 +97,8 @@ def apply_campus_filters(q, f: dict):
         terms = [t.strip() for t in f["location"].split(",") if t.strip()]
         if terms:
             q = q.filter(or_(*(CampusJob.locations.ilike(f"%{t}%") for t in terms)))
+    if f.get("created_after"):
+        q = q.filter(CampusJob.created_at > f["created_after"])
     if f.get("updated_after"):
         q = q.filter(func.substr(func.replace(CampusJob.updated_at_src, "/", "-"), 1, 10) >= f["updated_after"])
     if f.get("updated_before"):
@@ -152,6 +154,7 @@ def list_campus_jobs(
     location: Optional[str] = None,
     updated_after: Optional[str] = None,
     updated_before: Optional[str] = None,
+    created_after: Optional[datetime] = None,
     due_within_days: Optional[int] = Query(None, ge=0, le=365),
     hide_expired: bool = False,
     page: int = Query(1, ge=1),
@@ -171,6 +174,7 @@ def list_campus_jobs(
         "location": location,
         "updated_after": updated_after,
         "updated_before": updated_before,
+        "created_after": created_after,
         "due_within_days": due_within_days,
         "hide_expired": hide_expired,
     })

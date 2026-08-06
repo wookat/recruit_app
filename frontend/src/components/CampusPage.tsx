@@ -118,7 +118,7 @@ function SplitBadges({
     <span className="flex flex-wrap gap-1">
       {parts.map((p) => (
         <Badge key={p} variant="secondary" className={cn('whitespace-nowrap border-0', toneClass(map, p))}>
-          {p}
+          {t(p)}
         </Badge>
       ))}
     </span>
@@ -731,23 +731,23 @@ export function CampusPage({
   const typeChips = filters ? (
     <div className="flex flex-wrap items-center gap-1.5">
       <span className="mr-0.5 shrink-0 text-xs text-muted-foreground md:hidden">{t("企业类型")}</span>
-      {filters.company_types.slice(0, 6).map((t) => (
+      {filters.company_types.slice(0, 6).map((ct) => (
         <button
-          key={t}
-          onClick={() => toggleCompanyType(t)}
+          key={ct}
+          onClick={() => toggleCompanyType(ct)}
           className={cn(
             'min-h-11 rounded-md px-2.5 py-1 text-xs transition-colors md:min-h-0',
-            companyTypes.includes(t)
+            companyTypes.includes(ct)
               ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
               : 'hover:brightness-95 dark:hover:brightness-110',
-            toneClass(COMPANY_TYPE_TONES, t),
-            TONE_TEXT_STRONG[COMPANY_TYPE_TONES[t] || hashTone(t)],
+            toneClass(COMPANY_TYPE_TONES, ct),
+            TONE_TEXT_STRONG[COMPANY_TYPE_TONES[ct] || hashTone(ct)],
           )}
         >
-          {t}
-          {typeCounts?.[t] != null && (
+          {t(ct)}
+          {typeCounts?.[ct] != null && (
             <span data-count className="ml-1 hidden sm:inline">
-              {typeCounts[t].toLocaleString()}
+              {typeCounts[ct].toLocaleString()}
             </span>
           )}
         </button>
@@ -775,7 +775,7 @@ export function CampusPage({
                   : 'border-border bg-background text-foreground hover:bg-muted',
               )}
             >
-              {c}
+              {t(c)}
             </button>
           ))}
           {cityOptions.length > 0 && (
@@ -1344,7 +1344,7 @@ export function CampusPage({
                           toneClass(COMPANY_TYPE_TONES, job.company_type),
                         )}
                       >
-                        {job.company_type}
+                        {t(job.company_type)}
                       </Badge>
                     ) : (
                       '-'
@@ -1523,7 +1523,7 @@ export function CampusPage({
                 <SeenBadge board="campus" id={job.id} />
                 {job.company_type && (
                   <Badge variant="secondary" className={cn('border-0', toneClass(COMPANY_TYPE_TONES, job.company_type))}>
-                    {job.company_type}
+                    {t(job.company_type)}
                   </Badge>
                 )}
                 {job.no_exam && job.no_exam !== '/' && (
@@ -1694,7 +1694,7 @@ export function CampusPage({
           open={!!detail}
           onClose={() => setDetail(null)}
           title={detail.company || '-'}
-          badges={[detail.company_type, detail.source_table].filter((b): b is string => !!b)}
+          badges={[detail.company_type, detail.source_table].filter((b): b is string => !!b).map((b) => t(b))}
           tags={deriveCampusTags(detail).map((t) => ({
             ...t,
             onClick:

@@ -274,7 +274,7 @@ export function PositionSheet({
           })()}
           <SheetTitle className="flex flex-wrap items-center gap-2 pr-8 text-lg">
             {t("岗位详情")}{' '}<Badge variant="secondary">{item.year}</Badge>
-            {item.job_type && <Badge variant="outline">{item.job_type}</Badge>}
+            {item.job_type && <Badge variant="outline">{t(item.job_type)}</Badge>}
             {item.edu_level_norm &&
               (onTagClick && item.edu_level_norm === '本科' ? (
                 <button
@@ -286,11 +286,11 @@ export function PositionSheet({
                 >
                   <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary transition-colors hover:bg-primary/20">
                     <Filter className="h-3 w-3" aria-hidden="true" />
-                    {item.edu_level_norm}
+                    {t(item.edu_level_norm)}
                   </Badge>
                 </button>
               ) : (
-                <Badge variant="outline">{item.edu_level_norm}</Badge>
+                <Badge variant="outline">{t(item.edu_level_norm)}</Badge>
               ))}
           </SheetTitle>
           {derivePositionTags(item).filter((t) => t.key !== 'edu_bk').length > 0 && (

@@ -36,10 +36,10 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className={cn(PILL_BASE, yearClass(item.year))}>{item.year}</span>
-            <span className={cn(PILL_BASE, jobTypeClass(item.job_type))}>{item.job_type}</span>
+            <span className={cn(PILL_BASE, jobTypeClass(item.job_type))}>{t(item.job_type)}</span>
             {item.edu_level_norm && (
               <span className={cn(PILL_BASE, eduClass(item.edu_level_norm))}>
-                {item.edu_level_norm}
+                {t(item.edu_level_norm)}
               </span>
             )}
             {status && (

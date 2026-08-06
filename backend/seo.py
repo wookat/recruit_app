@@ -13,7 +13,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 
 import cache
@@ -443,6 +443,8 @@ def _major_positions(db: Session, name: str):
 @cache.cached("seo_major_counts", ttl=SEO_TTL, stale=True)
 def _major_counts(db: Session = None) -> dict:
     """全部专业的三板块命中数（slug -> {pos, campus, bianzhi}）；只在预热时重算。"""
+    # 全量 ILIKE 计数超出默认 20s statement_timeout，仅预热路径承担
+    db.execute(text("SET statement_timeout = '300s'"))
     out = {}
     for slug, (name, _disc) in MAJOR_BY_SLUG.items():
         like = f"%{name}%"
@@ -452,6 +454,7 @@ def _major_counts(db: Session = None) -> dict:
         bz = (db.query(func.count()).select_from(BianzhiJob)
               .filter(BianzhiJob.major_requirement.ilike(like)).scalar() or 0)
         out[slug] = {"pos": pos, "campus": campus, "bianzhi": bz}
+    db.execute(text("SET statement_timeout = DEFAULT"))
     return out
 
 
@@ -544,6 +547,7 @@ def _render_major_index(db: Session = None) -> str:
 def _render_major(slug: str, db: Session = None) -> str:
     name, disc = MAJOR_BY_SLUG[slug]
     like = f"%{name}%"
+    db.execute(text("SET statement_timeout = '120s'"))  # 聚合查询仅预热路径承担
     rows = (_major_positions(db, name)
             .with_entities(Position.province, Position.exam_type_norm, func.count())
             .group_by(Position.province, Position.exam_type_norm).all())
@@ -563,6 +567,7 @@ def _render_major(slug: str, db: Session = None) -> str:
         raise HTTPException(status_code=404)
     jobs = (_major_positions(db, name)
             .order_by(Position.id.desc()).limit(20).all())
+    db.execute(text("SET statement_timeout = DEFAULT"))
 
     top_prov = sorted(prov_counts.items(), key=lambda kv: -kv[1])[:10]
     prov_chips = "".join(

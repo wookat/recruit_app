@@ -3,6 +3,7 @@ import logging
 import re
 import os
 import threading
+import time
 from urllib.parse import quote
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -78,6 +79,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+SLOW_REQUEST_SECONDS = 2.0
+
+
+@app.middleware("http")
+async def slow_request_log(request: Request, call_next):
+    """慢请求观测：任何 API 请求超过阈值记录 method/path/耗时，便于定位线上偶发慢响应。"""
+    start = time.perf_counter()
+    response = await call_next(request)
+    elapsed = time.perf_counter() - start
+    if elapsed > SLOW_REQUEST_SECONDS and request.url.path.startswith("/api/"):
+        logger.warning("slow request: %s %s %.1fs status=%s",
+                       request.method, request.url.path, elapsed, response.status_code)
+    return response
+
+
 app.include_router(admin_router)
 app.include_router(campus_router)
 app.include_router(bianzhi_router)

@@ -907,6 +907,12 @@ def warm_seo_pages():
 
 
 @celery_app.task
+def refresh_freshness_caches():
+    """每 10 分钟请求路径外重算 freshness/recent-updates 缓存，消除 TTL 到期冷重算。"""
+    return precompute.refresh_freshness_caches()
+
+
+@celery_app.task
 def check_watch_sources():
     """定时任务：对所有到期启用的来源执行采集闭环（公告→附件→解析→入库）。"""
     db = SessionLocal()

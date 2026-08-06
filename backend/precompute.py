@@ -130,6 +130,23 @@ def warm_board_caches() -> dict:
     return {"warmed": warmed, "errors": errors}
 
 
+def refresh_freshness_caches() -> dict:
+    """强制重算 /api/freshness 与 /api/recent-updates 缓存（请求路径外）。
+
+    beat 每 10 分钟调用，保证用户请求永远命中热缓存，消除 TTL 到期后的冷重算。
+    """
+    import main as main_app
+
+    cache.invalidate_prefixes("freshness", "recent_updates")
+    db = SessionLocal()
+    try:
+        main_app.data_freshness(db=db)
+        main_app.recent_updates(days=7, db=db)
+    finally:
+        db.close()
+    return {"ok": True}
+
+
 def warm_seo_pages(invalidate: bool = True) -> dict:
     """预热 SSR SEO 页（/zhaokao 省/城市/类型页与 /daily）的 Redis 缓存。
 

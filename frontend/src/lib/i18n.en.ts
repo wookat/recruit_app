@@ -347,6 +347,8 @@ export const EN: Record<string, string> = {
   '启用': 'Enabled',
   '告警': 'Alert',
   '周': '',
+  '按月': 'Month',
+  '按周': 'Week',
   '回今天': 'Back to today',
   '国企': 'SOE',
   '国企/央企': 'SOE / central SOE',

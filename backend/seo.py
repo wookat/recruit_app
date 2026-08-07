@@ -272,9 +272,9 @@ def _display_title(j) -> str:
                 break
             i += 1
             k += 1
-        if k == len(emp_key) and i < len(t):
+        if k == len(emp_key):
             t = t[i:].strip(" -—·、:：")
-    return t or title
+    return t or (j.exam_type_norm or j.job_type or "岗位")
 
 
 def _job_rows(jobs) -> str:

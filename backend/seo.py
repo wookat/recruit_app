@@ -8,6 +8,7 @@ FastAPI 层输出一组可收录的路径型页面 /zhaokao/...，含 JobPosting
 import html
 import json
 import os
+from email.utils import format_datetime
 from urllib.parse import quote
 from datetime import date, datetime, timedelta, timezone
 
@@ -213,7 +214,8 @@ def render_404() -> str:
             f"<div class='chips'>"
             f"<a href='/zhaokao'>按省份浏览招考岗位</a>"
             f"<a href='/major'>按专业反查可报岗位</a>"
-            f"<a href='/daily'>每日岗位精选</a></div>"
+            f"<a href='/daily'>每日岗位精选</a>"
+            f"<a href='/rank'>数据榜单</a></div>"
             f"<a class='cta' href='/'>返回{BRAND}首页 →</a>")
     crumb = f"<a href='/'>{BRAND}</a> › 404"
     return _page(f"页面不存在 - {BRAND}",
@@ -304,6 +306,9 @@ def _render_index(db: Session = None) -> str:
             f"<div class='chips'>{chips}</div>"
             f"<h2 style='font-size:16px;margin-top:20px'>按考试类型</h2>"
             f"<div class='chips'>{et_chips}</div>"
+            f"<h2 style='font-size:16px;margin-top:20px'>数据榜单</h2>"
+            f"<div class='chips'><a href='/rank/shangan'>上岸难度参考榜</a>"
+            f"<a href='/rank/sanbuxian'>三不限岗位雷达</a></div>"
             f"<a class='cta' href='/'>打开{BRAND}筛选全部岗位 →</a>")
     crumb = f"<a href='/'>{BRAND}</a> › 招考岗位"
     return _page(f"全国公务员事业单位招考岗位大全 - {BRAND}",
@@ -895,6 +900,346 @@ def daily_latest(db: Session = Depends(get_db)):
     return {"day": row.day.isoformat(), "is_today": row.day >= today}
 
 
+# ---------------- RSS 订阅 /feed.xml ----------------
+
+FEED_TZ = timezone(timedelta(hours=8))
+
+
+def _rfc822(dt) -> str:
+    if isinstance(dt, date) and not isinstance(dt, datetime):
+        dt = datetime(dt.year, dt.month, dt.day, 8, 0, 0)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=FEED_TZ)
+    return format_datetime(dt)
+
+
+def _feed_item(title: str, link: str, desc: str, pub) -> str:
+    return (f"<item><title>{_esc(title)}</title>"
+            f"<link>{_esc(link)}</link>"
+            f"<guid isPermaLink=\"true\">{_esc(link)}</guid>"
+            f"<description>{_esc(desc)}</description>"
+            f"<pubDate>{_rfc822(pub)}</pubDate></item>")
+
+
+@cache.cached("seo_feed", ttl=1800, stale=True)
+def _render_feed(db: Session = None) -> str:
+    items = []
+    digests = (db.query(DailyDigest)
+               .order_by(DailyDigest.day.desc()).limit(30).all())
+    for r in digests:
+        n = (len(json.loads(r.campus_ids_json or "[]"))
+             + len(json.loads(r.bianzhi_ids_json or "[]")))
+        intro = (r.intro or "").strip()
+        items.append(_feed_item(
+            f"每日岗位精选 · {_fmt_day_cn(r.day)}（{n} 个高价值岗位）",
+            f"{SITE}/daily/{r.day.isoformat()}",
+            intro or f"{_fmt_day_cn(r.day)}上岸雷达精选 {n} 个高价值岗位，含单位、地点与报名截止时间。",
+            r.day))
+    campus = (db.query(CampusJob)
+              .filter(CampusJob.deadline_date.is_(None)
+                      | (CampusJob.deadline_date >= date.today()))
+              .order_by(CampusJob.id.desc()).limit(12).all())
+    for j in campus:
+        title = ((j.positions or "").replace("\n", " ").strip() or "校园招聘")[:50]
+        company = (j.company or "招聘单位")[:40]
+        loc = ((j.locations or "").split("、")[0].split(",")[0] or "多地")[:14]
+        ddl = _daily_deadline(j.deadline_date, j.deadline_text)
+        items.append(_feed_item(
+            f"{company}：{title}",
+            f"{SITE}/?board=campus&job=campus:{j.id}",
+            f"{company}在招：{title}；地点：{loc}；报名截止：{ddl}。",
+            j.created_at or datetime.now(FEED_TZ)))
+    build_date = _rfc822(datetime.now(FEED_TZ))
+    return (
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">"
+        "<channel>"
+        f"<title>{BRAND} · 每日岗位精选</title>"
+        f"<link>{SITE}/daily</link>"
+        f"<description>{BRAND}每日岗位精选与最新岗位：覆盖公务员、事业单位、编制、央国企与校招高价值岗位，每日更新。</description>"
+        "<language>zh-cn</language>"
+        f"<lastBuildDate>{build_date}</lastBuildDate>"
+        f"<atom:link href=\"{SITE}/feed.xml\" rel=\"self\" type=\"application/rss+xml\"/>"
+        + "".join(items) + "</channel></rss>")
+
+
+@router.get("/feed.xml")
+def feed(db: Session = Depends(get_db)):
+    return Response(content=_render_feed(db=db),
+                    media_type="application/rss+xml; charset=utf-8",
+                    headers={"Cache-Control": HTML_CACHE_CONTROL})
+
+
+# ---------------- 数据榜单页 /rank ----------------
+
+# 榜单样本下限：省×系统组合岗位数低于该值不参与打分（样本过小分数不稳）
+RANK_MIN_CELL = 50
+# 竞争热度（近7日浏览）参与打分的全站样本下限：浏览数据不足时退化为两因子口径
+RANK_MIN_VIEWS = 200
+
+
+def _pct_rank(values: list, v) -> int:
+    """v 在 values 中的百分位（0-100，越大代表 v 越大）。"""
+    if not values:
+        return 50
+    below = sum(1 for x in values if x < v)
+    return round(below * 100 / len(values))
+
+
+@cache.cached("seo_rank_stats", ttl=SEO_TTL, stale=True)
+def _rank_stats(db: Session = None) -> dict:
+    """省份×系统 榜单原始指标 + 难度参考分（只在预热路径重算）。"""
+    db.execute(text("SET statement_timeout = '300s'"))
+    ets = [norm for _, norm, _ in EXAM_TYPES]
+    rows = db.execute(text("""
+        SELECT province, exam_type_norm,
+               count(*) AS total,
+               count(*) FILTER (
+                   WHERE raw_major ILIKE '%不限%'
+                      OR undergrad_major ILIKE '%不限%'
+                      OR grad_major ILIKE '%不限%'
+               ) AS unlim
+        FROM positions
+        WHERE dup_of_id IS NULL AND invalid_reason IS NULL
+          AND province = ANY(:provs) AND exam_type_norm = ANY(:ets)
+        GROUP BY 1, 2
+    """), {"provs": [n for _, n in PROVINCES], "ets": ets}).all()
+    views = {}
+    total_views = 0
+    try:
+        vrows = db.execute(text("""
+            SELECT p.province, p.exam_type_norm, SUM(v.views) AS views
+            FROM metrics_job_view_daily v
+            JOIN positions p ON p.id = v.job_id
+            WHERE v.board = 'positions' AND v.day >= CURRENT_DATE - 6
+              AND p.dup_of_id IS NULL AND p.invalid_reason IS NULL
+            GROUP BY 1, 2
+        """)).all()
+        for prov, et, n in vrows:
+            views[(prov, et)] = int(n or 0)
+            total_views += int(n or 0)
+    except Exception:
+        pass  # 浏览指标缺失时退化为两因子口径
+    db.execute(text("SET statement_timeout = DEFAULT"))
+    cells = []
+    for prov, et, total, unlim in rows:
+        if total < RANK_MIN_CELL:
+            continue
+        cells.append({
+            "prov": prov, "et": et, "total": int(total),
+            "unlim_ratio": round(int(unlim) * 100 / int(total)),
+            "heat": round(views.get((prov, et), 0) * 1000 / int(total), 1),
+        })
+    heat_used = total_views >= RANK_MIN_VIEWS
+    supplies = [c["total"] for c in cells]
+    ratios = [c["unlim_ratio"] for c in cells]
+    heats = [c["heat"] for c in cells]
+    for c in cells:
+        supply_pct = _pct_rank(supplies, c["total"])
+        unlim_pct = _pct_rank(ratios, c["unlim_ratio"])
+        if heat_used:
+            heat_pct = _pct_rank(heats, c["heat"])
+            score = 0.4 * heat_pct + 0.3 * (100 - supply_pct) + 0.3 * (100 - unlim_pct)
+        else:
+            score = 0.5 * (100 - supply_pct) + 0.5 * (100 - unlim_pct)
+        c["score"] = round(score)
+    cells.sort(key=lambda c: (-c["score"], c["prov"], c["et"]))
+    return {"cells": cells, "heat_used": heat_used,
+            "day": date.today().isoformat()}
+
+
+def _rank_level(score: int) -> str:
+    if score >= 80:
+        return "偏高"
+    if score >= 60:
+        return "中高"
+    if score >= 40:
+        return "中等"
+    if score >= 20:
+        return "中低"
+    return "偏低"
+
+
+@cache.cached("seo_rank_shangan", ttl=SEO_TTL, stale=True)
+def _render_rank_shangan(db: Session = None) -> str:
+    data = _rank_stats(db=db)
+    cells = data["cells"]
+    heat_used = data["heat_used"]
+    rows_html = []
+    for i, c in enumerate(cells):
+        prov_slug = SLUG_BY_PROV.get(c["prov"], "")
+        et_slug = SLUG_BY_ET.get(c["et"], "")
+        short = ET_BY_SLUG.get(et_slug, (c["et"], c["et"]))[1]
+        deep = f"/?province={quote(c['prov'])}&exam_type_norm={quote(c['et'])}"
+        rows_html.append(
+            f"<tr><td data-l='排名'>{i + 1}</td>"
+            f"<td data-l='省份×系统'><a href='/zhaokao/{prov_slug}/{et_slug}'>{c['prov']}·{short}</a></td>"
+            f"<td data-l='难度参考分'>{c['score']}（{_rank_level(c['score'])}）</td>"
+            f"<td data-l='在库岗位'>{c['total']:,}</td>"
+            f"<td data-l='不限专业占比'>{c['unlim_ratio']}%</td>"
+            f"<td data-l='筛选'><a href='{_esc(deep)}'>去筛选 →</a></td></tr>")
+    method = (
+        "<h2 style='font-size:16px;margin:20px 0 8px'>口径说明</h2>"
+        "<p class='desc'>难度参考分为 0-100 的<strong>相对参考值</strong>，仅基于本站可计算指标构造："
+        + ("站内竞争热度分位（近 7 日同组岗位人均浏览，权重 0.4）、岗位供给量分位（权重 0.3，供给越少分越高）、"
+           "不限专业岗位占比分位（权重 0.3，占比越低分越高）。"
+           if heat_used else
+           "岗位供给量分位（权重 0.5，供给越少分越高）与不限专业岗位占比分位（权重 0.5，占比越低分越高）；"
+           "当前浏览样本不足，竞争热度因子未启用。")
+        + f"样本下限：单组岗位数 ≥{RANK_MIN_CELL} 才参与打分。"
+          "该分数<strong>不代表</strong>真实报录比或考试难度，不同省份招考节奏差异也会影响供给量，"
+          "仅供选岗时横向参考，请以官方公告与历年报录数据为准。</p>")
+    body = (f"<h1>省份×系统 上岸难度参考榜</h1>"
+            f"<p class='desc'>基于{BRAND}在库 {sum(c['total'] for c in cells):,} 个体制内岗位，"
+            f"对 {len(cells)} 个「省份×招考系统」组合按站内可算指标构造难度参考分并排序，"
+            f"分数越高代表相对竞争压力可能越大，每日随数据更新。</p>"
+            f"<table><thead><tr><th>排名</th><th>省份×系统</th><th>难度参考分</th>"
+            f"<th>在库岗位</th><th>不限专业占比</th><th>筛选</th></tr></thead>"
+            f"<tbody>{''.join(rows_html)}</tbody></table>"
+            + method
+            + f"<a class='cta' href='/'>打开{BRAND}筛选全部岗位 →</a>"
+            "<h2 style='font-size:16px;margin:20px 0 8px'>更多榜单</h2>"
+            "<div class='chips'><a href='/rank/sanbuxian'>三不限岗位雷达</a>"
+            "<a href='/rank'>全部榜单</a><a href='/zhaokao'>按省份浏览岗位</a></div>")
+    crumb = f"<a href='/'>{BRAND}</a> › <a href='/rank'>数据榜单</a> › 上岸难度参考榜"
+    jsonld = ("<script type=\"application/ld+json\">" + json.dumps({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": f"{BRAND} 省份×系统上岸难度参考榜",
+        "itemListElement": [
+            {"@type": "ListItem", "position": i + 1,
+             "url": f"{SITE}/zhaokao/{SLUG_BY_PROV.get(c['prov'], '')}/{SLUG_BY_ET.get(c['et'], '')}",
+             "name": f"{c['prov']}{c['et']}（难度参考分 {c['score']}）"}
+            for i, c in enumerate(cells[:30])],
+    }, ensure_ascii=False) + "</script>")
+    return _page(f"省份×系统上岸难度参考榜（{len(cells)} 组每日更新） - {BRAND}",
+                 f"全国 {len(cells)} 个省份×招考系统组合的上岸难度参考分排行：基于岗位供给量、不限专业占比与站内竞争热度构造，选岗横向参考，每日更新。",
+                 f"{SITE}/rank/shangan", crumb, body, jsonld)
+
+
+# 三不限口径：专业不限 + 学历低门槛（大专/中专或不限）+ 无工作经历要求（应届可报）
+_SBX_WHERE = """
+    dup_of_id IS NULL AND invalid_reason IS NULL
+    AND (raw_major ILIKE '%不限%' OR undergrad_major ILIKE '%不限%'
+         OR grad_major ILIKE '%不限%')
+    AND (edu_level_norm IS NULL OR edu_level_norm IN ('大专/中专', '其他/不限'))
+    AND COALESCE(special_requirements, '') NOT ILIKE '%工作经历%'
+    AND COALESCE(special_requirements, '') NOT ILIKE '%工作经验%'
+"""
+
+
+@cache.cached("seo_sbx_stats", ttl=SEO_TTL, stale=True)
+def _sbx_stats(db: Session = None) -> dict:
+    db.execute(text("SET statement_timeout = '300s'"))
+    rows = db.execute(text(
+        "SELECT province, count(*) AS total FROM positions WHERE "
+        + _SBX_WHERE +
+        " AND province = ANY(:provs) GROUP BY 1 ORDER BY 2 DESC"),
+        {"provs": [n for _, n in PROVINCES]}).all()
+    ids = db.execute(text(
+        "SELECT id FROM positions WHERE " + _SBX_WHERE +
+        " ORDER BY id DESC LIMIT 20")).all()
+    db.execute(text("SET statement_timeout = DEFAULT"))
+    return {"prov": [(p, int(n)) for p, n in rows],
+            "sample_ids": [r[0] for r in ids],
+            "day": date.today().isoformat()}
+
+
+def _sbx_deep(prov: str = "") -> str:
+    parts = ["major=" + quote("不限"),
+             "edu_level=" + quote("大专/中专"),
+             "edu_level=" + quote("其他/不限")]
+    if prov:
+        parts.insert(0, "province=" + quote(prov))
+    return "/?" + "&".join(parts)
+
+
+@cache.cached("seo_rank_sanbuxian", ttl=SEO_TTL, stale=True)
+def _render_rank_sanbuxian(db: Session = None) -> str:
+    data = _sbx_stats(db=db)
+    total = sum(n for _, n in data["prov"])
+    jobs = []
+    if data["sample_ids"]:
+        jobs = (db.query(Position)
+                .filter(Position.id.in_(data["sample_ids"])).all())
+        jobs.sort(key=lambda j: -j.id)
+    prov_rows = "".join(
+        f"<tr><td data-l='省份'><a href='/zhaokao/{SLUG_BY_PROV.get(p, '')}'>{p}</a></td>"
+        f"<td data-l='三不限岗位数'>{n:,}</td>"
+        f"<td data-l='筛选'><a href='{_esc(_sbx_deep(p))}'>去筛选 →</a></td></tr>"
+        for p, n in data["prov"])
+    method = (
+        "<h2 style='font-size:16px;margin:20px 0 8px'>口径说明</h2>"
+        "<p class='desc'>本页「三不限」口径为：岗位专业要求含「不限」（含大类表述）"
+        "＋学历门槛为大专/中专或不限＋岗位特殊要求中未见工作经历/经验要求（通常应届可报）。"
+        "为站内字段自动筛选结果，个别岗位可能存在户籍、证书、性别等其他限制条件，"
+        "报考前请务必核对官方职位表原文。数据每日随采集管线刷新。</p>")
+    body = (f"<h1>三不限岗位雷达（不限专业·低学历门槛·应届可报）</h1>"
+            f"<p class='desc'>全国当前在库「三不限」体制内岗位共 {total:,} 个："
+            f"专业不限、学历门槛不高于大专/中专、且无工作经历要求，"
+            f"按省份聚合排序，每日随数据更新。</p>"
+            f"<a class='cta' href='{_esc(_sbx_deep())}'>在{BRAND}中筛选全部三不限岗位 →</a>"
+            f"<h2 style='font-size:16px;margin:16px 0 8px'>分省份统计</h2>"
+            f"<table><thead><tr><th>省份</th><th>三不限岗位数</th><th>筛选</th></tr></thead>"
+            f"<tbody>{prov_rows}</tbody></table>"
+            f"<h2 style='font-size:16px;margin:20px 0 8px'>最新三不限岗位样例</h2>"
+            f"<table><thead><tr><th>岗位</th><th>单位</th><th>地点</th><th>学历</th><th>报名时间</th></tr></thead>"
+            f"<tbody>{_job_rows(jobs)}</tbody></table>"
+            + method
+            + "<h2 style='font-size:16px;margin:20px 0 8px'>更多榜单</h2>"
+            "<div class='chips'><a href='/rank/shangan'>上岸难度参考榜</a>"
+            "<a href='/rank'>全部榜单</a><a href='/major'>按专业反查岗位</a></div>")
+    crumb = f"<a href='/'>{BRAND}</a> › <a href='/rank'>数据榜单</a> › 三不限岗位雷达"
+    jsonld = ("<script type=\"application/ld+json\">" + json.dumps({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": f"{BRAND} 三不限岗位雷达（分省）",
+        "itemListElement": [
+            {"@type": "ListItem", "position": i + 1,
+             "url": f"{SITE}/zhaokao/{SLUG_BY_PROV.get(p, '')}",
+             "name": f"{p}三不限岗位 {n:,} 个"}
+            for i, (p, n) in enumerate(data["prov"][:31])],
+    }, ensure_ascii=False) + "</script>")
+    return _page(f"三不限岗位雷达：不限专业不限学历应届可报（{total:,} 个在库） - {BRAND}",
+                 f"全国三不限体制内岗位 {total:,} 个：专业不限、大专/中专可报、无工作经历要求，按省份聚合每日更新，附最新岗位样例。",
+                 f"{SITE}/rank/sanbuxian", crumb, body, jsonld)
+
+
+@cache.cached("seo_rank_index", ttl=SEO_TTL, stale=True)
+def _render_rank_index(db: Session = None) -> str:
+    cells = _rank_stats(db=db)["cells"]
+    sbx_total = sum(n for _, n in _sbx_stats(db=db)["prov"])
+    body = (f"<h1>数据榜单：用在库数据帮你横向选岗</h1>"
+            f"<p class='desc'>{BRAND}基于全站在库岗位自动生成的数据榜单栏目，"
+            f"每日随采集管线刷新，帮你在报名前做横向参考。</p>"
+            f"<div class='chips'>"
+            f"<a href='/rank/shangan'>省份×系统 上岸难度参考榜<span class='n'>{len(cells)} 组</span></a>"
+            f"<a href='/rank/sanbuxian'>三不限岗位雷达<span class='n'>{sbx_total:,} 个</span></a></div>"
+            f"<a class='cta' href='/'>打开{BRAND}筛选全部岗位 →</a>"
+            "<h2 style='font-size:16px;margin:20px 0 8px'>更多栏目</h2>"
+            "<div class='chips'><a href='/zhaokao'>按省份浏览</a>"
+            "<a href='/major'>按专业反查</a><a href='/daily'>每日精选</a></div>")
+    crumb = f"<a href='/'>{BRAND}</a> › 数据榜单"
+    return _page(f"数据榜单（上岸难度参考·三不限雷达） - {BRAND}",
+                 "上岸雷达数据榜单：省份×系统上岸难度参考榜、三不限岗位雷达等基于在库岗位数据自动生成的选岗参考栏目，每日更新。",
+                 f"{SITE}/rank", crumb, body)
+
+
+@router.get("/rank", response_class=HTMLResponse)
+def rank_index(db: Session = Depends(get_db)):
+    return _html(_render_rank_index(db=db))
+
+
+@router.get("/rank/shangan", response_class=HTMLResponse)
+def rank_shangan(db: Session = Depends(get_db)):
+    return _html(_render_rank_shangan(db=db))
+
+
+@router.get("/rank/sanbuxian", response_class=HTMLResponse)
+def rank_sanbuxian(db: Session = Depends(get_db)):
+    return _html(_render_rank_sanbuxian(db=db))
+
+
 # IndexNow 站点验证密钥文件（https://www.indexnow.org/）：仅在配置了密钥时注册精确路径，
 # 避免动态 /{key}.txt 模式截获 robots.txt 等静态文件
 INDEXNOW_KEY = os.environ.get("INDEXNOW_KEY", "")
@@ -943,6 +1288,9 @@ def sitemap(db: Session = Depends(get_db)):
         url(f"{SITE}/zhaokao", "0.9"),
         url(f"{SITE}/daily", "0.9"),
         url(f"{SITE}/major", "0.9"),
+        url(f"{SITE}/rank", "0.8"),
+        url(f"{SITE}/rank/shangan", "0.8"),
+        url(f"{SITE}/rank/sanbuxian", "0.8"),
     ]
     try:
         for s in _major_live_slugs(db):

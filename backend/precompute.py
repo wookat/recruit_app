@@ -163,6 +163,8 @@ def warm_seo_pages(invalidate: bool = True) -> dict:
             "seo_index", "seo_prov", "seo_prov_et", "seo_city", "seo_city_et",
             "seo_daily_index", "seo_daily_detail", "seo_daily_days",
             "seo_major_counts", "seo_major_index", "seo_major",
+            "seo_rank_stats", "seo_sbx_stats", "seo_rank_index",
+            "seo_rank_shangan", "seo_rank_sanbuxian", "seo_feed",
         )
     warmed, errors = 0, 0
     failed_pages: list = []
@@ -192,6 +194,12 @@ def warm_seo_pages(invalidate: bool = True) -> dict:
         _try(seo._render_daily_index)
         for day in seo._recent_digest_days(db=db, limit=3):
             _try(seo._render_daily_detail, day)
+        _try(seo._rank_stats)  # 榜单原始指标（索引页/榜单页共用）
+        _try(seo._sbx_stats)
+        _try(seo._render_rank_index)
+        _try(seo._render_rank_shangan)
+        _try(seo._render_rank_sanbuxian)
+        _try(seo._render_feed)
         _try(seo._major_counts)  # 先算全量计数（索引页/sitemap/详情页枚举共用）
         _try(seo._render_major_index)
         try:

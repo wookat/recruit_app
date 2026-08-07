@@ -163,6 +163,7 @@ def submit_indexnow(self):
         pass  # 每日精选期号枚举失败不影响主体提交
     finally:
         db.close()
+    urls.extend((f"{SITE}/rank", f"{SITE}/rank/shangan", f"{SITE}/rank/sanbuxian"))
     urls.append(f"{SITE}/major")
     db = SessionLocal()
     try:

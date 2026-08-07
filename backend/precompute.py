@@ -25,16 +25,30 @@ FILTERS_KEY = cache._make_key("filters", (), {})
 
 
 def refresh_hot_caches() -> dict:
-    """重算 stats 与 filters 并以 24h TTL 写入 Redis，返回结果摘要。"""
+    """重算 stats 与 filters 并以 24h TTL 写入 Redis（含 7 天 stale 副本），返回结果摘要。
+
+    先 ANALYZE 主表：大批量数据修复后统计信息过期会让聚合回退慢计划。
+    """
     db = SessionLocal()
     try:
+        try:
+            for t in ("positions", "campus_jobs", "bianzhi_jobs"):
+                db.execute(sa_text(f"ANALYZE {t}"))
+            db.commit()
+        except Exception as exc:  # noqa: BLE001  ANALYZE 失败不影响重算
+            logger.warning("refresh_hot_caches ANALYZE 失败: %s: %s", type(exc).__name__, exc)
+            db.rollback()
         stats = crud.get_stats(db)
         filters = crud.get_filter_options(db)
     finally:
         db.close()
     r = cache.get_redis()
-    r.setex(STATS_KEY, HOT_TTL, json.dumps(stats, default=str))
-    r.setex(FILTERS_KEY, HOT_TTL, json.dumps(filters, default=str))
+    stats_payload = json.dumps(stats, default=str)
+    filters_payload = json.dumps(filters, default=str)
+    r.setex(STATS_KEY, HOT_TTL, stats_payload)
+    r.setex(f"stale:{STATS_KEY}", cache.STALE_TTL, stats_payload)
+    r.setex(FILTERS_KEY, HOT_TTL, filters_payload)
+    r.setex(f"stale:{FILTERS_KEY}", cache.STALE_TTL, filters_payload)
     return {"stats_total": stats.get("total"), "filters_keys": list(filters.keys())}
 
 

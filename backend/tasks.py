@@ -11,6 +11,8 @@ import requests
 import pandas as pd
 from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session
+from celery.schedules import crontab
+from celery.signals import task_prerun, worker_ready
 from celery_app import celery_app
 from database import SessionLocal, engine
 from ingest import ingest_positions_df
@@ -938,6 +940,84 @@ def warm_seo_pages():
 def refresh_freshness_caches():
     """每 10 分钟请求路径外重算 freshness/recent-updates 缓存，消除 TTL 到期冷重算。"""
     return precompute.refresh_freshness_caches()
+
+
+# ---------- beat 漏发补发（worker 重启窗口定时任务丢失根治） ----------
+
+BEAT_TZ = ZoneInfo("Asia/Shanghai")
+BEAT_MARKER_TTL = 48 * 3600
+# 重复执行会向用户重复推送的任务不自动补发
+CATCHUP_EXCLUDE = {"tasks.push_due_reminders", "tasks.push_saved_filter_news"}
+BEAT_CATCHUP_LOCK = "beat_catchup_lock"
+
+
+def _beat_marker(task_name: str, day: str) -> str:
+    return f"beat_ran:{day}:{task_name}"
+
+
+@task_prerun.connect
+def _mark_beat_run(sender=None, **kwargs):
+    """任意任务执行前打当日标记，供启动补发对照「今日应跑未跑」。"""
+    name = getattr(sender, "name", None)
+    if not name or not name.startswith("tasks."):
+        return
+    try:
+        day = datetime.now(BEAT_TZ).strftime("%Y-%m-%d")
+        get_redis().setex(_beat_marker(name, day), BEAT_MARKER_TTL, "1")
+    except Exception as exc:  # noqa: BLE001  标记失败不影响任务本身
+        logger.warning("beat 执行标记失败 %s: %s: %s", name, type(exc).__name__, exc)
+
+
+def _catchup_missed_beat_tasks() -> dict:
+    """对照 beat 排期表补发今日应跑未跑的定时任务（worker 重启窗口漏发兑底）。
+
+    只补低频（每日/每周）crontab 任务；高频任务下一个周期自然补上；
+    推送类任务不补发（避免向用户重复推送）。
+    """
+    now = datetime.now(BEAT_TZ)
+    day = now.strftime("%Y-%m-%d")
+    r = get_redis()
+    dispatched, skipped = [], []
+    for entry in celery_app.conf.beat_schedule.values():
+        task_name = entry["task"]
+        sched = entry["schedule"]
+        if not isinstance(sched, crontab):
+            continue
+        if len(sched.minute) > 1 or len(sched.hour) > 1:
+            continue  # 高频任务（如 */10）不参与补发
+        if (now.isoweekday() % 7) not in sched.day_of_week:
+            continue
+        if now.day not in sched.day_of_month or now.month not in sched.month_of_year:
+            continue
+        scheduled = now.replace(hour=min(sched.hour), minute=min(sched.minute),
+                                second=0, microsecond=0)
+        if scheduled > now:
+            continue  # 今日还未到点，beat 会正常触发
+        if task_name in CATCHUP_EXCLUDE:
+            skipped.append(task_name)
+            continue
+        if r.get(_beat_marker(task_name, day)):
+            continue  # 今日已跑过
+        celery_app.send_task(task_name)
+        dispatched.append(task_name)
+    logger.info("beat 补发检查：dispatched=%s skipped=%s", dispatched, skipped)
+    return {"date": day, "dispatched": dispatched, "skipped_push": skipped}
+
+
+@celery_app.task
+def catchup_beat_tasks():
+    """启动自检：对照排期表补发今日应跑未跑的任务。"""
+    return _catchup_missed_beat_tasks()
+
+
+@worker_ready.connect
+def _catchup_on_worker_start(sender=None, **kwargs):
+    """worker 启动后延迟 60s 下发补发自检（分布式锁防多 worker 重复）。"""
+    try:
+        if get_redis().set(BEAT_CATCHUP_LOCK, "1", nx=True, ex=300):
+            catchup_beat_tasks.apply_async(countdown=60)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("beat 补发自检下发失败: %s: %s", type(exc).__name__, exc)
 
 
 @celery_app.task

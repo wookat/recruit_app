@@ -521,7 +521,19 @@ def search_positions(
         # 先取列表（LIMIT page_size，冷路径也快），再带短超时计数：
         # 非默认筛选组合冷 count 可能扫大量堆页，超时则降级为
         # 「至少 N 条」部分计数 + 后台补算，避免请求级 20s 超时反复重试
-        items = q.order_by(*order_keys).offset((page - 1) * page_size).limit(page_size).all()
+        items = None
+        items_key = None
+        if force_bitmap:
+            # 专业/类别筛选的位图扫描冷盘仍要读大量堆页，id 列表入缓存
+            # 使重复组合（如 AI 一键匹配热门条件、total_partial 重试）免重算
+            items_key = f"items:pos:{sort}:{page}:{page_size}:" + filters.model_dump_json()
+            ids = _cache_get_json(items_key)
+            if ids is not None:
+                items = _positions_by_ids(db, ids)
+        if items is None:
+            items = q.order_by(*order_keys).offset((page - 1) * page_size).limit(page_size).all()
+            if items_key is not None:
+                _cache_set_json(items_key, 1800, [p.id for p in items])
         total = _cache_get_json(count_key)
         if total is None:
             try:

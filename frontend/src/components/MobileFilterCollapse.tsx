@@ -49,7 +49,7 @@ export function MobileFilterCollapse({ count, title = t("全部筛选"), onReset
           <Button
             variant="outline"
             size="sm"
-            className="h-11 gap-1.5"
+            className="h-10 gap-1.5"
             onClick={() => setOpen(true)}
           >
             <SlidersHorizontal className="h-4 w-4" />
@@ -58,9 +58,9 @@ export function MobileFilterCollapse({ count, title = t("全部筛选"), onReset
           <Sheet open={open} onOpenChange={(v) => !v && setOpen(false)}>
             <SheetContent
               side="bottom"
-              className="max-h-[85dvh] overflow-y-auto rounded-t-2xl px-4 pb-8 pt-4"
+              className="max-h-[85dvh] gap-2 overflow-y-auto rounded-t-2xl px-4 pb-8 pt-4"
             >
-              <SheetHeader className="px-0 pt-0">
+              <SheetHeader className="p-0">
                 <SheetTitle>{title}</SheetTitle>
               </SheetHeader>
               <div className="space-y-3">{children}</div>

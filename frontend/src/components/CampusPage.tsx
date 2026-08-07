@@ -898,7 +898,7 @@ export function CampusPage({
     (hideSeen ? 1 : 0)
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-sm:space-y-2.5">
       <NewSinceBanner
         board="campus"
         onApply={(since) => {
@@ -907,6 +907,7 @@ export function CampusPage({
         }}
       />
       {/* 预设视图 chips */}
+      <div className="relative">
       <div className="scrollbar-none -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
         <div className="flex w-max gap-2 sm:w-full sm:flex-wrap">
           {PRESETS.map((v) => (
@@ -914,7 +915,7 @@ export function CampusPage({
               key={v.key}
               onClick={() => selectPreset(v.key)}
               className={cn(
-                'min-h-11 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+                'min-h-9 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors',
                 preset === v.key
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-background text-foreground hover:bg-muted',
@@ -937,7 +938,7 @@ export function CampusPage({
                   key={p.key}
                   type="button"
                   onClick={() => onCrossPreset(p.key)}
-                  className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-md border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-9"
+                  className="inline-flex min-h-9 items-center gap-1 whitespace-nowrap rounded-md border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   {p.label}
                   <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -946,6 +947,11 @@ export function CampusPage({
             </>
           )}
         </div>
+      </div>
+      <div
+        className="pointer-events-none absolute inset-y-0 -right-4 w-8 bg-gradient-to-l from-background to-transparent sm:hidden"
+        aria-hidden
+      />
       </div>
 
       {crossTotal > 0 && onCrossOpen && (
@@ -1074,7 +1080,7 @@ export function CampusPage({
                   setSort({ key, dir: dir as 'asc' | 'desc' })
                 }
               }}
-              className="ml-1 h-10 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+              className="ml-1 h-10 rounded-md border border-border bg-background px-2 text-sm text-foreground max-md:hidden"
             >
               <option value="">{t("默认排序")}</option>
               <option value="updated:desc">{t("更新最新")}</option>
@@ -1158,11 +1164,34 @@ export function CampusPage({
         {cityFilterRow}
         {eduRow}
         {quickToggleRow}
+        {view === 'card' && (
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            {t("排序")}
+            <select
+              aria-label={t("排序")}
+              value={sort ? `${sort.key}:${sort.dir}` : ''}
+              onChange={(e) => {
+                const v = e.target.value
+                if (!v) setSort(null)
+                else {
+                  const [key, dir] = v.split(':')
+                  setSort({ key, dir: dir as 'asc' | 'desc' })
+                }
+              }}
+              className="h-10 flex-1 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+            >
+              <option value="">{t("默认排序")}</option>
+              <option value="updated:desc">{t("更新最新")}</option>
+              <option value="deadline:asc">{t("截止最近")}</option>
+              <option value="start:desc">{t("开始最新")}</option>
+            </select>
+          </label>
+        )}
       </MobileFilterCollapse>
 
       {/* 计数 + 导出 */}
       {data && (
-        <div ref={listTopRef} className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <div ref={listTopRef} className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground max-sm:text-xs">
           <span>
             {t("共")}{' '}<span className="font-medium text-foreground">{data.total.toLocaleString()}</span> {' '}{t("条")}{' '}</span>
           <FreshnessNote board="campus" />
@@ -1508,14 +1537,8 @@ export function CampusPage({
               )}
               onClick={() => setDetail(job)}
             >
-              <div className="flex flex-wrap items-center gap-2">
-                <BoardFavoriteButton
-                  className="-ml-2 -my-1"
-                  active={campusFavorites.some((f) => f.id === job.id)}
-                  onToggle={() => toggleCampusFavorite(job)}
-                />
-                <BoardCompareButton className="-ml-1 -my-1" item={{ board: 'campus', job }} />
-                <ShareTextButton className="-ml-1 -my-1" text={campusShareText(job)} />
+              <div className="flex items-start justify-between gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <span className="text-base font-semibold">
                   <Highlight text={job.company} query={keyword} />
                 </span>
@@ -1565,6 +1588,16 @@ export function CampusPage({
                 {job.updated_at_src && (
                   <span className="ml-auto text-xs text-muted-foreground">{t("更新：")}{normalizeDateStr(job.updated_at_src)}</span>
                 )}
+              </div>
+              <div className="flex shrink-0 items-center">
+                <BoardFavoriteButton
+                  className="-my-1"
+                  active={campusFavorites.some((f) => f.id === job.id)}
+                  onToggle={() => toggleCampusFavorite(job)}
+                />
+                <BoardCompareButton className="-my-1" item={{ board: 'campus', job }} />
+                <ShareTextButton className="-my-1" text={campusShareText(job)} />
+              </div>
               </div>
               {job.positions && (
                 <p className="mt-1.5 line-clamp-2 text-sm text-foreground/90">

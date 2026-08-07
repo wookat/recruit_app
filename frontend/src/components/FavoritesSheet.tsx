@@ -1117,8 +1117,8 @@ export function FavoritesSheet({ open, onClose, onOpenHistory, initialBoard }: P
   return (
     <>
       <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-        <SheetContent side="right" className="w-full max-w-2xl p-0 data-[side=right]:w-full sm:max-w-md">
-          <SheetHeader className="space-y-1.5 px-4 pt-6 sm:px-6">
+        <SheetContent side="right" className="w-full max-w-2xl gap-2 p-0 data-[side=right]:w-full sm:max-w-md">
+          <SheetHeader className="space-y-1.5 px-4 pb-2 pt-6 sm:px-6">
             <SheetTitle className="flex items-center gap-2 pr-8 text-lg">
               <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
               {t("我的收藏")}{' '}<Badge variant="secondary">{totalCount}</Badge>

@@ -152,7 +152,7 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
         <Button
           variant={active ? 'default' : 'outline'}
           size="sm"
-          className="min-h-11 gap-1.5 sm:min-h-8"
+          className="min-h-10 gap-1.5 sm:min-h-8"
           onClick={() => {
             if (active) return
             if (profileUsable(profile)) {
@@ -171,7 +171,7 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
           <Button
             variant="ghost"
             size="sm"
-            className="min-h-11 gap-1 text-xs text-muted-foreground sm:min-h-8"
+            className="min-h-10 gap-1 text-xs text-muted-foreground sm:min-h-8"
             onClick={() => {
               syncEditor(profile)
               setEditing(true)
@@ -184,7 +184,7 @@ export function MatchByProfileButton({ board, onOpenDetail }: Props) {
           <Button
             variant="ghost"
             size="sm"
-            className="min-h-11 gap-1 text-xs text-muted-foreground sm:min-h-8"
+            className="min-h-10 gap-1 text-xs text-muted-foreground sm:min-h-8"
             onClick={() => {
               setActive(false)
               setResult(null)

@@ -8,6 +8,7 @@ FastAPI 层输出一组可收录的路径型页面 /zhaokao/...，含 JobPosting
 import html
 import json
 import os
+import re
 from urllib.parse import quote
 from datetime import date, datetime, timedelta, timezone
 
@@ -131,6 +132,7 @@ a{color:#1d4ed8;text-decoration:underline}
 header.site{background:#fff;border-bottom:1px solid #e4e4e7}
 header.site .wrap{display:flex;align-items:center;gap:8px;padding-top:12px;padding-bottom:12px}
 .logo{font-weight:700;font-size:18px;color:#1d4ed8}
+.tagline{color:#52525b;font-size:13px}
 nav.crumb{font-size:13px;color:#52525b;margin:12px 0}
 h1{font-size:22px;margin:8px 0 4px}
 p.desc{color:#52525b;font-size:14px;margin-bottom:16px}
@@ -147,10 +149,16 @@ tr:last-child td{border-bottom:none}
 .cta{display:inline-block;background:#1d4ed8;color:#fff;border-radius:8px;
   padding:10px 18px;font-size:14px;margin:16px 0}
 .cta:hover{background:#1e40af;text-decoration:none}
+.cta.ghost{background:#fff;color:#1d4ed8;border:1px solid #1d4ed8}
+.cta.ghost:hover{background:#eff6ff}
+.ctas{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.ctas .cta{margin:0}
 footer{color:#52525b;font-size:12px;margin:24px 0 16px}
 @media(max-width:640px){
   .wrap{padding:12px}
   h1{font-size:19px}
+  .ctas{flex-direction:column;gap:8px}
+  .ctas .cta{text-align:center}
   table,thead,tbody,tr{display:block}
   thead{display:none}
   tr{border-bottom:1px solid #e4e4e7;padding:8px 0}
@@ -162,7 +170,7 @@ footer{color:#52525b;font-size:12px;margin:24px 0 16px}
   a{color:#60a5fa}
   header.site{background:#18181b;border-color:#27272a}
   .logo{color:#60a5fa}
-  nav.crumb,p.desc,footer,.chips a .n{color:#a1a1aa}
+  nav.crumb,p.desc,footer,.chips a .n,.tagline{color:#a1a1aa}
   .chips a{border-color:#3f3f46;background:#18181b;color:#d4d4d8}
   .chips a:hover{border-color:#60a5fa;color:#60a5fa}
   table{background:#18181b;border-color:#27272a}
@@ -170,6 +178,8 @@ footer{color:#52525b;font-size:12px;margin:24px 0 16px}
   th,td{border-color:#27272a}
   .cta{background:#2563eb;color:#fff}
   .cta:hover{background:#1d4ed8}
+  .cta.ghost{background:transparent;color:#60a5fa;border-color:#60a5fa}
+  .cta.ghost:hover{background:#1e3a8a33}
   @media(max-width:640px){tr{border-color:#27272a}}
 }
 """
@@ -196,7 +206,7 @@ def _page(title: str, desc: str, canonical: str, crumb: str, body: str,
 </head>
 <body>
 <header class="site"><div class="wrap"><a class="logo" href="/">{BRAND}</a>
-<span style="color:#52525b;font-size:13px">全国公务员·事业单位·校招岗位库</span></div></header>
+<span class="tagline">全国公务员·事业单位·校招岗位库</span></div></header>
 <main class="wrap">
 <nav class="crumb">{crumb}</nav>
 {body}
@@ -246,10 +256,33 @@ def _stats_para(scope: str, total: int, month_new: int, et_counts: dict) -> str:
     return f"<p class='desc'>{body}</p>"
 
 
+_CODE_PREFIX = re.compile(r"^\d{6,}[-—_·\s]*")
+
+
+def _display_title(j) -> str:
+    """岗位列展示标题：去掉原始职位代码前缀与和单位列重复的单位全名前缀。"""
+    title = (j.position_example or "").strip() or (j.exam_type_norm or j.job_type or "岗位")
+    t = _CODE_PREFIX.sub("", title).strip()
+    emp_key = re.sub(r"\s+", "", j.employer or "")
+    if emp_key:
+        i = k = 0
+        while i < len(t) and k < len(emp_key):
+            if t[i].isspace():
+                i += 1
+                continue
+            if t[i] != emp_key[k]:
+                break
+            i += 1
+            k += 1
+        if k == len(emp_key):
+            t = t[i:].strip(" -—·、:：")
+    return t or (j.exam_type_norm or j.job_type or "岗位")
+
+
 def _job_rows(jobs) -> str:
     rows = []
     for j in jobs:
-        title = (j.position_example or "").strip() or (j.exam_type_norm or j.job_type or "岗位")
+        title = _display_title(j)
         loc = "·".join(x for x in (j.city, j.district) if x) or (j.work_location or "")[:30]
         signup = (j.signup_time or "").strip()[:40] or "见公告"
         rows.append(
@@ -526,6 +559,43 @@ def _major_live_slugs(db: Session) -> list:
             if c["pos"] + c["campus"] + c["bianzhi"] > 0]
 
 
+def _dedup_sample_jobs(jobs, limit: int = 20) -> list:
+    """样例去重：同 岗位名+单位 的多地同岗只保留首条，并记录地区数。"""
+    seen: dict = {}
+    out = []
+    for j in jobs:
+        key = (_display_title(j), (j.employer or "").strip())
+        if key in seen:
+            locs = seen[key]
+            loc = "·".join(x for x in (j.city, j.district) if x) or (j.work_location or "")[:30]
+            if loc:
+                locs.add(loc)
+            continue
+        if len(out) >= limit:
+            continue
+        loc = "·".join(x for x in (j.city, j.district) if x) or (j.work_location or "")[:30]
+        seen[key] = {loc} if loc else set()
+        out.append((j, seen[key]))
+    return out
+
+
+def _dedup_job_rows(dedup_jobs) -> str:
+    rows = []
+    for j, locs in dedup_jobs:
+        title = _display_title(j)
+        n = len(locs)
+        first = sorted(locs)[0] if locs else ""
+        loc = f"{first} 等 {n} 个地区" if n > 1 else first
+        signup = (j.signup_time or "").strip()[:40] or "见公告"
+        rows.append(
+            f"<tr><td data-l='岗位'>{_esc(title[:60])}</td>"
+            f"<td data-l='单位'>{_esc((j.employer or '')[:40])}</td>"
+            f"<td data-l='地点'>{_esc(loc)}</td>"
+            f"<td data-l='学历'>{_esc(j.edu_level_norm or '不限')}</td>"
+            f"<td data-l='报名时间'>{_esc(signup)}</td></tr>")
+    return "".join(rows)
+
+
 def _major_jsonld(name: str, jobs) -> str:
     postings = []
     for j in jobs[:20]:
@@ -617,8 +687,9 @@ def _render_major(slug: str, db: Session = None) -> str:
         raise HTTPException(status_code=404)
     db.execute(text("SET statement_timeout = '120s'"))  # 样例查询仅预热路径承担
     jobs = (_major_positions(db, name)
-            .order_by(Position.id.desc()).limit(20).all())
+            .order_by(Position.id.desc()).limit(80).all())
     db.execute(text("SET statement_timeout = DEFAULT"))
+    samples = _dedup_sample_jobs(jobs, limit=20)
 
     top_prov = sorted(prov_counts.items(), key=lambda kv: -kv[1])[:10]
     prov_chips = "".join(
@@ -650,11 +721,12 @@ def _render_major(slug: str, db: Session = None) -> str:
                f"<div class='chips'>{et_chips}</div>" if et_chips else "")
             + (f"<h2 style='font-size:16px;margin:16px 0 8px'>省份分布 Top10</h2>"
                f"<div class='chips'>{prov_chips}</div>" if prov_chips else "")
-            + f"<a class='cta' href='{_esc(deep)}'>在{BRAND}中按「{name}」筛选体制内岗位 →</a> "
-            + (f"<a class='cta' style='background:#0f766e' href='{_esc(campus_deep)}'>查看{name}校招岗位 →</a>" if campus_total else "")
+            + f"<div class='ctas'><a class='cta' href='{_esc(deep)}'>在{BRAND}中按「{name}」筛选体制内岗位 →</a>"
+            + (f"<a class='cta ghost' href='{_esc(campus_deep)}'>查看{name}校招岗位 →</a>" if campus_total else "")
+            + "</div>"
             + f"<h2 style='font-size:16px;margin:16px 0 8px'>最新岗位样例</h2>"
             f"<table><thead><tr><th>岗位</th><th>单位</th><th>地点</th><th>学历</th><th>报名时间</th></tr></thead>"
-            f"<tbody>{_job_rows(jobs)}</tbody></table>"
+            f"<tbody>{_dedup_job_rows(samples)}</tbody></table>"
             + (f"<h2 style='font-size:16px;margin:20px 0 8px'>{disc}门类其他专业</h2>"
                f"<div class='chips'>{others}</div>" if others else "")
             + "<h2 style='font-size:16px;margin:20px 0 8px'>更多</h2>"
@@ -665,7 +737,7 @@ def _render_major(slug: str, db: Session = None) -> str:
     return _page(f"{name}专业能报哪些岗位（{total_all:,} 个在库） - {BRAND}",
                  f"{name}专业可报岗位 {total_all:,} 个：公务员、事业单位、编制与校招岗位数量、省份分布、考试类型与最新岗位样例，每日更新。",
                  f"{SITE}/major/{slug}", crumb, body,
-                 _major_jsonld(name, jobs))
+                 _major_jsonld(name, [j for j, _locs in samples]))
 
 
 @router.get("/major", response_class=HTMLResponse)
@@ -1189,8 +1261,11 @@ def _render_daily_detail(day_str: str, db: Session = None) -> str:
         f"<a href='/daily/{d}'>{int(d[5:7])}月{int(d[8:10])}日</a>"
         for d in days if d != day_str)
     total = len(campus) + len(bianzhi)
+    intro = re.sub(r"[（(]\s*全量筛选戳\s*\S+\s*[）)]", "", row.intro or "").strip().rstrip("：:")
+    intro_html = (f"{_esc(intro)}，全量岗位可在"
+                  f"<a href='/'>{BRAND}（jobs.zalize.com）</a>筛选：")
     body = (f"<h1>每日岗位精选 · {_fmt_day_cn(day)}</h1>"
-            f"<p class='desc'>{_esc(row.intro)}</p>"
+            f"<p class='desc'>{intro_html}</p>"
             + "".join(sections)
             + f"<a class='cta' href='/'>打开{BRAND}筛选与订阅全部岗位 →</a>"
             f"<h2 style='font-size:16px;margin:20px 0 8px'>近期精选</h2>"

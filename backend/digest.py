@@ -79,7 +79,7 @@ def pick_digest(db: Session, day: date):
 
 
 def intro_text(day: date) -> str:
-    return f"{day.strftime('%Y年%m月%d日')}上岸雷达新收录岗位精选（全量筛选戳 {SITE} ）："
+    return f"{day.strftime('%Y年%m月%d日')}上岸雷达新收录岗位精选："
 
 
 def save_digest(db: Session, day: date | None = None) -> dict:
@@ -105,7 +105,7 @@ def render_digest(db: Session, day: date | None = None) -> str:
     lines = [
         f"# 每日岗位精选 · {day.strftime('%Y年%m月%d日')}",
         "",
-        f"今天上岸雷达新收录岗位精选（全量筛选戳 {SITE} ）：",
+        f"今天上岸雷达新收录岗位精选（全量岗位见 {SITE} ）：",
         "",
     ]
     if campus:

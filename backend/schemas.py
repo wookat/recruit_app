@@ -180,12 +180,15 @@ class PvIn(BaseModel):
     board: str  # positions / campus / bianzhi / updates / calendar ...
     page: Optional[str] = None
     sid: Optional[str] = None  # sessionStorage 随机 id（不跨天），用于独立会话估算
+    qa: Optional[bool] = None  # 显式 QA/内部流量标记（?qa=1 机制）
 
 
 class JobViewIn(BaseModel):
     """岗位级浏览上报体（详情面板打开时计数）。"""
     board: str  # positions / campus / bianzhi
     job_id: int
+    sid: Optional[str] = None  # 与 PV 同一 sessionStorage sid，漏斗可测
+    qa: Optional[bool] = None  # 显式 QA/内部流量标记
 
 
 class FeedbackIn(BaseModel):

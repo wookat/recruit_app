@@ -381,10 +381,11 @@ def health_summary(db: Session = Depends(get_db)):
             {"date": str(row.d), "pv": int(row.pv), "sessions": int(row.sessions)}
             for row in db.execute(text("""
                 SELECT p.day AS d, sum(p.pv) AS pv,
-                       coalesce((SELECT count(*) FROM metrics_sessions_daily s WHERE s.day = p.day), 0) AS sessions
+                       coalesce((SELECT count(*) FROM metrics_sessions_daily s
+                                 WHERE s.day = p.day AND NOT s.internal), 0) AS sessions
                 FROM metrics_pv_daily p
                 WHERE p.day >= CURRENT_DATE - interval '13 days'
-                  AND p.board <> 'event'
+                  AND p.board <> 'event' AND NOT p.internal
                 GROUP BY 1 ORDER BY 1
             """)).all()
         ]
@@ -399,6 +400,7 @@ def health_summary(db: Session = Depends(get_db)):
             for row in db.execute(text("""
                 SELECT page, sum(pv) AS n FROM metrics_pv_daily
                 WHERE board = 'event' AND day >= CURRENT_DATE - interval '13 days'
+                  AND NOT internal
                 GROUP BY page
             """)).all()
         }

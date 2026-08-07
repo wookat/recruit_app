@@ -71,6 +71,7 @@ INVALID_SQL = text("""
         WHEN (employer IS NULL OR employer = '') AND (position_example IS NULL OR position_example = '')
             THEN 'no_employer_no_position'
         WHEN year IS NULL OR year < 2000 OR year > 2100 THEN 'bad_year'
+        WHEN exam_type LIKE '%教育部国家大学生就业服务平台%' THEN 'campus_source'
         ELSE NULL END
     WHERE invalid_reason IS NULL
 """)

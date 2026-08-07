@@ -99,7 +99,12 @@ export const PositionCardGrid = memo(function PositionCardGrid({ data: rawData, 
   return (
     <div className={loading ? 'space-y-3 opacity-50 transition-opacity' : 'space-y-3'}>
       {(collapsedGroups > 0 || expandedGroups.size > 0) && (
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <div
+          className={
+            'flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground' +
+            (expandedGroups.size === 0 ? ' max-sm:[@media(max-height:700px)]:hidden' : '')
+          }
+        >
           {collapsedGroups > 0 ? (
             <span>{tt`本页已折叠 ${collapsedGroups} 组同岗多地区岗位（${hiddenRows} 条），总数按未折叠口径统计`}</span>
           ) : (

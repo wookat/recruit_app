@@ -39,6 +39,9 @@ BTREE_INDEXES = [
 
 INDEXES = [
     ("idx_pos_search_text", "positions", "search_text"),
+    # 专业筛选（AI 一键匹配）OR 到 raw_major：undergrad/grad 已有 trgm 索引
+    # （idx_pos_search），raw_major 缺索引使整个 OR 退化为堆过滤
+    ("idx_pos_raw_major_trgm", "positions", "raw_major"),
     ("idx_campus_company_trgm", "campus_jobs", "company"),
     ("idx_campus_positions_trgm", "campus_jobs", "positions"),
     ("idx_campus_industry_trgm", "campus_jobs", "industry"),

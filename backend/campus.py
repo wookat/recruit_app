@@ -74,6 +74,7 @@ CAMPUS_EXPORT_COLUMNS = [
 
 def apply_campus_filters(q, f: dict):
     """列表/导出共用的筛选链；f 为列表接口同名参数的 dict。"""
+    q = q.filter(CampusJob.invalid_reason == None)  # noqa: E711  软删行不展示
     if f.get("hide_expired"):
         q = q.filter(or_(CampusJob.deadline_date == None,  # noqa: E711
                          CampusJob.deadline_date >= date.today()))
@@ -251,7 +252,8 @@ def campus_counts(db: Session = Depends(get_db)):
     """企业类型/批次计数（前端 chips 显示，1 小时缓存，失败回退旧缓存）。"""
     ctypes = (
         db.query(CampusJob.company_type, func.count())
-        .filter(CampusJob.company_type != None, CampusJob.company_type != "")  # noqa: E711
+        .filter(CampusJob.invalid_reason == None,  # noqa: E711
+                CampusJob.company_type != None, CampusJob.company_type != "")  # noqa: E711
         .group_by(CampusJob.company_type)
         .all()
     )
@@ -303,7 +305,8 @@ def campus_filter_options(db: Session = Depends(get_db)):
     def distinct(col, limit=100):
         rows = (
             db.query(col, func.count().label("n"))
-            .filter(col != None, col != "")  # noqa: E711
+            .filter(CampusJob.invalid_reason == None,  # noqa: E711
+                    col != None, col != "")  # noqa: E711
             .group_by(col)
             .order_by(func.count().desc())
             .limit(limit)

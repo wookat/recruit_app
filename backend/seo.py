@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 import cache
 import topic_pages
+from board_scope import TIZHINEI_STRICT_JOB_TYPES
 from database import get_db
 from major_pages import MAJOR_BY_SLUG, MAJOR_DISCIPLINES, resolve_major_alias
 from models import BianzhiJob, CampusJob, DailyDigest, Position
@@ -155,6 +156,8 @@ tr:last-child td{border-bottom:none}
 .ctas{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
 .ctas .cta{margin:0}
 footer{color:#52525b;font-size:12px;margin:24px 0 16px}
+.badge{display:inline-block;background:#f4f4f5;color:#71717a;border:1px solid #e4e4e7;
+  border-radius:4px;font-size:11px;padding:1px 6px;margin-left:6px;white-space:nowrap}
 @media(max-width:640px){
   .wrap{padding:12px}
   h1{font-size:19px}
@@ -181,6 +184,7 @@ footer{color:#52525b;font-size:12px;margin:24px 0 16px}
   .cta:hover{background:#1d4ed8}
   .cta.ghost{background:transparent;color:#60a5fa;border-color:#60a5fa}
   .cta.ghost:hover{background:#1e3a8a33}
+  .badge{background:#27272a;color:#a1a1aa;border-color:#3f3f46}
   @media(max-width:640px){tr{border-color:#27272a}}
 }
 """
@@ -190,9 +194,24 @@ def _esc(v) -> str:
     return html.escape(str(v or ""))
 
 
+# 指向 SPA 的站内链接（href='/' 或 href='/?…'）；内容页全中文，进站时追加
+# lang=zh 保持语言连贯（SPA 对 URL 参数仅当次生效，不覆盖用户已选语言）
+RE_SPA_HREF = re.compile(r"href=(['\"])/(\?[^'\"]*)?\1")
+
+
+def _spa_lang_zh(page: str) -> str:
+    def rep(m):
+        q, qs = m.group(1), m.group(2) or ""
+        if "lang=" in qs:
+            return m.group(0)
+        sep = ("&amp;" if "&amp;" in qs else "&") if qs else "?"
+        return f"href={q}/{qs}{sep}lang=zh{q}"
+    return RE_SPA_HREF.sub(rep, page)
+
+
 def _page(title: str, desc: str, canonical: str, crumb: str, body: str,
           jsonld: str = "") -> str:
-    return f"""<!DOCTYPE html>
+    return _spa_lang_zh(f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -214,7 +233,7 @@ def _page(title: str, desc: str, canonical: str, crumb: str, body: str,
 <footer>数据来自公开招考公告与官方渠道聚合，实际以官方公告为准。{BRAND} · <a href="/">jobs.zalize.com</a></footer>
 </main>
 </body>
-</html>"""
+</html>""")
 
 
 def render_404() -> str:
@@ -779,6 +798,15 @@ def _week_ago() -> datetime:
     return datetime.now(timezone.utc) - timedelta(days=7)
 
 
+# 严格「体制内」口径：positions 中也含少量企业行（央企/国企、银行、其他企业），
+# 「体制内」专题与样例只统计公务员/事业编/军文/选调等编制类岗位
+TIZHINEI_JOB_TYPES = TIZHINEI_STRICT_JOB_TYPES
+
+
+def _topic_tizhinei():
+    return Position.job_type.in_(TIZHINEI_JOB_TYPES)
+
+
 def _topic_unrestricted():
     return or_(Position.undergrad_major.ilike("%不限%"),
                Position.grad_major.ilike("%不限%"),
@@ -795,12 +823,13 @@ def _topic_counts(db: Session = None) -> dict:
     # 体制内：省×学历×考试类型 一次分组（edu 专题的 n/考试类型分布）
     pos_rows = (_active(db.query(Position.province, Position.edu_level_norm,
                                  Position.exam_type_norm, func.count()))
+                .filter(_topic_tizhinei())
                 .group_by(Position.province, Position.edu_level_norm,
                           Position.exam_type_norm).all())
     pos_week = dict(
         _active(db.query(func.concat(Position.province, "|", Position.edu_level_norm),
                          func.count()))
-        .filter(Position.created_at >= week_ago)
+        .filter(_topic_tizhinei(), Position.created_at >= week_ago)
         .group_by(Position.province, Position.edu_level_norm).all())
     edu_agg: dict = {}
     for prov, edu, et, n in pos_rows:
@@ -813,11 +842,12 @@ def _topic_counts(db: Session = None) -> dict:
 
     # 体制内不限专业：省×学历 一次分组（buxian 专题的 n/学历分布）
     bx_rows = (_active(db.query(Position.province, Position.edu_level_norm, func.count()))
-               .filter(_topic_unrestricted())
+               .filter(_topic_tizhinei(), _topic_unrestricted())
                .group_by(Position.province, Position.edu_level_norm).all())
     bx_week = dict(
         _active(db.query(Position.province, func.count()))
-        .filter(_topic_unrestricted(), Position.created_at >= week_ago)
+        .filter(_topic_tizhinei(), _topic_unrestricted(),
+                Position.created_at >= week_ago)
         .group_by(Position.province).all())
     bx_agg: dict = {}
     for prov, edu, n in bx_rows:
@@ -863,7 +893,8 @@ def _topic_counts(db: Session = None) -> dict:
             out[slug] = {"n": c["n"], "week": bz_week.get((kind, t["prov"]), 0),
                          "dist": c["dist"]}
         else:  # campus_city / campus_soe：城市子串命中，逐城市小表查询
-            q = db.query(CampusJob).filter(CampusJob.locations.ilike(f"%{t['city']}%"))
+            q = db.query(CampusJob).filter(CampusJob.invalid_reason == None,  # noqa: E711
+                                           CampusJob.locations.ilike(f"%{t['city']}%"))
             if kind == "campus_soe":
                 q = q.filter(CampusJob.company_type.in_(topic_pages.SOE_TYPES))
             n = q.count()
@@ -901,12 +932,14 @@ def _topic_live_slugs(db: Session) -> list:
 def _topic_samples(db: Session, t: dict, limit: int = 20):
     kind = t["kind"]
     if kind in ("buxian", "edu"):
-        q = _active(db.query(Position)).filter(Position.province == t["prov"])
+        q = _active(db.query(Position)).filter(Position.province == t["prov"],
+                                               _topic_tizhinei())
         q = (q.filter(_topic_unrestricted()) if kind == "buxian"
              else q.filter(Position.edu_level_norm == t["edu"]))
         return q.order_by(Position.id.desc()).limit(limit).all()
     if kind in ("campus_city", "campus_soe"):
-        q = db.query(CampusJob).filter(CampusJob.locations.ilike(f"%{t['city']}%"))
+        q = db.query(CampusJob).filter(CampusJob.invalid_reason == None,  # noqa: E711
+                                       CampusJob.locations.ilike(f"%{t['city']}%"))
         if kind == "campus_soe":
             q = q.filter(CampusJob.company_type.in_(topic_pages.SOE_TYPES))
         return q.order_by(CampusJob.id.desc()).limit(limit).all()
@@ -1014,11 +1047,33 @@ def _render_topic_index(db: Session = None) -> str:
                 f"<h2 style='font-size:16px;margin:16px 0 8px'>{label}</h2>"
                 f"<div class='chips'>{chips}</div>")
     grand = sum(counts.values())
+    # 按省份/城市分组：方便「找自己省」的浏览者（组内按岗位数排序不利于按地区扫读）
+    by_region: dict = {}
+    for slug, n in live:
+        region = TOPIC_CANDIDATES[slug].get("prov") or TOPIC_CANDIDATES[slug].get("city")
+        if region:
+            by_region.setdefault(region, []).append((slug, n))
+    region_order = [p for _, p in PROVINCES] + [c for _, c in topic_pages.TOPIC_CITIES]
+    region_rows = []
+    for region in region_order:
+        items = by_region.get(region)
+        if not items:
+            continue
+        chips = "".join(
+            f"<a href='/topic/{s}'>{TOPIC_CANDIDATES[s]['name']}"
+            f"<span class='n'>{n:,}</span></a>" for s, n in items)
+        region_rows.append(
+            f"<h3 style='font-size:14px;margin:12px 0 4px'>{region}</h3>"
+            f"<div class='chips'>{chips}</div>")
+    region_section = (
+        "<h2 style='font-size:16px;margin:20px 0 8px'>按省份/城市找专题</h2>"
+        + "".join(region_rows)) if region_rows else ""
     body = (f"<h1>热门筛选组合专题：按需求一键直达岗位</h1>"
             f"<p class='desc'>把最常见的找岗需求做成专题页：不限专业可报、大专/硕士学历门槛、"
             f"热门城市应届校招、央国企校招、教师/医疗编制等，共 {len(live)} 个专题、"
             f"累计 {grand:,} 个在库岗位，点击专题查看岗位统计、最新样例并一键回站内筛选，每日更新。</p>"
             + "".join(sections)
+            + region_section
             + f"<a class='cta' href='/'>打开{BRAND}筛选全部岗位 →</a>")
     crumb = f"<a href='/'>{BRAND}</a> › 热门专题"
     jsonld = ("<script type=\"application/ld+json\">" + json.dumps({
@@ -1065,6 +1120,8 @@ def _render_topic(slug: str, db: Session = None) -> str:
             f"<h2 style='font-size:16px;margin:16px 0 8px'>最新岗位样例</h2>"
             f"<table><thead>{_TOPIC_TABLE_HEADS[t['board']]}</thead>"
             f"<tbody>{_topic_rows(t, jobs)}</tbody></table>"
+            + f"<p class='desc' style='margin-top:12px'>看中的岗位可在站内收藏、设截止提醒："
+              f"<a href='{_esc(t['deep'])}'>打开该筛选并加星收藏 →</a></p>"
             + (f"<h2 style='font-size:16px;margin:20px 0 8px'>同类专题</h2>"
                f"<div class='chips'>{kind_sibs}</div>" if kind_sibs else "")
             + "<h2 style='font-size:16px;margin:20px 0 8px'>更多</h2>"
@@ -1382,6 +1439,8 @@ def feed(db: Session = Depends(get_db)):
 
 # 榜单样本下限：省×系统组合岗位数低于该值不参与打分（样本过小分数不稳）
 RANK_MIN_CELL = 50
+# 小样本阈值：低于该值的组合分数区分度差，榜单中注明「样本少」并排在足样本组之后
+RANK_SMALL_CELL = 300
 # 竞争热度（近7日浏览）参与打分的全站样本下限：浏览数据不足时退化为两因子口径
 RANK_MIN_VIEWS = 200
 
@@ -1451,7 +1510,8 @@ def _rank_stats(db: Session = None) -> dict:
         else:
             score = 0.5 * (100 - supply_pct) + 0.5 * (100 - unlim_pct)
         c["score"] = round(score)
-    cells.sort(key=lambda c: (-c["score"], c["prov"], c["et"]))
+    # 足样本组（≥RANK_SMALL_CELL）优先，小样本组排在后段，避免榜首被小样本 100 分扎堆
+    cells.sort(key=lambda c: (c["total"] < RANK_SMALL_CELL, -c["score"], c["prov"], c["et"]))
     return {"cells": cells, "heat_used": heat_used,
             "day": date.today().isoformat()}
 
@@ -1479,32 +1539,39 @@ def _render_rank_shangan(db: Session = None) -> str:
         et_slug = SLUG_BY_ET.get(c["et"], "")
         short = ET_BY_SLUG.get(et_slug, (c["et"], c["et"]))[1]
         deep = f"/?province={quote(c['prov'])}&exam_type_norm={quote(c['et'])}"
+        small = ("<span class='badge'>样本少，仅供参考</span>"
+                 if c["total"] < RANK_SMALL_CELL else "")
         rows_html.append(
             f"<tr><td data-l='排名'>{i + 1}</td>"
             f"<td data-l='省份×系统'><a href='/zhaokao/{prov_slug}/{et_slug}'>{c['prov']}·{short}</a></td>"
-            f"<td data-l='难度参考分'>{c['score']}（{_rank_level(c['score'])}）</td>"
+            f"<td data-l='难度参考分'>{c['score']}（{_rank_level(c['score'])}）{small}</td>"
             f"<td data-l='在库岗位'>{c['total']:,}</td>"
             f"<td data-l='不限专业占比'>{c['unlim_ratio']}%</td>"
             f"<td data-l='筛选'><a href='{_esc(deep)}'>去筛选 →</a></td></tr>")
     method = (
-        "<h2 style='font-size:16px;margin:20px 0 8px'>口径说明</h2>"
+        "<h2 id='koujing' style='font-size:16px;margin:20px 0 8px'>口径说明</h2>"
         "<p class='desc'>难度参考分为 0-100 的<strong>相对参考值</strong>，仅基于本站可计算指标构造："
         + ("站内竞争热度分位（近 7 日同组岗位人均浏览，权重 0.4）、岗位供给量分位（权重 0.3，供给越少分越高）、"
            "不限专业岗位占比分位（权重 0.3，占比越低分越高）。"
            if heat_used else
            "岗位供给量分位（权重 0.5，供给越少分越高）与不限专业岗位占比分位（权重 0.5，占比越低分越高）；"
            "当前浏览样本不足，竞争热度因子未启用。")
-        + f"样本下限：单组岗位数 ≥{RANK_MIN_CELL} 才参与打分。"
+        + f"样本下限：单组岗位数 ≥{RANK_MIN_CELL} 才参与打分；"
+          f"岗位数 <{RANK_SMALL_CELL} 的组合分数区分度有限，已标注「样本少」并排在足样本组之后。"
           "该分数<strong>不代表</strong>真实报录比或考试难度，不同省份招考节奏差异也会影响供给量，"
           "仅供选岗时横向参考，请以官方公告与历年报录数据为准。</p>")
     body = (f"<h1>省份×系统 上岸难度参考榜</h1>"
             f"<p class='desc'>基于{BRAND}在库 {sum(c['total'] for c in cells):,} 个体制内岗位，"
             f"对 {len(cells)} 个「省份×招考系统」组合按站内可算指标构造难度参考分并排序，"
             f"分数越高代表相对竞争压力可能越大，每日随数据更新。</p>"
+            f"<p class='desc'>分数为<strong>相对参考值</strong>（基于岗位供给量与不限专业占比等站内指标），"
+            f"<strong>不代表</strong>真实报录比或考试难度；岗位数少的组合已标注「样本少」并排在后段。"
+            f"<a href='#koujing'>查看完整口径说明 ↓</a></p>"
             f"<table><thead><tr><th>排名</th><th>省份×系统</th><th>难度参考分</th>"
             f"<th>在库岗位</th><th>不限专业占比</th><th>筛选</th></tr></thead>"
             f"<tbody>{''.join(rows_html)}</tbody></table>"
             + method
+            + "<p class='desc'>看中某个组合？点行内「去筛选」进站后可加星收藏岗位、设置截止提醒。</p>"
             + f"<a class='cta' href='/'>打开{BRAND}筛选全部岗位 →</a>"
             "<h2 style='font-size:16px;margin:20px 0 8px'>更多榜单</h2>"
             "<div class='chips'><a href='/rank/sanbuxian'>三不限岗位雷达</a>"
@@ -1528,6 +1595,7 @@ def _render_rank_shangan(db: Session = None) -> str:
 # 三不限口径：专业不限 + 学历低门槛（大专/中专或不限）+ 无工作经历要求（应届可报）
 _SBX_WHERE = """
     dup_of_id IS NULL AND invalid_reason IS NULL
+    AND job_type IN ('公务员', '事业单位/事业编', '军队文职', '选调生', '教师', '三支一扶')
     AND (raw_major ILIKE '%不限%' OR undergrad_major ILIKE '%不限%'
          OR grad_major ILIKE '%不限%')
     AND (edu_level_norm IS NULL OR edu_level_norm IN ('大专/中专', '其他/不限'))
@@ -1594,6 +1662,8 @@ def _render_rank_sanbuxian(db: Session = None) -> str:
             f"<table><thead><tr><th>岗位</th><th>单位</th><th>地点</th><th>学历</th><th>报名时间</th></tr></thead>"
             f"<tbody>{_job_rows(jobs)}</tbody></table>"
             + method
+            + f"<p class='desc'>看中的岗位可在站内收藏、设截止提醒："
+              f"<a href='{_esc(_sbx_deep())}'>打开三不限筛选并加星收藏 →</a></p>"
             + "<h2 style='font-size:16px;margin:20px 0 8px'>更多榜单</h2>"
             "<div class='chips'><a href='/rank/shangan'>上岸难度参考榜</a>"
             "<a href='/rank'>全部榜单</a><a href='/major'>按专业反查岗位</a></div>")

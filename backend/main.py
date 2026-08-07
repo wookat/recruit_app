@@ -103,7 +103,7 @@ async def slow_request_log(request: Request, call_next):
 
 
 # SSR SEO 页路径前缀：无效路径 404 时返回品牌化 HTML（含返回首页链接），不裸 JSON
-SSR_404_PREFIXES = ("/zhaokao", "/daily", "/major")
+SSR_404_PREFIXES = ("/zhaokao", "/daily", "/major", "/topic")
 
 
 @app.exception_handler(StarletteHTTPException)

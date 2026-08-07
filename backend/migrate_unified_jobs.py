@@ -8,6 +8,7 @@
 """
 from sqlalchemy import text
 
+from board_scope import TIZHINEI_BOARD_JOB_TYPES
 from database import engine
 from normalizer import CITY_TO_PROVINCE
 
@@ -36,6 +37,9 @@ LOC_ARR_SQL = (
 #: 去掉尾缀「市/省/自治区」后的单个地名词
 CLEAN_LOC_SQL = "nullif(regexp_replace(coalesce({tok}, ''), '(市|省|自治区)$', ''), '')"
 
+#: 体制内板块 job_type 白名单（排除 positions 内纯企业招聘行：其他企业）
+TIZHINEI_JOB_TYPE_SQL = ", ".join(f"'{t}'" for t in TIZHINEI_BOARD_JOB_TYPES)
+
 CREATE_VIEW = f"""
 CREATE MATERIALIZED VIEW unified_jobs AS
 SELECT
@@ -59,6 +63,7 @@ SELECT
   p.created_at AS created_at
 FROM positions p
 WHERE p.dup_of_id IS NULL AND p.invalid_reason IS NULL
+  AND p.job_type IN ({TIZHINEI_JOB_TYPE_SQL})
 UNION ALL
 SELECT
   '校招'::text,
@@ -93,6 +98,7 @@ LEFT JOIN LATERAL (
   LEFT JOIN unified_city_province u1 ON u1.city = {CLEAN_LOC_SQL.format(tok='la.a[1]')}
   LEFT JOIN unified_city_province u2 ON u2.city = {CLEAN_LOC_SQL.format(tok='la.a[2]')}
 ) ucp ON true
+WHERE c.invalid_reason IS NULL
 UNION ALL
 SELECT
   '编制'::text,
@@ -171,6 +177,9 @@ def main():
         # 建视图/索引是长事务，不受全局 20s 语句超时限制
         conn.execute(text("SET statement_timeout = 0"))
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+        conn.execute(text(
+            "ALTER TABLE campus_jobs ADD COLUMN IF NOT EXISTS invalid_reason varchar(50)"
+        ))
         conn.commit()
         ensure_city_province(conn)
         exists = conn.execute(text(
@@ -187,6 +196,16 @@ def main():
                 conn.execute(text("DROP MATERIALIZED VIEW unified_jobs"))
                 conn.commit()
                 exists = None
+            else:
+                definition = conn.execute(text(
+                    "SELECT definition FROM pg_matviews WHERE matviewname = 'unified_jobs'"
+                )).scalar() or ""
+                # R279：体制内分支需含 job_type 白名单，校招分支需排除软删行
+                if "央企/国企" not in definition or "c.invalid_reason" not in definition:
+                    print("unified_jobs 缺少体制内 job_type 白名单/校招软删过滤，重建 ...")
+                    conn.execute(text("DROP MATERIALIZED VIEW unified_jobs"))
+                    conn.commit()
+                    exists = None
         if exists:
             print("unified_jobs 已存在，跳过创建（如需重建请先 DROP MATERIALIZED VIEW unified_jobs）")
         else:

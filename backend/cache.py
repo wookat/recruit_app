@@ -7,6 +7,7 @@ from hashlib import md5
 from typing import Any, Callable, Optional
 
 import redis
+from sqlalchemy import text as sa_text
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +101,7 @@ def _revalidate_bg(func: Callable[..., Any], args, kwargs, key: str, ttl: int, l
     r = get_redis()
     db = SessionLocal()
     try:
+        db.execute(sa_text("SET statement_timeout = '120s'"))  # 冷聚合由后台承担，放宽默认 20s
         kw = dict(kwargs)
         if "db" in kw:
             kw["db"] = db

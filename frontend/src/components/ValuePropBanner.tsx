@@ -64,7 +64,7 @@ export function ValuePropBanner({
   }
 
   return (
-    <section className="relative animate-fade-in-up rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-3 py-2 sm:mb-4 sm:p-4">
+    <section className="relative animate-fade-in-up rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-3 py-1.5 sm:mb-4 sm:p-4">
       <button
         type="button"
         aria-label={t("关闭价值主张条")}

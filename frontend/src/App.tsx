@@ -539,7 +539,7 @@ export default function App() {
   return (
     <div className="flex min-h-screen flex-col bg-muted/30 font-sans">
       <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 max-sm:py-2">
           <div className="flex min-w-0 items-center gap-2.5">
             <BrandMark className="h-9 w-9 shrink-0" />
             <div className="flex min-w-0 flex-col leading-none">
@@ -552,7 +552,7 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
-            className="relative min-h-11 gap-1.5 px-2 sm:min-h-8"
+            className="relative min-h-10 gap-1.5 px-2 sm:min-h-8"
             aria-label={t("全站搜索")}
             title={t("全站搜索（Ctrl K）")}
             onClick={() => setSearchOpen(true)}
@@ -568,7 +568,7 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
-            className="min-h-11 min-w-11 gap-1.5 px-2 sm:min-h-8 sm:min-w-0"
+            className="min-h-10 min-w-10 gap-1.5 px-2 sm:min-h-8 sm:min-w-0"
             onClick={cycleTheme}
             title={theme === 'system' ? t("主题：跟随系统") : theme === 'dark' ? t("主题：暗色") : t("主题：亮色")}
             aria-label={t("切换主题")}
@@ -579,7 +579,7 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
-            className="min-h-11 gap-1 px-2 sm:min-h-8"
+            className="min-h-10 gap-1 px-2 sm:min-h-8"
             onClick={() => setLang(getLang() === 'en' ? 'zh' : 'en')}
             title={getLang() === 'en' ? '切换到中文' : 'Switch to English'}
             aria-label={getLang() === 'en' ? '切换到中文' : 'Switch to English'}
@@ -590,7 +590,7 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
-            className={`min-h-11 gap-1.5 px-2 sm:min-h-8 ${section.mode === 'all' ? 'text-primary' : ''}`}
+            className={`min-h-10 gap-1.5 px-2 sm:min-h-8 ${section.mode === 'all' ? 'text-primary' : ''}`}
             aria-label={t("全部岗位")}
             title={t("体制内/校招/编制合并检索")}
             onClick={() => {
@@ -604,7 +604,7 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
-            className={`hidden min-h-11 gap-1.5 px-2 sm:min-h-8 md:inline-flex ${section.mode === 'updates' ? 'text-primary' : ''}`}
+            className={`hidden min-h-10 gap-1.5 px-2 sm:min-h-8 md:inline-flex ${section.mode === 'updates' ? 'text-primary' : ''}`}
             aria-label={t("今日更新")}
             title={t("近 7 天新增岗位")}
             onClick={() => {
@@ -618,7 +618,7 @@ export default function App() {
           <Button
             variant="ghost"
             size="sm"
-            className={`hidden min-h-11 gap-1.5 px-2 sm:min-h-8 md:inline-flex ${section.mode === 'calendar' ? 'text-primary' : ''}`}
+            className={`hidden min-h-10 gap-1.5 px-2 sm:min-h-8 md:inline-flex ${section.mode === 'calendar' ? 'text-primary' : ''}`}
             aria-label={t("截止日历")}
             title={t("截止日历")}
             onClick={() => {
@@ -629,13 +629,13 @@ export default function App() {
             <CalendarDays className="h-4 w-4" />
             <span className="hidden sm:inline">{t("日历")}</span>
           </Button>
-          <Button variant="ghost" size="sm" className="hidden min-h-11 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setGuideOpen(true)}>
+          <Button variant="ghost" size="sm" className="hidden min-h-10 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setGuideOpen(true)}>
             <BookOpen className="h-4 w-4" />
             {t("求职攻略")}{' '}</Button>
           <Button
             variant="ghost"
             size="sm"
-            className="min-h-11 gap-1.5 px-2 sm:min-h-8"
+            className="min-h-10 gap-1.5 px-2 sm:min-h-8"
             aria-label={t("最近浏览")}
             title={t("最近浏览")}
             onClick={() => setHistoryOpen(true)}
@@ -643,7 +643,7 @@ export default function App() {
             <History className="h-4 w-4" />
             <span className="hidden lg:inline">{t("最近浏览")}</span>
           </Button>
-          <Button variant="outline" size="sm" className="relative hidden min-h-11 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setFavOpen(true)}>
+          <Button variant="outline" size="sm" className="relative hidden min-h-10 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setFavOpen(true)}>
             <Star className="h-4 w-4 text-amber-400" />
             {t("我的收藏")}{' '}{dueSoon > 0 && (
               <span
@@ -677,7 +677,7 @@ export default function App() {
         )}
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 max-sm:pt-2">
         {isNotFound ? (
           <NotFoundPage />
         ) : (

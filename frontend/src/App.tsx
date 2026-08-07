@@ -812,6 +812,23 @@ export default function App() {
             <BookOpen className="h-3.5 w-3.5" />
             {t("求职攻略")}{' '}</button>
         </div>
+        <div className="mb-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+          <a href="/topic" className="underline-offset-4 hover:text-foreground hover:underline">
+            {t("岗位专题")}
+          </a>
+          <a href="/rank" className="underline-offset-4 hover:text-foreground hover:underline">
+            {t("数据榜单")}
+          </a>
+          <a href="/zhaokao" className="underline-offset-4 hover:text-foreground hover:underline">
+            {t("按省份浏览")}
+          </a>
+          <a href="/major" className="underline-offset-4 hover:text-foreground hover:underline">
+            {t("按专业反查")}
+          </a>
+          <a href="/daily" className="underline-offset-4 hover:text-foreground hover:underline">
+            {t("每日精选")}
+          </a>
+        </div>
         {t("数据来源：国家公务员局、军队人才网、国聘网及各省官方/汇总页面 · 仅供参考 ·")}{' '}
         <button
           type="button"

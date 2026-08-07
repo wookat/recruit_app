@@ -646,7 +646,7 @@ def get_filter_options_lite(db: Session, limit: int = 120):
     exam_type_norms: list = []
     work_locations: list = []
     try:
-        db.execute(sa_text("SET LOCAL statement_timeout = '4s'"))
+        db.execute(sa_text("SET LOCAL statement_timeout = '2s'"))
         years = [r[0] for r in db.query(Position.year)
                  .filter(*clean, Position.year != None)  # noqa: E711
                  .distinct().order_by(Position.year.desc()).all()]

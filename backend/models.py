@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Date, Integer, String, Text, DateTime, Index, UniqueConstraint, func
+from sqlalchemy import Boolean, Column, Date, Integer, String, Text, DateTime, Index, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import ARRAY
 from database import Base
 
@@ -72,6 +72,7 @@ class CampusJob(Base):
     notes = Column(Text)
     updated_at_src = Column(String(30))
     content_hash = Column(String(32), unique=True, index=True)
+    invalid_reason = Column(String(50))  # 软删口径：junk 等；保留 content_hash 防重新入库
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -98,6 +99,7 @@ class BianzhiJob(Base):
     apply_url = Column(Text)
     updated_at_src = Column(String(30), index=True)
     content_hash = Column(String(32), unique=True, index=True)
+    campus_flag = Column(Boolean, nullable=False, server_default="false")  # 校招性质公告（与校招板块口径重叠）
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 

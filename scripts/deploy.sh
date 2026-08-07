@@ -20,6 +20,13 @@ if ! git merge-base --is-ancestor origin/main HEAD; then
     exit 1
   fi
 fi
+# 从分支（非 main 顶点）部署时给出醒目提示（不阻断）
+if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]]; then
+  echo "=============================================================="
+  echo "WARN: 当前 HEAD != origin/main（分支部署）。"
+  echo "  分支部署会覆盖其它未合并分支的已部署改动，合并后请从 main 重新部署。"
+  echo "=============================================================="
+fi
 REMOTE_DIR=/opt/recruit_app
 SSH=(sshpass -e ssh -o StrictHostKeyChecking=no "$SERVER")
 RSYNC=(sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no")

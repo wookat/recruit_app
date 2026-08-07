@@ -9,7 +9,8 @@ function formatFreshness(iso: string | null): string | null {
   if (isNaN(d.getTime())) return null
   const hours = (Date.now() - d.getTime()) / 3600000
   if (hours < 1) return t("刚刚更新")
-  if (hours <= 48) return tt`数据更新于 ${Math.floor(hours)} 小时前`
+  const h = Math.floor(hours)
+  if (hours <= 48) return h === 1 ? t("数据更新于 1 小时前") : tt`数据更新于 ${h} 小时前`
   return tt`数据更新于 ${iso.slice(0, 10)}`
 }
 

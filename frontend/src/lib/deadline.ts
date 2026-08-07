@@ -33,6 +33,14 @@ export function parseDeadlineText(
   return last
 }
 
+/** 去掉日期文本中无意义的时分秒后缀（如「2026-04-17 00:00:00」→「2026-04-17」）。 */
+export function stripTimeOfDay(raw: string): string {
+  return raw
+    .replace(/\s*[0-2]?\d:[0-5]\d(:[0-5]\d)?/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
+
 /** 从报名时间原文中提取最后一个日期作为截止日期（无法解析返回 null）。 */
 export function parseSignupDeadline(item: Position): Date | null {
   return parseDeadlineText(item.signup_time, item.year || undefined)

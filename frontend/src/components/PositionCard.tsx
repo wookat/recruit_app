@@ -15,6 +15,7 @@ import { ShareTextButton, buildShareText } from './ShareTextButton'
 import { jobShareUrl } from '@/lib/clipboard'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
 import { derivePositionTags } from '@/lib/jobTags'
+import { stripTimeOfDay } from '@/lib/deadline'
 import { DueBadge } from './DueBadge'
 import { SeenBadge } from './SeenBadge'
 import { NewDot } from './NewDot'
@@ -124,7 +125,7 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
         {item.signup_time && (
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 shrink-0" />
-            <span className="line-clamp-1">{item.signup_time}</span>
+            <span className="line-clamp-1" title={item.signup_time}>{stripTimeOfDay(item.signup_time)}</span>
             <DueBadge date={item.signup_deadline?.slice(0, 10)} />
           </div>
         )}

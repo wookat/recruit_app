@@ -782,7 +782,7 @@ export function BianzhiPage({
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-sm:space-y-2.5">
       <NewSinceBanner
         board="bianzhi"
         onApply={(since) => {
@@ -799,7 +799,7 @@ export function BianzhiPage({
               key={v.key}
               onClick={() => selectPreset(v.key)}
               className={cn(
-                'inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+                'inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors',
                 preset === v.key
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-background text-foreground hover:bg-muted',
@@ -824,7 +824,7 @@ export function BianzhiPage({
               setPage(1)
             }}
             className={cn(
-              'min-h-11 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+              'min-h-9 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors',
               recentOnly
                 ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-foreground hover:bg-muted',
@@ -838,7 +838,7 @@ export function BianzhiPage({
               setPage(1)
             }}
             className={cn(
-              'min-h-11 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+              'min-h-9 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors',
               dueOnly
                 ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-foreground hover:bg-muted',
@@ -852,7 +852,7 @@ export function BianzhiPage({
               setPage(1)
             }}
             className={cn(
-              'min-h-11 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+              'min-h-9 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors',
               hideExpired
                 ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-foreground hover:bg-muted',
@@ -863,7 +863,7 @@ export function BianzhiPage({
             type="button"
             onClick={() => setHideSeen((v) => !v)}
             className={cn(
-              'min-h-11 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors sm:min-h-9',
+              'min-h-9 whitespace-nowrap rounded-md border px-3.5 py-1.5 text-sm transition-colors',
               hideSeen
                 ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-foreground hover:bg-muted',
@@ -879,7 +879,7 @@ export function BianzhiPage({
                   key={p.key}
                   type="button"
                   onClick={() => onCrossPreset(p.key)}
-                  className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-md border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-9"
+                  className="inline-flex min-h-9 items-center gap-1 whitespace-nowrap rounded-md border border-dashed border-border bg-background px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   {p.label}
                   <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1011,13 +1011,13 @@ export function BianzhiPage({
           </button>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <Button variant="outline" size="sm" className="h-11 gap-1.5 sm:h-10" onClick={() => setGuideOpen(true)}>
+          <Button variant="outline" size="sm" className="h-10 gap-1.5" onClick={() => setGuideOpen(true)}>
             <GraduationCap className="h-4 w-4" />
             {t("专业就业方向")}{' '}</Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-11 gap-1.5 sm:h-10"
+            className="h-10 gap-1.5"
             onClick={() => setShowHrSites((v) => !v)}
           >
             <Landmark className="h-4 w-4" />
@@ -1130,7 +1130,7 @@ export function BianzhiPage({
 
       {/* 计数 + 导出 */}
       {data && (
-        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground max-sm:text-xs">
           <span>
             {t("共")}{' '}<span className="font-medium text-foreground">{data.total.toLocaleString()}</span> {' '}{t("条")}{' '}</span>
           <FreshnessNote board="bianzhi" />
@@ -1257,14 +1257,8 @@ export function BianzhiPage({
               className="cursor-pointer rounded-xl border bg-background p-4 transition-colors hover:border-primary/20 hover:shadow-md"
               onClick={() => setDetail(job)}
             >
-              <div className="flex flex-wrap items-center gap-2">
-                <BoardFavoriteButton
-                  className="-ml-2 -my-1"
-                  active={bianzhiFavorites.some((f) => f.id === job.id)}
-                  onToggle={() => toggleBianzhiFavorite(job)}
-                />
-                <BoardCompareButton className="-ml-1 -my-1" item={{ board: 'bianzhi', job }} />
-                <ShareTextButton className="-ml-1 -my-1" text={bianzhiShareText(job)} />
+              <div className="flex items-start justify-between gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <span className="text-base font-semibold">
                   <Highlight
                     text={
@@ -1286,6 +1280,16 @@ export function BianzhiPage({
                 {job.updated_at_src && (
                   <span className="ml-auto text-xs text-muted-foreground">{t("更新：")}{normalizeDateStr(job.updated_at_src)}</span>
                 )}
+              </div>
+              <div className="flex shrink-0 items-center">
+                <BoardFavoriteButton
+                  className="-my-1"
+                  active={bianzhiFavorites.some((f) => f.id === job.id)}
+                  onToggle={() => toggleBianzhiFavorite(job)}
+                />
+                <BoardCompareButton className="-my-1" item={{ board: 'bianzhi', job }} />
+                <ShareTextButton className="-my-1" text={bianzhiShareText(job)} />
+              </div>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
                 {job.province && <span className="text-muted-foreground">{job.province}</span>}

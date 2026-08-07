@@ -337,7 +337,7 @@ export function PositionSheet({
               </SelectContent>
             </Select>
             <ShareMenuButton
-              className="h-11 w-11 sm:h-8 sm:w-8"
+              className="h-9 w-9 sm:h-8 sm:w-8"
               url={jobShareUrl('positions', item.id)}
               title={`${item.position_example || item.exam_type || ''} - ${item.employer || ''}`}
               text={buildShareText({

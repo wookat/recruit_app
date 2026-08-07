@@ -828,8 +828,8 @@ export function ListPage({
     }
   }
 
-  const keyFilterRow = (className?: string) => (
-    <div className={cn('grid grid-cols-2 gap-2 sm:grid-cols-4', className)}>
+  const keyFilterRow = (className?: string, hideProvince = false) => (
+    <div className={cn('grid grid-cols-2 gap-2', hideProvince ? 'sm:grid-cols-3' : 'sm:grid-cols-4', className)}>
       {filters ? (
         <>
           <MultiSelect
@@ -846,16 +846,18 @@ export function ListPage({
             selected={params.job_type || []}
             onChange={(v) => updateParam('job_type', v)}
           />
-          <MultiSelect
-            label=""
-            triggerLabel={t("省份")}
-            options={filters.provinces}
-            selected={(params.location || []).filter((v) => filters.provinces.includes(v))}
-            onChange={(v) => {
-              const nonProvince = (params.location || []).filter((x) => !filters.provinces.includes(x))
-              updateParam('location', [...new Set([...v, ...nonProvince])])
-            }}
-          />
+          {!hideProvince && (
+            <MultiSelect
+              label=""
+              triggerLabel={t("省份")}
+              options={filters.provinces}
+              selected={(params.location || []).filter((v) => filters.provinces.includes(v))}
+              onChange={(v) => {
+                const nonProvince = (params.location || []).filter((x) => !filters.provinces.includes(x))
+                updateParam('location', [...new Set([...v, ...nonProvince])])
+              }}
+            />
+          )}
           <MultiSelect
             label=""
             triggerLabel={t("学历")}
@@ -866,7 +868,7 @@ export function ListPage({
         </>
       ) : (
         <>
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: hideProvince ? 3 : 4 }).map((_, i) => (
             <Skeleton key={i} className="h-9 w-full rounded-lg" />
           ))}
         </>
@@ -979,12 +981,13 @@ export function ListPage({
                     </Button>
                   }
                 />
-                <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-2xl px-4 pb-8 pt-4">
-                  <SheetHeader>
+                <SheetContent side="bottom" className="max-h-[85dvh] gap-2 overflow-y-auto rounded-t-2xl px-4 pb-8 pt-4">
+                  <SheetHeader className="p-0">
                     <SheetTitle>{t("高级筛选")}</SheetTitle>
                   </SheetHeader>
-                  <div className="mt-4 space-y-4">
-                    {keyFilterRow()}
+                  <div className="mt-1 space-y-4 pb-14">
+                    {keyFilterRow(undefined, true)}
+                    <p className="text-xs text-muted-foreground">{t("省份/城市/区县在下方「工作地点」中级联选择")}</p>
                     {advancedFilterPanel}
                   </div>
                   <div className="sticky bottom-0 mt-4 flex gap-2 bg-popover pt-2">

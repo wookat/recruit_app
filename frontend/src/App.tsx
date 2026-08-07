@@ -6,7 +6,7 @@ import { LazyPositionSheet } from '@/components/LazyPositionSheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SearchPage } from '@/components/SearchPage'
 import { Skeleton } from '@/components/ui/skeleton'
-import { BookOpen, Briefcase, CalendarDays, History, Languages, Layers, Moon, Search, Settings, Sparkles, Star, Sun } from 'lucide-react'
+import { BarChart3, BookOpen, Briefcase, CalendarDays, GraduationCap, History, Languages, Layers, MapPin, Moon, Newspaper, Search, Settings, Sparkles, Star, Sun, Tags } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
@@ -543,7 +543,7 @@ export default function App() {
           <div className="flex min-w-0 items-center gap-2.5">
             <BrandMark className="h-9 w-9 shrink-0" />
             <div className="flex min-w-0 flex-col leading-none">
-              <h1 className="truncate whitespace-nowrap text-lg font-bold tracking-tight">{t("上岸雷达")}</h1>
+              <h1 className={`truncate whitespace-nowrap font-bold tracking-tight ${getLang() === 'en' ? 'text-base lg:text-lg' : 'text-lg'}`}>{t("上岸雷达")}</h1>
               <span className="mt-0.5 hidden truncate whitespace-nowrap text-[11px] tracking-widest text-muted-foreground lg:block">
                 {t("体制内岗位 · 校招信息 一站检索")}{' '}</span>
             </div>
@@ -829,19 +829,24 @@ export default function App() {
             {t("求职攻略")}{' '}</button>
         </div>
         <div className="mb-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-          <a href="/topic" className="underline-offset-4 hover:text-foreground hover:underline">
+          <a href="/topic" className="inline-flex items-center gap-1 underline-offset-4 hover:text-foreground hover:underline">
+            <Tags className="h-3.5 w-3.5" />
             {t("岗位专题")}
           </a>
-          <a href="/rank" className="underline-offset-4 hover:text-foreground hover:underline">
+          <a href="/rank" className="inline-flex items-center gap-1 underline-offset-4 hover:text-foreground hover:underline">
+            <BarChart3 className="h-3.5 w-3.5" />
             {t("数据榜单")}
           </a>
-          <a href="/zhaokao" className="underline-offset-4 hover:text-foreground hover:underline">
+          <a href="/zhaokao" className="inline-flex items-center gap-1 underline-offset-4 hover:text-foreground hover:underline">
+            <MapPin className="h-3.5 w-3.5" />
             {t("按省份浏览")}
           </a>
-          <a href="/major" className="underline-offset-4 hover:text-foreground hover:underline">
+          <a href="/major" className="inline-flex items-center gap-1 underline-offset-4 hover:text-foreground hover:underline">
+            <GraduationCap className="h-3.5 w-3.5" />
             {t("按专业反查")}
           </a>
-          <a href="/daily" className="underline-offset-4 hover:text-foreground hover:underline">
+          <a href="/daily" className="inline-flex items-center gap-1 underline-offset-4 hover:text-foreground hover:underline">
+            <Newspaper className="h-3.5 w-3.5" />
             {t("每日精选")}
           </a>
         </div>

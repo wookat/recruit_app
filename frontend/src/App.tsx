@@ -122,7 +122,12 @@ interface Section {
 
 function initialSection(): Section {
   const q = new URLSearchParams(window.location.search)
-  const board = q.get('board')
+  let board = q.get('board')
+  // 深链 ?job=board:id 不带 board 参数时，按 job 前缀自动切到对应板块
+  if (!board) {
+    const jobBoard = (q.get('job') || '').split(':')[0]
+    if (jobBoard === 'campus' || jobBoard === 'bianzhi') board = jobBoard
+  }
   if (board === 'campus' || board === 'bianzhi') {
     return { mode: board, preset: q.get('bpreset') || undefined }
   }

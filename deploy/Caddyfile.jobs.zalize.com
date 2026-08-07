@@ -6,14 +6,14 @@
 #   sudo systemctl reload caddy
 #
 # access log：JSON 格式写 /var/log/caddy/jobs.zalize.com-access.log，
-# 单文件 100MB 滚动，最多 10 个历史文件、保留 14 天（磁盘上限约 1GB）。
-# 用于 bot 抓取 / referer 可观测性分析。
+# 单文件 50MB 滚动，最多 10 个历史文件、保留 14 天（磁盘上限约 500MB，
+# 宿主机磁盘已 88% 使用，勿放大）。用于 bot 抓取 / referer 可观测性分析。
 
 # recruit_app
 jobs.zalize.com {
 	log {
 		output file /var/log/caddy/jobs.zalize.com-access.log {
-			roll_size 100mb
+			roll_size 50mb
 			roll_keep 10
 			roll_keep_for 336h
 		}

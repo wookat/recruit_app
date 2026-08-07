@@ -998,6 +998,8 @@ def _catchup_missed_beat_tasks() -> dict:
             continue
         if r.get(_beat_marker(task_name, day)):
             continue  # 今日已跑过
+        if not r.set(f"beat_catchup_sent:{day}:{task_name}", "1", nx=True, ex=BEAT_MARKER_TTL):
+            continue  # 今日已补发过（可能仍在队列排队），避免连续重启重复入队重型任务
         celery_app.send_task(task_name)
         dispatched.append(task_name)
     logger.info("beat 补发检查：dispatched=%s skipped=%s", dispatched, skipped)

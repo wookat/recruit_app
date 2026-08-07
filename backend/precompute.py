@@ -6,6 +6,8 @@
 import json
 import logging
 
+from sqlalchemy import text as sa_text
+
 import cache
 import crud
 from bianzhi import apply_bianzhi_filters, bianzhi_export_order
@@ -143,8 +145,10 @@ def refresh_freshness_caches() -> dict:
     cache.invalidate_prefixes("freshness", "recent_updates")
     db = SessionLocal()
     try:
+        db.execute(sa_text("SET statement_timeout = '120s'"))  # 仅预热路径承担冷聚合
         main_app.data_freshness(db=db)
         main_app.recent_updates(days=7, db=db)
+        db.execute(sa_text("SET statement_timeout = DEFAULT"))
     finally:
         db.close()
     return {"ok": True}

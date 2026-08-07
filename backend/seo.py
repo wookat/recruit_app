@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 import cache
 import topic_pages
+from board_scope import TIZHINEI_STRICT_JOB_TYPES
 from database import get_db
 from major_pages import MAJOR_BY_SLUG, MAJOR_DISCIPLINES, resolve_major_alias
 from models import BianzhiJob, CampusJob, DailyDigest, Position
@@ -799,8 +800,7 @@ def _week_ago() -> datetime:
 
 # 严格「体制内」口径：positions 中也含少量企业行（央企/国企、银行、其他企业），
 # 「体制内」专题与样例只统计公务员/事业编/军文/选调等编制类岗位
-TIZHINEI_JOB_TYPES = ("公务员", "事业单位/事业编", "军队文职",
-                      "选调生", "教师", "三支一扶")
+TIZHINEI_JOB_TYPES = TIZHINEI_STRICT_JOB_TYPES
 
 
 def _topic_tizhinei():
@@ -893,7 +893,8 @@ def _topic_counts(db: Session = None) -> dict:
             out[slug] = {"n": c["n"], "week": bz_week.get((kind, t["prov"]), 0),
                          "dist": c["dist"]}
         else:  # campus_city / campus_soe：城市子串命中，逐城市小表查询
-            q = db.query(CampusJob).filter(CampusJob.locations.ilike(f"%{t['city']}%"))
+            q = db.query(CampusJob).filter(CampusJob.invalid_reason == None,  # noqa: E711
+                                           CampusJob.locations.ilike(f"%{t['city']}%"))
             if kind == "campus_soe":
                 q = q.filter(CampusJob.company_type.in_(topic_pages.SOE_TYPES))
             n = q.count()
@@ -937,7 +938,8 @@ def _topic_samples(db: Session, t: dict, limit: int = 20):
              else q.filter(Position.edu_level_norm == t["edu"]))
         return q.order_by(Position.id.desc()).limit(limit).all()
     if kind in ("campus_city", "campus_soe"):
-        q = db.query(CampusJob).filter(CampusJob.locations.ilike(f"%{t['city']}%"))
+        q = db.query(CampusJob).filter(CampusJob.invalid_reason == None,  # noqa: E711
+                                       CampusJob.locations.ilike(f"%{t['city']}%"))
         if kind == "campus_soe":
             q = q.filter(CampusJob.company_type.in_(topic_pages.SOE_TYPES))
         return q.order_by(CampusJob.id.desc()).limit(limit).all()

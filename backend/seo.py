@@ -261,9 +261,19 @@ def _display_title(j) -> str:
     """岗位列展示标题：去掉原始职位代码前缀与和单位列重复的单位全名前缀。"""
     title = (j.position_example or "").strip() or (j.exam_type_norm or j.job_type or "岗位")
     t = _CODE_PREFIX.sub("", title).strip()
-    emp = (j.employer or "").strip()
-    if emp and t.startswith(emp) and len(t) > len(emp):
-        t = t[len(emp):].strip(" -—·、:：")
+    emp_key = re.sub(r"\s+", "", j.employer or "")
+    if emp_key:
+        i = k = 0
+        while i < len(t) and k < len(emp_key):
+            if t[i].isspace():
+                i += 1
+                continue
+            if t[i] != emp_key[k]:
+                break
+            i += 1
+            k += 1
+        if k == len(emp_key) and i < len(t):
+            t = t[i:].strip(" -—·、:：")
     return t or title
 
 

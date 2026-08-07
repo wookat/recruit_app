@@ -629,9 +629,17 @@ export default function App() {
             <CalendarDays className="h-4 w-4" />
             <span className="hidden sm:inline">{t("日历")}</span>
           </Button>
-          <Button variant="ghost" size="sm" className="hidden min-h-10 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setGuideOpen(true)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden min-h-10 gap-1.5 px-2 sm:min-h-8 md:inline-flex"
+            aria-label={t("求职攻略")}
+            title={t("求职攻略")}
+            onClick={() => setGuideOpen(true)}
+          >
             <BookOpen className="h-4 w-4" />
-            {t("求职攻略")}{' '}</Button>
+            <span className="hidden lg:inline">{t("求职攻略")}</span>
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -643,9 +651,17 @@ export default function App() {
             <History className="h-4 w-4" />
             <span className="hidden lg:inline">{t("最近浏览")}</span>
           </Button>
-          <Button variant="outline" size="sm" className="relative hidden min-h-10 gap-1.5 sm:min-h-8 md:inline-flex" onClick={() => setFavOpen(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="relative hidden min-h-10 gap-1.5 px-2 sm:min-h-8 md:inline-flex"
+            aria-label={t("我的收藏")}
+            title={t("我的收藏")}
+            onClick={() => setFavOpen(true)}
+          >
             <Star className="h-4 w-4 text-amber-400" />
-            {t("我的收藏")}{' '}{dueSoon > 0 && (
+            <span className="hidden lg:inline">{t("我的收藏")}</span>
+            {dueSoon > 0 && (
               <span
                 className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
                 title={tt`${dueSoon} 个收藏岗位 ${remindDays} 天内截止`}

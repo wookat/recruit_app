@@ -13,7 +13,7 @@ import pandas as pd
 from fastapi import FastAPI, Depends, Query, HTTPException, Request
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy import text
@@ -970,17 +970,24 @@ if os.path.isdir(dist_dir):
         return response
 
     class SpaStaticFiles(StaticFiles):
-        """未知路径的 HTML GET 请求回落到 index.html（404 状态），避免用户看到裸 JSON。"""
+        """未知路径的 HTML GET 请求回落到 index.html（404 状态），避免用户看到裸 JSON；
+        根级专题 slug（如 /shenzhen-guoqi）301 到 /topic/<slug>，兜底常见误输入。"""
+
+        @staticmethod
+        def _fallback(path):
+            if "/" not in path and path in seo.TOPIC_CANDIDATES:
+                return RedirectResponse(f"/topic/{path}", status_code=301)
+            return FileResponse(index_path, media_type="text/html", status_code=404)
 
         async def get_response(self, path, scope):
             try:
                 response = await super().get_response(path, scope)
             except StarletteHTTPException as exc:
                 if exc.status_code == 404 and scope["method"] in ("GET", "HEAD"):
-                    return FileResponse(index_path, media_type="text/html", status_code=404)
+                    return self._fallback(path)
                 raise
             if response.status_code == 404 and scope["method"] in ("GET", "HEAD"):
-                return FileResponse(index_path, media_type="text/html", status_code=404)
+                return self._fallback(path)
             return response
 
     app.mount("/", SpaStaticFiles(directory=dist_dir, html=True), name="static")

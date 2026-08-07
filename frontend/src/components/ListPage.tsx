@@ -463,6 +463,22 @@ export function ListPage({
     return () => clearTimeout(t)
   }, [data, loading, loadError, load])
 
+  // tier3 超时降级（timed_out）时自动重试：首次执行已预热缓冲区，重试通常可得完整结果；
+  // 重试期间不展示降级提示，避免瞬时闪现，重试后仍超时才提示
+  const timedOutRetryRef = useRef(0)
+  useEffect(() => {
+    timedOutRetryRef.current = 0
+  }, [effParams])
+  useEffect(() => {
+    if (!data?.timed_out || loading || loadError) return
+    if (timedOutRetryRef.current >= 2) return
+    const t = setTimeout(() => {
+      timedOutRetryRef.current += 1
+      load()
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [data, loading, loadError, load])
+
   function applyPreset(preset: PresetView) {
     if (preset.deadline) {
       setDeadlineView((v) => !v)
@@ -1544,7 +1560,7 @@ export function ListPage({
         >
           {t("结果较多，正在统计中，请稍候…如长时间无响应可减少筛选条件后重试")}{' '}</div>
       )}
-      {data?.timed_out && (
+      {data?.timed_out && timedOutRetryRef.current >= 2 && (
         <div
           role="status"
           className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"

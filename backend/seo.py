@@ -1053,7 +1053,9 @@ def _render_topic_index(db: Session = None) -> str:
         region = TOPIC_CANDIDATES[slug].get("prov") or TOPIC_CANDIDATES[slug].get("city")
         if region:
             by_region.setdefault(region, []).append((slug, n))
-    region_order = [p for _, p in PROVINCES] + [c for _, c in topic_pages.TOPIC_CITIES]
+    # 直辖市在 PROVINCES 与 TOPIC_CITIES 中同名，去重后只归省份组展示一次
+    region_order = [p for _, p in PROVINCES]
+    region_order += [c for _, c in topic_pages.TOPIC_CITIES if c not in region_order]
     region_rows = []
     for region in region_order:
         items = by_region.get(region)

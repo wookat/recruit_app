@@ -937,7 +937,7 @@ export function ListPage({
 
   return (
     <div className={showStats ? 'xl:grid xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start xl:gap-5' : undefined}>
-    <div className="flex min-w-0 flex-col gap-5 max-sm:gap-4">
+    <div className="flex min-w-0 flex-col gap-5 max-sm:gap-3">
       <NewSinceBanner board="positions" onApply={(since) => updateParam('created_after', since)} />
       {onOpenUpdates && (
         <ValuePropBanner
@@ -951,9 +951,9 @@ export function ListPage({
           onOpenUpdates={onOpenUpdates}
         />
       )}
-      <Card>
-        <CardContent className="space-y-4 p-4 max-sm:space-y-3 max-sm:p-3">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+      <Card className="max-sm:py-0">
+        <CardContent className="space-y-4 p-4 max-sm:space-y-2 max-sm:p-3">
+          <div className="flex flex-col gap-3 max-sm:gap-2 lg:flex-row lg:items-start">
             <SearchSuggestInput
               value={params.keyword || ''}
               onValueChange={(v) => updateParam('keyword', v)}
@@ -967,7 +967,7 @@ export function ListPage({
               <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
                 <SheetTrigger
                   render={
-                    <Button variant="outline" size="sm" className="relative h-11 shrink-0 gap-1.5 sm:h-9 lg:hidden" aria-label={t("筛选")}>
+                    <Button variant="outline" size="sm" className="relative h-10 shrink-0 gap-1.5 sm:h-9 lg:hidden" aria-label={t("筛选")}>
                       <Filter className="h-4 w-4" />
                       {t("筛选")}{' '}{positionsNewSum > 0 && (
                         <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" aria-label={t("常用筛选有上新")} />
@@ -1005,7 +1005,7 @@ export function ListPage({
               <Button
                 variant="outline"
                 size="icon"
-                className={cn('h-11 w-11 sm:h-9 sm:w-9', view === 'card' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
+                className={cn('h-10 w-10 sm:h-9 sm:w-9', view === 'card' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
                 aria-label={t("卡片视图")}
                 title={t("卡片视图")}
                 aria-pressed={view === 'card'}
@@ -1016,7 +1016,7 @@ export function ListPage({
               <Button
                 variant="outline"
                 size="icon"
-                className={cn('h-11 w-11 sm:h-9 sm:w-9', view === 'table' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
+                className={cn('h-10 w-10 sm:h-9 sm:w-9', view === 'table' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
                 aria-label={t("表格视图")}
                 title={t("表格视图")}
                 aria-pressed={view === 'table'}
@@ -1027,7 +1027,7 @@ export function ListPage({
               <Button
                 variant="outline"
                 size="icon"
-                className={cn('h-11 w-11 sm:h-9 sm:w-9', view === 'list' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
+                className={cn('h-10 w-10 sm:h-9 sm:w-9', view === 'list' && 'border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary')}
                 aria-label={t("无限滚动列表")}
                 title={t("无限滚动列表（大数据量浏览）")}
                 aria-pressed={view === 'list'}
@@ -1038,7 +1038,7 @@ export function ListPage({
               <Button
                 variant={toolsOpen ? 'secondary' : 'outline'}
                 size="icon"
-                className="h-11 w-11 sm:hidden"
+                className="h-10 w-10 sm:hidden"
                 aria-label={t("更多搜索工具")}
                 title={t("更多搜索工具")}
                 aria-expanded={toolsOpen}
@@ -1337,7 +1337,7 @@ export function ListPage({
       )}
 
       <div className="relative">
-      <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5 sm:flex-wrap">
+      <div className="scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5 max-sm:py-0 sm:flex-wrap">
         {PRESET_VIEWS.map((preset) => {
           const active = isPresetActive(preset)
           return (
@@ -1346,7 +1346,7 @@ export function ListPage({
               type="button"
               onClick={() => applyPreset(preset)}
               className={cn(
-                'min-h-11 shrink-0 cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
+                'min-h-9 shrink-0 cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
                 active
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
@@ -1360,7 +1360,7 @@ export function ListPage({
           type="button"
           onClick={() => updateParam('hide_expired', params.hide_expired ? undefined : true)}
           className={cn(
-            'min-h-11 shrink-0 cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
+            'min-h-9 shrink-0 cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
             params.hide_expired
               ? 'border-primary bg-primary/10 text-primary'
               : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
@@ -1371,7 +1371,7 @@ export function ListPage({
           type="button"
           onClick={() => setHideSeen((v) => !v)}
           className={cn(
-            'min-h-11 shrink-0 cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
+            'min-h-9 shrink-0 cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0',
             hideSeen
               ? 'border-primary bg-primary/10 text-primary'
               : 'border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground',
@@ -1387,7 +1387,7 @@ export function ListPage({
                 key={p.key}
                 type="button"
                 onClick={() => onCrossPreset(p.key)}
-                className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-md border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground sm:min-h-0"
+                className="inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1 rounded-md border border-dashed border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground sm:min-h-0"
               >
                 {p.label}
                 <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
@@ -1485,7 +1485,7 @@ export function ListPage({
         )}
       <div className="flex items-center justify-between">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h1 className="shrink-0 whitespace-nowrap text-xl font-bold tracking-tight">{title}</h1>
+          <h1 className="shrink-0 whitespace-nowrap text-xl font-bold tracking-tight max-sm:text-lg">{title}</h1>
           {data && (
             <>
             <Badge

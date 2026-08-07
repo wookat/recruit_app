@@ -192,7 +192,8 @@ def warm_seo_pages(invalidate: bool = True) -> dict:
     def _try(fn, *args):
         nonlocal warmed, errors
         try:
-            fn(*args, db=db)
+            with cache.warm_mode():  # 进程内预热绕过 SWR 短路，确保 fresh 键回填
+                fn(*args, db=db)
             warmed += 1
         except Exception as exc:  # noqa: BLE001  单页失败不影响其余预热
             errors += 1
@@ -211,7 +212,10 @@ def warm_seo_pages(invalidate: bool = True) -> dict:
         for prov_slug, city_slug, _ in seo.CITIES:
             _try(seo._render_city, prov_slug, city_slug)
         _try(seo._render_daily_index)
-        for day in seo._recent_digest_days(db=db, limit=3):
+        # 全量预热 /daily/{day}：单页渲染很快，只热最近 3 期会让旧期号页首访冷渲染
+        with cache.warm_mode():
+            days = seo._recent_digest_days(db=db, limit=90)
+        for day in days:
             _try(seo._render_daily_detail, day)
         _try(seo._rank_stats)  # 榜单原始指标（索引页/榜单页共用）
         _try(seo._sbx_stats)

@@ -1,7 +1,9 @@
+import contextvars
 import json
 import logging
 import os
 import threading
+from contextlib import contextmanager
 from functools import wraps
 from hashlib import md5
 from typing import Any, Callable, Optional
@@ -79,6 +81,22 @@ def _is_degraded(result: Any) -> bool:
     return isinstance(result, dict) and bool(result.get("timed_out") or result.get("total_partial"))
 
 
+_WARM_MODE = contextvars.ContextVar("cache_warm_mode", default=False)
+
+
+@contextmanager
+def warm_mode():
+    """预热上下文：块内不走 SWR 短路，缺 fresh 时同步重算回填。
+
+    进程内（非 Celery）调用预热函数时使用：否则 stale 存在会直接返回旧值，
+    fresh 键始终不回填，预热形同虚设。"""
+    token = _WARM_MODE.set(True)
+    try:
+        yield
+    finally:
+        _WARM_MODE.reset(token)
+
+
 def _in_celery_task() -> bool:
     """Celery 任务（预热/重算路径）内不走 SWR：预热必须同步重算回填。"""
     try:
@@ -136,7 +154,7 @@ def cached(prefix: str, ttl: int = 60, stale: bool = False):
                 cached = r.get(key)
                 if cached:
                     return json.loads(cached)
-                if stale and not _in_celery_task():
+                if stale and not _in_celery_task() and not _WARM_MODE.get():
                     old = r.get(stale_key)
                     if old is not None:
                         lock_key = f"revalidate_lock:{key}"

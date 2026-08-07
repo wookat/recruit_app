@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import pandas as pd
 import requests
 from export_utils import export_csv_sql
+from soe_name_rules import classify_soe_name
 
 BASE = "http://job.mohrss.gov.cn/cjobs/jobinfolist/listJobinfolist"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -68,9 +69,16 @@ def fetch_page(param: str, value: str, page: int, retries: int = 3):
 
 def transform(records, default_year: int) -> pd.DataFrame:
     rows = []
+    skipped_non_soe = 0
     for label, it in records:
         title = (it.get("aca112") or "").strip()
         employer = (it.get("aab004") or "").strip()
+        # 经济类型（国有全资等）为单位自报，存在大量私企误报；
+        # 国企类只收单位名白名单复核通过的行（R284）
+        if "事业" not in label and label != "机关" \
+                and classify_soe_name(employer) != "soe":
+            skipped_non_soe += 1
+            continue
         edu = EDU_MAP.get(str(it.get("aac011") or ""), "")
         desc = (it.get("acb22a") or "").strip()
         area = " ".join(s for s in [(it.get("area_") or "").strip(), (it.get("aab302") or "").strip()] if s)
@@ -110,6 +118,8 @@ def transform(records, default_year: int) -> pd.DataFrame:
             "备注": desc[:500],
             "专业要求（原始）": "",
         })
+    if skipped_non_soe:
+        print(f"skipped {skipped_non_soe} non-whitelisted SOE-labeled rows")
     return pd.DataFrame(rows)
 
 

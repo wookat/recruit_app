@@ -137,11 +137,29 @@ def _revalidate_bg(func: Callable[..., Any], args, kwargs, key: str, ttl: int, l
             pass
 
 
-def cached(prefix: str, ttl: int = 60, stale: bool = False):
+def _spawn_revalidate(r: redis.Redis, func, args, kwargs, key: str, ttl: int, prefix: str) -> None:
+    lock_key = f"revalidate_lock:{key}"
+    if _REVALIDATE_SLOTS.acquire(blocking=False):
+        if r.set(lock_key, "1", nx=True, ex=600):
+            threading.Thread(
+                target=_revalidate_bg,
+                args=(func, args, kwargs, key, ttl, lock_key),
+                name=f"revalidate-{prefix}",
+                daemon=True,
+            ).start()
+        else:
+            _REVALIDATE_SLOTS.release()
+
+
+def cached(prefix: str, ttl: int = 60, stale: bool = False,
+           cold_fallback: Optional[Callable[..., Any]] = None):
     """Redis 缓存装饰器。stale=True 时额外保留一份 7 天的副本：
     - 重算失败（如共享服务器负载导致语句超时）时返回旧数据而非 500；
     - fresh 键缺失但 stale 存在时 stale-while-revalidate：立即返回旧数据，
-      后台线程（带分布式锁防雪崩）重算回填，杜绝用户面冷路径长阻塞/502。"""
+      后台线程（带分布式锁防雪崩）重算回填，杜绝用户面冷路径长阻塞/502；
+    - cold_fallback：fresh 与 stale 都缺失（真全冷）时的兜底：立即返回
+      轻量降级结果（不入缓存），后台线程同步重算完整结果回填，
+      避免重聚合在请求线程内长阻塞直至 502。"""
 
     def decorator(func: Callable[..., Any]):
         @wraps(func)
@@ -157,18 +175,11 @@ def cached(prefix: str, ttl: int = 60, stale: bool = False):
                 if stale and not _in_celery_task() and not _WARM_MODE.get():
                     old = r.get(stale_key)
                     if old is not None:
-                        lock_key = f"revalidate_lock:{key}"
-                        if _REVALIDATE_SLOTS.acquire(blocking=False):
-                            if r.set(lock_key, "1", nx=True, ex=600):
-                                threading.Thread(
-                                    target=_revalidate_bg,
-                                    args=(func, args, kwargs, key, ttl, lock_key),
-                                    name=f"revalidate-{prefix}",
-                                    daemon=True,
-                                ).start()
-                            else:
-                                _REVALIDATE_SLOTS.release()
+                        _spawn_revalidate(r, func, args, kwargs, key, ttl, prefix)
                         return json.loads(old)
+                    if cold_fallback is not None:
+                        _spawn_revalidate(r, func, args, kwargs, key, ttl, prefix)
+                        return cold_fallback(*args, **kwargs)
             except Exception:
                 pass
             try:

@@ -600,7 +600,8 @@ def get_sources(
 
 
 @app.get("/api/filters", response_model=schemas.FilterOptions)
-@cache.cached("filters", ttl=86400, stale=True)
+@cache.cached("filters", ttl=86400, stale=True,
+              cold_fallback=lambda db: crud.get_filter_options_lite(db))
 def get_filters(db: Session = Depends(get_db)):
     return crud.get_filter_options(db)
 

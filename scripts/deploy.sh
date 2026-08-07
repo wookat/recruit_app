@@ -30,7 +30,7 @@ fi
 # 关键调度窗保护：北京时间 05:30–08:00 是每日采集/刷新任务密集期，
 # 重启 worker 会造成 beat 定时任务漏发（启动补发可兜底，但仍应尽量避开）
 BJ_HHMM=$(TZ=Asia/Shanghai date +%H%M)
-if [[ "$BJ_HHMM" -ge 0530 && "$BJ_HHMM" -lt 0800 ]]; then
+if [[ "10#$BJ_HHMM" -ge 10#0530 && "10#$BJ_HHMM" -lt 10#0800 ]]; then
   if [[ "${ALLOW_SCHED_WINDOW:-0}" == "1" ]]; then
     echo "WARN: 当前处于关键调度窗（北京 05:30–08:00），ALLOW_SCHED_WINDOW=1 已指定，继续部署"
   else

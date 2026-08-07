@@ -476,15 +476,17 @@ def search_positions(
     count 超时写 total_partial=True（total 为「至少 N 条」部分值），两者均不入缓存。"""
     q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
     q = _apply_filters(q, Position, filters)
-    # 类别筛选是高选择性条件：用 year+0 阻止 planner 走全量 (year,id) 有序索引扫描，
-    # 改走 job_type/exam_type 位图索引后再排序
-    year_col = (Position.year + 0) if filters.category else Position.year
+    # 类别/专业筛选是高选择性条件：用 year+0 阻止 planner 走全量 (year,id)
+    # 有序索引扫描（专业 ILIKE 无索引，逆序扫全表冷盘可达十几秒），
+    # 改走 job_type/exam_type/location_tags 位图索引后再排序
+    force_bitmap = bool(filters.category or filters.major)
+    year_col = (Position.year + 0) if force_bitmap else Position.year
     if sort == "year_desc":
         order_keys = [year_col.desc(), Position.id.desc()]
     elif sort == "year_asc":
         order_keys = [year_col.asc(), Position.id.asc()]
     else:
-        order_keys = [(Position.id + 0).desc() if filters.category else Position.id.desc()]
+        order_keys = [(Position.id + 0).desc() if force_bitmap else Position.id.desc()]
     count_key = "cnt:pos:" + filters.model_dump_json()
     timed_out = False
     if filters.keyword:
@@ -572,7 +574,8 @@ def search_positions_cursor(
 ):
     q = db.query(Position).filter(Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)).options(defer(Position.search_text))
     q = _apply_filters(q, Position, filters)
-    year_col = (Position.year + 0) if filters.category else Position.year
+    force_bitmap = bool(filters.category or filters.major)
+    year_col = (Position.year + 0) if force_bitmap else Position.year
     if sort == "year_desc" and after_year is not None:
         q = q.filter(
             or_(
@@ -588,7 +591,7 @@ def search_positions_cursor(
             )
         ).order_by(year_col.asc(), Position.id.asc())
     else:
-        q = q.filter(Position.id < after_id).order_by((Position.id + 0).desc() if filters.category else Position.id.desc())
+        q = q.filter(Position.id < after_id).order_by((Position.id + 0).desc() if force_bitmap else Position.id.desc())
     return q.limit(page_size).all()
 
 
@@ -618,6 +621,60 @@ def search_sources(db: Session, filters: PositionFilter, page: int = 1, page_siz
     total = cache.get_or_set(count_key, 1800, lambda: _capped_count(q))
     items = q.offset((page - 1) * page_size).limit(page_size).all()
     return total, items
+
+
+def get_filter_options_lite(db: Session, limit: int = 120):
+    """/api/filters 真全冷（fresh+stale 都缺）兜底：只查有索引的轻量维度
+    （短超时），跳过 location_tags 全量扫描与区县树等重聚合；
+    热门城市/区县维度置空，由后台重算回填完整结果后自行恢复。"""
+    clean = [Position.dup_of_id.is_(None), Position.invalid_reason.is_(None)]
+
+    def distinct_values(col, l=limit):
+        rows = (
+            db.query(col)
+            .filter(*clean, col != None, col != "")  # noqa: E711
+            .distinct()
+            .order_by(col)
+            .limit(l)
+            .all()
+        )
+        return [r[0] for r in rows if r[0]]
+
+    years: list = []
+    job_types: list = []
+    edu_levels: list = []
+    exam_type_norms: list = []
+    work_locations: list = []
+    try:
+        db.execute(sa_text("SET LOCAL statement_timeout = '4s'"))
+        years = [r[0] for r in db.query(Position.year)
+                 .filter(*clean, Position.year != None)  # noqa: E711
+                 .distinct().order_by(Position.year.desc()).all()]
+        job_types = distinct_values(Position.job_type)
+        edu_levels = distinct_values(Position.edu_level_norm)
+        exam_type_norms = distinct_values(Position.exam_type_norm)
+        work_locations = distinct_values(Position.work_location)
+        db.execute(sa_text("SET LOCAL statement_timeout = DEFAULT"))
+    except OperationalError as e:
+        if not _is_query_canceled(e):
+            raise
+        db.rollback()
+
+    return {
+        "years": years,
+        "job_types": job_types,
+        "edu_requirements": edu_levels,
+        "work_locations": work_locations,
+        "exam_types": [],
+        "edu_levels": edu_levels,
+        "categories": list(CATEGORY_KEYWORDS.keys()),
+        "provinces": PROVINCE_DISPLAY_ORDER,
+        "location_tree": location_tree(),
+        "hot_locations": [],
+        "districts": [],
+        "exam_type_norms": exam_type_norms,
+        "district_tree": [],
+    }
 
 
 def get_filter_options(db: Session, limit: int = 120):

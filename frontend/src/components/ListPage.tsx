@@ -940,6 +940,9 @@ export function ListPage({
     <div className="flex min-w-0 flex-col gap-5 max-sm:gap-3">
       <NewSinceBanner board="positions" onApply={(since) => updateParam('created_after', since)} />
       {onOpenUpdates && (
+        // 矮屏手机（如 375×667）隐藏价值主张条，保证第 2 张岗位卡
+        // 在底部导航上方可见 ≥40px；375×812 等常规高度不受影响
+        <div className="max-sm:[@media(max-height:700px)]:hidden">
         <ValuePropBanner
           onMatch={() => {
             setToolsOpen(true)
@@ -950,6 +953,7 @@ export function ListPage({
           }}
           onOpenUpdates={onOpenUpdates}
         />
+        </div>
       )}
       <Card className="max-sm:py-0">
         <CardContent className="space-y-4 p-4 max-sm:space-y-2 max-sm:p-3">

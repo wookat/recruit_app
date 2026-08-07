@@ -176,26 +176,32 @@ class PageViewDaily(Base):
     """自建轻量访问统计：日聚合 PV（无 cookie、无个人数据、IP 不落库）。"""
 
     __tablename__ = "metrics_pv_daily"
-    __table_args__ = (UniqueConstraint("day", "board", "page", name="uq_pv_day_board_page"),)
+    __table_args__ = (
+        UniqueConstraint("day", "board", "page", "internal", name="uq_pv_day_board_page_int"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     day = Column(Date, nullable=False, index=True)
     board = Column(String(30), nullable=False)
     page = Column(String(50), nullable=False, default="")
     pv = Column(Integer, nullable=False, default=0)
+    internal = Column(Boolean, nullable=False, default=False, server_default="false")
 
 
 class JobViewDaily(Base):
     """岗位级浏览日聚合：详情面板打开计数（无 cookie、无个人数据、IP 不落库）。"""
 
     __tablename__ = "metrics_job_view_daily"
-    __table_args__ = (UniqueConstraint("day", "board", "job_id", name="uq_jobview_day_board_job"),)
+    __table_args__ = (
+        UniqueConstraint("day", "board", "job_id", "internal", name="uq_jobview_day_board_job_int"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     day = Column(Date, nullable=False, index=True)
     board = Column(String(20), nullable=False)
     job_id = Column(Integer, nullable=False, index=True)
     views = Column(Integer, nullable=False, default=0)
+    internal = Column(Boolean, nullable=False, default=False, server_default="false")
 
 
 class SessionDaily(Base):
@@ -207,6 +213,39 @@ class SessionDaily(Base):
     id = Column(Integer, primary_key=True, index=True)
     day = Column(Date, nullable=False, index=True)
     sid = Column(String(40), nullable=False)
+    internal = Column(Boolean, nullable=False, default=False, server_default="false")
+
+
+class MetricEventDaily(Base):
+    """留存/漏斗事件（含 sid）：日 × 事件 × 会话聚合，漏斗可按 sid 串联。"""
+
+    __tablename__ = "metrics_event_daily"
+    __table_args__ = (
+        UniqueConstraint("day", "event", "sid", "internal", name="uq_event_day_event_sid_int"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    day = Column(Date, nullable=False, index=True)
+    event = Column(String(50), nullable=False)
+    sid = Column(String(40), nullable=False, default="", index=True)
+    n = Column(Integer, nullable=False, default=0)
+    internal = Column(Boolean, nullable=False, default=False, server_default="false")
+
+
+class MetricRequestLog(Base):
+    """metrics 上报请求审计日志：ip 加盐哈希存储（不可逆），供过滤复核与清洗留证。"""
+
+    __tablename__ = "metrics_request_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ts = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    kind = Column(String(20), nullable=False)  # pv / event / job_view
+    board = Column(String(30), nullable=False, default="")
+    page = Column(String(50), nullable=False, default="")
+    sid = Column(String(40), nullable=False, default="")
+    ip_hash = Column(String(16), nullable=False, default="")
+    ua = Column(String(300), nullable=False, default="")
+    internal = Column(Boolean, nullable=False, default=False, server_default="false")
 
 
 class DailyDigest(Base):

@@ -1478,7 +1478,7 @@ def _rank_stats(db: Session = None) -> dict:
             SELECT p.province, p.exam_type_norm, SUM(v.views) AS views
             FROM metrics_job_view_daily v
             JOIN positions p ON p.id = v.job_id
-            WHERE v.board = 'positions' AND v.day >= CURRENT_DATE - 6
+            WHERE v.board = 'positions' AND v.day >= CURRENT_DATE - 6 AND NOT v.internal
               AND p.dup_of_id IS NULL AND p.invalid_reason IS NULL
             GROUP BY 1, 2
         """)).all()

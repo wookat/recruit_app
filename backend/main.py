@@ -28,6 +28,7 @@ import schemas
 import cache
 import csv_export
 import share_meta
+import traffic_filter
 from admin import require_admin, router as admin_router
 from campus import router as campus_router
 from bianzhi import router as bianzhi_router
@@ -486,7 +487,7 @@ def position_heat(position_id: int, db: Session = Depends(get_db)):
             SELECT COALESCE(SUM(v.views), 0) AS views
             FROM metrics_job_view_daily v
             WHERE v.board = 'positions' AND v.job_id = :id
-              AND v.day >= CURRENT_DATE - 6
+              AND v.day >= CURRENT_DATE - 6 AND NOT v.internal
         """),
         {"id": position_id},
     ).one()
@@ -504,7 +505,7 @@ def position_heat(position_id: int, db: Session = Depends(get_db)):
                 SELECT v.job_id, SUM(v.views) AS views
                 FROM metrics_job_view_daily v
                 JOIN positions p ON p.id = v.job_id
-                WHERE v.board = 'positions' AND v.day >= CURRENT_DATE - 6
+                WHERE v.board = 'positions' AND v.day >= CURRENT_DATE - 6 AND NOT v.internal
                   AND p.dup_of_id IS NULL AND p.invalid_reason IS NULL
                   AND p.province = :prov AND p.exam_type_norm = :et AND p.year = :y
                 GROUP BY v.job_id
@@ -825,7 +826,11 @@ METRIC_EVENTS = {"remind_set", "save_filter", "new_since_click", "apply_click", 
 
 @app.post("/api/metrics/pv")
 def report_pv(request: Request, body: schemas.PvIn, db: Session = Depends(get_db)):
-    """自建轻量访问统计：日聚合 PV + 独立会话估算（无 cookie，IP 不落库）。"""
+    """自建轻量访问统计：日聚合 PV + 独立会话估算（IP 仅加盐哈希存审计表）。
+
+    QA/内部流量（显式 qa 标记 / 无头 UA / 云厂商 IP）标记 internal=true 落库，
+    保留行但不计入统计口径。
+    """
     _rate_limit(request, "pv", limit=60, window=60)
     board = (body.board or "").strip()
     if not PV_BOARD_RE.match(board):
@@ -833,17 +838,30 @@ def report_pv(request: Request, body: schemas.PvIn, db: Session = Depends(get_db
     page = (body.page or "").strip()[:50]
     if board == "event" and page not in METRIC_EVENTS:
         raise HTTPException(status_code=422, detail="event 无效")
-    db.execute(text("""
-        INSERT INTO metrics_pv_daily (day, board, page, pv)
-        VALUES (CURRENT_DATE, :b, :p, 1)
-        ON CONFLICT (day, board, page) DO UPDATE SET pv = metrics_pv_daily.pv + 1
-    """), {"b": board, "p": page})
+    internal, ip_hash, ua = traffic_filter.classify_request(request, qa=bool(body.qa))
     sid = (body.sid or "").strip()[:40]
+    db.execute(text("""
+        INSERT INTO metrics_pv_daily (day, board, page, pv, internal)
+        VALUES (CURRENT_DATE, :b, :p, 1, :i)
+        ON CONFLICT (day, board, page, internal) DO UPDATE SET pv = metrics_pv_daily.pv + 1
+    """), {"b": board, "p": page, "i": internal})
     if sid:
         db.execute(text("""
-            INSERT INTO metrics_sessions_daily (day, sid)
-            VALUES (CURRENT_DATE, :s) ON CONFLICT (day, sid) DO NOTHING
-        """), {"s": sid})
+            INSERT INTO metrics_sessions_daily (day, sid, internal)
+            VALUES (CURRENT_DATE, :s, :i) ON CONFLICT (day, sid) DO NOTHING
+        """), {"s": sid, "i": internal})
+    if board == "event":
+        db.execute(text("""
+            INSERT INTO metrics_event_daily (day, event, sid, n, internal)
+            VALUES (CURRENT_DATE, :e, :s, 1, :i)
+            ON CONFLICT (day, event, sid, internal)
+            DO UPDATE SET n = metrics_event_daily.n + 1
+        """), {"e": page, "s": sid, "i": internal})
+    db.execute(text("""
+        INSERT INTO metrics_request_log (kind, board, page, sid, ip_hash, ua, internal)
+        VALUES (:k, :b, :p, :s, :ih, :ua, :i)
+    """), {"k": "event" if board == "event" else "pv", "b": board, "p": page,
+           "s": sid, "ih": ip_hash, "ua": ua, "i": internal})
     db.commit()
     return {"ok": True}
 
@@ -853,17 +871,31 @@ JOB_VIEW_BOARDS = {"positions", "campus", "bianzhi"}
 
 @app.post("/api/metrics/job-view")
 def report_job_view(request: Request, body: schemas.JobViewIn, db: Session = Depends(get_db)):
-    """岗位级浏览上报：详情面板打开时按日聚合计数（无 cookie，IP 不落库）。"""
+    """岗位级浏览上报：详情面板打开时按日聚合计数（QA/内部流量标 internal）。"""
     _rate_limit(request, "jobview", limit=60, window=60)
     if body.board not in JOB_VIEW_BOARDS:
         raise HTTPException(status_code=422, detail="board 无效")
     if body.job_id <= 0:
         raise HTTPException(status_code=422, detail="job_id 无效")
+    internal, ip_hash, ua = traffic_filter.classify_request(request, qa=bool(body.qa))
+    sid = (body.sid or "").strip()[:40]
     db.execute(text("""
-        INSERT INTO metrics_job_view_daily (day, board, job_id, views)
-        VALUES (CURRENT_DATE, :b, :j, 1)
-        ON CONFLICT (day, board, job_id) DO UPDATE SET views = metrics_job_view_daily.views + 1
-    """), {"b": body.board, "j": body.job_id})
+        INSERT INTO metrics_job_view_daily (day, board, job_id, views, internal)
+        VALUES (CURRENT_DATE, :b, :j, 1, :i)
+        ON CONFLICT (day, board, job_id, internal)
+        DO UPDATE SET views = metrics_job_view_daily.views + 1
+    """), {"b": body.board, "j": body.job_id, "i": internal})
+    db.execute(text("""
+        INSERT INTO metrics_event_daily (day, event, sid, n, internal)
+        VALUES (CURRENT_DATE, 'job_view', :s, 1, :i)
+        ON CONFLICT (day, event, sid, internal)
+        DO UPDATE SET n = metrics_event_daily.n + 1
+    """), {"s": sid, "i": internal})
+    db.execute(text("""
+        INSERT INTO metrics_request_log (kind, board, page, sid, ip_hash, ua, internal)
+        VALUES ('job_view', :b, :p, :s, :ih, :ua, :i)
+    """), {"b": body.board, "p": str(body.job_id), "s": sid,
+           "ih": ip_hash, "ua": ua, "i": internal})
     db.commit()
     return {"ok": True}
 

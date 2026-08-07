@@ -3,7 +3,9 @@ import { API_BASE } from '@/api'
 const SID_KEY = 'recruit.sid'
 const INTERNAL_KEY = 'recruit.internal'
 
-/** 内部走查/测试流量不计入 PV：带 ?qa=1 访问一次后本机永久排除 */
+/** 内部走查/测试流量显式标记：带 ?qa=1 访问一次后本机永久标记；
+ * 上报仍发送但带 qa:true，服务端标 internal=true 落库（不计入统计口径）；
+ * 服务端另有 UA/云厂商 IP 多信号兜底，本地标记失效也不会污染数据。 */
 function isInternal(): boolean {
   try {
     if (new URLSearchParams(window.location.search).get('qa') === '1') {
@@ -34,7 +36,6 @@ let lastAt = 0
 
 /** 自建轻量访问统计上报（无 cookie、无个人数据，失败静默）。 */
 export function reportPv(board: string, page = '') {
-  if (isInternal()) return
   const key = `${board}|${page}`
   const now = Date.now()
   if (key === lastKey && now - lastAt < 2000) return // 去重：rerender/StrictMode 双触发
@@ -44,7 +45,7 @@ export function reportPv(board: string, page = '') {
     void fetch(`${API_BASE}/api/metrics/pv`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ board, page, sid: getSid() }),
+      body: JSON.stringify({ board, page, sid: getSid(), qa: isInternal() || undefined }),
       keepalive: true,
     }).catch(() => undefined)
   } catch {
@@ -55,9 +56,8 @@ export function reportPv(board: string, page = '') {
 let lastJobKey = ''
 let lastJobAt = 0
 
-/** 岗位级浏览上报：详情面板打开时计数（QA/内部流量同样排除，失败静默）。 */
+/** 岗位级浏览上报：详情面板打开时计数（QA/内部流量服务端标 internal，失败静默）。 */
 export function reportJobView(board: string, jobId: number) {
-  if (isInternal()) return
   const key = `${board}|${jobId}`
   const now = Date.now()
   if (key === lastJobKey && now - lastJobAt < 2000) return // 去重：rerender/StrictMode 双触发
@@ -67,7 +67,7 @@ export function reportJobView(board: string, jobId: number) {
     void fetch(`${API_BASE}/api/metrics/job-view`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ board, job_id: jobId }),
+      body: JSON.stringify({ board, job_id: jobId, sid: getSid(), qa: isInternal() || undefined }),
       keepalive: true,
     }).catch(() => undefined)
   } catch {
@@ -84,12 +84,11 @@ export type MetricEvent =
 
 /** 留存功能埋点事件（复用 metrics_pv 通道，board="event"）。 */
 export function reportEvent(event: MetricEvent) {
-  if (isInternal()) return
   try {
     void fetch(`${API_BASE}/api/metrics/pv`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ board: 'event', page: event, sid: getSid() }),
+      body: JSON.stringify({ board: 'event', page: event, sid: getSid(), qa: isInternal() || undefined }),
       keepalive: true,
     }).catch(() => undefined)
   } catch {

@@ -531,9 +531,23 @@ def search_positions(
             if ids is not None:
                 items = _positions_by_ids(db, ids)
         if items is None:
-            items = q.order_by(*order_keys).offset((page - 1) * page_size).limit(page_size).all()
-            if items_key is not None:
-                _cache_set_json(items_key, 1800, [p.id for p in items])
+            if force_bitmap:
+                # 冷盘位图扫描 + 排序可超 10s：短超时兜底，超时改无排序
+                # LIMIT 取数（找满即停），标记 timed_out、不入缓存
+                try:
+                    db.execute(sa_text(f"SET LOCAL statement_timeout = '{TIER3_TIMEOUT_MS * 2}'"))
+                    items = q.order_by(*order_keys).offset((page - 1) * page_size).limit(page_size).all()
+                    db.execute(sa_text("SET LOCAL statement_timeout = DEFAULT"))
+                    if items_key is not None:
+                        _cache_set_json(items_key, 1800, [p.id for p in items])
+                except OperationalError as e:
+                    if not _is_query_canceled(e):
+                        raise
+                    db.rollback()
+                    items = q.offset((page - 1) * page_size).limit(page_size).all()
+                    timed_out = True
+            else:
+                items = q.order_by(*order_keys).offset((page - 1) * page_size).limit(page_size).all()
         total = _cache_get_json(count_key)
         if total is None:
             try:
@@ -635,6 +649,25 @@ def search_sources(db: Session, filters: PositionFilter, page: int = 1, page_siz
     return total, items
 
 
+# 冷兜底静态维度：DB 高负载下连轻量 distinct 也可能超时，
+# 固定维度用静态值保证学历/年份/岗位类型下拉始终可用
+_LITE_JOB_TYPES = [
+    "公务员", "事业单位/事业编", "军队文职", "选调生", "教师",
+    "三支一扶", "央企/国企", "银行", "其他企业",
+]
+_LITE_EDU_LEVELS = ["博士研究生", "硕士研究生", "本科", "大专/中专", "其他/不限"]
+_LITE_EXAM_TYPE_NORMS = [
+    "国家公务员考试", "省级公务员考试", "事业单位招聘", "教育教学",
+    "医疗卫生", "银行招聘", "企业招聘", "军队文职招考", "选调生",
+    "基层项目", "公安司法", "科学研究", "其他",
+]
+
+
+def _lite_years() -> list:
+    y = datetime.now().year
+    return list(range(y + 1, 2020, -1))
+
+
 def get_filter_options_lite(db: Session, limit: int = 120):
     """/api/filters 真全冷（fresh+stale 都缺）兜底：只查有索引的轻量维度
     （短超时），跳过 location_tags 全量扫描与区县树等重聚合；
@@ -671,6 +704,11 @@ def get_filter_options_lite(db: Session, limit: int = 120):
         if not _is_query_canceled(e):
             raise
         db.rollback()
+
+    years = years or _lite_years()
+    job_types = job_types or list(_LITE_JOB_TYPES)
+    edu_levels = edu_levels or list(_LITE_EDU_LEVELS)
+    exam_type_norms = exam_type_norms or list(_LITE_EXAM_TYPE_NORMS)
 
     return {
         "years": years,

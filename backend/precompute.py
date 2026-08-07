@@ -167,6 +167,7 @@ def warm_seo_pages(invalidate: bool = True) -> dict:
             "seo_index", "seo_prov", "seo_prov_et", "seo_city", "seo_city_et",
             "seo_daily_index", "seo_daily_detail", "seo_daily_days",
             "seo_major_counts", "seo_major_index", "seo_major",
+            "seo_topic_counts", "seo_topic_index", "seo_topic",
         )
     warmed, errors = 0, 0
     failed_pages: list = []
@@ -205,6 +206,18 @@ def warm_seo_pages(invalidate: bool = True) -> dict:
             errors += 1
             failed_pages.append("_major_live_slugs")
             logger.warning("warm_seo_pages 专业枚举失败: %s: %s",
+                           type(exc).__name__, exc)
+            db.rollback()
+        _try(seo._topic_counts)  # 先算全量计数（索引页/sitemap/详情页枚举共用）
+        _try(seo._render_topic_index)
+        try:
+            # 控制总预热时长：只预热 Top20 专题详情页（其余首访冷渲染后进缓存）
+            for s in seo._topic_live_slugs(db)[:20]:
+                _try(seo._render_topic, s)
+        except Exception as exc:  # noqa: BLE001  专题枚举失败不影响其余预热
+            errors += 1
+            failed_pages.append("_topic_live_slugs")
+            logger.warning("warm_seo_pages 专题枚举失败: %s: %s",
                            type(exc).__name__, exc)
             db.rollback()
     finally:

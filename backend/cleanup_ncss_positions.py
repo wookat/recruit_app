@@ -41,6 +41,7 @@ def main():
         if not args.apply:
             print("dry-run：未修改任何数据（--apply 执行）")
             return
+        db.execute(text("SET statement_timeout = '600s'"))
         db.execute(text(
             f"UPDATE positions SET invalid_reason = :m WHERE {WHERE}"), {"m": MARK})
         db.commit()

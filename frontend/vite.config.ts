@@ -17,7 +17,7 @@ export default defineConfig({
         importScripts: ['push-sw.js'],
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//, /^\/zhaokao/, /^\/daily/, /^\/major/, /^\/rank/, /^\/feed\.xml$/, /^\/sitemap\.xml$/, /^\/robots\.txt$/],
+        navigateFallbackDenylist: [/^\/api\//, /^\/zhaokao/, /^\/daily/, /^\/major/, /^\/topic/, /^\/rank/, /^\/feed\.xml$/, /^\/sitemap\.xml$/, /^\/robots\.txt$/],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {

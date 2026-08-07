@@ -103,7 +103,7 @@ async def slow_request_log(request: Request, call_next):
 
 
 # SSR SEO 页路径前缀：无效路径 404 时返回品牌化 HTML（含返回首页链接），不裸 JSON
-SSR_404_PREFIXES = ("/zhaokao", "/daily", "/major", "/rank")
+SSR_404_PREFIXES = ("/zhaokao", "/daily", "/major", "/topic", "/rank")
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -266,7 +266,8 @@ def recent_updates(days: int = Query(7, ge=1, le=30), db: Session = Depends(get_
                 SELECT id, coalesce(nullif(employer, ''), exam_type) AS title,
                        coalesce(position_example, '') AS sub, coalesce(province, '') AS extra
                 FROM positions
-                WHERE dup_of_id IS NULL AND invalid_reason IS NULL AND created_at::date = :d
+                WHERE dup_of_id IS NULL AND invalid_reason IS NULL
+                  AND created_at >= CAST(:d AS date) AND created_at < CAST(:d AS date) + 1
                 ORDER BY id DESC LIMIT :n"""), {"d": d, "n": RECENT_ITEM_MAX}).all()
             entry["items"] = [{"id": r.id, "title": r.title, "sub": r.sub, "extra": r.extra} for r in rows]
 
@@ -278,7 +279,8 @@ def recent_updates(days: int = Query(7, ge=1, le=30), db: Session = Depends(get_
         if not entry["bulk"]:
             rows = db.execute(text("""
                 SELECT id, coalesce(company, '') AS title, coalesce(positions, '') AS sub, coalesce(batch, '') AS extra
-                FROM campus_jobs WHERE created_at::date = :d
+                FROM campus_jobs
+                WHERE created_at >= CAST(:d AS date) AND created_at < CAST(:d AS date) + 1
                 ORDER BY id DESC LIMIT :n"""), {"d": d, "n": RECENT_ITEM_MAX}).all()
             entry["items"] = [{"id": r.id, "title": r.title, "sub": r.sub, "extra": r.extra} for r in rows]
 
@@ -294,7 +296,9 @@ def recent_updates(days: int = Query(7, ge=1, le=30), db: Session = Depends(get_
             rows = db.execute(text(f"""
                 SELECT id, coalesce(nullif(employer, ''), concat(province, category)) AS title,
                        coalesce(job_type, '') AS sub, coalesce(province, '') AS extra
-                FROM bianzhi_jobs WHERE created_at::date = :d AND {bz_not_note}
+                FROM bianzhi_jobs
+                WHERE created_at >= CAST(:d AS date) AND created_at < CAST(:d AS date) + 1
+                  AND {bz_not_note}
                 ORDER BY id DESC LIMIT :n"""), {"d": d, "n": RECENT_ITEM_MAX}).all()
             entry["items"] = [{"id": r.id, "title": r.title, "sub": r.sub, "extra": r.extra} for r in rows]
 

@@ -8,6 +8,7 @@ FastAPI 层输出一组可收录的路径型页面 /zhaokao/...，含 JobPosting
 import html
 import json
 import os
+import re
 from email.utils import format_datetime
 from urllib.parse import quote
 from datetime import date, datetime, timedelta, timezone
@@ -18,6 +19,7 @@ from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 
 import cache
+import topic_pages
 from database import get_db
 from major_pages import MAJOR_BY_SLUG, MAJOR_DISCIPLINES, resolve_major_alias
 from models import BianzhiJob, CampusJob, DailyDigest, Position
@@ -131,6 +133,7 @@ a{color:#1d4ed8;text-decoration:underline}
 header.site{background:#fff;border-bottom:1px solid #e4e4e7}
 header.site .wrap{display:flex;align-items:center;gap:8px;padding-top:12px;padding-bottom:12px}
 .logo{font-weight:700;font-size:18px;color:#1d4ed8}
+.tagline{color:#52525b;font-size:13px}
 nav.crumb{font-size:13px;color:#52525b;margin:12px 0}
 h1{font-size:22px;margin:8px 0 4px}
 p.desc{color:#52525b;font-size:14px;margin-bottom:16px}
@@ -147,10 +150,16 @@ tr:last-child td{border-bottom:none}
 .cta{display:inline-block;background:#1d4ed8;color:#fff;border-radius:8px;
   padding:10px 18px;font-size:14px;margin:16px 0}
 .cta:hover{background:#1e40af;text-decoration:none}
+.cta.ghost{background:#fff;color:#1d4ed8;border:1px solid #1d4ed8}
+.cta.ghost:hover{background:#eff6ff}
+.ctas{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.ctas .cta{margin:0}
 footer{color:#52525b;font-size:12px;margin:24px 0 16px}
 @media(max-width:640px){
   .wrap{padding:12px}
   h1{font-size:19px}
+  .ctas{flex-direction:column;gap:8px}
+  .ctas .cta{text-align:center}
   table,thead,tbody,tr{display:block}
   thead{display:none}
   tr{border-bottom:1px solid #e4e4e7;padding:8px 0}
@@ -162,7 +171,7 @@ footer{color:#52525b;font-size:12px;margin:24px 0 16px}
   a{color:#60a5fa}
   header.site{background:#18181b;border-color:#27272a}
   .logo{color:#60a5fa}
-  nav.crumb,p.desc,footer,.chips a .n{color:#a1a1aa}
+  nav.crumb,p.desc,footer,.chips a .n,.tagline{color:#a1a1aa}
   .chips a{border-color:#3f3f46;background:#18181b;color:#d4d4d8}
   .chips a:hover{border-color:#60a5fa;color:#60a5fa}
   table{background:#18181b;border-color:#27272a}
@@ -170,6 +179,8 @@ footer{color:#52525b;font-size:12px;margin:24px 0 16px}
   th,td{border-color:#27272a}
   .cta{background:#2563eb;color:#fff}
   .cta:hover{background:#1d4ed8}
+  .cta.ghost{background:transparent;color:#60a5fa;border-color:#60a5fa}
+  .cta.ghost:hover{background:#1e3a8a33}
   @media(max-width:640px){tr{border-color:#27272a}}
 }
 """
@@ -196,7 +207,7 @@ def _page(title: str, desc: str, canonical: str, crumb: str, body: str,
 </head>
 <body>
 <header class="site"><div class="wrap"><a class="logo" href="/">{BRAND}</a>
-<span style="color:#52525b;font-size:13px">全国公务员·事业单位·校招岗位库</span></div></header>
+<span class="tagline">全国公务员·事业单位·校招岗位库</span></div></header>
 <main class="wrap">
 <nav class="crumb">{crumb}</nav>
 {body}
@@ -214,6 +225,7 @@ def render_404() -> str:
             f"<div class='chips'>"
             f"<a href='/zhaokao'>按省份浏览招考岗位</a>"
             f"<a href='/major'>按专业反查可报岗位</a>"
+            f"<a href='/topic'>热门筛选组合专题</a>"
             f"<a href='/daily'>每日岗位精选</a>"
             f"<a href='/rank'>数据榜单</a></div>"
             f"<a class='cta' href='/'>返回{BRAND}首页 →</a>")
@@ -246,10 +258,33 @@ def _stats_para(scope: str, total: int, month_new: int, et_counts: dict) -> str:
     return f"<p class='desc'>{body}</p>"
 
 
+_CODE_PREFIX = re.compile(r"^\d{6,}[-—_·\s]*")
+
+
+def _display_title(j) -> str:
+    """岗位列展示标题：去掉原始职位代码前缀与和单位列重复的单位全名前缀。"""
+    title = (j.position_example or "").strip() or (j.exam_type_norm or j.job_type or "岗位")
+    t = _CODE_PREFIX.sub("", title).strip()
+    emp_key = re.sub(r"\s+", "", j.employer or "")
+    if emp_key:
+        i = k = 0
+        while i < len(t) and k < len(emp_key):
+            if t[i].isspace():
+                i += 1
+                continue
+            if t[i] != emp_key[k]:
+                break
+            i += 1
+            k += 1
+        if k == len(emp_key):
+            t = t[i:].strip(" -—·、:：")
+    return t or (j.exam_type_norm or j.job_type or "岗位")
+
+
 def _job_rows(jobs) -> str:
     rows = []
     for j in jobs:
-        title = (j.position_example or "").strip() or (j.exam_type_norm or j.job_type or "岗位")
+        title = _display_title(j)
         loc = "·".join(x for x in (j.city, j.district) if x) or (j.work_location or "")[:30]
         signup = (j.signup_time or "").strip()[:40] or "见公告"
         rows.append(
@@ -306,6 +341,8 @@ def _render_index(db: Session = None) -> str:
             f"<div class='chips'>{chips}</div>"
             f"<h2 style='font-size:16px;margin-top:20px'>按考试类型</h2>"
             f"<div class='chips'>{et_chips}</div>"
+            f"<h2 style='font-size:16px;margin-top:20px'>热门专题</h2>"
+            f"<div class='chips'><a href='/topic'>不限专业·应届·央国企·编制等热门筛选组合专题</a></div>"
             f"<h2 style='font-size:16px;margin-top:20px'>数据榜单</h2>"
             f"<div class='chips'><a href='/rank/shangan'>上岸难度参考榜</a>"
             f"<a href='/rank/sanbuxian'>三不限岗位雷达</a></div>"
@@ -527,6 +564,43 @@ def _major_live_slugs(db: Session) -> list:
             if c["pos"] + c["campus"] + c["bianzhi"] > 0]
 
 
+def _dedup_sample_jobs(jobs, limit: int = 20) -> list:
+    """样例去重：同 岗位名+单位 的多地同岗只保留首条，并记录地区数。"""
+    seen: dict = {}
+    out = []
+    for j in jobs:
+        key = (_display_title(j), (j.employer or "").strip())
+        if key in seen:
+            locs = seen[key]
+            loc = "·".join(x for x in (j.city, j.district) if x) or (j.work_location or "")[:30]
+            if loc:
+                locs.add(loc)
+            continue
+        if len(out) >= limit:
+            continue
+        loc = "·".join(x for x in (j.city, j.district) if x) or (j.work_location or "")[:30]
+        seen[key] = {loc} if loc else set()
+        out.append((j, seen[key]))
+    return out
+
+
+def _dedup_job_rows(dedup_jobs) -> str:
+    rows = []
+    for j, locs in dedup_jobs:
+        title = _display_title(j)
+        n = len(locs)
+        first = sorted(locs)[0] if locs else ""
+        loc = f"{first} 等 {n} 个地区" if n > 1 else first
+        signup = (j.signup_time or "").strip()[:40] or "见公告"
+        rows.append(
+            f"<tr><td data-l='岗位'>{_esc(title[:60])}</td>"
+            f"<td data-l='单位'>{_esc((j.employer or '')[:40])}</td>"
+            f"<td data-l='地点'>{_esc(loc)}</td>"
+            f"<td data-l='学历'>{_esc(j.edu_level_norm or '不限')}</td>"
+            f"<td data-l='报名时间'>{_esc(signup)}</td></tr>")
+    return "".join(rows)
+
+
 def _major_jsonld(name: str, jobs) -> str:
     postings = []
     for j in jobs[:20]:
@@ -618,8 +692,9 @@ def _render_major(slug: str, db: Session = None) -> str:
         raise HTTPException(status_code=404)
     db.execute(text("SET statement_timeout = '120s'"))  # 样例查询仅预热路径承担
     jobs = (_major_positions(db, name)
-            .order_by(Position.id.desc()).limit(20).all())
+            .order_by(Position.id.desc()).limit(80).all())
     db.execute(text("SET statement_timeout = DEFAULT"))
+    samples = _dedup_sample_jobs(jobs, limit=20)
 
     top_prov = sorted(prov_counts.items(), key=lambda kv: -kv[1])[:10]
     prov_chips = "".join(
@@ -651,11 +726,12 @@ def _render_major(slug: str, db: Session = None) -> str:
                f"<div class='chips'>{et_chips}</div>" if et_chips else "")
             + (f"<h2 style='font-size:16px;margin:16px 0 8px'>省份分布 Top10</h2>"
                f"<div class='chips'>{prov_chips}</div>" if prov_chips else "")
-            + f"<a class='cta' href='{_esc(deep)}'>在{BRAND}中按「{name}」筛选体制内岗位 →</a> "
-            + (f"<a class='cta' style='background:#0f766e' href='{_esc(campus_deep)}'>查看{name}校招岗位 →</a>" if campus_total else "")
+            + f"<div class='ctas'><a class='cta' href='{_esc(deep)}'>在{BRAND}中按「{name}」筛选体制内岗位 →</a>"
+            + (f"<a class='cta ghost' href='{_esc(campus_deep)}'>查看{name}校招岗位 →</a>" if campus_total else "")
+            + "</div>"
             + f"<h2 style='font-size:16px;margin:16px 0 8px'>最新岗位样例</h2>"
             f"<table><thead><tr><th>岗位</th><th>单位</th><th>地点</th><th>学历</th><th>报名时间</th></tr></thead>"
-            f"<tbody>{_job_rows(jobs)}</tbody></table>"
+            f"<tbody>{_dedup_job_rows(samples)}</tbody></table>"
             + (f"<h2 style='font-size:16px;margin:20px 0 8px'>{disc}门类其他专业</h2>"
                f"<div class='chips'>{others}</div>" if others else "")
             + "<h2 style='font-size:16px;margin:20px 0 8px'>更多</h2>"
@@ -666,7 +742,7 @@ def _render_major(slug: str, db: Session = None) -> str:
     return _page(f"{name}专业能报哪些岗位（{total_all:,} 个在库） - {BRAND}",
                  f"{name}专业可报岗位 {total_all:,} 个：公务员、事业单位、编制与校招岗位数量、省份分布、考试类型与最新岗位样例，每日更新。",
                  f"{SITE}/major/{slug}", crumb, body,
-                 _major_jsonld(name, jobs))
+                 _major_jsonld(name, [j for j, _locs in samples]))
 
 
 @router.get("/major", response_class=HTMLResponse)
@@ -682,6 +758,335 @@ def major_detail(slug: str, db: Session = Depends(get_db)):
             return RedirectResponse(f"/major/{canonical}", status_code=301)
         raise HTTPException(status_code=404)
     return _html(_render_major(slug, db=db))
+
+
+# ---------------- 热门筛选组合专题页 /topic ----------------
+
+TOPIC_CANDIDATES = topic_pages.build_candidates(PROVINCES)
+
+_TOPIC_DIST_LABELS = {
+    "buxian": "学历分布",
+    "edu": "考试类型分布",
+    "campus_city": "学历要求分布",
+    "campus_soe": "学历要求分布",
+    "bz_edu": "类型分布",
+    "bz_med": "类型分布",
+}
+_TOPIC_BOARD_LABELS = {"positions": "体制内", "campus": "校招/社招", "bianzhi": "编制/央国企"}
+
+
+def _week_ago() -> datetime:
+    return datetime.now(timezone.utc) - timedelta(days=7)
+
+
+def _topic_unrestricted():
+    return or_(Position.undergrad_major.ilike("%不限%"),
+               Position.grad_major.ilike("%不限%"),
+               Position.raw_major.ilike("%不限%"))
+
+
+@cache.cached("seo_topic_counts", ttl=SEO_TTL, stale=True)
+def _topic_counts(db: Session = None) -> dict:
+    """全部候选专题的岗位统计（slug -> {n, week, dist}）；只在预热时重算。"""
+    db.execute(text("SET statement_timeout = '300s'"))  # 仅预热路径承担
+    week_ago = _week_ago()
+    out: dict = {}
+
+    # 体制内：省×学历×考试类型 一次分组（edu 专题的 n/考试类型分布）
+    pos_rows = (_active(db.query(Position.province, Position.edu_level_norm,
+                                 Position.exam_type_norm, func.count()))
+                .group_by(Position.province, Position.edu_level_norm,
+                          Position.exam_type_norm).all())
+    pos_week = dict(
+        _active(db.query(func.concat(Position.province, "|", Position.edu_level_norm),
+                         func.count()))
+        .filter(Position.created_at >= week_ago)
+        .group_by(Position.province, Position.edu_level_norm).all())
+    edu_agg: dict = {}
+    for prov, edu, et, n in pos_rows:
+        if not prov or not edu:
+            continue
+        c = edu_agg.setdefault((prov, edu), {"n": 0, "dist": {}})
+        c["n"] += n
+        if et:
+            c["dist"][et] = c["dist"].get(et, 0) + n
+
+    # 体制内不限专业：省×学历 一次分组（buxian 专题的 n/学历分布）
+    bx_rows = (_active(db.query(Position.province, Position.edu_level_norm, func.count()))
+               .filter(_topic_unrestricted())
+               .group_by(Position.province, Position.edu_level_norm).all())
+    bx_week = dict(
+        _active(db.query(Position.province, func.count()))
+        .filter(_topic_unrestricted(), Position.created_at >= week_ago)
+        .group_by(Position.province).all())
+    bx_agg: dict = {}
+    for prov, edu, n in bx_rows:
+        if not prov:
+            continue
+        c = bx_agg.setdefault(prov, {"n": 0, "dist": {}})
+        c["n"] += n
+        if edu:
+            c["dist"][edu] = c["dist"].get(edu, 0) + n
+
+    # 编制：category 内 省×类型 分组
+    bz_agg: dict = {}
+    bz_week: dict = {}
+    for kind, category in (("bz_edu", "教育系统"), ("bz_med", "医疗系统")):
+        rows = (db.query(BianzhiJob.province, BianzhiJob.job_type, func.count())
+                .filter(BianzhiJob.category == category)
+                .group_by(BianzhiJob.province, BianzhiJob.job_type).all())
+        for prov, jt, n in rows:
+            if not prov:
+                continue
+            c = bz_agg.setdefault((kind, prov), {"n": 0, "dist": {}})
+            c["n"] += n
+            if jt:
+                c["dist"][jt] = c["dist"].get(jt, 0) + n
+        bz_week.update({
+            (kind, prov): n for prov, n in
+            db.query(BianzhiJob.province, func.count())
+            .filter(BianzhiJob.category == category,
+                    BianzhiJob.created_at >= week_ago)
+            .group_by(BianzhiJob.province).all() if prov})
+
+    for slug, t in TOPIC_CANDIDATES.items():
+        kind = t["kind"]
+        if kind == "edu":
+            c = edu_agg.get((t["prov"], t["edu"])) or {"n": 0, "dist": {}}
+            out[slug] = {"n": c["n"], "week": pos_week.get(f"{t['prov']}|{t['edu']}", 0),
+                         "dist": c["dist"]}
+        elif kind == "buxian":
+            c = bx_agg.get(t["prov"]) or {"n": 0, "dist": {}}
+            out[slug] = {"n": c["n"], "week": bx_week.get(t["prov"], 0), "dist": c["dist"]}
+        elif kind in ("bz_edu", "bz_med"):
+            c = bz_agg.get((kind, t["prov"])) or {"n": 0, "dist": {}}
+            out[slug] = {"n": c["n"], "week": bz_week.get((kind, t["prov"]), 0),
+                         "dist": c["dist"]}
+        else:  # campus_city / campus_soe：城市子串命中，逐城市小表查询
+            q = db.query(CampusJob).filter(CampusJob.locations.ilike(f"%{t['city']}%"))
+            if kind == "campus_soe":
+                q = q.filter(CampusJob.company_type.in_(topic_pages.SOE_TYPES))
+            n = q.count()
+            week = q.filter(CampusJob.created_at >= week_ago).count()
+            dist = dict(
+                q.with_entities(CampusJob.edu_requirement, func.count())
+                .filter(CampusJob.edu_requirement.isnot(None),
+                        CampusJob.edu_requirement != "")
+                .group_by(CampusJob.edu_requirement).all())
+            out[slug] = {"n": n, "week": week, "dist": dist}
+    db.execute(text("SET statement_timeout = DEFAULT"))
+    return out
+
+
+def _topic_live(db: Session) -> list:
+    """收录专题列表 [(slug, n)]：岗位数≥MIN_JOBS、每类取 Top、总量封顶，按岗位数排序。"""
+    counts = _topic_counts(db=db)
+    by_kind: dict = {}
+    for slug, t in TOPIC_CANDIDATES.items():
+        n = (counts.get(slug) or {}).get("n", 0)
+        if n >= topic_pages.MIN_JOBS:
+            by_kind.setdefault(t["kind"], []).append((slug, n))
+    picked = []
+    for kind, items in by_kind.items():
+        items.sort(key=lambda kv: -kv[1])
+        picked.extend(items[:topic_pages.KIND_CAPS[kind]])
+    picked.sort(key=lambda kv: -kv[1])
+    return picked[:topic_pages.MAX_TOPICS]
+
+
+def _topic_live_slugs(db: Session) -> list:
+    return [slug for slug, _ in _topic_live(db)]
+
+
+def _topic_samples(db: Session, t: dict, limit: int = 20):
+    kind = t["kind"]
+    if kind in ("buxian", "edu"):
+        q = _active(db.query(Position)).filter(Position.province == t["prov"])
+        q = (q.filter(_topic_unrestricted()) if kind == "buxian"
+             else q.filter(Position.edu_level_norm == t["edu"]))
+        return q.order_by(Position.id.desc()).limit(limit).all()
+    if kind in ("campus_city", "campus_soe"):
+        q = db.query(CampusJob).filter(CampusJob.locations.ilike(f"%{t['city']}%"))
+        if kind == "campus_soe":
+            q = q.filter(CampusJob.company_type.in_(topic_pages.SOE_TYPES))
+        return q.order_by(CampusJob.id.desc()).limit(limit).all()
+    category = "教育系统" if kind == "bz_edu" else "医疗系统"
+    return (db.query(BianzhiJob)
+            .filter(BianzhiJob.category == category, BianzhiJob.province == t["prov"])
+            .order_by(BianzhiJob.id.desc()).limit(limit).all())
+
+
+def _topic_rows(t: dict, jobs) -> str:
+    kind = t["kind"]
+    if kind in ("buxian", "edu"):
+        return _job_rows(jobs)
+    rows = []
+    if kind in ("campus_city", "campus_soe"):
+        for j in jobs:
+            rows.append(
+                f"<tr><td data-l='岗位'>{_esc(((j.positions or '').replace(chr(10), ' ') or '校园招聘')[:40])}</td>"
+                f"<td data-l='单位'>{_esc((j.company or '')[:30])}</td>"
+                f"<td data-l='类型'>{_esc((j.company_type or '')[:14])}</td>"
+                f"<td data-l='截止'>{_esc(_daily_deadline(j.deadline_date, j.deadline_text))}</td></tr>")
+        return "".join(rows)
+    for j in jobs:
+        rows.append(
+            f"<tr><td data-l='单位'>{_esc(((j.employer or '').replace(chr(10), ' ') or '编制岗位')[:36])}</td>"
+            f"<td data-l='类型'>{_esc((j.job_type or '')[:16])}</td>"
+            f"<td data-l='学历'>{_esc((j.edu_requirement or '')[:14])}</td>"
+            f"<td data-l='截止'>{_esc(_daily_deadline(j.deadline_date, j.deadline_text))}</td></tr>")
+    return "".join(rows)
+
+
+_TOPIC_TABLE_HEADS = {
+    "positions": "<tr><th>岗位</th><th>单位</th><th>地点</th><th>学历</th><th>报名时间</th></tr>",
+    "campus": "<tr><th>岗位</th><th>单位</th><th>类型</th><th>截止</th></tr>",
+    "bianzhi": "<tr><th>单位</th><th>类型</th><th>学历</th><th>截止</th></tr>",
+}
+
+
+def _topic_jsonld(t: dict, jobs) -> str:
+    postings = []
+    for j in jobs[:20]:
+        if t["board"] == "positions":
+            title = (j.position_example or "").strip() or (j.exam_type_norm or "岗位")
+            org = j.employer
+            region = j.province or "全国"
+            locality = j.city or j.province or "全国"
+            posted = j.created_at.strftime("%Y-%m-%d") if j.created_at else None
+            through = (j.signup_deadline.strftime("%Y-%m-%d")
+                       if j.signup_deadline else None)
+        elif t["board"] == "campus":
+            title = ((j.positions or "").replace("\n", " ").strip() or "校园招聘")
+            org = j.company
+            region = t.get("city") or "全国"
+            locality = region
+            posted = j.created_at.strftime("%Y-%m-%d") if j.created_at else None
+            through = j.deadline_date.strftime("%Y-%m-%d") if j.deadline_date else None
+        else:
+            title = ((j.employer or "").replace("\n", " ").strip() or "编制岗位")
+            org = j.employer
+            region = j.province or "全国"
+            locality = region
+            posted = j.created_at.strftime("%Y-%m-%d") if j.created_at else None
+            through = j.deadline_date.strftime("%Y-%m-%d") if j.deadline_date else None
+        item = {
+            "@type": "JobPosting",
+            "title": title[:80],
+            "hiringOrganization": {"@type": "Organization",
+                                   "name": (org or "招录单位")[:80]},
+            "jobLocation": {"@type": "Place", "address": {
+                "@type": "PostalAddress", "addressRegion": region,
+                "addressLocality": locality, "addressCountry": "CN"}},
+            "employmentType": "FULL_TIME",
+        }
+        if posted:
+            item["datePosted"] = posted
+        if through:
+            item["validThrough"] = through
+        postings.append(item)
+    if not postings:
+        return ""
+    data = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": t["h1"],
+        "itemListElement": [
+            {"@type": "ListItem", "position": i + 1, "item": p}
+            for i, p in enumerate(postings)],
+    }
+    return ("<script type=\"application/ld+json\">"
+            + json.dumps(data, ensure_ascii=False) + "</script>")
+
+
+@cache.cached("seo_topic_index", ttl=SEO_TTL, stale=True)
+def _render_topic_index(db: Session = None) -> str:
+    live = _topic_live(db)
+    counts = dict(live)
+    sections = []
+    for kind, label in topic_pages.KIND_LABELS.items():
+        chips = "".join(
+            f"<a href='/topic/{slug}'>{TOPIC_CANDIDATES[slug]['name']}"
+            f"<span class='n'>{n:,}</span></a>"
+            for slug, n in live if TOPIC_CANDIDATES[slug]["kind"] == kind)
+        if chips:
+            sections.append(
+                f"<h2 style='font-size:16px;margin:16px 0 8px'>{label}</h2>"
+                f"<div class='chips'>{chips}</div>")
+    grand = sum(counts.values())
+    body = (f"<h1>热门筛选组合专题：按需求一键直达岗位</h1>"
+            f"<p class='desc'>把最常见的找岗需求做成专题页：不限专业可报、大专/硕士学历门槛、"
+            f"热门城市应届校招、央国企校招、教师/医疗编制等，共 {len(live)} 个专题、"
+            f"累计 {grand:,} 个在库岗位，点击专题查看岗位统计、最新样例并一键回站内筛选，每日更新。</p>"
+            + "".join(sections)
+            + f"<a class='cta' href='/'>打开{BRAND}筛选全部岗位 →</a>")
+    crumb = f"<a href='/'>{BRAND}</a> › 热门专题"
+    jsonld = ("<script type=\"application/ld+json\">" + json.dumps({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": f"{BRAND}热门筛选组合专题",
+        "itemListElement": [
+            {"@type": "ListItem", "position": i + 1,
+             "url": f"{SITE}/topic/{slug}",
+             "name": TOPIC_CANDIDATES[slug]["h1"]}
+            for i, (slug, _) in enumerate(live[:50])],
+    }, ensure_ascii=False) + "</script>")
+    return _page(f"热门筛选组合专题（不限专业·应届·央国企·编制） - {BRAND}",
+                 f"{len(live)} 个热门找岗专题：不限专业可报体制内、大专/硕士可报、热门城市应届校招、央国企校招、教师与医疗编制，含岗位统计与最新样例，每日更新。",
+                 f"{SITE}/topic", crumb, body, jsonld)
+
+
+@cache.cached("seo_topic", ttl=SEO_TTL, stale=True)
+def _render_topic(slug: str, db: Session = None) -> str:
+    t = TOPIC_CANDIDATES[slug]
+    if slug not in _topic_live_slugs(db):
+        raise HTTPException(status_code=404)
+    c = _topic_counts(db=db).get(slug) or {}
+    total = c.get("n", 0)
+    week = c.get("week", 0)
+    dist: dict = c.get("dist") or {}
+    db.execute(text("SET statement_timeout = '120s'"))  # 样例查询仅预热路径承担
+    jobs = _topic_samples(db, t)
+    db.execute(text("SET statement_timeout = DEFAULT"))
+    dist_top = sorted(dist.items(), key=lambda kv: -kv[1])[:5]
+    dist_txt = "、".join(f"{k} {v:,} 个" for k, v in dist_top)
+    board_label = _TOPIC_BOARD_LABELS[t["board"]]
+    week_txt = f"近 7 天新增 {week:,} 个。" if week else ""
+    desc_txt = (f"{t['desc']}当前在库岗位共 {total:,} 个（{board_label}板块）。{week_txt}"
+                + (f"{_TOPIC_DIST_LABELS[t['kind']]}：{dist_txt}。" if dist_txt else "")
+                + "数据来自官方公开招录渠道，去重后每日更新，实际以官方公告为准。")
+    kind_sibs = "".join(
+        f"<a href='/topic/{s}'>{TOPIC_CANDIDATES[s]['name']}</a>"
+        for s in _topic_live_slugs(db)
+        if s != slug and TOPIC_CANDIDATES[s]["kind"] == t["kind"])
+    body = (f"<h1>{t['h1']}（{total:,} 个在库）</h1>"
+            f"<p class='desc'>{desc_txt}</p>"
+            f"<a class='cta' href='{_esc(t['deep'])}'>在{BRAND}中打开该筛选组合 →</a>"
+            f"<h2 style='font-size:16px;margin:16px 0 8px'>最新岗位样例</h2>"
+            f"<table><thead>{_TOPIC_TABLE_HEADS[t['board']]}</thead>"
+            f"<tbody>{_topic_rows(t, jobs)}</tbody></table>"
+            + (f"<h2 style='font-size:16px;margin:20px 0 8px'>同类专题</h2>"
+               f"<div class='chips'>{kind_sibs}</div>" if kind_sibs else "")
+            + "<h2 style='font-size:16px;margin:20px 0 8px'>更多</h2>"
+            "<div class='chips'><a href='/topic'>全部热门专题</a>"
+            "<a href='/zhaokao'>按省份浏览岗位</a>"
+            "<a href='/major'>按专业反查岗位</a></div>")
+    crumb = f"<a href='/'>{BRAND}</a> › <a href='/topic'>热门专题</a> › {t['name']}"
+    return _page(f"{t['h1']}（{total:,} 个在库） - {BRAND}",
+                 f"{t['h1']} {total:,} 个：岗位统计、{_TOPIC_DIST_LABELS[t['kind']]}与最新岗位样例，附一键回站内筛选入口，每日更新。",
+                 f"{SITE}/topic/{slug}", crumb, body, _topic_jsonld(t, jobs))
+
+
+@router.get("/topic", response_class=HTMLResponse)
+def topic_index(db: Session = Depends(get_db)):
+    return _html(_render_topic_index(db=db))
+
+
+@router.get("/topic/{slug}", response_class=HTMLResponse)
+def topic_detail(slug: str, db: Session = Depends(get_db)):
+    if slug not in TOPIC_CANDIDATES:
+        raise HTTPException(status_code=404)
+    return _html(_render_topic(slug, db=db))
 
 
 @router.get("/zhaokao", response_class=HTMLResponse)
@@ -861,8 +1266,11 @@ def _render_daily_detail(day_str: str, db: Session = None) -> str:
         f"<a href='/daily/{d}'>{int(d[5:7])}月{int(d[8:10])}日</a>"
         for d in days if d != day_str)
     total = len(campus) + len(bianzhi)
+    intro = re.sub(r"[（(]\s*全量筛选戳\s*\S+\s*[）)]", "", row.intro or "").strip().rstrip("：:")
+    intro_html = (f"{_esc(intro)}，全量岗位可在"
+                  f"<a href='/'>{BRAND}（jobs.zalize.com）</a>筛选：")
     body = (f"<h1>每日岗位精选 · {_fmt_day_cn(day)}</h1>"
-            f"<p class='desc'>{_esc(row.intro)}</p>"
+            f"<p class='desc'>{intro_html}</p>"
             + "".join(sections)
             + f"<a class='cta' href='/'>打开{BRAND}筛选与订阅全部岗位 →</a>"
             f"<h2 style='font-size:16px;margin:20px 0 8px'>近期精选</h2>"
@@ -1288,10 +1696,16 @@ def sitemap(db: Session = Depends(get_db)):
         url(f"{SITE}/zhaokao", "0.9"),
         url(f"{SITE}/daily", "0.9"),
         url(f"{SITE}/major", "0.9"),
+        url(f"{SITE}/topic", "0.9"),
         url(f"{SITE}/rank", "0.8"),
         url(f"{SITE}/rank/shangan", "0.8"),
         url(f"{SITE}/rank/sanbuxian", "0.8"),
     ]
+    try:
+        for s in _topic_live_slugs(db):
+            urls.append(url(f"{SITE}/topic/{s}", "0.7"))
+    except Exception:
+        pass  # 专题页枚举失败不影响 sitemap 主体
     try:
         for s in _major_live_slugs(db):
             urls.append(url(f"{SITE}/major/{s}", "0.7"))

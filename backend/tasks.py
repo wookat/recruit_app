@@ -1,5 +1,6 @@
 import csv
 import json
+import logging
 import os
 import re
 import time
@@ -47,6 +48,8 @@ from recruit_parser import (
     extract_zip,
     parse_position_excel,
 )
+
+logger = logging.getLogger(__name__)
 
 APP_DATA_DIR = os.getenv("APP_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data"))
 os.makedirs(APP_DATA_DIR, exist_ok=True)
@@ -164,6 +167,7 @@ def submit_indexnow(self):
     finally:
         db.close()
     urls.extend((f"{SITE}/rank", f"{SITE}/rank/shangan", f"{SITE}/rank/sanbuxian"))
+    urls.append(f"{SITE}/feed.xml")
     urls.append(f"{SITE}/major")
     db = SessionLocal()
     try:
@@ -195,6 +199,8 @@ def submit_indexnow(self):
             },
             timeout=30,
         )
+        logger.info("indexnow submit: status=%s urls=%s body=%s",
+                    resp.status_code, len(urls), (resp.text or "")[:200])
         return {"status": resp.status_code, "urls": len(urls)}
     except Exception as exc:
         raise self.retry(exc=exc)

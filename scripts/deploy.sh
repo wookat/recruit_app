@@ -27,6 +27,19 @@ if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]]; then
   echo "  分支部署会覆盖其它未合并分支的已部署改动，合并后请从 main 重新部署。"
   echo "=============================================================="
 fi
+# 关键调度窗保护：北京时间 05:30–08:00 是每日采集/刷新任务密集期，
+# 重启 worker 会造成 beat 定时任务漏发（启动补发可兜底，但仍应尽量避开）
+BJ_HHMM=$(TZ=Asia/Shanghai date +%H%M)
+if [[ "10#$BJ_HHMM" -ge 10#0530 && "10#$BJ_HHMM" -lt 10#0800 ]]; then
+  if [[ "${ALLOW_SCHED_WINDOW:-0}" == "1" ]]; then
+    echo "WARN: 当前处于关键调度窗（北京 05:30–08:00），ALLOW_SCHED_WINDOW=1 已指定，继续部署"
+  else
+    echo "ERROR: 当前北京时间 $BJ_HHMM 处于关键调度窗 05:30–08:00，重启 worker 可能漏发定时任务。" >&2
+    echo "  请窗口外部署；确需现在部署：ALLOW_SCHED_WINDOW=1 SERVER=... ./scripts/deploy.sh" >&2
+    exit 1
+  fi
+fi
+
 REMOTE_DIR=/opt/recruit_app
 SSH=(sshpass -e ssh -o StrictHostKeyChecking=no "$SERVER")
 RSYNC=(sshpass -e rsync -az -e "ssh -o StrictHostKeyChecking=no")

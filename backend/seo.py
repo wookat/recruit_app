@@ -40,6 +40,8 @@ def _html(content: str) -> HTMLResponse:
 
 SITE = "https://jobs.zalize.com"
 BRAND = "上岸雷达"
+# OG/Twitter 分享卡片图（1200×630 静态品牌图，scripts/gen_share_card.py 生成）
+SHARE_IMAGE = f"{SITE}/share-card.png"
 
 PROVINCES = [
     ("beijing", "北京"), ("tianjin", "天津"), ("hebei", "河北"),
@@ -220,6 +222,19 @@ def _page(title: str, desc: str, canonical: str, crumb: str, body: str,
 <title>{_esc(title)}</title>
 <meta name="description" content="{_esc(desc)}">
 <link rel="canonical" href="{canonical}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{BRAND}">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="{_esc(title)}">
+<meta property="og:description" content="{_esc(desc)}">
+<meta property="og:url" content="{canonical}">
+<meta property="og:image" content="{SHARE_IMAGE}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{_esc(title)}">
+<meta name="twitter:description" content="{_esc(desc)}">
+<meta name="twitter:image" content="{SHARE_IMAGE}">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>{_CSS}</style>
 {jsonld}
@@ -1141,10 +1156,26 @@ def topic_index(db: Session = Depends(get_db)):
     return _html(_render_topic_index(db=db))
 
 
+# 专题 slug 片段别名：外部拼错/猜测的常见写法归一到真实片段（无对应专题时回 /topic）
+_TOPIC_FRAG_ALIASES = {"benke": "buxian", "dazhuang": "dazhuan", "yanjiusheng": "shuoshi"}
+_TOPIC_REGION_SLUGS = ({s for s, _ in PROVINCES}
+                       | {s for s, _ in topic_pages.TOPIC_CITIES})
+
+
 @router.get("/topic/{slug}", response_class=HTMLResponse)
 def topic_detail(slug: str, db: Session = Depends(get_db)):
     if slug not in TOPIC_CANDIDATES:
+        region, _, frag = slug.partition("-")
+        alias = f"{region}-{_TOPIC_FRAG_ALIASES.get(frag, '')}"
+        if alias in TOPIC_CANDIDATES:
+            return RedirectResponse(f"/topic/{alias}", status_code=301)
+        if region in _TOPIC_REGION_SLUGS:
+            # 地区前缀合法但组合不存在（如 /topic/guangdong-benke）：回专题索引而非 404
+            return RedirectResponse("/topic", status_code=302)
         raise HTTPException(status_code=404)
+    if slug not in _topic_live_slugs(db):
+        # 候选存在但当前未收录（岗位数不足/被类目上限挤出）：回专题索引而非 404
+        return RedirectResponse("/topic", status_code=302)
     return _html(_render_topic(slug, db=db))
 
 

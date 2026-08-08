@@ -65,4 +65,12 @@ if [[ "$MODE" != "--frontend-only" ]]; then
   "${SSH[@]}" "sleep 15 && docker exec recruit-worker celery -A celery_app call tasks.warm_seo_pages" || \
     echo "WARN: SEO 缓存重预热任务下发失败，可手动执行 tasks.warm_seo_pages"
 fi
+# 磁盘水位检查：>90% 打告警日志（每日维护脚本见 scripts/setup-disk-maintenance.sh）
+DISK_USE=$("${SSH[@]}" "df --output=pcent / | tail -1 | tr -dc '0-9'" || echo "")
+if [[ -n "$DISK_USE" && "$DISK_USE" -ge 90 ]]; then
+  echo "ALERT: 服务器根分区磁盘使用率 ${DISK_USE}% >= 90%，请尽快清理（docker prune/日志/exports）" >&2
+elif [[ -n "$DISK_USE" ]]; then
+  echo "disk: 服务器根分区使用率 ${DISK_USE}%"
+fi
+
 echo "deployed: $(curl -s https://jobs.zalize.com/ | grep -o 'index-[^\"]*\.js' | head -1)"

@@ -384,6 +384,8 @@ _WINDOW_FALLBACK = (7, 14, 30)
 def generate_weekly_content(db: Session, day: date | None = None) -> dict:
     """生成一期三类 × 两版式盘点内容与二维码，写入 exports/content/<周>/。"""
     day = day or _today_cn()
+    # 离线周任务，统计 SQL 较重（多窗口 + ILIKE），放宽本会话语句超时
+    db.execute(text("SET statement_timeout = '300s'"))
     week = _week_tag(day)
     out_dir = os.path.join(CONTENT_DIR, week)
     os.makedirs(out_dir, exist_ok=True)

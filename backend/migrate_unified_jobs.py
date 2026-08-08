@@ -178,9 +178,14 @@ def main():
         # 建视图/索引是长事务，不受全局 20s 语句超时限制
         conn.execute(text("SET statement_timeout = 0"))
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
-        conn.execute(text(
-            "ALTER TABLE campus_jobs ADD COLUMN IF NOT EXISTS invalid_reason varchar(50)"
-        ))
+        has_ir = conn.execute(text(
+            "SELECT 1 FROM information_schema.columns"
+            " WHERE table_name = 'campus_jobs' AND column_name = 'invalid_reason'"
+        )).scalar()
+        if not has_ir:
+            conn.execute(text(
+                "ALTER TABLE campus_jobs ADD COLUMN IF NOT EXISTS invalid_reason varchar(50)"
+            ))
         has_cbd = conn.execute(text(
             "SELECT 1 FROM information_schema.columns"
             " WHERE table_name = 'positions' AND column_name = 'cross_board_dup'"

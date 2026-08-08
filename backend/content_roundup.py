@@ -392,7 +392,7 @@ def generate_weekly_content(db: Session, day: date | None = None) -> dict:
         s = {}
         for days in _WINDOW_FALLBACK:
             s = stats_fn(db, day, days=days)
-            if s and s.get(gate_key):
+            if s and s.get(gate_key) and s.get("new_count"):
                 break
         if not s or not s.get(gate_key):
             skipped.append(name)

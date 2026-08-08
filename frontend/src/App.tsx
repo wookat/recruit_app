@@ -543,7 +543,15 @@ export default function App() {
           <div className="flex min-w-0 items-center gap-2.5">
             <BrandMark className="h-9 w-9 shrink-0" />
             <div className="flex min-w-0 flex-col leading-none">
-              <h1 className={`truncate whitespace-nowrap font-bold tracking-tight ${getLang() === 'en' ? 'text-[15px] sm:text-base lg:text-lg' : 'text-lg'}`}>{t("上岸雷达")}</h1>
+              <h1 className={`truncate whitespace-nowrap font-bold tracking-tight ${getLang() === 'en' ? 'text-[15px] sm:text-base lg:text-lg' : 'text-lg'}`} aria-label={t("上岸雷达")}>
+                {getLang() === 'en' ? (
+                  <>
+                    Shangan<span className="hidden min-[430px]:inline"> Radar</span>
+                  </>
+                ) : (
+                  t("上岸雷达")
+                )}
+              </h1>
               <span className="mt-0.5 hidden truncate whitespace-nowrap text-[11px] tracking-widest text-muted-foreground lg:block">
                 {t("体制内岗位 · 校招信息 一站检索")}{' '}</span>
             </div>

@@ -27,7 +27,7 @@ import bianzhi as bianzhi_api
 import campus as campus_api
 import csv_export
 import quality
-from models import Base, BianzhiJob, CampusJob, PushSubscription
+from models import Base, BianzhiJob, BotCrawlDaily, CampusJob, PushSubscription
 from pywebpush import webpush, WebPushException
 import refresh_feishu
 import collect_ciic
@@ -527,6 +527,33 @@ def cleanup_exports():
         except OSError:
             continue
     return {"removed": removed}
+
+
+@celery_app.task
+def aggregate_bot_crawl(day: str = ""):
+    """每日解析前一日（北京时间）Caddy access log，落库 bot_crawl_daily。
+
+    幂等：同日重跑先删后插。day 缺省为昨天，可传 YYYY-MM-DD 手动补算。
+    worker 容器需只读挂载 /var/log/caddy（docker-compose.prod.yml）。
+    """
+    import bot_crawl
+
+    target = datetime.strptime(day, "%Y-%m-%d").date() if day else bot_crawl.yesterday_cn()
+    agg = bot_crawl.aggregate_day(target)
+    db = SessionLocal()
+    try:
+        Base.metadata.create_all(bind=engine, tables=[BotCrawlDaily.__table__])
+        db.query(BotCrawlDaily).filter(BotCrawlDaily.day == target).delete()
+        for (bot, fam), (hits, s2, s4, s5) in sorted(agg.items()):
+            db.add(BotCrawlDaily(
+                day=target, bot=bot, path_family=fam,
+                hits=hits, status_2xx=s2, status_4xx=s4, status_5xx=s5,
+            ))
+        db.commit()
+        total = sum(v[0] for v in agg.values())
+        return {"day": str(target), "rows": len(agg), "hits": total}
+    finally:
+        db.close()
 
 
 @celery_app.task

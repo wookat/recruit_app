@@ -63,6 +63,7 @@ SELECT
   p.created_at AS created_at
 FROM positions p
 WHERE p.dup_of_id IS NULL AND p.invalid_reason IS NULL
+  AND NOT p.cross_board_dup
   AND p.job_type IN ({TIZHINEI_JOB_TYPE_SQL})
 UNION ALL
 SELECT
@@ -180,6 +181,16 @@ def main():
         conn.execute(text(
             "ALTER TABLE campus_jobs ADD COLUMN IF NOT EXISTS invalid_reason varchar(50)"
         ))
+        has_cbd = conn.execute(text(
+            "SELECT 1 FROM information_schema.columns"
+            " WHERE table_name = 'positions' AND column_name = 'cross_board_dup'"
+        )).scalar()
+        if not has_cbd:
+            # ALTER 需 AccessExclusive 锁，先查列存在避免无谓排队阻塞线上查询
+            conn.execute(text(
+                "ALTER TABLE positions ADD COLUMN IF NOT EXISTS"
+                " cross_board_dup boolean NOT NULL DEFAULT false"
+            ))
         conn.commit()
         ensure_city_province(conn)
         exists = conn.execute(text(
@@ -201,8 +212,9 @@ def main():
                     "SELECT definition FROM pg_matviews WHERE matviewname = 'unified_jobs'"
                 )).scalar() or ""
                 # R279：体制内分支需含 job_type 白名单，校招分支需排除软删行
-                if "央企/国企" not in definition or "c.invalid_reason" not in definition:
-                    print("unified_jobs 缺少体制内 job_type 白名单/校招软删过滤，重建 ...")
+                if ("央企/国企" not in definition or "c.invalid_reason" not in definition
+                        or "cross_board_dup" not in definition):
+                    print("unified_jobs 缺少体制内 job_type 白名单/校招软删过滤/跨板块去重，重建 ...")
                     conn.execute(text("DROP MATERIALIZED VIEW unified_jobs"))
                     conn.commit()
                     exists = None

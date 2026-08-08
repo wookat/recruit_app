@@ -949,10 +949,15 @@ def refresh_unified_jobs():
     """每日采集入库后刷新 unified_jobs 物化视图并失效 /api/jobs 缓存。"""
     with engine.connect() as conn:
         conn.execute(sql_text("SET statement_timeout = 0"))
-        exists = conn.execute(sql_text(
-            "SELECT 1 FROM pg_matviews WHERE matviewname = 'unified_jobs'"
+        definition = conn.execute(sql_text(
+            "SELECT definition FROM pg_matviews WHERE matviewname = 'unified_jobs'"
         )).scalar()
-        if not exists:
+        if definition and "cross_board_dup" not in definition:
+            # 视图定义过旧（缺跨板块去重过滤），重建
+            conn.execute(sql_text("DROP MATERIALIZED VIEW unified_jobs"))
+            conn.commit()
+            definition = None
+        if not definition:
             migrate_unified_jobs.main()
         else:
             conn.execute(sql_text(

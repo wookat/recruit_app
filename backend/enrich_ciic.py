@@ -32,7 +32,7 @@ from sqlalchemy import text
 import cache
 import precompute
 from database import SessionLocal
-from models import BianzhiJob, CampusJob
+from models import CampusJob
 
 API_DETAIL = "https://www.ciiczhaopin.com/api/position/detail"
 API_SEARCH = "https://www.ciiczhaopin.com/api/position/search"
@@ -264,11 +264,13 @@ def enrich_bianzhi(dry_run: bool = False, limit: int = 0, audit_path: str = "",
                     rec["parsed"] = {"deadline_date": dl.isoformat()}
                     rec["action"] = "filled"
                     if not dry_run:
-                        obj = db.get(BianzhiJob, row.id)
-                        if obj is not None and obj.deadline_date is None:
-                            obj.deadline_date = dl
-                            if not (obj.deadline_text or "").strip():
-                                obj.deadline_text = (raw or "")[:DEADLINE_TEXT_LIMIT]
+                        db.execute(text(
+                            "UPDATE bianzhi_jobs SET deadline_date = :dl,"
+                            " deadline_text = CASE WHEN coalesce(btrim(deadline_text), '') = ''"
+                            " THEN :dt ELSE deadline_text END"
+                            " WHERE id = :rid AND deadline_date IS NULL"),
+                            {"dl": dl, "dt": (raw or "")[:DEADLINE_TEXT_LIMIT],
+                             "rid": row.id})
                     stats["deadline_filled"] += 1
                 audit.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 if not dry_run and i % 200 == 0:

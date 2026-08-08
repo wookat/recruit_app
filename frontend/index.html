@@ -81,6 +81,186 @@
         }
       })()
     </script>
+    <style>
+      .boot-fallback {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: #ffffff;
+        color: #171717;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+          'Microsoft YaHei', sans-serif;
+        z-index: 2147483647;
+      }
+      html.dark .boot-fallback {
+        background: #0a0a0a;
+        color: #fafafa;
+      }
+      .boot-fallback .boot-card {
+        max-width: 420px;
+        text-align: center;
+      }
+      .boot-fallback .boot-brand {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
+      .boot-fallback h1 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 8px;
+      }
+      .boot-fallback p {
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0 0 20px;
+        color: #737373;
+      }
+      html.dark .boot-fallback p {
+        color: #a3a3a3;
+      }
+      .boot-fallback button {
+        appearance: none;
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 24px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        background: #171717;
+        color: #fafafa;
+      }
+      html.dark .boot-fallback button {
+        background: #fafafa;
+        color: #171717;
+      }
+    </style>
+    <script>
+      // 引导守护：主入口 JS 首屏加载失败（网络拦截/旧 SW 提供损坏入口）时 React
+      // 未挂载，页面纯白屏。此脚本不依赖 bundle：8s 内未见挂载标记或入口 script
+      // 报错即注销 SW+清 caches+带 cache-bust 参数强刷一次（冷却窗口防死循环），
+      // 二次仍失败则渲染静态错误卡。挂载成功（main.tsx 调 __bootOk）即清哨兵。
+      ;(function () {
+        var KEY = 'recruit.bootRetriedAt'
+        var COOLDOWN_MS = 10 * 60 * 1000
+        var TIMEOUT_MS = 8000
+        var recovered = false
+
+        function retriedRecently() {
+          try {
+            var ts = Number(sessionStorage.getItem(KEY) || localStorage.getItem(KEY))
+            return ts > 0 && Date.now() - ts < COOLDOWN_MS
+          } catch (e) {
+            return true
+          }
+        }
+        function markRetried() {
+          try {
+            sessionStorage.setItem(KEY, String(Date.now()))
+            localStorage.setItem(KEY, String(Date.now()))
+          } catch (e) {
+            /* ignore */
+          }
+        }
+        function purge() {
+          var jobs = []
+          try {
+            if ('serviceWorker' in navigator) {
+              jobs.push(
+                navigator.serviceWorker.getRegistrations().then(function (regs) {
+                  return Promise.all(
+                    regs.map(function (r) {
+                      return r.unregister()
+                    }),
+                  )
+                }),
+              )
+            }
+            if ('caches' in window) {
+              jobs.push(
+                caches.keys().then(function (keys) {
+                  return Promise.all(
+                    keys.map(function (k) {
+                      return caches.delete(k)
+                    }),
+                  )
+                }),
+              )
+            }
+          } catch (e) {
+            /* ignore */
+          }
+          return Promise.all(jobs).catch(function () {})
+        }
+        function bustReload() {
+          var url
+          try {
+            url = new URL(window.location.href)
+            url.searchParams.set('boot', String(Date.now()))
+          } catch (e) {
+            url = null
+          }
+          window.location.replace(url ? url.href : window.location.href)
+        }
+        function showFallback() {
+          var root = document.getElementById('root')
+          if (!root) return
+          root.innerHTML =
+            '<div class="boot-fallback"><div class="boot-card">' +
+            '<div class="boot-brand">上岸雷达</div>' +
+            '<h1>页面加载失败</h1>' +
+            '<p>自动恢复未成功，可能是网络不稳定。请检查网络后点击下方按钮重试。</p>' +
+            '<button type="button" id="boot-retry-btn">重新加载</button>' +
+            '</div></div>'
+          var btn = document.getElementById('boot-retry-btn')
+          if (btn) {
+            btn.addEventListener('click', function () {
+              markRetried()
+              purge().then(bustReload, bustReload)
+            })
+          }
+        }
+        function recover() {
+          if (recovered || window.__appMounted) return
+          recovered = true
+          if (retriedRecently()) {
+            showFallback()
+            return
+          }
+          markRetried()
+          purge().then(bustReload, bustReload)
+        }
+
+        var timer = window.setTimeout(recover, TIMEOUT_MS)
+        function onScriptError(ev) {
+          var t = ev && ev.target
+          if (t && t.tagName === 'SCRIPT' && !window.__appMounted) recover()
+        }
+        window.addEventListener('error', onScriptError, true)
+
+        window.__bootOk = function () {
+          window.__appMounted = true
+          window.clearTimeout(timer)
+          window.removeEventListener('error', onScriptError, true)
+          try {
+            sessionStorage.removeItem(KEY)
+            localStorage.removeItem(KEY)
+            // 挂载成功后清掉 cache-bust 参数，保持 URL 干净
+            var u = new URL(window.location.href)
+            if (u.searchParams.has('boot')) {
+              u.searchParams.delete('boot')
+              window.history.replaceState(null, '', u.href)
+            }
+          } catch (e) {
+            /* ignore */
+          }
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

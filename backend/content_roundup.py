@@ -219,9 +219,10 @@ def _link_block(url: str, qr_name: str) -> list[str]:
 
 def render_province(s: dict, style: str, url: str, qr_name: str) -> str:
     prov, n, days = s["province"], s["new_count"], s["days"]
+    span = "本周" if days <= 7 else f"近{days}天"
     if style == "xhs":
         lines = [
-            f"📢 本周{prov}体制内新增 {n} 个岗位！",
+            f"📢 {span}{prov}体制内新增 {n} 个岗位！",
             "",
             _polish(f"最近 {days} 天{prov}一口气上新了 {n} 个体制内岗位，想上岸的姐妹冲！",
                     f"prov-{prov}-{s['day']}"),
@@ -238,7 +239,7 @@ def render_province(s: dict, style: str, url: str, qr_name: str) -> str:
         lines += ["", _hashtags([f"{prov}公务员", "体制内", "事业编", "考公上岸", "应届生求职"])]
         return "\n".join(lines)
     lines = [
-        f"# 本周新增{prov}体制内岗位盘点（截至 {s['day']}）",
+        f"# {span}新增{prov}体制内岗位盘点（截至 {s['day']}）",
         "",
         _polish(
             f"过去 {days} 天，上岸雷达共收录{prov}新增体制内岗位 {n} 个。"
@@ -273,7 +274,7 @@ def render_sanbuxian(s: dict, style: str, url: str, qr_name: str) -> str:
     total, n, days = s["total"], s["new_count"], s["days"]
     if style == "xhs":
         lines = [
-            f"🆓 三不限岗位周报：在库 {total} 个，本周新增 {n} 个！",
+            f"🆓 三不限岗位周报：在库 {total} 个，近{days}天新增 {n} 个！",
             "",
             _polish(
                 f"专业不限+学历门槛低+不要工作经验的「三不限」岗位，全站现在有 {total} 个，"
@@ -321,14 +322,15 @@ def render_sanbuxian(s: dict, style: str, url: str, qr_name: str) -> str:
 
 def render_campus_soe(s: dict, style: str, url: str, qr_name: str) -> str:
     n, days = s["new_count"], s["days"]
+    span = "本周" if days <= 7 else f"近{days}天"
     if style == "xhs":
         lines = [
-            f"🏢 应届生央国企校招周榜：本周新增 {n} 条！",
+            f"🏢 应届生央国企校招周榜：{span}新增 {n} 条！",
             "",
             _polish(f"最近 {days} 天新收录 {n} 条央国企校招信息，应届的宝子们抓紧投！",
                     f"soe-{s['day']}"),
             "",
-            "🔥 本周在招央国企 Top：",
+            f"🔥 {span}在招央国企 Top：",
         ]
         lines += [f"· {c}（{k} 条）" for c, k in s["top_companies"][:6]]
         if s["closing"]:
@@ -345,7 +347,7 @@ def render_campus_soe(s: dict, style: str, url: str, qr_name: str) -> str:
             "本文按招聘主体与报名截止时间盘点，供应届生投递参考。",
             f"soe-long-{s['day']}"),
         "",
-        "## 一、本周在招央国企 Top（按新增条数）",
+        f"## 一、{span}在招央国企 Top（按新增条数）",
         "",
         "| 企业 | 新增条数 |",
         "| --- | --- |",
@@ -370,22 +372,31 @@ def render_campus_soe(s: dict, style: str, url: str, qr_name: str) -> str:
 # ---------------------------------------------------------------- 主流程
 
 _TYPES = (
-    ("province", province_weekly_stats, render_province, "weekly-province"),
-    ("sanbuxian", sanbuxian_weekly_stats, render_sanbuxian, "weekly-sanbuxian"),
-    ("campus-soe", campus_soe_weekly_stats, render_campus_soe, "weekly-campus-soe"),
+    ("province", province_weekly_stats, render_province, "weekly-province", "new_count"),
+    ("sanbuxian", sanbuxian_weekly_stats, render_sanbuxian, "weekly-sanbuxian", "total"),
+    ("campus-soe", campus_soe_weekly_stats, render_campus_soe, "weekly-campus-soe", "new_count"),
 )
+
+#: 统计窗口逐级放宽：采集成批入库，近7天可能无新增，自动扩到 14/30 天
+_WINDOW_FALLBACK = (7, 14, 30)
 
 
 def generate_weekly_content(db: Session, day: date | None = None) -> dict:
     """生成一期三类 × 两版式盘点内容与二维码，写入 exports/content/<周>/。"""
     day = day or _today_cn()
+    # 离线周任务，统计 SQL 较重（多窗口 + ILIKE），放宽本会话语句超时
+    db.execute(text("SET statement_timeout = '300s'"))
     week = _week_tag(day)
     out_dir = os.path.join(CONTENT_DIR, week)
     os.makedirs(out_dir, exist_ok=True)
     files, skipped = [], []
-    for name, stats_fn, render_fn, campaign in _TYPES:
-        s = stats_fn(db, day)
-        if not s or not s.get("new_count"):
+    for name, stats_fn, render_fn, campaign, gate_key in _TYPES:
+        s = {}
+        for days in _WINDOW_FALLBACK:
+            s = stats_fn(db, day, days=days)
+            if s and s.get(gate_key) and s.get("new_count"):
+                break
+        if not s or not s.get(gate_key):
             skipped.append(name)
             continue
         for style in ("xhs", "long"):

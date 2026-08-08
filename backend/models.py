@@ -31,6 +31,7 @@ class Position(Base):
     content_hash_v2 = Column(String(32), index=True)
     dup_of_id = Column(Integer)
     invalid_reason = Column(String(50))
+    cross_board_dup = Column(Boolean, nullable=False, server_default="false")  # 与校招板块严格重复（unified 排除，positions 板块保留）
     exam_type_norm = Column(String(50), index=True)
     signup_deadline = Column(DateTime, index=True)
     province = Column(String(30), index=True)

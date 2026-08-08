@@ -1,5 +1,8 @@
-"""中智招聘 (ciiczhaopin.com) 详情字段补全：deadline_date/deadline_text 与 industry
-（campus_jobs，source_table='中智'）。
+"""中智招聘 (ciiczhaopin.com) 详情字段补全。
+
+- campus_jobs（source_table='中智'）：deadline_date/deadline_text 与 industry；
+- bianzhi_jobs（announce_url 指向 ciiczhaopin 的央国企社招行）：deadline_date/deadline_text
+  （R296，bianzhi_jobs 无 industry 字段）。
 
 数据源（合法公开 JSON 接口，无需登录/Cookie/验证码，同 collect_ciic.py）：
     GET  https://www.ciiczhaopin.com/api/position/detail?uuid={uuid}
@@ -14,7 +17,8 @@
 用法：
     python enrich_ciic.py --dry-run --limit 500        # 试点：只抓取解析，不写库
     python enrich_ciic.py --limit 500                  # 试点 apply：写库 + 缓存失效
-    python enrich_ciic.py                              # 全量 apply
+    python enrich_ciic.py                              # 全量 apply（campus_jobs）
+    python enrich_ciic.py --table bianzhi              # 全量 apply（bianzhi_jobs）
 """
 import argparse
 import json
@@ -28,7 +32,7 @@ from sqlalchemy import text
 import cache
 import precompute
 from database import SessionLocal
-from models import CampusJob
+from models import BianzhiJob, CampusJob
 
 API_DETAIL = "https://www.ciiczhaopin.com/api/position/detail"
 API_SEARCH = "https://www.ciiczhaopin.com/api/position/search"
@@ -213,15 +217,91 @@ def enrich(dry_run: bool = False, limit: int = 0, audit_path: str = "",
         db.close()
 
 
+def enrich_bianzhi(dry_run: bool = False, limit: int = 0, audit_path: str = "",
+                   days: int = 0) -> dict:
+    """bianzhi_jobs 中智行（announce_url 指向 ciiczhaopin）deadline 补全。"""
+    db = SessionLocal()
+    audit_path = audit_path or (
+        f"enrich_ciic_bianzhi_audit_{datetime.now():%Y%m%d_%H%M%S}.jsonl")
+    stats = {"dry_run": dry_run, "table": "bianzhi_jobs", "scanned": 0,
+             "deadline_filled": 0, "skipped": 0, "error": 0}
+    try:
+        rows = db.execute(text(
+            "SELECT id, announce_url FROM bianzhi_jobs "
+            "WHERE deadline_date IS NULL "
+            "AND announce_url LIKE 'https://www.ciiczhaopin.com/%'"
+            + (" AND created_at >= now() - make_interval(days => :days)" if days else "")
+            + " ORDER BY id"
+            + (" LIMIT :lim" if limit else "")),
+            {**({"lim": limit} if limit else {}),
+             **({"days": days} if days else {})}).fetchall()
+        print(f"bianzhi 待补全 {len(rows)} 条（deadline_date 为空）", flush=True)
+        with open(audit_path, "a", encoding="utf-8") as audit:
+            for i, row in enumerate(rows, 1):
+                stats["scanned"] += 1
+                rec = {"table": "bianzhi_jobs", "id": row.id, "url": row.announce_url,
+                       "fetched_at": datetime.now().isoformat(timespec="seconds")}
+                m = _UUID_RE.search(row.announce_url or "")
+                if not m:
+                    rec.update(action="error", error="no uuid in announce_url")
+                    stats["error"] += 1
+                    audit.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                    continue
+                pos, err = fetch_detail(m.group(1))
+                if err:
+                    rec.update(action="error", error=f"detail: {err}")
+                    stats["error"] += 1
+                    audit.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                    continue
+                raw = pos.get("deadlineTime")
+                dl = parse_deadline(raw or "")
+                rec["raw"] = {"deadlineTime": raw}
+                if dl is None:
+                    rec["action"] = "skipped"
+                    rec["reason"] = "no parsable value"
+                    stats["skipped"] += 1
+                else:
+                    rec["parsed"] = {"deadline_date": dl.isoformat()}
+                    rec["action"] = "filled"
+                    if not dry_run:
+                        obj = db.get(BianzhiJob, row.id)
+                        if obj is not None and obj.deadline_date is None:
+                            obj.deadline_date = dl
+                            if not (obj.deadline_text or "").strip():
+                                obj.deadline_text = (raw or "")[:DEADLINE_TEXT_LIMIT]
+                    stats["deadline_filled"] += 1
+                audit.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                if not dry_run and i % 200 == 0:
+                    db.commit()
+                if i % 50 == 0:
+                    print(f"  进度 {i}/{len(rows)} {stats}", flush=True)
+        if not dry_run:
+            db.commit()
+            cache.invalidate_prefixes(
+                "bianzhi_filters", "bianzhi_counts", "bianzhi_timeline")
+            try:
+                precompute.warm_board_caches()
+            except Exception:  # noqa: BLE001  预热失败不影响补全结果
+                pass
+        stats["audit"] = audit_path
+        print(json.dumps(stats, ensure_ascii=False, indent=2))
+        return stats
+    finally:
+        db.close()
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="中智详情 API 补全 campus_jobs.deadline_date/industry")
+        description="中智详情 API 补全 campus_jobs/bianzhi_jobs 的截止日期等字段")
     parser.add_argument("--dry-run", action="store_true", help="只抓取解析不写库")
     parser.add_argument("--limit", type=int, default=0, help="最多处理 N 条")
     parser.add_argument("--audit", default="", help="JSONL 审计文件路径")
     parser.add_argument("--days", type=int, default=0, help="只处理最近 N 天入库的行")
+    parser.add_argument("--table", choices=["campus", "bianzhi"], default="campus",
+                        help="目标表（默认 campus_jobs）")
     args = parser.parse_args()
-    enrich(dry_run=args.dry_run, limit=args.limit, audit_path=args.audit, days=args.days)
+    fn = enrich_bianzhi if args.table == "bianzhi" else enrich
+    fn(dry_run=args.dry_run, limit=args.limit, audit_path=args.audit, days=args.days)
 
 
 if __name__ == "__main__":

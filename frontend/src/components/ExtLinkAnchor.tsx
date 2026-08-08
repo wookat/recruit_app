@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { domainOf, sourceTrust, useConfirmExtLink } from '@/lib/extLink'
 import { recordApplyClick } from '@/lib/applyTracking'
+import { isWeChat, wechatOpenInBrowserTip } from '@/lib/wechat'
 
 /** 详情外链：显示目标域名徽章；开启「外链打开前确认」时先弹确认层再跳转。
  * 传入 jobKey 时上报 apply_click 并登记回站「投了吗？」提示。 */
@@ -61,6 +62,12 @@ export function ExtLinkAnchor({ url, jobKey, jobTitle }: { url: string; jobKey?:
           {trust === 'third-party' && (
             <span className="rounded-sm bg-muted px-1.5 py-px">{t("第三方来源 · 请以官方公告为准")}</span>
           )}
+        </div>
+      )}
+      {isWeChat() && (
+        <div className="mt-0.5 text-xs text-muted-foreground">
+          {t("微信内打开外链可能受限，如无法打开请在浏览器打开本页：")}
+          {wechatOpenInBrowserTip()}
         </div>
       )}
       {confirmOn && (

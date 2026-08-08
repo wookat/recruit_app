@@ -9,6 +9,7 @@ import {
   type CampusParams,
 } from '@/api'
 import { getSavedFilters, getSavedQueries } from './storage'
+import { isWeChat } from './wechat'
 
 /** 常用筛选「订阅上新」：记录每组筛选上次查看时的结果总数基线，
  *  打开站点后台逐组静默请求当前总数（page_size=1，并发 ≤2），
@@ -267,7 +268,8 @@ export async function enableNotifyForSavedFilter(): Promise<'granted' | 'fallbac
 }
 
 export function isNewsNotificationSupported(): boolean {
-  return 'Notification' in window
+  // 微信内置浏览器统一视为不支持（回退站内红点）
+  return !isWeChat() && 'Notification' in window
 }
 
 function todayStr(): string {

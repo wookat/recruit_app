@@ -6,6 +6,7 @@ import { getEffectiveDeadline, parseSignupDeadline } from '@/lib/deadline'
 import { buildPushFilters } from '@/lib/savedNews'
 import { getRemindDays, getRemindNodes } from '@/lib/reminderPref'
 import { getReminder } from '@/lib/reminders'
+import { isWeChat } from '@/lib/wechat'
 
 const ENABLED_KEY = 'recruit.pushEnabled'
 const EVENT = 'recruit-push-change'
@@ -50,8 +51,10 @@ export function buildPushItems(
 }
 
 export function isPushSupported(): boolean {
+  // 微信内置浏览器（尤其 Android X5/XWeb）可能暴露 PushManager 但订阅/送达不可用，统一视为不支持
   return (
     typeof window !== 'undefined' &&
+    !isWeChat() &&
     'serviceWorker' in navigator &&
     'PushManager' in window &&
     'Notification' in window

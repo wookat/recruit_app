@@ -3,6 +3,7 @@ import { useState, useSyncExternalStore } from 'react'
 import { MonitorDown, Share, SquarePlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { isWeChat, wechatOpenInBrowserTip } from '@/lib/wechat'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -56,6 +57,19 @@ export function InstallAppEntry() {
   const [guideOpen, setGuideOpen] = useState(false)
 
   if (isStandalone()) return null
+
+  // 微信内无法安装 PWA（无 beforeinstallprompt，iOS 无分享菜单添加入口），降级为去浏览器安装的提示
+  if (isWeChat()) {
+    return (
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5">
+        <MonitorDown className="h-4 w-4 shrink-0 text-primary" />
+        <span className="min-w-0 flex-1 text-sm">
+          {t("微信内暂不支持安装到桌面，请在浏览器打开本站后安装：")}
+          {wechatOpenInBrowserTip()}
+        </span>
+      </div>
+    )
+  }
 
   const ios = isIos()
 

@@ -29,6 +29,9 @@ celery_app.conf.update(
         "tasks.check_dead_links": {"queue": "heavy"},  # 每周全量死链扫描（长任务）
         "tasks.check_watch_sources": {"queue": "heavy"},  # 每日全源采集闭环（长任务）
         "tasks.scrape_*": {"queue": "heavy"},
+        # 生产 task_runs 实测均为 25–60 分钟级长任务，留在 default 仍会阻塞轻任务
+        "tasks.warm_seo_pages": {"queue": "heavy"},
+        "tasks.refresh_unified_jobs": {"queue": "heavy"},
     },
     worker_prefetch_multiplier=1,
     result_expires=3600 * 24,

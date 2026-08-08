@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import func, text
 from sqlalchemy.orm import Session
@@ -16,8 +17,10 @@ from cache import get_or_set, get_redis
 from database import get_db
 from models import BotCrawlDaily, Feedback, Position, WatchSource, Announcement, CrawlRun
 from celery_app import celery_app
-from tasks import DQ_REPORT_KEY, data_quality_audit, refresh_feishu_data
+from tasks import (DQ_REPORT_KEY, data_quality_audit, refresh_feishu_data,
+                   generate_weekly_content as tasks_generate_weekly_content)
 import collector
+import content_roundup
 import precompute
 import quality
 
@@ -535,6 +538,32 @@ def sync_today(db: Session = Depends(get_db)):
     ]
     items.sort(key=lambda it: it["started_at"] or "", reverse=True)
     return {"date": start.date().isoformat(), "items": items}
+
+
+@router.get("/content", dependencies=[Depends(require_admin)])
+def list_content():
+    """列出盘点内容流水线产物（exports/content/ 下的文案与二维码，按周倒序）。"""
+    return {"items": content_roundup.list_content_files()}
+
+
+@router.get("/content/download", dependencies=[Depends(require_admin)])
+def download_content(path: str = Query(..., max_length=200)):
+    """下载单个盘点内容文件；path 形如 2026-W32/province-xhs.md。"""
+    base = os.path.realpath(content_roundup.CONTENT_DIR)
+    full = os.path.realpath(os.path.join(base, path))
+    if not full.startswith(base + os.sep) or not os.path.isfile(full):
+        raise HTTPException(status_code=404, detail="文件不存在")
+    media = "image/png" if full.endswith(".png") else "text/markdown; charset=utf-8"
+    if full.endswith(".json"):
+        media = "application/json"
+    return FileResponse(full, media_type=media, filename=os.path.basename(full))
+
+
+@router.post("/content/generate", dependencies=[Depends(require_admin)])
+def generate_content_now():
+    """立即触发一期盘点内容生成（复用每周 Celery 任务），返回 task_id 供轮询。"""
+    task = tasks_generate_weekly_content.delay()
+    return {"task_id": task.id}
 
 
 @router.post("/sync-now", dependencies=[Depends(require_admin)])

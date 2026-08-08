@@ -31,11 +31,33 @@ function getSid(): string {
   }
 }
 
+const UTM_KEY = 'recruit.utm'
+
+/** 渠道归因上报：URL 带 utm_source 时每会话记一次（board="utm"，page=渠道名）。 */
+function reportUtmOnce() {
+  try {
+    const src = (new URLSearchParams(window.location.search).get('utm_source') || '')
+      .trim()
+      .slice(0, 50)
+    if (!src || sessionStorage.getItem(UTM_KEY)) return
+    sessionStorage.setItem(UTM_KEY, src)
+    void fetch(`${API_BASE}/api/metrics/pv`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ board: 'utm', page: src, sid: getSid(), qa: isInternal() || undefined }),
+      keepalive: true,
+    }).catch(() => undefined)
+  } catch {
+    // ignore
+  }
+}
+
 let lastKey = ''
 let lastAt = 0
 
 /** 自建轻量访问统计上报（无 cookie、无个人数据，失败静默）。 */
 export function reportPv(board: string, page = '') {
+  reportUtmOnce()
   const key = `${board}|${page}`
   const now = Date.now()
   if (key === lastKey && now - lastAt < 2000) return // 去重：rerender/StrictMode 双触发

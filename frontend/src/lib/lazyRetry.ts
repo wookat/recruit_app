@@ -29,6 +29,8 @@ async function purgeSwCaches(): Promise<void> {
       const keys = await caches.keys()
       await Promise.all(keys.map((k) => caches.delete(k)))
     }
+    // 绕过 HTTP 缓存重取当前页 HTML，避免刷新后仍拿到旧 index.html
+    await fetch(window.location.href, { cache: 'reload' })
   } catch {
     // 清理失败不阻塞刷新
   }
@@ -53,6 +55,12 @@ export function purgeReloadOnce(): boolean {
   markReloaded()
   void purgeSwCaches().finally(() => window.location.reload())
   return true
+}
+
+/** 用户手动点「点击刷新」时的彻底清理路径：不受冷却限制，注销 SW+清 precache+强刷。 */
+export function forcePurgeReload(): void {
+  markReloaded()
+  void purgeSwCaches().finally(() => window.location.reload())
 }
 
 function purgeAndReload<T>(): Promise<T> {

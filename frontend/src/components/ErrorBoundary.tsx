@@ -1,5 +1,5 @@
 import { t } from '@/lib/i18n'
-import { purgeReloadOnce } from '@/lib/lazyRetry'
+import { forcePurgeReload, purgeReloadOnce } from '@/lib/lazyRetry'
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { RefreshCw, TriangleAlert } from 'lucide-react'
 
@@ -36,7 +36,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <button
           type="button"
           className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          onClick={() => window.location.reload()}
+          onClick={() => forcePurgeReload()}
         >
           <RefreshCw className="h-4 w-4" />
           {t("点击刷新")}{' '}</button>

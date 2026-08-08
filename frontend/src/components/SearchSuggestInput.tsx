@@ -84,6 +84,7 @@ export function SearchSuggestInput({
   const [active, setActive] = useState(-1)
   const [composing, setComposing] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const commitRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastCommitted = useRef(value)
 
@@ -94,11 +95,12 @@ export function SearchSuggestInput({
     !!suggestBoard && open,
   )
 
-  // 外部变更（清除筛选/一键匹配等）同步到内部
+  // 外部变更（清除筛选/一键匹配等）同步到内部；
+  // 输入框聚焦中不覆写正在输入的内容，避免防抖提交与父级回传的竞态吞掉按键
   useEffect(() => {
     if (value !== lastCommitted.current) {
       lastCommitted.current = value
-      setText(value)
+      if (document.activeElement !== inputRef.current) setText(value)
     }
   }, [value])
 
@@ -168,11 +170,23 @@ export function SearchSuggestInput({
     <div ref={rootRef} className="relative flex-1">
       <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
+        ref={inputRef}
         value={text}
         onChange={(e) => handleChange(e.target.value)}
         onCompositionStart={() => setComposing(true)}
         onCompositionEnd={() => setComposing(false)}
         onFocus={() => setOpen(true)}
+        onBlur={() => {
+          // 失焦时立即提交待防抖内容，避免丢失末尾输入
+          if (commitRef.current) {
+            clearTimeout(commitRef.current)
+            commitRef.current = null
+          }
+          if (text !== lastCommitted.current) {
+            lastCommitted.current = text
+            onValueChange(text)
+          }
+        }}
         placeholder={placeholder}
         className={cn('pl-9', inputClassName)}
         role="combobox"

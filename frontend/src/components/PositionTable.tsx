@@ -1,4 +1,4 @@
-import { t, tt } from '@/lib/i18n'
+import { getLang, t, tt } from '@/lib/i18n'
 import { TableSwipeHint } from './TableSwipeHint'
 import { memo, useMemo, useState, type ReactNode } from 'react'
 
@@ -80,7 +80,8 @@ const columns: ColumnDef<Position>[] = [
     id: 'edu_level_norm',
     accessorFn: (row) => row.edu_level_norm || row.edu_requirement,
     header: t("学历要求"),
-    size: 150,
+    // EN 译文（如 Bachelor's or above）更长，需更宽列宽避免 chips 被裁切
+    size: getLang() === 'en' ? 200 : 150,
   },
   { accessorKey: 'work_location', header: t("工作地点"), size: 150 },
   { accessorKey: 'signup_time', header: t("报名时间"), size: 140 },

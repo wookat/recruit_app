@@ -1,4 +1,4 @@
-import { t, tt } from '@/lib/i18n'
+import { getLang, t, tt } from '@/lib/i18n'
 import { memo } from 'react'
 import type { Position } from '@/api'
 import { Button } from '@/components/ui/button'
@@ -39,7 +39,13 @@ export const PositionCard = memo(function PositionCard({ item, onDetail, highlig
     >
       <CardHeader className="pb-2 max-sm:pb-0">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
+          {/* EN 译文 pill 更长，窄屏限制单行高度，保证首屏第 2 张卡可见（与中文同标准） */}
+          <div
+            className={cn(
+              'flex flex-wrap items-center gap-2',
+              getLang() === 'en' && 'max-sm:max-h-6 max-sm:gap-1.5 max-sm:overflow-hidden',
+            )}
+          >
             <span className={cn(PILL_BASE, yearClass(item.year))}>{item.year}</span>
             <span className={cn(PILL_BASE, jobTypeClass(item.job_type))}>{t(item.job_type)}</span>
             {item.edu_level_norm && (

@@ -4,6 +4,10 @@
 按单位性质(aab019)与经济类型(aab020)过滤出体制内相关子集，逐页抓取并按
 acb200(岗位ID)去重。
 
+定位：手动按需采集器（不在 celery beat 定时内），导出 CSV/SQL 后经批量导入脚本入库。
+R296 已用真实采集验证 R284 白名单过滤生效（国企类仅收 classify_soe_name='soe' 的行，
+非白名单行计入 skipped 计数打印）。
+
 用法:
     python scrape_mohrss_ggzp.py --out ../exports/mohrss_ggzp
 """

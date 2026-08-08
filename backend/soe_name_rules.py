@@ -77,6 +77,27 @@ _PRIVATE_TOKENS = (
 )
 
 
+# R296 人工复核（对照工商股权信息）确认为民营的单位白名单：
+# NCSS 自报 company_type='国有企业' 失真，仅此名单允许覆写为民营企业；
+# 复核记录见 docs/research/r296-ncss-company-type-review.md
+MANUAL_PRIVATE_COMPANIES = frozenset({
+    "湖州长兴磁通电子科技有限公司",
+    "浙江海利得酒店管理有限公司",
+    "西充金领莲花大酒店有限公司",
+    "湖州志辉科技股份有限公司",
+    "山东海盛海洋工程集团有限公司",
+    "浙江碧桂园管理咨询有限公司",
+    "联奕测试",
+})
+
+
+def override_company_type(company: str, claimed: str) -> str:
+    """采集入库/更新时套用人工复核结论，防止自报值把修复覆写回去。"""
+    if (company or "").strip() in MANUAL_PRIVATE_COMPANIES and "国有" in (claimed or ""):
+        return "民营企业"
+    return claimed
+
+
 def classify_soe_name(employer: str) -> str:
     e = (employer or "").strip()
     if not e:

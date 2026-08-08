@@ -41,6 +41,7 @@ from sqlalchemy import text
 import cache
 import precompute
 import import_campus
+import soe_name_rules
 from database import Base, SessionLocal, engine
 from models import CampusJob
 
@@ -177,7 +178,9 @@ def to_campus_row(item: dict) -> dict:
     return {
         "company": (item.get("recName") or "").strip(),
         "positions": (item.get("jobName") or "").strip(),
-        "company_type": (item.get("recProperty") or "").strip() or "央国企",
+        "company_type": soe_name_rules.override_company_type(
+            (item.get("recName") or "").strip(),
+            (item.get("recProperty") or "").strip() or "央国企"),
         "batch": BATCH,
         "grad_years": grad_years_of(item),
         "edu_requirement": (item.get("degreeName") or "").strip(),

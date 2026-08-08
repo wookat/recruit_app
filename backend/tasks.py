@@ -33,6 +33,7 @@ import refresh_feishu
 import collect_ciic
 import enrich_ciic
 import enrich_ncss
+import task_runs  # noqa: F401  celery 信号注册：任务执行结果落库 task_runs 表
 from seo import (CITIES, EXAM_TYPES, PROVINCES, SITE, _city_et_slugs,
                  _major_live_slugs, _recent_digest_days, _topic_live_slugs)
 import digest
@@ -135,10 +136,14 @@ def enrich_new_details(self):
     ciic = enrich_ciic.enrich(
         limit=1500, days=2,
         audit_path=os.path.join(EXPORTS_DIR, f"enrich_ciic_{day}.jsonl"))
+    ciic_bz = enrich_ciic.enrich_bianzhi(
+        limit=1500, days=2,
+        audit_path=os.path.join(EXPORTS_DIR, f"enrich_ciic_bianzhi_{day}.jsonl"))
     ncss = enrich_ncss.enrich(
         limit=1500, days=2,
         audit_path=os.path.join(EXPORTS_DIR, f"enrich_ncss_{day}.jsonl"))
     return {"ciic": {k: ciic.get(k) for k in ("scanned", "deadline_filled", "industry_filled", "error")},
+            "ciic_bianzhi": {k: ciic_bz.get(k) for k in ("scanned", "deadline_filled", "error")},
             "ncss": {k: ncss.get(k) for k in ("scanned", "industry_filled", "error")}}
 
 

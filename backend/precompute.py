@@ -31,6 +31,7 @@ def refresh_hot_caches() -> dict:
     """
     db = SessionLocal()
     try:
+        db.execute(sa_text("SET statement_timeout = '120s'"))  # 后台预热路径承担冷聚合，放宽默认 20s
         try:
             for t in ("positions", "campus_jobs", "bianzhi_jobs"):
                 db.execute(sa_text(f"ANALYZE {t}"))

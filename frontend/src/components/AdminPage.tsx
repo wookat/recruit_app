@@ -18,6 +18,7 @@ import {
   fetchSyncStatus,
   setFeedbackHandled,
   fetchSyncToday,
+  fetchTaskRuns,
   fetchTaskStatus,
   triggerScrape,
   triggerSyncNow,
@@ -32,6 +33,8 @@ import {
   type HealthVisitDay,
   type QualityIssues,
   type SyncTodayItem,
+  type TaskRunFailure,
+  type TaskRunStat,
   type WatchSource,
 } from '@/api'
 import { Button } from '@/components/ui/button'
@@ -896,6 +899,8 @@ function HealthCard({ health, updatedAt, token }: { health: HealthSummary; updat
 
         <SyncTodaySection token={token} />
 
+        <TaskRunsSection token={token} />
+
         {health.visits && health.visits.length > 0 && <VisitsSection visits={health.visits} />}
 
         {health.events && Object.keys(health.events).length > 0 && <EventsSection events={health.events} />}
@@ -1061,6 +1066,101 @@ function SyncTodaySection({ token }: { token: string }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Celery 任务执行记录（task_runs 表）：最近失败明细 + 近 7 天成功率概览。 */
+function TaskRunsSection({ token }: { token: string }) {
+  const [data, setData] = useState<{ days: number; recent_failures: TaskRunFailure[]; stats: TaskRunStat[] } | null>(null)
+  const [expanded, setExpanded] = useState(false)
+
+  useEffect(() => {
+    fetchTaskRuns(token)
+      .then(setData)
+      .catch(() => undefined)
+  }, [token])
+
+  if (!data) return null
+  const failureCount = data.recent_failures.length
+  const byTask = new Map<string, { ok: number; fail: number; avg: number | null }>()
+  for (const s of data.stats) {
+    const cur = byTask.get(s.task_name) || { ok: 0, fail: 0, avg: null }
+    if (s.status === 'failure') cur.fail += s.count
+    else cur.ok += s.count
+    if (s.status === 'success') cur.avg = s.avg_runtime_s
+    byTask.set(s.task_name, cur)
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        className="mb-2 flex items-center gap-1 text-xs font-medium"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+        {tt`任务执行记录（近 ${data.days} 天）`}
+        {failureCount > 0 ? (
+          <Badge className="border-transparent bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
+            {tt`${failureCount} 次失败`}
+          </Badge>
+        ) : (
+          <Badge className="border-transparent bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300">{t("无失败")}</Badge>
+        )}
+      </button>
+      {expanded && (
+        <div className="space-y-3">
+          {failureCount > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs text-muted-foreground">
+                    <th className="py-1.5 pr-3">{t("失败任务")}</th>
+                    <th className="py-1.5 pr-3">{t("时间")}</th>
+                    <th className="py-1.5">{t("错误")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.recent_failures.map((f, i) => (
+                    <tr key={i} className="border-b last:border-0">
+                      <td className="whitespace-nowrap py-1.5 pr-3 text-xs">{f.task_name.replace('tasks.', '')}</td>
+                      <td className="whitespace-nowrap py-1.5 pr-3 text-xs">
+                        {f.finished_at ? new Date(f.finished_at).toLocaleString('zh-CN') : '-'}
+                      </td>
+                      <td className="max-w-[320px] truncate py-1.5 text-xs text-red-600 dark:text-red-400" title={f.error || undefined}>
+                        {f.error || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[420px] text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="py-1.5 pr-3">{t("任务")}</th>
+                  <th className="py-1.5 pr-3">{t("成功")}</th>
+                  <th className="py-1.5 pr-3">{t("失败")}</th>
+                  <th className="py-1.5">{t("平均耗时")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...byTask.entries()].map(([name, s]) => (
+                  <tr key={name} className="border-b last:border-0">
+                    <td className="whitespace-nowrap py-1.5 pr-3 text-xs">{name.replace('tasks.', '')}</td>
+                    <td className="py-1.5 pr-3 text-xs tabular-nums">{s.ok}</td>
+                    <td className={`py-1.5 pr-3 text-xs tabular-nums ${s.fail > 0 ? 'font-medium text-red-600 dark:text-red-400' : ''}`}>{s.fail}</td>
+                    <td className="py-1.5 text-xs tabular-nums">{s.avg != null ? tt`${s.avg} 秒` : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

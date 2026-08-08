@@ -58,7 +58,7 @@ if [[ "$MODE" != "--frontend-only" ]]; then
   "${RSYNC[@]}" docker-compose.prod.yml Dockerfile "$SERVER:$REMOTE_DIR/"
 fi
 
-"${SSH[@]}" "cd $REMOTE_DIR && docker compose -f docker-compose.prod.yml build app && docker compose -f docker-compose.prod.yml up -d app worker"
+"${SSH[@]}" "cd $REMOTE_DIR && docker compose -f docker-compose.prod.yml build app && docker compose -f docker-compose.prod.yml up -d app worker worker-heavy"
 
 if [[ "$MODE" != "--frontend-only" ]]; then
   # SSR 模板变更需失效并重渲染 SEO 页缓存（26h TTL，启动预热不失效已有键）

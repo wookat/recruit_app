@@ -1020,6 +1020,25 @@ export async function fetchSyncToday(token: string): Promise<{ date: string; ite
   return res.data
 }
 
+export interface TaskRunFailure {
+  task_name: string
+  finished_at: string | null
+  runtime_s: number | null
+  error: string | null
+}
+
+export interface TaskRunStat {
+  task_name: string
+  status: string
+  count: number
+  avg_runtime_s: number | null
+}
+
+export async function fetchTaskRuns(token: string, days = 7): Promise<{ days: number; recent_failures: TaskRunFailure[]; stats: TaskRunStat[] }> {
+  const res = await axios.get(`${API_BASE}/api/admin/task-runs`, { params: { days }, ...adminHeaders(token) })
+  return res.data
+}
+
 export interface ContentFileItem {
   week: string
   name: string

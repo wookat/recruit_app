@@ -60,11 +60,38 @@ services:
     # 2 核小机上每日同步（北京 6:00–7:30）曾把在线查询拖到 10–73s：
     # 降低 worker CPU 权重 + nice，让 app/postgres 在争抢时优先
     cpu_shares: 256
-    command: ["nice", "-n", "10", "celery", "-A", "celery_app", "worker", "-B", "--loglevel=info", "--concurrency=1"]
+    # R303 队列拆分：本 worker 只消费 default（轻任务）+ beat；
+    # 长采集/enrich 任务由 worker-heavy 消费，互不阻塞
+    command: ["nice", "-n", "10", "celery", "-A", "celery_app", "worker", "-B", "-Q", "default", "--loglevel=info", "--concurrency=1"]
     volumes:
       - ./exports:/app/exports
       # bot 抓取观测：tasks.aggregate_bot_crawl 每日解析宿主机 Caddy access log
       - /var/log/caddy:/var/log/caddy:ro
+    environment:
+      DATABASE_URL: postgresql://recruit:recruit@postgres:5432/recruit
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUB: ${VAPID_SUB:-mailto:admin@zalize.com}
+      INDEXNOW_KEY: ${INDEXNOW_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker-heavy:
+    image: recruit-app:latest
+    container_name: recruit-worker-heavy
+    restart: unless-stopped
+    # 只消费 heavy 队列（collect_*/enrich_*/全量死链等长任务），
+    # 2G 小机内存紧张：单进程 + 低 CPU 权重，长任务跑时轻任务仍即时执行
+    cpu_shares: 256
+    command: ["nice", "-n", "10", "celery", "-A", "celery_app", "worker", "-Q", "heavy", "--loglevel=info", "--concurrency=1"]
+    volumes:
+      - ./exports:/app/exports
     environment:
       DATABASE_URL: postgresql://recruit:recruit@postgres:5432/recruit
       REDIS_URL: redis://redis:6379/0

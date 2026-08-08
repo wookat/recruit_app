@@ -54,8 +54,8 @@ export function getEffectiveDeadline(job: {
   return parseDeadlineText(job.deadline_date) ?? parseDeadlineText(job.deadline_text)
 }
 
-/** 截止日期距今超过 3 年视为「长期有效」（源数据用 2031+ 占位表示长期招聘）。 */
-export const LONG_TERM_DAYS = 365 * 3
+/** 截止日期距今超过 18 个月视为「长期有效」（源数据用更新日+3年、2031+ 等远期占位表示长期招聘）。 */
+export const LONG_TERM_DAYS = 548
 
 export function isLongTermDate(date: string | null | undefined): boolean {
   if (!date) return false

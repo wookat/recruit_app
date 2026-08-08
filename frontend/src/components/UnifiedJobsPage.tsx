@@ -637,7 +637,7 @@ export function UnifiedJobsPage() {
                             {item.category || '-'}
                           </span>
                           <span className="hidden truncate text-xs text-muted-foreground md:block">
-                            {item.edu_level_norm || '-'}
+                            {item.edu_level_norm ? t(item.edu_level_norm) : '-'}
                           </span>
                           <span className="hidden truncate text-xs text-muted-foreground md:block">
                             {row.groupKey && row.cities.length !== 1 ? (
@@ -700,7 +700,7 @@ export function UnifiedJobsPage() {
                               </span>
                               <span className="inline-flex items-center gap-1">
                                 <GraduationCap className="h-3.5 w-3.5 shrink-0" />
-                                {item.edu_level_norm || t('不限')}
+                                {item.edu_level_norm ? t(item.edu_level_norm) : t('不限')}
                               </span>
                               <span className="inline-flex items-center gap-1">
                                 <MapPin className="h-3.5 w-3.5 shrink-0" />

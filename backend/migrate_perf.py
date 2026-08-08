@@ -29,6 +29,10 @@ STATEMENTS = [
     """CREATE INDEX IF NOT EXISTS idx_pos_clean_employer_year
        ON positions (employer, year)
        WHERE dup_of_id IS NULL AND invalid_reason IS NULL""",
+    # 同单位历年招录归一匹配：去「全国」前缀与整体重复（与 main.py EMPLOYER_NORM_SQL 一致）
+    """CREATE INDEX IF NOT EXISTS idx_pos_clean_employer_norm_year
+       ON positions ((regexp_replace(regexp_replace(employer, '^全国', ''), '^(.+?)\\1$', '\\1')), year)
+       WHERE dup_of_id IS NULL AND invalid_reason IS NULL""",
 ]
 
 

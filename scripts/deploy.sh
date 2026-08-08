@@ -74,3 +74,11 @@ elif [[ -n "$DISK_USE" ]]; then
 fi
 
 echo "deployed: $(curl -s https://jobs.zalize.com/ | grep -o 'index-[^\"]*\.js' | head -1)"
+
+# PWA 回归防护：/sw.js 必须是 Workbox 生成的 Service Worker（非 SPA HTML 兜底）
+SW_HEAD=$(curl -s https://jobs.zalize.com/sw.js | head -c 300)
+if echo "$SW_HEAD" | grep -q "precache\|workbox"; then
+  echo "sw.js: OK (workbox service worker)"
+else
+  echo "ALERT: /sw.js 不是 Workbox Service Worker（PWA 离线能力可能失效），请检查 dist 构建产物与部署" >&2
+fi

@@ -63,6 +63,8 @@ services:
     command: ["nice", "-n", "10", "celery", "-A", "celery_app", "worker", "-B", "--loglevel=info", "--concurrency=1"]
     volumes:
       - ./exports:/app/exports
+      # bot 抓取观测：tasks.aggregate_bot_crawl 每日解析宿主机 Caddy access log
+      - /var/log/caddy:/var/log/caddy:ro
     environment:
       DATABASE_URL: postgresql://recruit:recruit@postgres:5432/recruit
       REDIS_URL: redis://redis:6379/0

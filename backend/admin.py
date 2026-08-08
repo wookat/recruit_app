@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from cache import get_or_set, get_redis
 from database import get_db
-from models import Feedback, Position, WatchSource, Announcement, CrawlRun
+from models import BotCrawlDaily, Feedback, Position, WatchSource, Announcement, CrawlRun
 from celery_app import celery_app
 from tasks import DQ_REPORT_KEY, data_quality_audit, refresh_feishu_data
 import collector
@@ -450,6 +450,29 @@ def health_summary(db: Session = Depends(get_db)):
         "cache_ttl_seconds": caches,
         "table_estimates": table_counts,
         "data_quality": dq_summary,
+    }
+
+
+@router.get("/bot-crawl", dependencies=[Depends(require_admin)])
+def bot_crawl(days: int = Query(14, ge=1, le=90), db: Session = Depends(get_db)):
+    """bot 抓取日趋势（bot_crawl_daily，Caddy 日志每日聚合）。"""
+    since = (datetime.now(timezone.utc) + timedelta(hours=8)).date() - timedelta(days=days)
+    rows = (
+        db.query(BotCrawlDaily)
+        .filter(BotCrawlDaily.day >= since)
+        .order_by(BotCrawlDaily.day.desc(), BotCrawlDaily.hits.desc())
+        .all()
+    )
+    return {
+        "days": days,
+        "rows": [
+            {
+                "day": str(r.day), "bot": r.bot, "path_family": r.path_family,
+                "hits": r.hits, "status_2xx": r.status_2xx,
+                "status_4xx": r.status_4xx, "status_5xx": r.status_5xx,
+            }
+            for r in rows
+        ],
     }
 
 

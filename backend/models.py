@@ -248,6 +248,25 @@ class MetricRequestLog(Base):
     internal = Column(Boolean, nullable=False, default=False, server_default="false")
 
 
+class BotCrawlDaily(Base):
+    """bot 抓取日聚合（R301）：解析 Caddy access log 得到的长期趋势数据，
+    不受日志滚动窗口限制。bot 名带 "?" 后缀表示 UA 命中但 IP 未过前缀验真。"""
+
+    __tablename__ = "bot_crawl_daily"
+    __table_args__ = (
+        UniqueConstraint("day", "bot", "path_family", name="uq_botcrawl_day_bot_fam"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    day = Column(Date, nullable=False, index=True)
+    bot = Column(String(40), nullable=False)
+    path_family = Column(String(30), nullable=False)
+    hits = Column(Integer, nullable=False, default=0)
+    status_2xx = Column(Integer, nullable=False, default=0)
+    status_4xx = Column(Integer, nullable=False, default=0)
+    status_5xx = Column(Integer, nullable=False, default=0)
+
+
 class DailyDigest(Base):
     """每日岗位精选结构化存档：站内 /daily 栏目页与 SPA 入口的数据源。"""
 

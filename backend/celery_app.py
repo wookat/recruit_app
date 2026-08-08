@@ -91,6 +91,10 @@ celery_app.conf.update(
             "task": "tasks.check_dead_links_new",
             "schedule": crontab(hour=7, minute=30),  # 每日同步后增量补扫新入库链接
         },
+        "aggregate-bot-crawl": {
+            "task": "tasks.aggregate_bot_crawl",
+            "schedule": crontab(hour=1, minute=20),  # 每天解析前一日 Caddy 日志聚合 bot 抓取趋势
+        },
         "cleanup-exports": {
             "task": "tasks.cleanup_exports",
             "schedule": crontab(hour=5, minute=30),  # 清理超过 24h 的导出文件

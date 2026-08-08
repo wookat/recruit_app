@@ -15,6 +15,8 @@ EOF
 cat > /usr/local/bin/recruit-disk-maintenance.sh <<'EOF'
 #!/usr/bin/env bash
 set -uo pipefail
+# 注意：本脚本不得触碰 /var/log/caddy/（Caddy access log 由 caddy 自身
+# roll 管理：50MB×10、保留 14 天，是 bot 抓取观测数据源，勿删/勿轮转）。
 echo "=== $(date -u '+%F %T UTC') disk maintenance ==="
 docker system prune -af --filter "until=72h"
 journalctl --vacuum-size=500M --vacuum-time=14d

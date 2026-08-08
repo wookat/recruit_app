@@ -7,6 +7,7 @@ import { formatNodes, getRemindNodes } from '@/lib/reminderPref'
 import { getFavorites } from '@/lib/positionStore'
 import { getBianzhiFavorites, getCampusFavorites } from '@/lib/boardFavorites'
 import { REMIND_CONFIRM_EVENT, REMIND_CTA_EVENT } from '@/lib/remindCta'
+import { isWeChat } from '@/lib/wechat'
 
 const DISMISS_MS = 10000
 
@@ -44,6 +45,7 @@ export function RemindToastHost() {
 
   if (!open) return null
 
+  const wechat = isWeChat()
   const remindNodes = formatNodes(getRemindNodes())
 
   const activate = async () => {
@@ -86,6 +88,11 @@ export function RemindToastHost() {
                 ? t("推送暂不可用，已保存到我的提醒（收藏面板可查看）")
                 : t("开启失败，可稍后到收藏面板重试")}
           </span>
+        </>
+      ) : wechat ? (
+        <>
+          <Star className="h-4 w-4 shrink-0 fill-amber-400 text-amber-400" aria-hidden="true" />
+          <span className="max-w-72">{t("已收藏。微信内暂不支持推送提醒，可在浏览器打开本站后开启")}</span>
         </>
       ) : (
         <>

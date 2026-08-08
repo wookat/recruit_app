@@ -1305,4 +1305,12 @@ export const EN: Record<string, string> = {
   '浙江': 'Zhejiang',
   '香港': 'Hong Kong',
   '澳门': 'Macau',
+  '点右上角「…」→「在浏览器中打开」（Safari）': 'Tap "…" (top right) → "Open in Browser" (Safari)',
+  '点右上角「…」→「在浏览器打开」': 'Tap "…" (top right) → "Open in Browser"',
+  '在浏览器打开体验更佳（支持截止推送提醒与安装到桌面）：': 'Better experience in a browser (deadline push reminders & install to home screen): ',
+  '微信内暂不支持推送，已存入站内提醒（收藏面板可查看）；建议收藏后在浏览器打开以开启推送：': 'Push is unavailable inside WeChat; saved as an in-site reminder (see favorites panel). Open in a browser to enable push: ',
+  '已收藏。微信内暂不支持推送提醒，可在浏览器打开本站后开启': 'Saved. Push reminders are unavailable inside WeChat; open this site in a browser to enable them',
+  '微信内暂不支持推送提醒，收藏与站内提醒不受影响；在浏览器打开本站可开启截止推送：': 'Push reminders are unavailable inside WeChat; favorites and in-site reminders still work. Open this site in a browser to enable deadline push: ',
+  '微信内暂不支持安装到桌面，请在浏览器打开本站后安装：': 'Installing to home screen is unavailable inside WeChat; open this site in a browser to install: ',
+  '微信内打开外链可能受限，如无法打开请在浏览器打开本页：': 'External links may be restricted inside WeChat; if it fails to open, open this page in a browser: ',
 }

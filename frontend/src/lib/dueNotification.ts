@@ -1,12 +1,14 @@
 import { t, tt } from './i18n'
 import { useSyncExternalStore } from 'react'
+import { isWeChat } from './wechat'
 
 const ENABLED_KEY = 'recruit.dueNotifyEnabled'
 const LAST_DATE_KEY = 'recruit.lastNotifiedDate'
 const EVENT = 'recruit-due-notify-change'
 
 export function isNotificationSupported(): boolean {
-  return typeof window !== 'undefined' && 'Notification' in window
+  // 微信内置浏览器可能暴露 Notification 但权限/展示不可用，统一视为不支持
+  return typeof window !== 'undefined' && !isWeChat() && 'Notification' in window
 }
 
 export function getNotifyEnabled(): boolean {

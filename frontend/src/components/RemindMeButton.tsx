@@ -11,6 +11,7 @@ import { getBianzhiFavorites, getCampusFavorites } from '@/lib/boardFavorites'
 import { emitRemindConfirm, suppressRemindCta } from '@/lib/remindCta'
 import { daysUntil } from '@/lib/deadline'
 import { reportEvent } from '@/lib/metrics'
+import { isWeChat, wechatOpenInBrowserTip } from '@/lib/wechat'
 
 interface Props {
   /** 岗位报名截止日期；无截止或已过期不渲染。 */
@@ -34,10 +35,12 @@ export function RemindMeButton({ deadline, favActive, onFavToggle, jobKey, jobTi
   const pushEnabled = usePushEnabled()
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'denied' | 'timeout' | 'error'>('idle')
   const [nodesOpen, setNodesOpen] = useState(false)
-  if (!deadline || daysUntil(deadline) < 0 || !isPushSupported()) return null
+  // 微信内保留收藏+站内提醒管理，仅降级 push 订阅分支
+  const wechat = isWeChat()
+  if (!deadline || daysUntil(deadline) < 0 || (!wechat && !isPushSupported())) return null
 
   const entry = jobKey ? reminders.find((e) => e.key === jobKey) : undefined
-  const done = state === 'done' || (favActive && pushEnabled && (!jobKey || !!entry))
+  const done = state === 'done' || (favActive && (wechat || pushEnabled) && (!jobKey || !!entry))
   const nodes = entry?.nodes ?? defaultNodes
 
   const syncItems = () =>
@@ -55,6 +58,14 @@ export function RemindMeButton({ deadline, favActive, onFavToggle, jobKey, jobTi
 
   const click = async () => {
     if (state === 'busy' || done) return
+    if (wechat) {
+      // 微信内无 Web Push：只收藏+记录站内提醒，不请求通知权限/订阅
+      if (!favActive) suppressRemindCta(onFavToggle)
+      if (jobKey) setReminder(jobKey, jobTitle ?? '', fmtDate(deadline))
+      reportEvent('remind_set')
+      setState('done')
+      return
+    }
     // 权限已授予时乐观更新按钮态并弹确认 toast，订阅/上报失败再回退提示
     const optimistic = Notification.permission === 'granted'
     setState(optimistic ? 'done' : 'busy')
@@ -93,6 +104,12 @@ export function RemindMeButton({ deadline, favActive, onFavToggle, jobKey, jobTi
       </Button>
       {!done && (
         <span className="text-[11px] text-muted-foreground">{tt`截止前 ${formatNodes(nodes)} 天提醒你报名`}</span>
+      )}
+      {wechat && done && (
+        <span className="w-full text-[11px] text-muted-foreground">
+          {t("微信内暂不支持推送，已存入站内提醒（收藏面板可查看）；建议收藏后在浏览器打开以开启推送：")}
+          {wechatOpenInBrowserTip()}
+        </span>
       )}
       {done && jobKey && (
         <button

@@ -60,6 +60,7 @@ import {
   useNewsNotifyEnabled,
 } from '@/lib/savedNews'
 import { buildPushItems, disablePush, enablePush, isPushSupported, syncPushItems, usePushEnabled } from '@/lib/push'
+import { isWeChat, wechatOpenInBrowserTip } from '@/lib/wechat'
 import { dismissFollowUp, followUpInfo, useFollowUpDismissed } from '@/lib/followup'
 import { cn } from '@/lib/utils'
 import { stripOrgPrefix } from '@/lib/orgPrefix'
@@ -2024,6 +2025,18 @@ function PushToggleRow() {
   const remindNodes = useRemindNodes()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  if (isWeChat()) {
+    // 微信内降级：不展示订阅开关，提示去浏览器开启
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+        <MonitorSmartphone className="h-3.5 w-3.5 shrink-0" />
+        <span className="min-w-0 flex-1">
+          {t("微信内暂不支持推送提醒，收藏与站内提醒不受影响；在浏览器打开本站可开启截止推送：")}
+          {wechatOpenInBrowserTip()}
+        </span>
+      </div>
+    )
+  }
   if (!isPushSupported()) return null
 
   const toggle = async () => {

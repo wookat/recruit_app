@@ -81,11 +81,19 @@ AUDIT_INSERT = text(
 
 
 def fix_p21_cross_board(conn, apply, jsonl_rows):
-    conn.execute(text(
-        "ALTER TABLE positions ADD COLUMN IF NOT EXISTS"
-        " cross_board_dup boolean NOT NULL DEFAULT false"
-    ))
-    conn.commit()
+    has_col = conn.execute(text(
+        "SELECT 1 FROM information_schema.columns"
+        " WHERE table_name = 'positions' AND column_name = 'cross_board_dup'"
+    )).scalar()
+    if not has_col:
+        # ALTER 需 AccessExclusive 锁，设 lock_timeout 防止排队阻塞线上查询
+        conn.execute(text("SET lock_timeout = '5s'"))
+        conn.execute(text(
+            "ALTER TABLE positions ADD COLUMN IF NOT EXISTS"
+            " cross_board_dup boolean NOT NULL DEFAULT false"
+        ))
+        conn.commit()
+        conn.execute(text("SET lock_timeout = 0"))
     rows = conn.execute(text(STRICT_MATCH_SQL)).mappings().all()
     fuzzy = conn.execute(text(FUZZY_COUNT_SQL)).scalar() or 0
     groups = len({(r["employer"], r["position_example"], r["deadline"]) for r in rows})

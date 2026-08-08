@@ -181,10 +181,16 @@ def main():
         conn.execute(text(
             "ALTER TABLE campus_jobs ADD COLUMN IF NOT EXISTS invalid_reason varchar(50)"
         ))
-        conn.execute(text(
-            "ALTER TABLE positions ADD COLUMN IF NOT EXISTS"
-            " cross_board_dup boolean NOT NULL DEFAULT false"
-        ))
+        has_cbd = conn.execute(text(
+            "SELECT 1 FROM information_schema.columns"
+            " WHERE table_name = 'positions' AND column_name = 'cross_board_dup'"
+        )).scalar()
+        if not has_cbd:
+            # ALTER 需 AccessExclusive 锁，先查列存在避免无谓排队阻塞线上查询
+            conn.execute(text(
+                "ALTER TABLE positions ADD COLUMN IF NOT EXISTS"
+                " cross_board_dup boolean NOT NULL DEFAULT false"
+            ))
         conn.commit()
         ensure_city_province(conn)
         exists = conn.execute(text(

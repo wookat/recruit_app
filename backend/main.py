@@ -13,7 +13,7 @@ import pandas as pd
 from fastapi import FastAPI, Depends, Query, HTTPException, Request
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy import text
@@ -428,24 +428,42 @@ def position_competition(
     return {"total": row.total, "unlimited_major": row.unlimited}
 
 
+def _norm_employer(emp: str) -> str:
+    """单位名归一：去掉采集源附加的「全国」前缀与整体重复（如「X局X局」），
+    与 SQL 侧 EMPLOYER_NORM_SQL / idx_pos_clean_employer_norm_year 表达式一致。"""
+    emp = emp.strip()
+    if emp.startswith("全国"):
+        emp = emp[2:]
+    half = len(emp) // 2
+    if half >= 1 and len(emp) % 2 == 0 and emp[:half] == emp[half:]:
+        emp = emp[:half]
+    return emp
+
+
+#: 与 migrate_perf.py 的 idx_pos_clean_employer_norm_year 索引表达式保持一致
+EMPLOYER_NORM_SQL = "regexp_replace(regexp_replace(employer, '^全国', ''), '^(.+?)\\1$', '\\1')"
+
+
 @app.get("/api/positions/employer-history")
 @cache.cached("pos_emp_hist", ttl=3600)
 def position_employer_history(
     employer: str = Query(..., min_length=2, max_length=300),
     db: Session = Depends(get_db),
 ):
-    """同单位历年招录：按年份聚合岗位条数及学历要求分布（1h 缓存）。"""
+    """同单位历年招录：按年份聚合岗位条数及学历要求分布（1h 缓存）。
+    单位名归一后匹配，兼容不同年份采集源对同一单位的不同写法。"""
+    emp_norm = _norm_employer(employer)
     rows = db.execute(
-        text("""
+        text(f"""
             SELECT year, count(*) AS total
             FROM positions
             WHERE dup_of_id IS NULL AND invalid_reason IS NULL
-              AND employer = :emp
+              AND {EMPLOYER_NORM_SQL} = :emp
             GROUP BY year
             ORDER BY year DESC
             LIMIT 10
         """),
-        {"emp": employer},
+        {"emp": emp_norm},
     ).all()
     years = [r.year for r in rows]
     edu_map: dict = {}
@@ -455,11 +473,11 @@ def position_employer_history(
                 SELECT year, edu_level_norm, count(*) AS n
                 FROM positions
                 WHERE dup_of_id IS NULL AND invalid_reason IS NULL
-                  AND employer = :emp AND year = ANY(:ys)
+                  AND {norm} = :emp AND year = ANY(:ys)
                   AND edu_level_norm IS NOT NULL AND edu_level_norm <> ''
                 GROUP BY year, edu_level_norm
-            """),
-            {"emp": employer, "ys": years},
+            """.format(norm=EMPLOYER_NORM_SQL)),
+            {"emp": emp_norm, "ys": years},
         ).all()
         for r in edu_rows:
             edu_map.setdefault(r.year, []).append({"level": r.edu_level_norm, "count": r.n})
@@ -969,14 +987,33 @@ if os.path.isdir(dist_dir):
             response.headers.setdefault("Cache-Control", "no-cache")
         return response
 
+    #: sw.js 缺失时的自愈兜底：注销自身并刷新受控页面，避免浏览器缓存旧 SW 后拿到 SPA HTML 报错
+    _SW_SELF_DESTRUCT = (
+        "self.addEventListener('install',()=>self.skipWaiting());"
+        "self.addEventListener('activate',e=>e.waitUntil("
+        "self.registration.unregister()"
+        ".then(()=>self.clients.matchAll({type:'window'}))"
+        ".then(cs=>cs.forEach(c=>c.navigate(c.url)))));"
+    )
+
+    _ASSET_EXTS = (".js", ".mjs", ".css", ".map", ".json", ".webmanifest", ".png",
+                   ".jpg", ".svg", ".ico", ".txt", ".woff", ".woff2", ".webp")
+
     class SpaStaticFiles(StaticFiles):
         """未知路径的 HTML GET 请求回落到 index.html（404 状态），避免用户看到裸 JSON；
+        静态资源类路径（.js/.css 等）绝不回落 HTML（防止 /sw.js 拿到 SPA 首页破坏 PWA），
+        其中 sw.js 缺失时返回自注销 SW 脚本自愈；
         根级专题 slug（如 /shenzhen-guoqi）301 到 /topic/<slug>，兜底常见误输入。"""
 
         @staticmethod
         def _fallback(path):
             if "/" not in path and path in seo.TOPIC_CANDIDATES:
                 return RedirectResponse(f"/topic/{path}", status_code=301)
+            if path in ("sw.js", "push-sw.js"):
+                return Response(_SW_SELF_DESTRUCT, media_type="application/javascript",
+                                headers={"Cache-Control": "no-cache"})
+            if path.lower().endswith(_ASSET_EXTS):
+                return PlainTextResponse("not found", status_code=404)
             return FileResponse(index_path, media_type="text/html", status_code=404)
 
         async def get_response(self, path, scope):

@@ -1416,9 +1416,9 @@ export function CampusPage({
                   <TableCell title={job.edu_requirement ?? ''}>
                     {job.edu_requirement ? (
                       <Badge variant="secondary" className={cn('whitespace-nowrap border-0', TONE_CLASSES.sky)}>
-                        {job.edu_requirement.length > 12
-                          ? job.edu_requirement.slice(0, 12) + '…'
-                          : job.edu_requirement}
+                        {t(job.edu_requirement).length > 12
+                          ? t(job.edu_requirement).slice(0, 12) + '…'
+                          : t(job.edu_requirement)}
                       </Badge>
                     ) : (
                       '-'
@@ -1625,9 +1625,9 @@ export function CampusPage({
                 )}
                 {job.edu_requirement && (
                   <Badge variant="secondary" className={cn('border-0', TONE_CLASSES.sky)}>
-                    {job.edu_requirement.length > 20
-                      ? job.edu_requirement.slice(0, 20) + '…'
-                      : job.edu_requirement}
+                    {t(job.edu_requirement).length > 20
+                      ? t(job.edu_requirement).slice(0, 20) + '…'
+                      : t(job.edu_requirement)}
                   </Badge>
                 )}
                 {job.industry && (

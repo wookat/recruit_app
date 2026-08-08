@@ -982,7 +982,7 @@ export const EN: Record<string, string> = {
   '竞争热度 高': 'Interest: high',
   '竞争热度 中': 'Interest: medium',
   '竞争热度 低': 'Interest: low',
-  '竞争热度：数据积累中，同类样本足够后展示': 'Interest level: gathering data; shown once the peer sample is large enough',
+  '竞争热度：站内浏览样本积累中（新站流量有限），同类岗位样本足够后自动展示': 'Interest level: on-site view samples still accumulating (traffic is limited on this new site); shown automatically once the peer sample is large enough',
   '该岗近 7 日浏览热度超过': 'Views in the last 7 days exceed',
   '的同类岗位': 'of similar jobs',
   '笔试': 'Written test',

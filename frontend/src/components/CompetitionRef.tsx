@@ -120,7 +120,7 @@ export function CompetitionRef({
             </div>
           ) : (
             <div className="mt-1.5 text-xs text-muted-foreground">
-              {t("竞争热度：数据积累中，同类样本足够后展示")}
+              {t("竞争热度：站内浏览样本积累中（新站流量有限），同类岗位样本足够后自动展示")}
             </div>
           )
         )}

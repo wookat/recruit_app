@@ -12,6 +12,9 @@ import {
   fetchHealthSummary,
   fetchAdminFeedback,
   fetchQualityIssues,
+  fetchAdminContent,
+  downloadAdminContent,
+  triggerContentGenerate,
   fetchSyncStatus,
   setFeedbackHandled,
   fetchSyncToday,
@@ -20,6 +23,7 @@ import {
   triggerSyncNow,
   type AdminFeedbackItem,
   type AdminOverview,
+  type ContentFileItem,
   type Announcement,
   type CrawlRun,
   type CrawlRunList,
@@ -295,6 +299,8 @@ export function AdminPage() {
 
       <QualityCard quality={quality} loading={qualityLoading} token={token} />
 
+      <ContentSection token={token} />
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">{t("抓取任务")}</CardTitle>
@@ -526,6 +532,88 @@ const BOARD_LABELS: Record<string, string> = {
   positions: t("体制内"),
   campus: t("校招"),
   bianzhi: t("编制"),
+}
+
+function ContentSection({ token }: { token: string }) {
+  const [items, setItems] = useState<ContentFileItem[]>([])
+  const [genTaskId, setGenTaskId] = useState<string | null>(null)
+  const [genStatus, setGenStatus] = useState('')
+
+  const loadContent = useCallback(() => {
+    fetchAdminContent(token)
+      .then((r) => setItems(r.items))
+      .catch(() => setItems([]))
+  }, [token])
+
+  useEffect(() => {
+    loadContent()
+  }, [loadContent])
+
+  useEffect(() => {
+    if (!genTaskId) return
+    const iv = setInterval(async () => {
+      try {
+        const res = await fetchSyncStatus(token, genTaskId)
+        setGenStatus(res.state)
+        if (res.state === 'SUCCESS' || res.state === 'FAILURE') {
+          clearInterval(iv)
+          setGenTaskId(null)
+          loadContent()
+        }
+      } catch {
+        clearInterval(iv)
+        setGenTaskId(null)
+      }
+    }, 3000)
+    return () => clearInterval(iv)
+  }, [genTaskId, token, loadContent])
+
+  const weeks = [...new Set(items.map((it) => it.week))]
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-base">{t("盘点内容（周更发布素材）")}</CardTitle>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!!genTaskId}
+          onClick={async () => {
+            const r = await triggerContentGenerate(token)
+            setGenTaskId(r.task_id)
+            setGenStatus('PENDING')
+          }}
+        >
+          {genTaskId ? tt`生成中…${genStatus}` : t("立即生成本周盘点")}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {weeks.length === 0 && (
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            {t("暂无内容，每周一自动生成，或点击右上角立即生成")}{' '}</p>
+        )}
+        {weeks.map((week) => (
+          <div key={week} className="mb-3">
+            <div className="mb-1 text-sm font-medium">{week}</div>
+            <div className="flex flex-wrap gap-2">
+              {items
+                .filter((it) => it.week === week)
+                .map((it) => (
+                  <Button
+                    key={it.path}
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => void downloadAdminContent(token, it.path, it.name)}
+                  >
+                    {it.name}
+                  </Button>
+                ))}
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
 }
 
 function FeedbackSection({ token }: { token: string }) {

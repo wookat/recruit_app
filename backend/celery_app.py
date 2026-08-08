@@ -67,6 +67,10 @@ celery_app.conf.update(
             "task": "tasks.generate_daily_digest",
             "schedule": crontab(hour=7, minute=40),  # 采集入库后生成每日岗位精选文案（渠道内容素材）
         },
+        "generate-weekly-content": {
+            "task": "tasks.generate_weekly_content",
+            "schedule": crontab(hour=9, minute=10, day_of_week=1),  # 每周一采集入库后生成盘点内容（多平台发布素材）
+        },
         "refresh-freshness-caches": {
             "task": "tasks.refresh_freshness_caches",
             "schedule": crontab(minute="*/10"),  # 请求路径外重算 freshness/recent-updates，消除 TTL 到期冷重算

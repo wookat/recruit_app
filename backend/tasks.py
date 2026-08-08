@@ -37,6 +37,7 @@ import task_runs  # noqa: F401  celery 信号注册：任务执行结果落库 t
 from seo import (CITIES, EXAM_TYPES, PROVINCES, SITE, _city_et_slugs,
                  _major_live_slugs, _recent_digest_days, _topic_live_slugs)
 import digest
+import content_roundup
 import collect_iguopin
 import collect_ncss
 import import_guopin_2027
@@ -225,6 +226,16 @@ def generate_daily_digest(self):
             f.write(md)
         saved = digest.save_digest(db)
         return {"path": path, "bytes": len(md.encode()), "saved": saved}
+    finally:
+        db.close()
+
+
+@celery_app.task(bind=True, max_retries=1, default_retry_delay=600, time_limit=1800)
+def generate_weekly_content(self):
+    """每周生成盘点内容（三类 × 小红书/长文两版式 + utm 深链二维码）到 exports/content/。"""
+    db = SessionLocal()
+    try:
+        return content_roundup.generate_weekly_content(db)
     finally:
         db.close()
 

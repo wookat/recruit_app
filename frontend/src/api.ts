@@ -1020,6 +1020,38 @@ export async function fetchSyncToday(token: string): Promise<{ date: string; ite
   return res.data
 }
 
+export interface ContentFileItem {
+  week: string
+  name: string
+  path: string
+  size: number
+  mtime: string
+}
+
+export async function fetchAdminContent(token: string): Promise<{ items: ContentFileItem[] }> {
+  const res = await axios.get(`${API_BASE}/api/admin/content`, adminHeaders(token))
+  return res.data
+}
+
+export async function downloadAdminContent(token: string, path: string, name: string): Promise<void> {
+  const res = await axios.get(`${API_BASE}/api/admin/content/download`, {
+    ...adminHeaders(token),
+    params: { path },
+    responseType: 'blob',
+  })
+  const url = URL.createObjectURL(res.data as Blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export async function triggerContentGenerate(token: string): Promise<{ task_id: string }> {
+  const res = await axios.post(`${API_BASE}/api/admin/content/generate`, null, adminHeaders(token))
+  return res.data
+}
+
 export async function triggerSyncNow(token: string): Promise<{ task_id: string }> {
   const res = await axios.post(`${API_BASE}/api/admin/sync-now`, null, adminHeaders(token))
   return res.data

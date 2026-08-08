@@ -540,6 +540,43 @@ def sync_today(db: Session = Depends(get_db)):
     return {"date": start.date().isoformat(), "items": items}
 
 
+@router.get("/task-runs", dependencies=[Depends(require_admin)])
+def task_runs_summary(days: int = Query(7, ge=1, le=30), db: Session = Depends(get_db)):
+    """Celery 任务执行记录（task_runs 表）：最近失败明细 + 近 N 天各任务成功率。"""
+    if not db.execute(text("SELECT to_regclass('task_runs')")).scalar():
+        return {"days": days, "recent_failures": [], "stats": []}
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    failures = db.execute(text(
+        "SELECT task_name, status, started_at, finished_at, runtime_s, error"
+        " FROM task_runs WHERE status = 'failure' AND finished_at >= :since"
+        " ORDER BY finished_at DESC LIMIT 50"), {"since": since}).mappings().all()
+    stats = db.execute(text(
+        "SELECT task_name, status, count(*) AS cnt, round(avg(runtime_s)::numeric, 1) AS avg_runtime_s"
+        " FROM task_runs WHERE finished_at >= :since"
+        " GROUP BY task_name, status ORDER BY task_name, status"), {"since": since}).mappings().all()
+    return {
+        "days": days,
+        "recent_failures": [
+            {
+                "task_name": r["task_name"],
+                "finished_at": r["finished_at"].isoformat() if r["finished_at"] else None,
+                "runtime_s": r["runtime_s"],
+                "error": r["error"],
+            }
+            for r in failures
+        ],
+        "stats": [
+            {
+                "task_name": r["task_name"],
+                "status": r["status"],
+                "count": r["cnt"],
+                "avg_runtime_s": float(r["avg_runtime_s"]) if r["avg_runtime_s"] is not None else None,
+            }
+            for r in stats
+        ],
+    }
+
+
 @router.get("/content", dependencies=[Depends(require_admin)])
 def list_content():
     """列出盘点内容流水线产物（exports/content/ 下的文案与二维码，按周倒序）。"""

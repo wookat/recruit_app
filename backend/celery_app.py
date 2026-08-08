@@ -20,6 +20,16 @@ celery_app.conf.update(
     enable_utc=True,
     task_track_started=True,
     task_time_limit=3600,
+    # 队列拆分（R303）：长采集/enrich 任务走 heavy 队列（独立 worker 消费），
+    # 轻任务（refresh/warm/digest/推送等）走 default，避免数小时采集阻塞轻任务
+    task_default_queue="default",
+    task_routes={
+        "tasks.collect_*": {"queue": "heavy"},
+        "tasks.enrich_*": {"queue": "heavy"},
+        "tasks.check_dead_links": {"queue": "heavy"},  # 每周全量死链扫描（长任务）
+        "tasks.check_watch_sources": {"queue": "heavy"},  # 每日全源采集闭环（长任务）
+        "tasks.scrape_*": {"queue": "heavy"},
+    },
     worker_prefetch_multiplier=1,
     result_expires=3600 * 24,
     beat_schedule={
